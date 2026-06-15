@@ -1,2 +1,3 @@
 - [Landing dark vs app light](landing-vs-app-theme.md) — landing is bold cinematic dark (Veltrix-inspired), authenticated app stays light "Neutro Notion"; keep landing dark self-contained, never toggle global .dark.
 - [Orval codegen](orval-codegen.md) — stop dev workflows before running Orval codegen or it hangs watching files.
+- [Read-page robustness](read-page-robustness.md) — every read page: isError+refetch via shared ErrorState, filtered-empty vs truly-empty, guarded charAt/index lookups; child query components own their loading/error.

@@ -27,6 +27,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Link } from "wouter";
+import { ErrorState } from "@/components/query-state";
 import {
   RadarChart,
   PolarGrid,
@@ -67,7 +68,7 @@ function formatMonth(period: string) {
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
     "Jul", "Ago", "Set", "Out", "Nov", "Dez",
   ];
-  return `${months[Number(m) - 1]}/${y.slice(2)}`;
+  return `${months[Number(m) - 1] ?? m ?? ""}/${y?.slice(2) ?? ""}`;
 }
 
 function TrendPill({ value }: { value: number }) {
@@ -91,9 +92,26 @@ function TrendPill({ value }: { value: number }) {
 }
 
 export default function DashboardPage() {
-  const { data: summary, isLoading: loadingSummary } = useGetFleetSummary();
-  const { data: kpis, isLoading: loadingKpis } = useGetFleetKpis();
-  const { data: alerts, isLoading: loadingAlerts } = useListFleetAlerts();
+  const {
+    data: summary,
+    isLoading: loadingSummary,
+    isError: errorSummary,
+    refetch: refetchSummary,
+  } = useGetFleetSummary();
+  const {
+    data: kpis,
+    isLoading: loadingKpis,
+    isError: errorKpis,
+    refetch: refetchKpis,
+  } = useGetFleetKpis();
+  const {
+    data: alerts,
+    isLoading: loadingAlerts,
+    isError: errorAlerts,
+    refetch: refetchAlerts,
+  } = useListFleetAlerts();
+
+  const hasError = errorSummary || errorKpis || errorAlerts;
 
   const radarData =
     kpis?.layers.map((l) => ({ layer: l.label, score: l.score })) ?? [];
@@ -110,6 +128,18 @@ export default function DashboardPage() {
             alertas do Detector de Vitória Ilusória.
           </p>
         </div>
+
+        {hasError && (
+          <ErrorState
+            title="Não foi possível carregar a frota"
+            description="Tente novamente em instantes."
+            onRetry={() => {
+              if (errorSummary) refetchSummary();
+              if (errorKpis) refetchKpis();
+              if (errorAlerts) refetchAlerts();
+            }}
+          />
+        )}
 
         {/* Top stat row */}
         {loadingSummary || loadingKpis ? (

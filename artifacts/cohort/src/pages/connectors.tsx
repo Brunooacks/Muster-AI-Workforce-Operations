@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link2, Search, Check, Download, AlertCircle } from "lucide-react";
+import { ErrorState } from "@/components/query-state";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { getListConnectorsQueryKey } from "@workspace/api-client-react";
 
 export default function ConnectorsPage() {
-  const { data: connectors, isLoading } = useListConnectors();
+  const { data: connectors, isLoading, isError, refetch } = useListConnectors();
   const { toast } = useToast();
   
   const connectPlatform = useConnectPlatform();
@@ -112,10 +113,19 @@ export default function ConnectorsPage() {
           </Card>
         )}
 
-        <div className="grid md:grid-cols-2 gap-4">
-          {isLoading ? (
+        {isError ? (
+          <ErrorState
+            title="Não foi possível carregar os conectores"
+            onRetry={() => refetch()}
+          />
+        ) : isLoading ? (
+          <div className="grid md:grid-cols-2 gap-4">
             <Card><CardContent className="p-6"><div className="h-24 bg-muted animate-pulse rounded"></div></CardContent></Card>
-          ) : connectors?.map(connector => (
+            <Card><CardContent className="p-6"><div className="h-24 bg-muted animate-pulse rounded"></div></CardContent></Card>
+          </div>
+        ) : connectors && connectors.length > 0 ? (
+          <div className="grid md:grid-cols-2 gap-4">
+            {connectors.map(connector => (
             <Card key={connector.id} className="flex flex-col">
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
@@ -161,8 +171,19 @@ export default function ConnectorsPage() {
                 )}
               </CardFooter>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <Card className="p-10 text-center">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              <Link2 className="h-8 w-8 opacity-50" />
+              <p className="font-medium text-foreground">Nenhum conector disponível</p>
+              <p className="text-sm">
+                Conecte uma plataforma para começar a descobrir agentes.
+              </p>
+            </div>
+          </Card>
+        )}
       </div>
     </AppLayout>
   );

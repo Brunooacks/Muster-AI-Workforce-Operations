@@ -9,10 +9,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Filter, Plus, ChevronRight, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
+import { ErrorState } from "@/components/query-state";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AgentsPage() {
   const [search, setSearch] = useState("");
-  const { data: agents, isLoading } = useListAgents({ search: search || undefined });
+  const [verdictFilter, setVerdictFilter] = useState<string>("all");
+  const { data: agents, isLoading, isError, refetch } = useListAgents({ search: search || undefined });
+
+  const filteredAgents = agents?.filter(
+    (a) => verdictFilter === "all" || a.currentVerdict === verdictFilter,
+  );
 
   const getVerdictColor = (verdict: string) => {
     switch (verdict) {
@@ -63,11 +76,27 @@ export default function AgentsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
+          <Select value={verdictFilter} onValueChange={setVerdictFilter}>
+            <SelectTrigger className="w-[190px] bg-card">
+              <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Veredito" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os vereditos</SelectItem>
+              <SelectItem value="promote">Promover</SelectItem>
+              <SelectItem value="mentor">Mentorar</SelectItem>
+              <SelectItem value="retire">Aposentar</SelectItem>
+              <SelectItem value="observation">Observação</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
+        {isError ? (
+          <ErrorState
+            title="Não foi possível carregar os agentes"
+            onRetry={() => refetch()}
+          />
+        ) : (
         <Card className="overflow-hidden border border-border shadow-sm">
           <Table>
             <TableHeader className="bg-muted/50">
@@ -92,13 +121,13 @@ export default function AgentsPage() {
                     <TableCell></TableCell>
                   </TableRow>
                 ))
-              ) : agents && agents.length > 0 ? (
-                agents.map((agent) => (
+              ) : filteredAgents && filteredAgents.length > 0 ? (
+                filteredAgents.map((agent) => (
                   <TableRow key={agent.id} className="hover:bg-muted/50 cursor-pointer group">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center font-bold text-primary">
-                          {agent.name.charAt(0)}
+                          {agent.name?.charAt(0) ?? "?"}
                         </div>
                         <div>
                           <Link href={`/agentes/${agent.id}`} className="font-medium hover:underline text-foreground block">
@@ -134,6 +163,12 @@ export default function AgentsPage() {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : agents && agents.length > 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    Nenhum agente para os filtros atuais.
+                  </TableCell>
+                </TableRow>
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
@@ -144,6 +179,7 @@ export default function AgentsPage() {
             </TableBody>
           </Table>
         </Card>
+        )}
       </div>
     </AppLayout>
   );

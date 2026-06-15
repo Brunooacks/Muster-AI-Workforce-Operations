@@ -11,11 +11,26 @@ import { queryClient } from "@/lib/queryClient";
 import { getGetAgentQueryKey, getGetAgentMetricsQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ErrorState } from "@/components/query-state";
 
 function MetricChart({ agentId }: { agentId: string }) {
-  const { data: metrics } = useGetAgentMetrics(agentId, "30d", {
+  const { data: metrics, isLoading, isError, refetch } = useGetAgentMetrics(agentId, "30d", {
     query: { enabled: !!agentId, queryKey: getGetAgentMetricsQueryKey(agentId, "30d") }
   });
+
+  if (isLoading) {
+    return <Skeleton className="h-64 w-full rounded-lg" />;
+  }
+
+  if (isError) {
+    return (
+      <ErrorState
+        compact
+        title="Não foi possível carregar as métricas"
+        onRetry={() => refetch()}
+      />
+    );
+  }
 
   if (!metrics || metrics.length === 0) {
     return (
@@ -69,7 +84,7 @@ export default function AgentDetailPage() {
   const agentId = params.id as string;
   const { toast } = useToast();
 
-  const { data: detail, isLoading } = useGetAgent(agentId, {
+  const { data: detail, isLoading, isError, refetch } = useGetAgent(agentId, {
     query: { enabled: !!agentId, queryKey: getGetAgentQueryKey(agentId) }
   });
 
@@ -134,6 +149,17 @@ export default function AgentDetailPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <AppLayout title="Carteira de Trabalho">
+        <ErrorState
+          title="Não foi possível carregar o agente"
+          onRetry={() => refetch()}
+        />
+      </AppLayout>
+    );
+  }
+
   if (!detail) {
     return (
       <AppLayout title="Agente não encontrado">
@@ -159,7 +185,7 @@ export default function AgentDetailPage() {
         <div className="flex flex-col md:flex-row justify-between items-start gap-6 p-6 bg-card border rounded-xl shadow-sm">
           <div className="flex gap-5">
             <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-2xl text-primary shrink-0">
-              {agent.name.charAt(0)}
+              {agent.name?.charAt(0) ?? "?"}
             </div>
             <div>
               <div className="flex items-center gap-3 mb-1">
@@ -258,15 +284,15 @@ export default function AgentDetailPage() {
               ))}
             </div>
             
-            {/* KPI Time Series would go here in a real implementation (Recharts) */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base font-medium">Histórico de Performance</CardTitle>
+                <CardDescription>
+                  Série temporal das 5 camadas nos últimos 30 dias
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center border border-dashed rounded-lg bg-muted/20 text-muted-foreground text-sm">
-                  Gráfico de série temporal (Eficácia, Eficiência, Adoção, Governança, Valor)
-                </div>
+                <MetricChart agentId={agentId} />
               </CardContent>
             </Card>
           </TabsContent>
