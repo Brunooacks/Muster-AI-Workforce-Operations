@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Cohort — AI agent fleet governance API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: fleet
+    description: Fleet-level overview and alerts
+  - name: agents
+    description: Agent registry, identity, evaluation and verdicts
+  - name: connectors
+    description: Platform connectors (plug and play)
 paths:
   /healthz:
     get:
@@ -24,6 +30,323 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /fleet/summary:
+    get:
+      operationId: getFleetSummary
+      tags: [fleet]
+      summary: Fleet summary
+      description: Consolidated cohort overview for the home dashboard
+      responses:
+        "200":
+          description: Fleet summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetSummary"
+
+  /fleet/alerts:
+    get:
+      operationId: listFleetAlerts
+      tags: [fleet]
+      summary: Active fleet alerts
+      description: Illusory-victory detector alerts across the whole fleet
+      parameters:
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [critical, high, medium, antecedent]
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved]
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /agents:
+    get:
+      operationId: listAgents
+      tags: [agents]
+      summary: List agents
+      parameters:
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [observation, active, flagged, retiring, retired]
+        - name: verdict
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [promote, mentor, retire, observation]
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [critical, high, medium, stable]
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+    post:
+      operationId: createAgent
+      tags: [agents]
+      summary: Admit a new agent (Carteira de Trabalho)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentInput"
+      responses:
+        "201":
+          description: Agent admitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDetail"
+
+  /agents/{agentId}:
+    get:
+      operationId: getAgent
+      tags: [agents]
+      summary: Get a single agent with full work record
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateAgent
+      tags: [agents]
+      summary: Update agent core fields
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentUpdate"
+      responses:
+        "200":
+          description: Updated agent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDetail"
+    delete:
+      operationId: deleteAgent
+      tags: [agents]
+      summary: Retire and remove an agent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /agents/{agentId}/identity:
+    patch:
+      operationId: updateAgentIdentity
+      tags: [agents]
+      summary: Update the agent work record (identity)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityUpdate"
+      responses:
+        "200":
+          description: Updated agent detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDetail"
+
+  /agents/{agentId}/evaluations:
+    get:
+      operationId: listAgentEvaluations
+      tags: [agents]
+      summary: Evaluation history for an agent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Evaluation history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evaluation"
+
+  /agents/{agentId}/metrics/{window}:
+    get:
+      operationId: getAgentMetrics
+      tags: [agents]
+      summary: KPI time series for an agent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: window
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: ["1h", "24h", "7d", "30d"]
+      responses:
+        "200":
+          description: KPI time series
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MetricPoint"
+
+  /agents/{agentId}/verdicts:
+    get:
+      operationId: listAgentVerdicts
+      tags: [agents]
+      summary: Immutable verdict history for an agent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verdict history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Verdict"
+
+  /agents/{agentId}/verdict/decision:
+    post:
+      operationId: decideVerdict
+      tags: [agents]
+      summary: Approve, disagree with, or export the current verdict
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerdictDecisionInput"
+      responses:
+        "200":
+          description: Updated verdict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verdict"
+
+  /connectors:
+    get:
+      operationId: listConnectors
+      tags: [connectors]
+      summary: List platform connectors
+      responses:
+        "200":
+          description: Connectors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connector"
+    post:
+      operationId: connectPlatform
+      tags: [connectors]
+      summary: Connect a platform (plug and play)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectorInput"
+      responses:
+        "201":
+          description: Connector created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connector"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +357,557 @@ components:
       required:
         - status
 
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    PlatformCount:
+      type: object
+      required: [platform, count]
+      properties:
+        platform:
+          type: string
+        count:
+          type: integer
+
+    VerdictBreakdown:
+      type: object
+      required: [promote, mentor, retire, observation]
+      properties:
+        promote:
+          type: integer
+        mentor:
+          type: integer
+        retire:
+          type: integer
+        observation:
+          type: integer
+
+    SeverityBreakdown:
+      type: object
+      required: [critical, high, medium, stable]
+      properties:
+        critical:
+          type: integer
+        high:
+          type: integer
+        medium:
+          type: integer
+        stable:
+          type: integer
+
+    FleetSummary:
+      type: object
+      required:
+        - totalAgents
+        - byVerdict
+        - bySeverity
+        - byPlatform
+        - avgHealthScore
+        - activeAlerts
+        - estimatedMonthlyValue
+        - estimatedMonthlyCost
+        - connectedPlatforms
+      properties:
+        totalAgents:
+          type: integer
+        byVerdict:
+          $ref: "#/components/schemas/VerdictBreakdown"
+        bySeverity:
+          $ref: "#/components/schemas/SeverityBreakdown"
+        byPlatform:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatformCount"
+        avgHealthScore:
+          type: number
+        activeAlerts:
+          type: integer
+        estimatedMonthlyValue:
+          type: number
+        estimatedMonthlyCost:
+          type: number
+        connectedPlatforms:
+          type: integer
+
+    Agent:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - role
+        - platform
+        - version
+        - status
+        - bio
+        - currentVerdict
+        - verdictConfidence
+        - severity
+        - healthScore
+        - admittedAt
+        - lastEvaluatedAt
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        role:
+          type: string
+        platform:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: [observation, active, flagged, retiring, retired]
+        avatarUrl:
+          type: ["string", "null"]
+        bio:
+          type: string
+        currentVerdict:
+          type: string
+          enum: [promote, mentor, retire, observation]
+        verdictConfidence:
+          type: number
+        severity:
+          type: string
+          enum: [critical, high, medium, stable]
+        healthScore:
+          type: number
+        activeAlerts:
+          type: integer
+        monthlyValue:
+          type: number
+        monthlyCost:
+          type: number
+        admittedAt:
+          type: string
+        lastEvaluatedAt:
+          type: string
+
+    AgentDetail:
+      type: object
+      required:
+        - agent
+        - identity
+        - owners
+        - latestEvaluation
+      properties:
+        agent:
+          $ref: "#/components/schemas/Agent"
+        identity:
+          $ref: "#/components/schemas/AgentIdentity"
+        owners:
+          $ref: "#/components/schemas/AgentOwners"
+        latestEvaluation:
+          $ref: "#/components/schemas/Evaluation"
+        currentVerdict:
+          $ref: "#/components/schemas/Verdict"
+
+    AgentIdentity:
+      type: object
+      required:
+        - bio
+        - shouldDo
+        - shouldNotDo
+        - autonomyLevel
+        - limits
+        - businessCase
+        - version
+      properties:
+        bio:
+          type: string
+        shouldDo:
+          type: array
+          items:
+            type: string
+        shouldNotDo:
+          type: array
+          items:
+            type: string
+        autonomyLevel:
+          type: string
+          enum: [autonomous, escalates, restricted]
+        autonomyNotes:
+          type: string
+        limits:
+          type: array
+          items:
+            type: string
+        businessCase:
+          $ref: "#/components/schemas/BusinessCase"
+        version:
+          type: integer
+
+    BusinessCase:
+      type: object
+      required:
+        - baseline
+        - targetPayback
+        - actualPayback
+        - description
+      properties:
+        baseline:
+          type: string
+        targetPayback:
+          type: string
+        actualPayback:
+          type: string
+        description:
+          type: string
+
+    AgentOwners:
+      type: object
+      required:
+        - businessOwner
+        - technicalOwner
+        - governanceSponsor
+      properties:
+        businessOwner:
+          type: string
+        technicalOwner:
+          type: string
+        governanceSponsor:
+          type: string
+
+    KpiMetric:
+      type: object
+      required:
+        - label
+        - value
+        - unit
+        - trend
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        trend:
+          type: number
+        direction:
+          type: string
+          enum: [up, down, flat]
+
+    KpiLayer:
+      type: object
+      required:
+        - key
+        - label
+        - score
+        - severity
+        - metrics
+      properties:
+        key:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+        score:
+          type: number
+        severity:
+          type: string
+          enum: [critical, high, medium, stable]
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiMetric"
+
+    Evaluation:
+      type: object
+      required:
+        - id
+        - agentId
+        - evaluatedAt
+        - window
+        - layers
+        - verdict
+        - verdictConfidence
+        - rationale
+      properties:
+        id:
+          type: string
+        agentId:
+          type: string
+        evaluatedAt:
+          type: string
+        window:
+          type: string
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiLayer"
+        verdict:
+          type: string
+          enum: [promote, mentor, retire, observation]
+        verdictConfidence:
+          type: number
+        rationale:
+          type: string
+
+    MetricPoint:
+      type: object
+      required:
+        - timestamp
+        - efficacy
+        - efficiency
+        - adoption
+        - governance
+        - value
+      properties:
+        timestamp:
+          type: string
+        efficacy:
+          type: number
+        efficiency:
+          type: number
+        adoption:
+          type: number
+        governance:
+          type: number
+        value:
+          type: number
+
+    NextAction:
+      type: object
+      required:
+        - action
+        - owner
+        - due
+      properties:
+        action:
+          type: string
+        owner:
+          type: string
+        due:
+          type: string
+
+    Verdict:
+      type: object
+      required:
+        - id
+        - agentId
+        - verdict
+        - confidence
+        - executionWindow
+        - suggestedSponsor
+        - nextActions
+        - rationale
+        - decision
+        - createdAt
+      properties:
+        id:
+          type: string
+        agentId:
+          type: string
+        verdict:
+          type: string
+          enum: [promote, mentor, retire, observation]
+        confidence:
+          type: number
+        executionWindow:
+          type: string
+        suggestedSponsor:
+          type: string
+        nextActions:
+          type: array
+          items:
+            $ref: "#/components/schemas/NextAction"
+        rationale:
+          type: string
+        decision:
+          type: string
+          enum: [pending, approved, disagreed, exported]
+        decidedBy:
+          type: ["string", "null"]
+        decidedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    Alert:
+      type: object
+      required:
+        - id
+        - agentId
+        - agentName
+        - pattern
+        - patternType
+        - severity
+        - hypothesis
+        - recommendation
+        - detectedAt
+        - status
+      properties:
+        id:
+          type: string
+        agentId:
+          type: string
+        agentName:
+          type: string
+        pattern:
+          type: string
+        patternType:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, antecedent]
+        hypothesis:
+          type: string
+        recommendation:
+          type: string
+        detectedAt:
+          type: string
+        status:
+          type: string
+          enum: [active, acknowledged, resolved]
+
+    Connector:
+      type: object
+      required:
+        - id
+        - platform
+        - name
+        - status
+        - agentsDiscovered
+        - category
+      properties:
+        id:
+          type: string
+        platform:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [connected, available, syncing]
+        agentsDiscovered:
+          type: integer
+        category:
+          type: string
+        lastSyncAt:
+          type: ["string", "null"]
+
+    AgentInput:
+      type: object
+      required:
+        - name
+        - role
+        - platform
+        - bio
+      properties:
+        name:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          minLength: 1
+        platform:
+          type: string
+        version:
+          type: string
+        bio:
+          type: string
+        shouldDo:
+          type: array
+          items:
+            type: string
+        shouldNotDo:
+          type: array
+          items:
+            type: string
+        autonomyLevel:
+          type: string
+          enum: [autonomous, escalates, restricted]
+        autonomyNotes:
+          type: string
+        limits:
+          type: array
+          items:
+            type: string
+        businessOwner:
+          type: string
+        technicalOwner:
+          type: string
+        governanceSponsor:
+          type: string
+        baseline:
+          type: string
+        targetPayback:
+          type: string
+        businessCaseDescription:
+          type: string
+
+    AgentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: [observation, active, flagged, retiring, retired]
+        bio:
+          type: string
+
+    IdentityUpdate:
+      type: object
+      properties:
+        bio:
+          type: string
+        shouldDo:
+          type: array
+          items:
+            type: string
+        shouldNotDo:
+          type: array
+          items:
+            type: string
+        autonomyLevel:
+          type: string
+          enum: [autonomous, escalates, restricted]
+        autonomyNotes:
+          type: string
+        limits:
+          type: array
+          items:
+            type: string
+        businessOwner:
+          type: string
+        technicalOwner:
+          type: string
+        governanceSponsor:
+          type: string
+
+    VerdictDecisionInput:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum: [approved, disagreed, exported]
+        reason:
+          type: string
+        decidedBy:
+          type: string
+
+    ConnectorInput:
+      type: object
+      required:
+        - platform
+      properties:
+        platform:
+          type: string
+        name:
+          type: string
