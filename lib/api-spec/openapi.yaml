@@ -347,6 +347,55 @@ paths:
               schema:
                 $ref: "#/components/schemas/Connector"
 
+  /connectors/{connectorId}/discover:
+    post:
+      operationId: discoverAgents
+      tags: [connectors]
+      summary: Run discovery on a connector
+      description: >-
+        Scans the connected platform, discovers running agents and proposes a
+        5-layer KPI mapping for each so they can be admitted in one click.
+      parameters:
+        - name: connectorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Discovery result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryResult"
+
+  /connectors/{connectorId}/import:
+    post:
+      operationId: importDiscoveredAgents
+      tags: [connectors]
+      summary: Admit discovered agents with their proposed metrics
+      parameters:
+        - name: connectorId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoveryImportInput"
+      responses:
+        "201":
+          description: Admitted agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+
 components:
   schemas:
     HealthStatus:
@@ -911,3 +960,98 @@ components:
           type: string
         name:
           type: string
+
+    ProposedMetric:
+      type: object
+      required:
+        - layer
+        - label
+        - sourceSignal
+        - value
+        - unit
+        - confidence
+      properties:
+        layer:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+        sourceSignal:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        confidence:
+          type: number
+
+    DiscoveredAgent:
+      type: object
+      required:
+        - externalId
+        - name
+        - role
+        - platform
+        - signals
+        - proposedMetrics
+        - confidence
+        - alreadyImported
+      properties:
+        externalId:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        platform:
+          type: string
+        signals:
+          type: array
+          items:
+            type: string
+        proposedMetrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProposedMetric"
+        proposedVerdict:
+          type: string
+          enum: [promote, mentor, retire, observation]
+        confidence:
+          type: number
+        alreadyImported:
+          type: boolean
+
+    DiscoveryResult:
+      type: object
+      required:
+        - connectorId
+        - platform
+        - discoveredAt
+        - agentsFound
+        - agents
+        - coverageNote
+      properties:
+        connectorId:
+          type: string
+        platform:
+          type: string
+        discoveredAt:
+          type: string
+        agentsFound:
+          type: integer
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscoveredAgent"
+        coverageNote:
+          type: string
+
+    DiscoveryImportInput:
+      type: object
+      required:
+        - externalIds
+      properties:
+        externalIds:
+          type: array
+          items:
+            type: string

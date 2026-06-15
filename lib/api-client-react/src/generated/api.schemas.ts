@@ -399,6 +399,61 @@ export interface ConnectorInput {
   name?: string;
 }
 
+export type ProposedMetricLayer = typeof ProposedMetricLayer[keyof typeof ProposedMetricLayer];
+
+
+export const ProposedMetricLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface ProposedMetric {
+  layer: ProposedMetricLayer;
+  label: string;
+  sourceSignal: string;
+  value: number;
+  unit: string;
+  confidence: number;
+}
+
+export type DiscoveredAgentProposedVerdict = typeof DiscoveredAgentProposedVerdict[keyof typeof DiscoveredAgentProposedVerdict];
+
+
+export const DiscoveredAgentProposedVerdict = {
+  promote: 'promote',
+  mentor: 'mentor',
+  retire: 'retire',
+  observation: 'observation',
+} as const;
+
+export interface DiscoveredAgent {
+  externalId: string;
+  name: string;
+  role: string;
+  platform: string;
+  signals: string[];
+  proposedMetrics: ProposedMetric[];
+  proposedVerdict?: DiscoveredAgentProposedVerdict;
+  confidence: number;
+  alreadyImported: boolean;
+}
+
+export interface DiscoveryResult {
+  connectorId: string;
+  platform: string;
+  discoveredAt: string;
+  agentsFound: number;
+  agents: DiscoveredAgent[];
+  coverageNote: string;
+}
+
+export interface DiscoveryImportInput {
+  externalIds: string[];
+}
+
 export type ListFleetAlertsParams = {
 severity?: ListFleetAlertsSeverity;
 status?: ListFleetAlertsStatus;

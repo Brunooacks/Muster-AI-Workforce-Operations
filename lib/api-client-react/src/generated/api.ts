@@ -27,6 +27,8 @@ import type {
   Alert,
   Connector,
   ConnectorInput,
+  DiscoveryImportInput,
+  DiscoveryResult,
   Error,
   Evaluation,
   FleetSummary,
@@ -1192,5 +1194,148 @@ export const useConnectPlatform = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getConnectPlatformMutationOptions(options));
+    }
+
+export const getDiscoverAgentsUrl = (connectorId: string,) => {
+
+
+
+
+  return `/api/connectors/${connectorId}/discover`
+}
+
+/**
+ * Scans the connected platform, discovers running agents and proposes a 5-layer KPI mapping for each so they can be admitted in one click.
+ * @summary Run discovery on a connector
+ */
+export const discoverAgents = async (connectorId: string, options?: RequestInit): Promise<DiscoveryResult> => {
+
+  return customFetch<DiscoveryResult>(getDiscoverAgentsUrl(connectorId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDiscoverAgentsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discoverAgents>>, TError,{connectorId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof discoverAgents>>, TError,{connectorId: string}, TContext> => {
+
+const mutationKey = ['discoverAgents'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof discoverAgents>>, {connectorId: string}> = (props) => {
+          const {connectorId} = props ?? {};
+
+          return  discoverAgents(connectorId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DiscoverAgentsMutationResult = NonNullable<Awaited<ReturnType<typeof discoverAgents>>>
+
+    export type DiscoverAgentsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Run discovery on a connector
+ */
+export const useDiscoverAgents = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discoverAgents>>, TError,{connectorId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof discoverAgents>>,
+        TError,
+        {connectorId: string},
+        TContext
+      > => {
+      return useMutation(getDiscoverAgentsMutationOptions(options));
+    }
+
+export const getImportDiscoveredAgentsUrl = (connectorId: string,) => {
+
+
+
+
+  return `/api/connectors/${connectorId}/import`
+}
+
+/**
+ * @summary Admit discovered agents with their proposed metrics
+ */
+export const importDiscoveredAgents = async (connectorId: string,
+    discoveryImportInput: DiscoveryImportInput, options?: RequestInit): Promise<Agent[]> => {
+
+  return customFetch<Agent[]>(getImportDiscoveredAgentsUrl(connectorId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      discoveryImportInput,)
+  }
+);}
+
+
+
+
+export const getImportDiscoveredAgentsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importDiscoveredAgents>>, TError,{connectorId: string;data: BodyType<DiscoveryImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importDiscoveredAgents>>, TError,{connectorId: string;data: BodyType<DiscoveryImportInput>}, TContext> => {
+
+const mutationKey = ['importDiscoveredAgents'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importDiscoveredAgents>>, {connectorId: string;data: BodyType<DiscoveryImportInput>}> = (props) => {
+          const {connectorId,data} = props ?? {};
+
+          return  importDiscoveredAgents(connectorId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportDiscoveredAgentsMutationResult = NonNullable<Awaited<ReturnType<typeof importDiscoveredAgents>>>
+    export type ImportDiscoveredAgentsMutationBody = BodyType<DiscoveryImportInput>
+    export type ImportDiscoveredAgentsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Admit discovered agents with their proposed metrics
+ */
+export const useImportDiscoveredAgents = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importDiscoveredAgents>>, TError,{connectorId: string;data: BodyType<DiscoveryImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importDiscoveredAgents>>,
+        TError,
+        {connectorId: string;data: BodyType<DiscoveryImportInput>},
+        TContext
+      > => {
+      return useMutation(getImportDiscoveredAgentsMutationOptions(options));
     }
 

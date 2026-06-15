@@ -569,3 +569,50 @@ export const ConnectPlatformBody = zod.object({
 })
 
 
+/**
+ * Scans the connected platform, discovers running agents and proposes a 5-layer KPI mapping for each so they can be admitted in one click.
+ * @summary Run discovery on a connector
+ */
+export const DiscoverAgentsParams = zod.object({
+  "connectorId": zod.coerce.string()
+})
+
+export const DiscoverAgentsResponse = zod.object({
+  "connectorId": zod.string(),
+  "platform": zod.string(),
+  "discoveredAt": zod.string(),
+  "agentsFound": zod.number(),
+  "agents": zod.array(zod.object({
+  "externalId": zod.string(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "platform": zod.string(),
+  "signals": zod.array(zod.string()),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "sourceSignal": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "confidence": zod.number()
+})),
+  "proposedVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']).optional(),
+  "confidence": zod.number(),
+  "alreadyImported": zod.boolean()
+})),
+  "coverageNote": zod.string()
+})
+
+
+/**
+ * @summary Admit discovered agents with their proposed metrics
+ */
+export const ImportDiscoveredAgentsParams = zod.object({
+  "connectorId": zod.coerce.string()
+})
+
+export const ImportDiscoveredAgentsBody = zod.object({
+  "externalIds": zod.array(zod.string())
+})
+
+

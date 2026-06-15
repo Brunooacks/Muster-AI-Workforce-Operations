@@ -1,0 +1,2 @@
+- [Orval path+query collision](orval-codegen.md) — an operation with BOTH path and query params makes orval emit a colliding `<Op>Params` in the zod barrel; keep ops path-only or query-only.
+- [Cohort product & design](cohort.md) — what Cohort is, chosen design direction (Notion-neutral), vocabulary, and architecture decisions.
