@@ -1,0 +1,38 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "QiapaWMzOdsM2ZguLKhAv"
+uri = "file://screenshots/logo-concepts.jpg"
+type = "image"
+title = "Cohort — 3 direções de logotipo"
+
+[[outputs]]
+id = "vERLP5DGRRVOgUsY8urg0"
+uri = "file://artifacts/cohort/public/brand/cohort-lockup-on-light.png"
+type = "image"
+title = "Lockup horizontal — fundo claro (PNG)"
+
+[[outputs]]
+id = "jLm3hqy3OQWiIO6_e6-Ad"
+uri = "file://artifacts/cohort/public/brand/cohort-lockup-on-dark.png"
+type = "image"
+title = "Lockup horizontal — fundo escuro (PNG)"
+
+[[outputs]]
+id = "jxptL19J_NdYR1mvNWFGa"
+uri = "file://artifacts/cohort/public/brand/cohort-symbol-on-light.png"
+type = "image"
+title = "Símbolo isolado — fundo claro (PNG)"
+
+[[outputs]]
+id = "yrzGSPz-TLlI5dUgTs_N-"
+uri = "file://artifacts/cohort/public/brand/cohort-wordmark-on-light.png"
+type = "image"
+title = "Wordmark isolado — fundo claro (PNG)"
+
+[[outputs]]
+id = "vsyvv7XIFkw5TQxIsxZ2U"
+uri = "file://artifacts/cohort/public/brand/cohort-favicon.svg"
+type = "image"
+title = "Favicon (SVG)"

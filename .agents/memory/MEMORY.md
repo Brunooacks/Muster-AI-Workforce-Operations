@@ -1,3 +1,4 @@
 - [Prod schema syncs only on publish](prod-schema-publish-sync.md) — live app 500s "column does not exist" after a dev schema change until the user re-publishes; dev looks healthy.
 - [Carteira agent-detail sourcing](carteira-agent-detail.md) — Detector=fleet alerts filtered client-side; timeline/targets derived in frontend, not schema.
 - [Discovery draft metrics](discovery-draft-metrics.md) — draft target/rationale are proposal-only (KpiMetric has no target); 5-layer coverage enforced via DEFAULT_LAYER_METRIC fallback.
+- [Cohort brand logo](brand-logo.md) — "Camadas Ascendentes" 3-chevron mark; CohortMark component is theme-aware; export assets in public/brand are font-outlined.

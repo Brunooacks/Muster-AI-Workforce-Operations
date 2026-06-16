@@ -9,6 +9,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import LandingDemo from "@/components/landing-demo";
+import { CohortMark } from "@/components/logo";
 
 const features = [
   {
@@ -75,9 +76,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-30 border-b border-card-border bg-background/70 backdrop-blur-md">
         <div className="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary font-serif text-lg font-semibold text-primary-foreground">
-              C
-            </div>
+            <CohortMark className="h-7 w-7" />
             <span className="font-serif text-xl font-medium tracking-tight">Cohort</span>
           </div>
           <div className="flex items-center gap-5">
@@ -217,9 +216,7 @@ export default function LandingPage() {
       <footer className="border-t border-card-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary font-serif text-xs font-semibold text-primary-foreground">
-              C
-            </div>
+            <CohortMark className="h-6 w-6" />
             <span className="font-serif font-medium text-foreground">Cohort</span>
           </div>
           <p>Sua força de trabalho de IA, sob julgamento contínuo.</p>

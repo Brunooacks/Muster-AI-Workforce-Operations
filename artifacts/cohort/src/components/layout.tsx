@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/lib/app-shell";
 import { Eyebrow, Pill } from "@/components/cohort";
+import { CohortMark } from "@/components/logo";
 import { useGetFleetSummary } from "@workspace/api-client-react";
 import { platformLabel } from "@/lib/platforms";
 
@@ -153,13 +154,16 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 function Wordmark() {
   return (
-    <div className="flex flex-col">
-      <span className="font-serif text-2xl font-medium leading-none tracking-tight text-foreground">
-        Cohort
-      </span>
-      <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-        AI Workforce Operations
-      </span>
+    <div className="flex items-center gap-2.5">
+      <CohortMark className="h-7 w-7 shrink-0" />
+      <div className="flex flex-col">
+        <span className="font-serif text-2xl font-medium leading-none tracking-tight text-foreground">
+          Cohort
+        </span>
+        <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          AI Workforce Operations
+        </span>
+      </div>
     </div>
   );
 }
