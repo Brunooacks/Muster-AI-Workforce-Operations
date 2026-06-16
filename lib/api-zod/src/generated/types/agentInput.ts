@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AgentInputAutonomyLevel } from './agentInputAutonomyLevel';
+import type { DraftMetric } from './draftMetric';
 
 export interface AgentInput {
   /** @minLength 1 */
@@ -15,6 +16,7 @@ export interface AgentInput {
   platform: string;
   version?: string;
   bio: string;
+  tagline?: string;
   shouldDo?: string[];
   shouldNotDo?: string[];
   autonomyLevel?: AgentInputAutonomyLevel;
@@ -26,4 +28,5 @@ export interface AgentInput {
   baseline?: string;
   targetPayback?: string;
   businessCaseDescription?: string;
+  proposedMetrics?: DraftMetric[];
 }

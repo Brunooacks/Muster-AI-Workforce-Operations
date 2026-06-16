@@ -28,6 +28,8 @@ import {
   DecideVerdictParams,
   DecideVerdictBody,
   DecideVerdictResponse,
+  AnalyzeAgentSourceBody,
+  AnalyzeAgentSourceResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
@@ -38,9 +40,11 @@ import {
 } from "../lib/serializers";
 import {
   buildProposedMetrics,
+  proposedMetricsFromDraft,
   scoreEvaluation,
   LAYER_ORDER,
 } from "../lib/discovery";
+import { analyzeAgentSource } from "../lib/analyze";
 
 const router: IRouter = Router();
 
@@ -85,7 +89,10 @@ router.post("/agents", requireAuth, async (req, res) => {
     "policy_violations",
     "value_generated",
   ];
-  const proposed = buildProposedMetrics(externalId, signals);
+  const proposed =
+    body.proposedMetrics && body.proposedMetrics.length > 0
+      ? proposedMetricsFromDraft(externalId, body.proposedMetrics)
+      : buildProposedMetrics(externalId, signals);
   const scored = scoreEvaluation(externalId, proposed);
 
   let slug = slugify(body.name);
@@ -105,6 +112,7 @@ router.post("/agents", requireAuth, async (req, res) => {
         version: body.version ?? "1.0.0",
         status: "observation",
         bio: body.bio,
+        tagline: body.tagline ?? "",
         currentVerdict: "observation",
         verdictConfidence: scored.verdictConfidence,
         severity: scored.severity,
@@ -193,6 +201,25 @@ router.post("/agents", requireAuth, async (req, res) => {
 
   const detail = await buildAgentDetail(agentId);
   res.status(201).json(detail);
+});
+
+router.post("/discovery/analyze", requireAuth, async (req, res) => {
+  const body = AnalyzeAgentSourceBody.parse(req.body);
+
+  try {
+    const draft = await analyzeAgentSource({
+      content: body.content,
+      platform: body.platform,
+      nameHint: body.nameHint,
+    });
+    const data = AnalyzeAgentSourceResponse.parse(draft);
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "Failed to analyze agent source");
+    res
+      .status(502)
+      .json({ error: "Não foi possível analisar o material do agente." });
+  }
 });
 
 router.get("/agents/:agentId", requireAuth, async (req, res) => {

@@ -279,6 +279,7 @@ export const CreateAgentBody = zod.object({
   "platform": zod.string(),
   "version": zod.string().optional(),
   "bio": zod.string(),
+  "tagline": zod.string().optional(),
   "shouldDo": zod.array(zod.string()).optional(),
   "shouldNotDo": zod.array(zod.string()).optional(),
   "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']).optional(),
@@ -289,7 +290,54 @@ export const CreateAgentBody = zod.object({
   "governanceSponsor": zod.string().optional(),
   "baseline": zod.string().optional(),
   "targetPayback": zod.string().optional(),
-  "businessCaseDescription": zod.string().optional()
+  "businessCaseDescription": zod.string().optional(),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "rationale": zod.string().optional()
+})).optional()
+})
+
+
+/**
+ * Uses an AI model to read the agent's code and skill definitions and propose a persona, Carteira de Trabalho and 5-layer KPI metrics. The result is an editable draft and is not persisted until admission.
+ * @summary Analyze pasted agent code and skills into an editable draft
+ */
+
+
+
+export const AnalyzeAgentSourceBody = zod.object({
+  "content": zod.string().min(1),
+  "platform": zod.string().optional(),
+  "nameHint": zod.string().optional()
+})
+
+export const AnalyzeAgentSourceResponse = zod.object({
+  "name": zod.string(),
+  "role": zod.string(),
+  "tagline": zod.string(),
+  "bio": zod.string(),
+  "shouldDo": zod.array(zod.string()),
+  "shouldNotDo": zod.array(zod.string()),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']),
+  "autonomyNotes": zod.string().optional(),
+  "limits": zod.array(zod.string()),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "description": zod.string()
+}),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "rationale": zod.string().optional()
+})),
+  "summary": zod.string(),
+  "confidence": zod.number()
 })
 
 

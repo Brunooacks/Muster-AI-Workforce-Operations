@@ -193,6 +193,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentDetail"
 
+  /discovery/analyze:
+    post:
+      operationId: analyzeAgentSource
+      tags: [agents]
+      summary: Analyze pasted agent code and skills into an editable draft
+      description: >-
+        Uses an AI model to read the agent's code and skill definitions and
+        propose a persona, Carteira de Trabalho and 5-layer KPI metrics. The
+        result is an editable draft and is not persisted until admission.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeSourceInput"
+      responses:
+        "200":
+          description: Draft generated from the provided source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDraft"
+
   /agents/{agentId}:
     get:
       operationId: getAgent
@@ -1081,6 +1104,8 @@ components:
           type: string
         bio:
           type: string
+        tagline:
+          type: string
         shouldDo:
           type: array
           items:
@@ -1110,6 +1135,10 @@ components:
           type: string
         businessCaseDescription:
           type: string
+        proposedMetrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/DraftMetric"
 
     AgentUpdate:
       type: object
@@ -1167,6 +1196,105 @@ components:
           type: string
         decidedBy:
           type: string
+
+    DraftMetric:
+      type: object
+      required:
+        - layer
+        - label
+        - unit
+        - target
+      properties:
+        layer:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+        unit:
+          type: string
+        target:
+          type: string
+        rationale:
+          type: string
+
+    DraftBusinessCase:
+      type: object
+      required:
+        - baseline
+        - targetPayback
+        - description
+      properties:
+        baseline:
+          type: string
+        targetPayback:
+          type: string
+        description:
+          type: string
+
+    AnalyzeSourceInput:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+        platform:
+          type: string
+        nameHint:
+          type: string
+
+    AgentDraft:
+      type: object
+      required:
+        - name
+        - role
+        - tagline
+        - bio
+        - shouldDo
+        - shouldNotDo
+        - autonomyLevel
+        - limits
+        - businessCase
+        - proposedMetrics
+        - summary
+        - confidence
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        tagline:
+          type: string
+        bio:
+          type: string
+        shouldDo:
+          type: array
+          items:
+            type: string
+        shouldNotDo:
+          type: array
+          items:
+            type: string
+        autonomyLevel:
+          type: string
+          enum: [autonomous, escalates, restricted]
+        autonomyNotes:
+          type: string
+        limits:
+          type: array
+          items:
+            type: string
+        businessCase:
+          $ref: "#/components/schemas/DraftBusinessCase"
+        proposedMetrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/DraftMetric"
+        summary:
+          type: string
+        confidence:
+          type: number
 
     ConnectorInput:
       type: object

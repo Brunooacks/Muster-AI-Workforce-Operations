@@ -22,9 +22,11 @@ import type {
 import type {
   Agent,
   AgentDetail,
+  AgentDraft,
   AgentInput,
   AgentUpdate,
   Alert,
+  AnalyzeSourceInput,
   Connector,
   ConnectorInput,
   DiscoveryImportInput,
@@ -763,6 +765,78 @@ export const useCreateAgent = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateAgentMutationOptions(options));
+    }
+
+export const getAnalyzeAgentSourceUrl = () => {
+
+
+
+
+  return `/api/discovery/analyze`
+}
+
+/**
+ * Uses an AI model to read the agent's code and skill definitions and propose a persona, Carteira de Trabalho and 5-layer KPI metrics. The result is an editable draft and is not persisted until admission.
+ * @summary Analyze pasted agent code and skills into an editable draft
+ */
+export const analyzeAgentSource = async (analyzeSourceInput: AnalyzeSourceInput, options?: RequestInit): Promise<AgentDraft> => {
+
+  return customFetch<AgentDraft>(getAnalyzeAgentSourceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      analyzeSourceInput,)
+  }
+);}
+
+
+
+
+export const getAnalyzeAgentSourceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeAgentSource>>, TError,{data: BodyType<AnalyzeSourceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeAgentSource>>, TError,{data: BodyType<AnalyzeSourceInput>}, TContext> => {
+
+const mutationKey = ['analyzeAgentSource'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeAgentSource>>, {data: BodyType<AnalyzeSourceInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  analyzeAgentSource(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeAgentSourceMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeAgentSource>>>
+    export type AnalyzeAgentSourceMutationBody = BodyType<AnalyzeSourceInput>
+    export type AnalyzeAgentSourceMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Analyze pasted agent code and skills into an editable draft
+ */
+export const useAnalyzeAgentSource = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeAgentSource>>, TError,{data: BodyType<AnalyzeSourceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeAgentSource>>,
+        TError,
+        {data: BodyType<AnalyzeSourceInput>},
+        TContext
+      > => {
+      return useMutation(getAnalyzeAgentSourceMutationOptions(options));
     }
 
 export const getGetAgentUrl = (agentId: string,) => {

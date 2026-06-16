@@ -418,6 +418,25 @@ export const AgentInputAutonomyLevel = {
   restricted: 'restricted',
 } as const;
 
+export type DraftMetricLayer = typeof DraftMetricLayer[keyof typeof DraftMetricLayer];
+
+
+export const DraftMetricLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface DraftMetric {
+  layer: DraftMetricLayer;
+  label: string;
+  unit: string;
+  target: string;
+  rationale?: string;
+}
+
 export interface AgentInput {
   /** @minLength 1 */
   name: string;
@@ -426,6 +445,7 @@ export interface AgentInput {
   platform: string;
   version?: string;
   bio: string;
+  tagline?: string;
   shouldDo?: string[];
   shouldNotDo?: string[];
   autonomyLevel?: AgentInputAutonomyLevel;
@@ -437,6 +457,7 @@ export interface AgentInput {
   baseline?: string;
   targetPayback?: string;
   businessCaseDescription?: string;
+  proposedMetrics?: DraftMetric[];
 }
 
 export type AgentUpdateStatus = typeof AgentUpdateStatus[keyof typeof AgentUpdateStatus];
@@ -492,6 +513,44 @@ export interface VerdictDecisionInput {
   decision: VerdictDecisionInputDecision;
   reason?: string;
   decidedBy?: string;
+}
+
+export interface DraftBusinessCase {
+  baseline: string;
+  targetPayback: string;
+  description: string;
+}
+
+export interface AnalyzeSourceInput {
+  /** @minLength 1 */
+  content: string;
+  platform?: string;
+  nameHint?: string;
+}
+
+export type AgentDraftAutonomyLevel = typeof AgentDraftAutonomyLevel[keyof typeof AgentDraftAutonomyLevel];
+
+
+export const AgentDraftAutonomyLevel = {
+  autonomous: 'autonomous',
+  escalates: 'escalates',
+  restricted: 'restricted',
+} as const;
+
+export interface AgentDraft {
+  name: string;
+  role: string;
+  tagline: string;
+  bio: string;
+  shouldDo: string[];
+  shouldNotDo: string[];
+  autonomyLevel: AgentDraftAutonomyLevel;
+  autonomyNotes?: string;
+  limits: string[];
+  businessCase: DraftBusinessCase;
+  proposedMetrics: DraftMetric[];
+  summary: string;
+  confidence: number;
 }
 
 export interface ConnectorInput {

@@ -244,6 +244,32 @@ function severityFromScore(score: number): Severity {
   return "stable";
 }
 
+// Generate a plausible deterministic value for a given unit.
+export function valueForUnit(rand: () => number, unit: string): number {
+  switch (unit) {
+    case "%":
+      return Math.round(45 + rand() * 50);
+    case "s":
+      return Math.round(20 + rand() * 180);
+    case "min":
+      return Math.round(2 + rand() * 30);
+    case "tok":
+      return Math.round(400 + rand() * 3000);
+    case "R$":
+      return Math.round(5 + rand() * 60) / 100;
+    case "R$ mil":
+      return Math.round(20 + rand() * 180);
+    case "/5":
+      return Math.round(35 + rand() * 15) / 10;
+    case "/dia":
+      return Math.round(50 + rand() * 600);
+    case "neg.":
+      return Math.round(10 + rand() * 120);
+    default:
+      return Math.round(40 + rand() * 55);
+  }
+}
+
 export function buildProposedMetrics(
   externalId: string,
   signals: string[],
@@ -253,47 +279,61 @@ export function buildProposedMetrics(
     .filter((s) => SIGNAL_MAP[s])
     .map((signal) => {
       const meta = SIGNAL_MAP[signal]!;
-      let value: number;
-      switch (meta.unit) {
-        case "%":
-          value = Math.round(45 + rand() * 50);
-          break;
-        case "s":
-          value = Math.round(20 + rand() * 180);
-          break;
-        case "min":
-          value = Math.round(2 + rand() * 30);
-          break;
-        case "tok":
-          value = Math.round(400 + rand() * 3000);
-          break;
-        case "R$":
-          value = Math.round(5 + rand() * 60) / 100;
-          break;
-        case "R$ mil":
-          value = Math.round(20 + rand() * 180);
-          break;
-        case "/5":
-          value = Math.round((35 + rand() * 15)) / 10;
-          break;
-        case "/dia":
-          value = Math.round(50 + rand() * 600);
-          break;
-        case "neg.":
-          value = Math.round(10 + rand() * 120);
-          break;
-        default:
-          value = Math.round(40 + rand() * 55);
-      }
       return {
         layer: meta.layer,
         label: meta.label,
         sourceSignal: signal,
-        value,
+        value: valueForUnit(rand, meta.unit),
         unit: meta.unit,
         confidence: Math.round((70 + rand() * 28) * 10) / 10,
       };
     });
+}
+
+export interface DraftMetricInput {
+  layer: LayerKey;
+  label: string;
+  unit: string;
+}
+
+// Sensible per-layer fallback so every evaluation/draft covers the 5 layers
+// even when the model (or the user's edits) omit one. Units align with
+// valueForUnit so plausible seed values are still generated.
+export const DEFAULT_LAYER_METRIC: Record<
+  LayerKey,
+  { label: string; unit: string; target: string }
+> = {
+  efficacy: { label: "Taxa de acerto", unit: "%", target: "≥ 85%" },
+  efficiency: { label: "Latência média", unit: "s", target: "< 60s" },
+  adoption: { label: "Interações por dia", unit: "/dia", target: "≥ 200" },
+  governance: { label: "Violações de política", unit: "neg.", target: "0" },
+  value: { label: "Valor gerado", unit: "R$ mil", target: "≥ 50" },
+};
+
+// Turn AI-proposed metric definitions (layer/label/unit) into seeded
+// ProposedMetric values so an initial evaluation can be scored at admission.
+// Guarantees at least one metric per layer so the seeded evaluation is complete.
+export function proposedMetricsFromDraft(
+  externalId: string,
+  drafts: DraftMetricInput[],
+): ProposedMetric[] {
+  const rand = seededRandom(externalId + ":draft");
+  const present = new Set(drafts.map((d) => d.layer));
+  const filled: DraftMetricInput[] = [...drafts];
+  for (const layer of LAYER_ORDER) {
+    if (!present.has(layer)) {
+      const def = DEFAULT_LAYER_METRIC[layer];
+      filled.push({ layer, label: def.label, unit: def.unit });
+    }
+  }
+  return filled.map((d) => ({
+    layer: d.layer,
+    label: d.label,
+    sourceSignal: d.label,
+    value: valueForUnit(rand, d.unit),
+    unit: d.unit,
+    confidence: Math.round((70 + rand() * 28) * 10) / 10,
+  }));
 }
 
 export interface ScoredEvaluation {
