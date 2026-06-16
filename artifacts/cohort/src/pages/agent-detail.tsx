@@ -1,15 +1,42 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/layout";
-import { useGetAgent, useGetAgentMetrics, useDecideVerdict } from "@workspace/api-client-react";
+import {
+  useGetAgent,
+  useGetAgentMetrics,
+  useDecideVerdict,
+  useListFleetAlerts,
+  getGetAgentQueryKey,
+  getGetAgentMetricsQueryKey,
+  getListFleetAlertsQueryKey,
+} from "@workspace/api-client-react";
 import { useParams } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import {
+  Check,
+  X,
+  Calendar,
+  RefreshCw,
+  Activity,
+  ScrollText,
+  Users,
+  Compass,
+  Sparkles,
+  AlertTriangle,
+  Eye,
+} from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
-import { getGetAgentQueryKey, getGetAgentMetricsQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { ErrorState } from "@/components/query-state";
 import {
   AgentDisc,
@@ -17,15 +44,32 @@ import {
   StatusBadge,
   VerdictBadge,
   SeverityBadge,
-  Eyebrow,
 } from "@/components/cohort";
+import {
+  type Audience,
+  carteiraI18n,
+  AudienceToggle,
+  SectionHeader,
+  Pillar,
+  MetricRow,
+  LAYER_ICON,
+  LAYER_CAPTION,
+  Eyebrow,
+} from "@/components/carteira";
 
-const cardTitleSerif = "font-serif text-lg font-medium tracking-tight";
+const AUTONOMY_LABEL: Record<string, string> = {
+  autonomous: "Autônomo",
+  escalates: "Escala quando necessário",
+  restricted: "Restrito",
+};
 
+/* ── Section 03: deterministic timeline from metric series ── */
 function MetricChart({ agentId }: { agentId: string }) {
-  const { data: metrics, isLoading, isError, refetch } = useGetAgentMetrics(agentId, "30d", {
-    query: { enabled: !!agentId, queryKey: getGetAgentMetricsQueryKey(agentId, "30d") },
-  });
+  const { data: metrics, isLoading, isError, refetch } = useGetAgentMetrics(
+    agentId,
+    "30d",
+    { query: { enabled: !!agentId, queryKey: getGetAgentMetricsQueryKey(agentId, "30d") } },
+  );
 
   if (isLoading) return <Skeleton className="h-64 w-full rounded-lg" />;
   if (isError)
@@ -65,22 +109,78 @@ function MetricChart({ agentId }: { agentId: string }) {
   );
 }
 
-function getDirectionIcon(direction?: string) {
-  if (direction === "up") return <ArrowUpRight className="h-3 w-3 text-chart-1" />;
-  if (direction === "down") return <ArrowDownRight className="h-3 w-3 text-chart-3" />;
-  return <Minus className="h-3 w-3 text-muted-foreground" />;
+function verdictFromScore(score: number) {
+  if (score >= 78) return "promote";
+  if (score >= 62) return "mentor";
+  if (score >= 50) return "observation";
+  return "retire";
 }
 
-const tabTrigger =
-  "data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none px-0 py-3 text-muted-foreground font-medium";
+function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteiraI18n)["gestor"] }) {
+  const { data: metrics } = useGetAgentMetrics(agentId, "30d", {
+    query: { enabled: !!agentId, queryKey: getGetAgentMetricsQueryKey(agentId, "30d") },
+  });
+
+  if (!metrics || metrics.length < 3) return null;
+
+  const pickAt = (frac: number) => metrics[Math.round((metrics.length - 1) * frac)]!;
+  const snaps = [pickAt(0), pickAt(0.5), pickAt(1)];
+
+  return (
+    <div className="grid grid-cols-1 gap-6 border-b border-card-border pb-6 md:grid-cols-3">
+      {snaps.map((s, i) => {
+        const avg = Math.round((s.efficacy + s.efficiency + s.adoption + s.governance + s.value) / 5);
+        const verdict = verdictFromScore(avg);
+        const dims = [
+          { label: "Eficácia", v: s.efficacy },
+          { label: "Eficiência", v: s.efficiency },
+          { label: "Adoção", v: s.adoption },
+          { label: "Governança", v: s.governance },
+          { label: "Valor", v: s.value },
+        ];
+        const isCurrent = i === snaps.length - 1;
+        return (
+          <div key={i} className={isCurrent ? "" : "opacity-80"}>
+            <div className="mb-3">
+              <h3 className="font-serif text-2xl font-medium tracking-tight">
+                {new Date(s.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+              </h3>
+              <div className="mt-1 flex items-center gap-2">
+                <Eyebrow>{t.health}</Eyebrow>
+                <span className="font-mono text-sm tabular-nums">{avg}</span>
+              </div>
+            </div>
+            <div className="space-y-1.5 border-t border-card-border pt-3">
+              {dims.map((d) => (
+                <div key={d.label} className="flex justify-between text-[13px]">
+                  <span className="text-muted-foreground">{d.label}</span>
+                  <span className="font-mono tabular-nums">{Math.round(d.v)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3">
+              <VerdictBadge verdict={verdict} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function AgentDetailPage() {
   const params = useParams();
   const agentId = params.id as string;
   const { toast } = useToast();
+  const [audience, setAudience] = useState<Audience>("gestor");
+  const t = carteiraI18n[audience];
 
   const { data: detail, isLoading, isError, refetch } = useGetAgent(agentId, {
     query: { enabled: !!agentId, queryKey: getGetAgentQueryKey(agentId) },
+  });
+
+  const { data: allAlerts, isError: alertsError } = useListFleetAlerts(undefined, {
+    query: { queryKey: getListFleetAlertsQueryKey() },
   });
 
   const decideVerdict = useDecideVerdict();
@@ -133,217 +233,344 @@ export default function AgentDetailPage() {
   }
 
   const { agent, identity, owners, latestEvaluation, currentVerdict } = detail;
+  const agentAlerts = (allAlerts ?? []).filter((a) => a.agentId === agent.id && a.status === "active");
+  const verdict = currentVerdict ?? undefined;
+
+  const cardBase = "rounded-xl border border-card-border bg-card";
 
   return (
     <AppLayout breadcrumbs={[{ label: "Portfólio", href: "/agentes" }, { label: agent.name }]}>
-      <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in duration-500">
-        {/* Header Profile */}
-        <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-card-border bg-card p-6 md:flex-row">
-          <div className="flex gap-5">
-            <AgentDisc name={agent.name} size="lg" />
-            <div>
-              <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                <h1 className="font-serif text-3xl font-medium tracking-tight">{agent.name}</h1>
-                <StatusBadge status={agent.status} />
-              </div>
-              <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="capitalize">{agent.platform}</span>
-                <span>·</span>
-                <span className="font-mono">v{agent.version}</span>
-                <span>·</span>
-                <span>{agent.role}</span>
-              </div>
-              <p className="max-w-xl text-sm text-muted-foreground">{agent.bio}</p>
-
-              <div className="mt-4 flex gap-6 text-sm">
-                <div>
-                  <Eyebrow>Dono de negócio</Eyebrow>
-                  <span className="mt-0.5 block font-medium">{owners.businessOwner}</span>
-                </div>
-                <div>
-                  <Eyebrow>Dono técnico</Eyebrow>
-                  <span className="mt-0.5 block font-medium">{owners.technicalOwner}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 flex-col items-end gap-2 rounded-lg border border-card-border bg-background/60 px-5 py-4">
-            <Eyebrow>Saúde geral</Eyebrow>
-            <div className="font-serif text-5xl font-medium leading-none tabular-nums">{agent.healthScore}</div>
-            <VerdictBadge verdict={agent.currentVerdict} />
-          </div>
+      <div className="mx-auto max-w-6xl space-y-12 animate-in fade-in duration-500">
+        {/* Audience toggle */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[11px] italic text-muted-foreground">{t.audienceHint}</p>
+          <AudienceToggle audience={audience} onChange={setAudience} />
         </div>
 
-        {/* Decisão recomendada */}
-        {currentVerdict && currentVerdict.decision === "pending" && (
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="flex flex-col items-start justify-between gap-6 p-6 md:flex-row md:items-center">
-              <div>
-                <div className="mb-2 flex items-center gap-2">
-                  <Eyebrow>Decisão recomendada</Eyebrow>
-                  <VerdictBadge verdict={currentVerdict.verdict} />
-                  <span className="text-xs font-medium text-primary">
-                    Confiança {currentVerdict.confidence}%
-                  </span>
-                </div>
-                <p className="mb-1 max-w-2xl text-sm font-medium text-foreground/90">{currentVerdict.rationale}</p>
-                <div className="flex gap-4 text-xs text-muted-foreground">
-                  <span>Sponsor: {currentVerdict.suggestedSponsor}</span>
-                  <span>Janela: {currentVerdict.executionWindow}</span>
-                </div>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleDecision("disagreed")}>
-                  <X className="mr-1 h-4 w-4" /> Discordar
-                </Button>
-                <Button size="sm" onClick={() => handleDecision("approved")}>
-                  <Check className="mr-1 h-4 w-4" /> Aprovar veredito
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Tabs defaultValue="evaluation" className="w-full">
-          <TabsList className="h-auto w-full justify-start space-x-6 rounded-none border-b border-card-border bg-transparent p-0">
-            <TabsTrigger value="evaluation" className={tabTrigger}>Avaliação KPI</TabsTrigger>
-            <TabsTrigger value="identity" className={tabTrigger}>Carteira de Trabalho</TabsTrigger>
-            <TabsTrigger value="actions" className={tabTrigger}>Plano de Ação</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="evaluation" className="space-y-6 pt-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-              {latestEvaluation?.layers.map((layer) => (
-                <Card key={layer.key} className="overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-card-border bg-secondary/30 px-4 py-3">
-                    <Eyebrow>{layer.label}</Eyebrow>
-                    <span className="font-serif text-xl font-medium tabular-nums">{layer.score}</span>
+        {/* ===== 01 · Carteira de Trabalho ===== */}
+        <section>
+          <SectionHeader number="01" title={t.sec01.title} caption={t.sec01.caption} />
+          <div className={cardBase}>
+            {/* Persona header */}
+            <div className="flex flex-col items-start justify-between gap-6 border-b border-card-border p-6 md:flex-row">
+              <div className="flex gap-5">
+                <AgentDisc name={agent.name} size="lg" />
+                <div>
+                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                    <h1 className="font-serif text-4xl font-medium tracking-tight">{agent.name}</h1>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {agent.role} · v{agent.version}
+                    </span>
+                    <StatusBadge status={agent.status} />
                   </div>
-                  <CardContent className="space-y-3 p-4">
-                    <SeverityBadge severity={layer.severity} />
-                    {layer.metrics.map((metric, idx) => (
-                      <div key={idx} className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{metric.label}</span>
-                          {getDirectionIcon(metric.direction)}
-                        </div>
-                        <div className="font-mono text-sm tabular-nums">
-                          {metric.value}{" "}
-                          <span className="text-xs font-normal text-muted-foreground">{metric.unit}</span>
+                  {agent.tagline && (
+                    <p className="mb-4 max-w-2xl font-serif text-xl italic leading-snug text-foreground/80">
+                      “{agent.tagline}”
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {t.sinceLabel}{" "}
+                      {new Date(agent.admittedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      {identity.version}ª {t.versionLabel}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Activity className="h-3.5 w-3.5" />
+                      {(agent.monthlyVolume ?? 0).toLocaleString("pt-BR")} {t.executionsLabel}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2 rounded-lg border border-card-border bg-background/60 px-5 py-4">
+                <Eyebrow>{t.health}</Eyebrow>
+                <div className="font-serif text-5xl font-medium leading-none tabular-nums">{agent.healthScore}</div>
+                <VerdictBadge verdict={agent.currentVerdict} />
+              </div>
+            </div>
+
+            {/* Identity grid: 4 pillars */}
+            <div className="grid grid-cols-1 divide-y divide-card-border md:grid-cols-2 md:divide-x lg:grid-cols-4 lg:divide-y-0">
+              <Pillar icon={ScrollText} title={t.jobDescription}>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <Eyebrow>{t.mustDo}</Eyebrow>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {identity.shouldDo.map((item, i) => (
+                        <li key={i} className="flex gap-2 text-foreground/90">
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-1" />
+                          <span className="text-[13px] leading-snug">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <Eyebrow>{t.mustNotDo}</Eyebrow>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {identity.shouldNotDo.map((item, i) => (
+                        <li key={i} className="flex gap-2 text-foreground/90">
+                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-3" />
+                          <span className="text-[13px] leading-snug">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </Pillar>
+
+              <Pillar icon={Users} title={t.responsibility}>
+                <div className="space-y-3.5 text-sm">
+                  <div>
+                    <Eyebrow>{t.businessOwner}</Eyebrow>
+                    <div className="mt-0.5 font-medium text-foreground/90">{owners.businessOwner || "—"}</div>
+                  </div>
+                  <div>
+                    <Eyebrow>{t.techOwner}</Eyebrow>
+                    <div className="mt-0.5 font-medium text-foreground/90">{owners.technicalOwner || "—"}</div>
+                  </div>
+                  <div>
+                    <Eyebrow>{t.governance}</Eyebrow>
+                    <div className="mt-0.5 font-medium text-foreground/90">{owners.governanceSponsor || "—"}</div>
+                  </div>
+                </div>
+              </Pillar>
+
+              <Pillar icon={Compass} title={t.autonomy}>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <Eyebrow>{t.level}</Eyebrow>
+                    <div className="mt-1">
+                      <Pill tone="blue">{AUTONOMY_LABEL[identity.autonomyLevel] ?? identity.autonomyLevel}</Pill>
+                    </div>
+                    {identity.autonomyNotes && (
+                      <p className="mt-2 text-[13px] leading-snug text-foreground/80">{identity.autonomyNotes}</p>
+                    )}
+                  </div>
+                  {identity.limits.length > 0 && (
+                    <div className="border-t border-card-border pt-3">
+                      <Eyebrow>{t.limits}</Eyebrow>
+                      <ul className="mt-1.5 space-y-1">
+                        {identity.limits.map((item, i) => (
+                          <li key={i} className="text-[13px] leading-snug text-foreground/80">
+                            · {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </Pillar>
+
+              <Pillar icon={Sparkles} title={t.origin}>
+                <div className="space-y-3 text-sm">
+                  {identity.businessCase.description && (
+                    <p className="text-[13px] italic leading-snug text-foreground/80">
+                      {identity.businessCase.description}
+                    </p>
+                  )}
+                  <div className="space-y-2 border-t border-card-border pt-3">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{t.baseline}</span>
+                      <span className="font-mono text-foreground/90">{identity.businessCase.baseline || "—"}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{t.paybackTarget}</span>
+                      <span className="font-mono text-foreground/90">{identity.businessCase.targetPayback || "—"}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{t.paybackReal}</span>
+                      <span className="font-mono font-semibold text-primary">{identity.businessCase.actualPayback || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+              </Pillar>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 02 · Avaliação de Desempenho ===== */}
+        <section>
+          <SectionHeader number="02" title={t.sec02.title} caption={t.sec02.caption} />
+          {latestEvaluation.layers.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {latestEvaluation.layers.map((layer) => {
+                const Icon = LAYER_ICON[layer.key] ?? Activity;
+                return (
+                  <div key={layer.key} className={`${cardBase} p-5`}>
+                    <div className="mb-4 flex items-start justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                        <div>
+                          <h3 className="font-serif text-lg font-medium leading-none tracking-tight">{layer.label}</h3>
+                          <p className="mt-1 text-[11px] text-muted-foreground">{LAYER_CAPTION[layer.key]?.[audience]}</p>
                         </div>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                      <span className="font-serif text-2xl font-medium tabular-nums">{layer.score}</span>
+                    </div>
+                    <div className="mb-3">
+                      <SeverityBadge severity={layer.severity} />
+                    </div>
+                    <div>
+                      {layer.metrics.map((m, idx) => (
+                        <MetricRow key={idx} {...m} targetLabel={t.target} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={`${cardBase} flex h-32 items-center justify-center text-sm text-muted-foreground`}>
+              Avaliação ainda não disponível para este agente.
+            </div>
+          )}
+        </section>
+
+        {/* ===== 03 · Histórico ===== */}
+        <section>
+          <SectionHeader number="03" title={t.sec03.title} caption={t.sec03.caption} />
+          <div className={`${cardBase} p-6`}>
+            <TimelineSnapshots agentId={agentId} t={t} />
+            <div className="pt-6">
+              <MetricChart agentId={agentId} />
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 04 · Detector de Vitória Ilusória ===== */}
+        <section>
+          <SectionHeader number="04" title={t.sec04.title} caption={t.sec04.caption} />
+          {alertsError ? (
+            <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>
+              <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3" />
+              Não foi possível carregar o detector de padrões agora.
+            </div>
+          ) : agentAlerts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {agentAlerts.map((alert) => (
+                <div key={alert.id} className={`${cardBase} border-l-4 border-l-chart-3 p-5`}>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">{alert.patternType}</span>
+                    <SeverityBadge severity={alert.severity} />
+                  </div>
+                  <h3 className="mb-3 font-serif text-lg font-medium leading-tight tracking-tight">{alert.pattern}</h3>
+                  <div className="space-y-3 text-[13px]">
+                    <div>
+                      <Eyebrow>{t.hypothesis}</Eyebrow>
+                      <p className="mt-1 leading-snug text-foreground/80">{alert.hypothesis}</p>
+                    </div>
+                    <div>
+                      <Eyebrow>{t.action}</Eyebrow>
+                      <p className="mt-1 font-medium leading-snug text-foreground/90">{alert.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className={cardTitleSerif}>Histórico de Performance</CardTitle>
-                <CardDescription>Série temporal das 5 camadas nos últimos 30 dias</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MetricChart agentId={agentId} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="identity" className="pt-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className={cardTitleSerif}>Diretrizes de Autonomia</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <Eyebrow>Nível</Eyebrow>
-                    <div className="mt-1.5">
-                      <Pill tone="blue">{identity.autonomyLevel}</Pill>
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{identity.autonomyNotes}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="mb-2 text-sm font-medium text-chart-1">Deve fazer</h4>
-                      <ul className="space-y-1.5 text-sm">
-                        {identity.shouldDo.map((item, i) => (
-                          <li key={i} className="flex gap-2">
-                            <Check className="h-4 w-4 shrink-0 text-chart-1" /> <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="mb-2 text-sm font-medium text-chart-3">Não deve fazer</h4>
-                      <ul className="space-y-1.5 text-sm">
-                        {identity.shouldNotDo.map((item, i) => (
-                          <li key={i} className="flex gap-2">
-                            <X className="h-4 w-4 shrink-0 text-chart-3" /> <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className={cardTitleSerif}>Caso de Negócio</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{identity.businessCase.description}</p>
-                  <div className="grid grid-cols-3 gap-4 border-t border-card-border pt-4">
-                    <div>
-                      <Eyebrow>Baseline</Eyebrow>
-                      <span className="mt-1 block font-mono text-sm tabular-nums">{identity.businessCase.baseline}</span>
-                    </div>
-                    <div>
-                      <Eyebrow>Meta</Eyebrow>
-                      <span className="mt-1 block font-mono text-sm tabular-nums">{identity.businessCase.targetPayback}</span>
-                    </div>
-                    <div>
-                      <Eyebrow>Atual</Eyebrow>
-                      <span className="mt-1 block font-mono text-sm tabular-nums text-primary">{identity.businessCase.actualPayback}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          ) : (
+            <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>
+              <Eye className="h-4 w-4 shrink-0 text-chart-1" />
+              {t.noAlerts}
             </div>
-          </TabsContent>
+          )}
+        </section>
 
-          <TabsContent value="actions" className="pt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className={cardTitleSerif}>Próximas Ações Sugeridas</CardTitle>
-                <CardDescription>Geradas pelo comitê para o veredito atual</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {currentVerdict && currentVerdict.nextActions.length > 0 ? (
-                  <div className="space-y-3">
-                    {currentVerdict.nextActions.map((action, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start justify-between rounded-lg border border-card-border bg-card p-3"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">{action.action}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">Responsável: {action.owner}</p>
-                        </div>
-                        <Pill tone="muted">{action.due}</Pill>
-                      </div>
-                    ))}
+        {/* ===== 05 · Recomendação para o Comitê ===== */}
+        <section>
+          <SectionHeader number="05" title={t.sec05.title} caption={t.sec05.caption} />
+          <div className={`${cardBase} overflow-hidden`}>
+            <div className="grid grid-cols-1 md:grid-cols-12">
+              <div className="border-b border-card-border bg-secondary/30 p-6 md:col-span-4 md:border-b-0 md:border-r">
+                <Eyebrow>{t.recommendedRoute}</Eyebrow>
+                <div className="mt-3 mb-4">
+                  <VerdictBadge verdict={verdict?.verdict ?? agent.currentVerdict} />
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t.confidence}</span>
+                    <span className="font-mono font-medium tabular-nums">
+                      {Math.round(verdict?.confidence ?? agent.verdictConfidence)}%
+                    </span>
                   </div>
-                ) : (
-                  <div className="py-8 text-center text-sm text-muted-foreground">Nenhuma ação pendente.</div>
+                  {verdict?.executionWindow && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.window}</span>
+                      <span className="font-mono font-medium">{verdict.executionWindow}</span>
+                    </div>
+                  )}
+                  {verdict?.suggestedSponsor && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.sponsor}</span>
+                      <span className="font-medium">{verdict.suggestedSponsor}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6 md:col-span-8">
+                {(verdict?.rationale || latestEvaluation.rationale) && (
+                  <div className="mb-6">
+                    <Eyebrow>{t.rationaleLabel}</Eyebrow>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/80">
+                      {verdict?.rationale || latestEvaluation.rationale}
+                    </p>
+                  </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                {verdict && verdict.nextActions.length > 0 && (
+                  <div className="border-t border-card-border pt-5">
+                    <Eyebrow>{t.nextActions}</Eyebrow>
+                    <div className="mt-4 space-y-4">
+                      {verdict.nextActions.map((action, idx) => (
+                        <div key={idx} className="grid grid-cols-12 items-start gap-3">
+                          <div className="col-span-1">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary font-serif text-sm text-primary-foreground">
+                              {idx + 1}
+                            </div>
+                          </div>
+                          <div className="col-span-2 pt-1">
+                            <Eyebrow>{t.in}</Eyebrow>
+                            <div className="font-mono text-xs text-foreground/90">{action.due}</div>
+                          </div>
+                          <div className="col-span-6 pt-1">
+                            <div className="text-sm font-medium text-foreground/90">{action.action}</div>
+                          </div>
+                          <div className="col-span-3 pt-1 text-right">
+                            <Eyebrow>{t.owner}</Eyebrow>
+                            <div className="text-xs font-medium text-foreground/90">{action.owner}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {verdict && verdict.decision === "pending" && (
+              <div className="flex flex-col items-start justify-between gap-3 border-t border-card-border bg-background/60 px-6 py-4 sm:flex-row sm:items-center">
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Decisão pendente · aguardando o comitê
+                </span>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => handleDecision("exported")} disabled={decideVerdict.isPending}>
+                    {t.export}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDecision("disagreed")} disabled={decideVerdict.isPending}>
+                    <X className="mr-1 h-4 w-4" /> {t.disagree}
+                  </Button>
+                  <Button size="sm" onClick={() => handleDecision("approved")} disabled={decideVerdict.isPending}>
+                    <Check className="mr-1 h-4 w-4" /> {t.approve}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="mt-4 text-center font-serif text-sm italic text-muted-foreground">{t.quote}</p>
+        </section>
       </div>
     </AppLayout>
   );

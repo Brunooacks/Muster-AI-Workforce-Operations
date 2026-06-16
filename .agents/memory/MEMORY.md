@@ -1,1 +1,2 @@
 - [Prod schema syncs only on publish](prod-schema-publish-sync.md) — live app 500s "column does not exist" after a dev schema change until the user re-publishes; dev looks healthy.
+- [Carteira agent-detail sourcing](carteira-agent-detail.md) — Detector=fleet alerts filtered client-side; timeline/targets derived in frontend, not schema.
