@@ -44,6 +44,9 @@ const LAYER_LABELS: Record<DraftMetricLayer, string> = {
   value: "Valor",
 };
 
+// Kept in sync with MAX_CONTENT_LENGTH in artifacts/api-server/src/lib/analyze.ts
+const MAX_CONTENT_LENGTH = 100_000;
+
 function clean(arr: string[]): string[] {
   return arr.map((s) => s.trim()).filter(Boolean);
 }
@@ -56,7 +59,10 @@ export default function AdmissionPage() {
 
   const [source, setSource] = useState("");
   const [draft, setDraft] = useState<AgentDraft | null>(null);
+  const [draftApplied, setDraftApplied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const overLimit = source.length > MAX_CONTENT_LENGTH;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -114,12 +120,35 @@ export default function AdmissionPage() {
     if (d.autonomyLevel) form.setValue("autonomyLevel", d.autonomyLevel);
   }
 
+  function onApplyDraft() {
+    if (!draft) return;
+    applyDraftToForm(draft);
+    setDraftApplied(true);
+    toast({
+      title: "Rascunho aplicado",
+      description: "Os campos da admissão foram preenchidos. Revise antes de admitir.",
+    });
+  }
+
+  function onDiscardDraft() {
+    setDraft(null);
+    setDraftApplied(false);
+  }
+
   function onAnalyze() {
     if (source.trim().length < 10) {
       toast({
         variant: "destructive",
         title: "Material insuficiente",
         description: "Cole o código e/ou as definições de skills do agente.",
+      });
+      return;
+    }
+    if (overLimit) {
+      toast({
+        variant: "destructive",
+        title: "Conteúdo muito grande",
+        description: `Reduza para até ${MAX_CONTENT_LENGTH.toLocaleString("pt-BR")} caracteres.`,
       });
       return;
     }
@@ -134,17 +163,10 @@ export default function AdmissionPage() {
       {
         onSuccess: (d) => {
           setDraft(d);
-          applyDraftToForm(d);
+          setDraftApplied(false);
           toast({
             title: "Rascunho gerado",
-            description: "Revise e edite a Carteira de Trabalho proposta antes de admitir.",
-          });
-        },
-        onError: () => {
-          toast({
-            variant: "destructive",
-            title: "Falha na análise",
-            description: "Não foi possível analisar o material do agente. Tente novamente.",
+            description: "Revise e edite o esboço, depois clique em Aplicar ao formulário.",
           });
         },
       },
@@ -162,7 +184,7 @@ export default function AdmissionPage() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const data = {
       ...values,
-      ...(draft
+      ...(draft && draftApplied
         ? {
             tagline: draft.tagline,
             shouldDo: clean(draft.shouldDo),
@@ -237,6 +259,14 @@ export default function AdmissionPage() {
               className="hidden"
               onChange={onUpload}
             />
+            <p
+              className={`text-right font-mono text-xs ${
+                overLimit ? "text-destructive" : "text-muted-foreground"
+              }`}
+            >
+              {source.length.toLocaleString("pt-BR")} /{" "}
+              {MAX_CONTENT_LENGTH.toLocaleString("pt-BR")} caracteres
+            </p>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Button
                 type="button"
@@ -245,10 +275,29 @@ export default function AdmissionPage() {
               >
                 Enviar arquivo
               </Button>
-              <Button type="button" onClick={onAnalyze} disabled={analyze.isPending}>
+              <Button
+                type="button"
+                onClick={onAnalyze}
+                disabled={analyze.isPending || overLimit}
+              >
                 {analyze.isPending ? "Analisando..." : "Analisar com IA"}
               </Button>
             </div>
+
+            {analyze.isPending && (
+              <p className="text-sm text-muted-foreground">
+                Analisando o material do agente…
+              </p>
+            )}
+            {analyze.isError && (
+              <p className="text-sm text-destructive">
+                {(analyze.error as { status?: number } | null)?.status === 429
+                  ? "Limite de uso da IA atingido. Aguarde alguns instantes e tente novamente."
+                  : (analyze.error as { status?: number } | null)?.status === 413
+                    ? `Conteúdo muito grande. Reduza para até ${MAX_CONTENT_LENGTH.toLocaleString("pt-BR")} caracteres.`
+                    : "Não foi possível analisar o material. Verifique o conteúdo e tente novamente."}
+              </p>
+            )}
 
             {draft && (
               <div className="space-y-5 rounded-md border border-card-border bg-muted/30 p-4">
@@ -258,6 +307,9 @@ export default function AdmissionPage() {
                     {draft.summary && (
                       <p className="mt-1 text-sm text-muted-foreground">{draft.summary}</p>
                     )}
+                    <p className="mt-1 text-xs italic text-muted-foreground">
+                      Esboço a confirmar — revise e ajuste antes de aplicar.
+                    </p>
                   </div>
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">
                     confiança {Math.round(draft.confidence)}%
@@ -407,6 +459,22 @@ export default function AdmissionPage() {
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-card-border pt-4">
+                  <p className="text-xs text-muted-foreground">
+                    {draftApplied
+                      ? "Rascunho aplicado ao formulário abaixo."
+                      : "Esboço a confirmar — clique para preencher a admissão."}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="ghost" onClick={onDiscardDraft}>
+                      Descartar
+                    </Button>
+                    <Button type="button" onClick={onApplyDraft}>
+                      Aplicar ao formulário
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

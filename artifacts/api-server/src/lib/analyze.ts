@@ -2,6 +2,19 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import type { LayerKey, AutonomyLevel } from "@workspace/db";
 import { DEFAULT_LAYER_METRIC } from "./discovery";
 
+// Max accepted size for pasted/uploaded source so a single analysis request
+// stays well within model + request limits. Kept in sync with the frontend.
+export const MAX_CONTENT_LENGTH = 100_000;
+
+// Thrown when the AI provider signals a rate-limit / quota error so the route
+// can surface a distinct 429 ("limite de uso") instead of a generic failure.
+export class RateLimitError extends Error {
+  constructor(message = "AI rate limit reached") {
+    super(message);
+    this.name = "RateLimitError";
+  }
+}
+
 export interface DraftMetric {
   layer: LayerKey;
   label: string;
@@ -148,15 +161,25 @@ export async function analyzeAgentSource(input: {
     "Código e/ou definições de skills do agente a analisar:\n\n" + input.content,
   );
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
-    max_completion_tokens: 8192,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userParts.join("\n\n") },
-    ],
-  });
+  let completion;
+  try {
+    completion = await openai.chat.completions.create({
+      model: "gpt-5.4",
+      max_completion_tokens: 8192,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userParts.join("\n\n") },
+      ],
+    });
+  } catch (err) {
+    const status = (err as { status?: number; code?: string }).status;
+    const code = (err as { status?: number; code?: string }).code;
+    if (status === 429 || code === "insufficient_quota" || code === "rate_limit_exceeded") {
+      throw new RateLimitError();
+    }
+    throw err;
+  }
 
   const text = completion.choices[0]?.message?.content ?? "";
   if (!text.trim()) {

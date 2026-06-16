@@ -44,7 +44,11 @@ import {
   scoreEvaluation,
   LAYER_ORDER,
 } from "../lib/discovery";
-import { analyzeAgentSource } from "../lib/analyze";
+import {
+  analyzeAgentSource,
+  MAX_CONTENT_LENGTH,
+  RateLimitError,
+} from "../lib/analyze";
 
 const router: IRouter = Router();
 
@@ -206,6 +210,14 @@ router.post("/agents", requireAuth, async (req, res) => {
 router.post("/discovery/analyze", requireAuth, async (req, res) => {
   const body = AnalyzeAgentSourceBody.parse(req.body);
 
+  if (body.content.length > MAX_CONTENT_LENGTH) {
+    res.status(413).json({
+      error: `Conteúdo muito grande. Reduza para até ${MAX_CONTENT_LENGTH.toLocaleString("pt-BR")} caracteres.`,
+      code: "content_too_large",
+    });
+    return;
+  }
+
   try {
     const draft = await analyzeAgentSource({
       content: body.content,
@@ -215,6 +227,14 @@ router.post("/discovery/analyze", requireAuth, async (req, res) => {
     const data = AnalyzeAgentSourceResponse.parse(draft);
     res.json(data);
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      req.log.warn({ err }, "AI rate limit reached during agent analysis");
+      res.status(429).json({
+        error: "Limite de uso da IA atingido. Aguarde alguns instantes e tente novamente.",
+        code: "rate_limited",
+      });
+      return;
+    }
     req.log.error({ err }, "Failed to analyze agent source");
     res
       .status(502)
