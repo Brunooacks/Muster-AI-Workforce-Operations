@@ -53,7 +53,7 @@ Cohort é uma plataforma plug-and-play que dá às frotas de agentes de IA (mult
 ## User preferences
 
 - **Design (app autenticado):** "Trincheira — AI Workforce Operations" (réplica fiel das 13 telas de referência). Fundo creme quente `42 30% 93%`, primária verde-floresta `158 27% 19%`; títulos e números grandes em **serif Spectral**, dados tabulares em **mono IBM Plex Mono**; eyebrows uppercase tracked; pills de status (sage/ocre/terracota/vermelho/azul). Supersede o "Neutro Notion"/sage anterior (que por sua vez superou o dark-amber rejeitado).
-- **Design (landing pública):** bold/cinematográfico DARK inspirado no Veltrix (veltrix.framer.ai) — fundo near-black, aurora animada, headline Inter 800/900 + palavra em Instrument Serif itálico, acento coral `#e8744a`. Mantido **self-contained** na landing; o app autenticado segue claro. Ver `.agents/memory/landing-vs-app-theme.md`.
+- **Design (landing pública):** MESMO tema claro "Trincheira" do app — creme + verde-floresta + serifada Spectral + mono IBM Plex Mono, puxando os tokens CSS do app (`bg-background`, `bg-primary`, `text-chart-*`). Headline serif com gradiente itálico `primary→chart-1→chart-2`. Isto **supersede** a antiga landing DARK Veltrix (coral/aurora removidos). Ver `.agents/memory/landing-vs-app-theme.md`.
 - **Idioma da UI:** português do Brasil.
 - **Vocabulário do produto:** Frota, Carteira de Trabalho, Veredito, Admissão, Comitê, Detector de Vitória Ilusória.
 - **Sem acoplamento específico do Replit** na lógica do produto.

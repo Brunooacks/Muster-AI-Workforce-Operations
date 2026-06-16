@@ -54,75 +54,58 @@ const features = [
 ];
 
 const verdicts = [
-  { label: "Promover", icon: TrendingUp, color: "#34d399", count: "12" },
-  { label: "Mentorar", icon: Minus, color: "#fbbf24", count: "7" },
-  { label: "Aposentar", icon: TrendingDown, color: "#f87171", count: "3" },
+  { label: "Promover", icon: TrendingUp, colorClass: "text-chart-1", count: "12" },
+  { label: "Mentorar", icon: Minus, colorClass: "text-chart-2", count: "7" },
+  { label: "Aposentar", icon: TrendingDown, colorClass: "text-chart-3", count: "3" },
 ];
-
-const ACCENT = "#e8744a";
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-[#0a0a0b] text-zinc-100 font-sans selection:bg-[#e8744a]/30">
-      {/* ── Cinematic aurora backdrop ── */}
+    <div className="relative min-h-screen overflow-x-clip bg-background text-foreground font-sans selection:bg-primary/20">
+      {/* ── Soft editorial backdrop ── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div
-          className="aurora-a absolute -top-1/3 -left-1/4 h-[80vh] w-[80vh] rounded-full blur-[120px] opacity-50"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(232,116,74,0.55), rgba(232,116,74,0) 70%)",
-          }}
+          className="absolute -top-1/4 -left-1/4 h-[70vh] w-[70vh] rounded-full blur-[130px] opacity-[0.22]"
+          style={{ background: "radial-gradient(circle, hsl(var(--primary)), transparent 70%)" }}
         />
         <div
-          className="aurora-b absolute top-1/4 right-[-15%] h-[70vh] w-[70vh] rounded-full blur-[120px] opacity-40"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(72,138,120,0.6), rgba(72,138,120,0) 70%)",
-          }}
+          className="absolute top-1/4 right-[-15%] h-[60vh] w-[60vh] rounded-full blur-[130px] opacity-[0.18]"
+          style={{ background: "radial-gradient(circle, hsl(var(--chart-1)), transparent 70%)" }}
         />
         <div
-          className="aurora-a absolute bottom-[-20%] left-1/3 h-[60vh] w-[60vh] rounded-full blur-[120px] opacity-30"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(96,120,180,0.5), rgba(96,120,180,0) 70%)",
-          }}
+          className="absolute bottom-[-15%] left-1/4 h-[55vh] w-[55vh] rounded-full blur-[130px] opacity-[0.14]"
+          style={{ background: "radial-gradient(circle, hsl(var(--chart-2)), transparent 70%)" }}
         />
         <div
-          className="absolute inset-0 opacity-[0.06]"
+          className="absolute inset-0 opacity-[0.04]"
           style={{
             backgroundImage:
-              "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+              "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
             backgroundSize: "64px 64px",
-            maskImage:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%)",
+            maskImage: "radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%)",
           }}
         />
-        <div className="absolute inset-0 bg-[#0a0a0b]/30" />
       </div>
 
       {/* ── Nav ── */}
-      <header className="sticky top-0 z-30 backdrop-blur-md">
-        <div className="mx-auto max-w-6xl px-6 h-[4.5rem] py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-card-border bg-background/70 backdrop-blur-md">
+        <div className="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div
-              className="h-8 w-8 rounded-md flex items-center justify-center font-bold text-[#0a0a0b]"
-              style={{ background: ACCENT }}
-            >
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary font-serif text-lg font-semibold text-primary-foreground">
               C
             </div>
-            <span className="font-semibold tracking-tight text-lg">Cohort</span>
+            <span className="font-serif text-xl font-medium tracking-tight">Cohort</span>
           </div>
           <div className="flex items-center gap-5">
             <Link
               href="/sign-in"
-              className="text-sm font-medium text-zinc-300 hover:text-white transition-colors"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               Entrar
             </Link>
             <Link
               href="/sign-up"
-              className="rounded-full px-5 py-2 text-sm font-semibold text-[#0a0a0b] transition-transform hover:scale-[1.03]"
-              style={{ background: ACCENT }}
+              className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03]"
             >
               Começar
             </Link>
@@ -131,48 +114,42 @@ export default function LandingPage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative mx-auto max-w-6xl px-6 pt-20 pb-24">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs font-medium text-zinc-300 backdrop-blur-sm mb-8">
-          <span
-            className="h-1.5 w-1.5 rounded-full animate-pulse"
-            style={{ background: ACCENT }}
-          />
+      <section className="relative mx-auto max-w-6xl px-6 pb-24 pt-20">
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-card-border bg-card px-3.5 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-chart-1" />
           Governança contínua para frotas de agentes de IA
         </div>
 
-        <h1 className="text-[15vw] leading-[0.86] sm:text-7xl md:text-8xl font-extrabold tracking-[-0.03em]">
+        <h1 className="font-serif text-[14vw] font-medium leading-[0.92] tracking-[-0.02em] sm:text-6xl md:text-7xl">
           Sua força de
           <br />
           trabalho de IA,
           <br />
-          <span className="font-display-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-[#e8744a] via-[#f0a17e] to-[#88b8a8]">
+          <span className="bg-gradient-to-r from-[hsl(var(--primary))] via-[hsl(var(--chart-1))] to-[hsl(var(--chart-2))] bg-clip-text italic text-transparent">
             sob julgamento.
           </span>
         </h1>
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-end">
-          <p className="max-w-xl text-lg text-zinc-400 leading-relaxed">
-            Cada agente em produção com identidade, donos e veredito periódico.
-            Cohort cruza KPIs em{" "}
-            <span className="text-zinc-100 font-medium">5 camadas</span>, detecta
-            vitórias ilusórias e decide com dados:{" "}
-            <span className="text-zinc-100 font-medium">promover</span>,{" "}
-            <span className="text-zinc-100 font-medium">mentorar</span> ou{" "}
-            <span className="text-zinc-100 font-medium">aposentar</span>.
+          <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
+            Cada agente em produção com identidade, donos e veredito periódico. Cohort cruza KPIs em{" "}
+            <span className="font-medium text-foreground">5 camadas</span>, detecta vitórias ilusórias e
+            decide com dados: <span className="font-medium text-chart-1">promover</span>,{" "}
+            <span className="font-medium text-chart-2">mentorar</span> ou{" "}
+            <span className="font-medium text-chart-3">aposentar</span>.
           </p>
 
           <div className="flex flex-wrap gap-3 lg:justify-end">
             <Link
               href="/sign-up"
-              className="group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-[#0a0a0b] transition-transform hover:scale-[1.03]"
-              style={{ background: ACCENT }}
+              className="group inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.03]"
             >
               Criar conta
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
               href="/sign-in"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-7 py-3.5 text-base font-semibold text-zinc-100 backdrop-blur-sm transition-colors hover:bg-white/[0.07]"
+              className="inline-flex items-center gap-2 rounded-full border border-card-border bg-card px-7 py-3.5 text-base font-semibold text-foreground transition-colors hover:bg-secondary"
             >
               Acessar painel
             </Link>
@@ -180,29 +157,24 @@ export default function LandingPage() {
         </div>
 
         {/* Floating product preview */}
-        <div className="mt-20 relative">
+        <div className="relative mt-20">
           <div
-            className="absolute -inset-x-10 -top-10 bottom-0 -z-10 blur-3xl opacity-30"
-            style={{
-              background:
-                "radial-gradient(60% 60% at 50% 0%, rgba(232,116,74,0.4), transparent 70%)",
-            }}
+            className="absolute -inset-x-10 -top-10 bottom-0 -z-10 opacity-40 blur-3xl"
+            style={{ background: "radial-gradient(60% 60% at 50% 0%, hsl(var(--primary) / 0.2), transparent 70%)" }}
           />
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl shadow-2xl shadow-black/50 md:p-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="rounded-2xl border border-card-border bg-card p-6 shadow-xl md:p-8">
+            <div className="mb-6 flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wider text-zinc-400">
+                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                   Perfil de desempenho
                 </p>
-                <p className="text-lg font-semibold">Frota · 22 agentes em campanha</p>
+                <p className="mt-0.5 font-serif text-lg font-medium">Frota · 22 agentes em campanha</p>
               </div>
               <div className="text-right">
-                <p className="text-xs uppercase tracking-wider text-zinc-400">
+                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                   Saúde média
                 </p>
-                <p className="text-3xl font-bold" style={{ color: ACCENT }}>
-                  80
-                </p>
+                <p className="font-serif text-3xl font-medium tabular-nums text-primary">80</p>
               </div>
             </div>
 
@@ -210,20 +182,14 @@ export default function LandingPage() {
               <div className="space-y-3.5">
                 {layers.map((l) => (
                   <div key={l.label}>
-                    <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="font-medium text-zinc-300">{l.label}</span>
-                      <span className="tabular-nums font-semibold">{l.score}</span>
+                    <div className="mb-1.5 flex items-center justify-between text-sm">
+                      <span className="font-medium text-foreground">{l.label}</span>
+                      <span className="font-mono font-semibold tabular-nums">{l.score}</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
                       <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${l.score}%`,
-                          background:
-                            l.tone === "good"
-                              ? "linear-gradient(90deg, #488a78, #34d399)"
-                              : "linear-gradient(90deg, #d98a3a, #fbbf24)",
-                        }}
+                        className={`h-full rounded-full ${l.tone === "good" ? "bg-chart-1" : "bg-chart-2"}`}
+                        style={{ width: `${l.score}%` }}
                       />
                     </div>
                   </div>
@@ -234,17 +200,12 @@ export default function LandingPage() {
                 {verdicts.map((v) => (
                   <div
                     key={v.label}
-                    className="rounded-xl border border-white/10 bg-white/[0.03] p-3 flex md:items-center gap-3 flex-col md:flex-row text-center md:text-left"
+                    className="flex flex-col gap-3 rounded-xl border border-card-border bg-background p-3 text-center md:flex-row md:items-center md:text-left"
                   >
-                    <v.icon
-                      className="h-5 w-5 mx-auto md:mx-0"
-                      style={{ color: v.color }}
-                    />
+                    <v.icon className={`mx-auto h-5 w-5 md:mx-0 ${v.colorClass}`} />
                     <div>
-                      <p className="text-xl font-bold tabular-nums leading-none">
-                        {v.count}
-                      </p>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">{v.label}</p>
+                      <p className="font-serif text-xl font-medium leading-none tabular-nums">{v.count}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{v.label}</p>
                     </div>
                   </div>
                 ))}
@@ -255,23 +216,18 @@ export default function LandingPage() {
       </section>
 
       {/* ── The loop ── */}
-      <section className="border-y border-white/10 bg-white/[0.02]">
+      <section className="border-y border-card-border bg-card/40">
         <div className="mx-auto max-w-6xl px-6 py-10">
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-3">
             {["Admissão", "Avaliação", "Veredito"].map((step, i) => (
               <div key={step} className="flex items-center gap-4 sm:gap-3">
-                <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5">
-                  <span
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-[#0a0a0b]"
-                    style={{ background: ACCENT }}
-                  >
+                <div className="flex items-center gap-3 rounded-full border border-card-border bg-card px-5 py-2.5">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary font-mono text-xs font-bold text-primary-foreground">
                     {i + 1}
                   </span>
                   <span className="font-medium">{step}</span>
                 </div>
-                {i < 2 && (
-                  <ArrowRight className="h-4 w-4 text-zinc-400 rotate-90 sm:rotate-0" />
-                )}
+                {i < 2 && <ArrowRight className="h-4 w-4 rotate-90 text-muted-foreground sm:rotate-0" />}
               </div>
             ))}
           </div>
@@ -280,35 +236,24 @@ export default function LandingPage() {
 
       {/* ── Features ── */}
       <section className="mx-auto max-w-6xl px-6 py-24">
-        <div className="max-w-2xl mb-14">
-          <p
-            className="text-sm font-semibold uppercase tracking-wider mb-4"
-            style={{ color: ACCENT }}
-          >
+        <div className="mb-14 max-w-2xl">
+          <p className="mb-4 font-mono text-xs font-semibold uppercase tracking-wider text-primary">
             A camada de gestão da sua frota
           </p>
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.05]">
+          <h2 className="font-serif text-4xl font-medium leading-[1.05] tracking-tight md:text-5xl">
             Outras ferramentas mostram o que o agente fez.{" "}
-            <span className="font-display-serif italic font-normal text-zinc-400">
-              Cohort responde se ele deve continuar.
-            </span>
+            <span className="italic text-muted-foreground">Cohort responde se ele deve continuar.</span>
           </h2>
         </div>
 
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-card-border bg-card-border sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
-            <div
-              key={f.title}
-              className="group relative bg-[#0a0a0b]/60 p-7 transition-colors hover:bg-white/[0.03]"
-            >
-              <div
-                className="mb-5 flex h-11 w-11 items-center justify-center rounded-lg border border-white/10"
-                style={{ background: "rgba(232,116,74,0.12)" }}
-              >
-                <f.icon className="h-5 w-5" style={{ color: ACCENT }} />
+            <div key={f.title} className="group bg-card p-7 transition-colors hover:bg-secondary/40">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
+                <f.icon className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">{f.desc}</p>
+              <h3 className="mb-2 font-serif text-lg font-medium">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -316,29 +261,20 @@ export default function LandingPage() {
 
       {/* ── CTA ── */}
       <section className="mx-auto max-w-6xl px-6 pb-28">
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 px-8 py-16 text-center md:py-20">
+        <div className="relative overflow-hidden rounded-3xl border border-card-border bg-card px-8 py-16 text-center md:py-20">
           <div
             className="absolute inset-0 -z-10"
-            style={{
-              background:
-                "radial-gradient(80% 120% at 50% 0%, rgba(232,116,74,0.28), rgba(10,10,11,0) 70%)",
-            }}
+            style={{ background: "radial-gradient(80% 120% at 50% 0%, hsl(var(--primary) / 0.12), transparent 70%)" }}
           />
-          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-5">
-            Cada agente.{" "}
-            <span className="font-display-serif italic font-normal">
-              Cada ciclo.
-            </span>{" "}
-            Um veredito.
+          <h2 className="mb-5 font-serif text-4xl font-medium tracking-tight md:text-6xl">
+            Cada agente. <span className="italic text-primary">Cada ciclo.</span> Um veredito.
           </h2>
-          <p className="mx-auto max-w-xl text-zinc-400 mb-9 text-lg">
-            Admita seus primeiros agentes em minutos e tenha o primeiro veredito
-            do comitê ainda hoje.
+          <p className="mx-auto mb-9 max-w-xl text-lg text-muted-foreground">
+            Admita seus primeiros agentes em minutos e tenha o primeiro veredito do comitê ainda hoje.
           </p>
           <Link
             href="/sign-up"
-            className="group inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-[#0a0a0b] transition-transform hover:scale-[1.03]"
-            style={{ background: ACCENT }}
+            className="group inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.03]"
           >
             Criar conta gratuita
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -347,16 +283,13 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-6 py-8 flex flex-col items-center justify-between gap-4 text-sm text-zinc-400 sm:flex-row">
+      <footer className="border-t border-card-border">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
-            <div
-              className="h-6 w-6 rounded flex items-center justify-center text-xs font-bold text-[#0a0a0b]"
-              style={{ background: ACCENT }}
-            >
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary font-serif text-xs font-semibold text-primary-foreground">
               C
             </div>
-            <span className="font-medium text-zinc-300">Cohort</span>
+            <span className="font-serif font-medium text-foreground">Cohort</span>
           </div>
           <p>Sua força de trabalho de IA, sob julgamento contínuo.</p>
         </div>

@@ -1,27 +1,29 @@
 ---
-name: Landing dark vs app light theme split
-description: Why the marketing landing is bold/dark while the authenticated app stays light "Neutro Notion"
+name: Unified light "Trincheira" theme (landing + app)
+description: The marketing landing and the authenticated app share ONE light theme — history of why the earlier dark-landing split was dropped
 ---
 
-# Two-surface visual strategy
+# Single-surface visual strategy
 
-The public landing (`artifacts/cohort/src/pages/landing.tsx`) is a **bold, cinematic
-DARK** surface (Veltrix-inspired: near-black `#0a0a0b`, animated aurora glows, massive
-Inter 800/900 headline + Instrument Serif italic accent word, warm coral accent
-`#e8744a`). The **authenticated app stays light** ("Neutro Notion": warm paper,
-monochrome + sage). They are intentionally different worlds.
+Both the public landing (`artifacts/cohort/src/pages/landing.tsx`) and the authenticated
+app use the **same light "Trincheira" theme**: warm-cream background (`42 30% 93%`),
+forest-green primary (`158 27% 19%`), Spectral serif headlines, IBM Plex Mono for
+eyebrows/numbers, status palette via `--chart-1..5` (sage/ochre/terracotta/red/blue).
+The landing pulls all colors from the app's CSS tokens (`bg-background`, `text-foreground`,
+`border-card-border`, `bg-primary`, `text-chart-1/2/3`, etc.) so the two surfaces stay
+in lockstep.
 
-**Why:** The user found the all-restrained "Neutro Notion" identity "pouco marcante /
-muito comedido" and pointed at Veltrix (veltrix.framer.ai) for impact. Earlier they had
-rejected a *dark-amber* proposal — but Veltrix itself is dark+warm, so the rejection was
-about that specific execution, not dark-on-the-landing forever. Resolution: impact where
-it sells (landing), calm where they work (product).
+**Why:** The landing was originally a bold/cinematic **dark** Veltrix-inspired surface
+(near-black, animated aurora, coral `#e8744a`, Inter 800/900 + Instrument Serif) while
+the app was light. The user found the dark-landing-vs-light-app contrast jarring
+("não faz sentido, mantenha clean") and explicitly chose to make the landing light/clean
+to match the app. This **supersedes** the prior deliberate dark-landing split.
 
 **How to apply:**
-- Keep the landing's dark colors **self-contained** in the component — do NOT toggle the
-  global `.dark` class or change the app's light default; that would darken the whole app.
-- The accent color used is coral `#e8744a` (declared as `ACCENT` const in landing.tsx),
-  not the rejected amber and not the app's sage.
-- Fonts: Instrument Serif (italic display accent) + Inter 800/900 are loaded via the
-  Google Fonts link in `index.html`; `.font-display-serif` and the `aurora-*` keyframes
-  live in `index.css`.
+- Do NOT reintroduce a dark landing or toggle the global `.dark` class. Keep the landing
+  using app tokens so palette changes propagate from `index.css`.
+- The hero accent is a serif italic gradient `from primary via chart-1 to chart-2` — not
+  the old coral. Coral `#e8744a`, the aurora `@keyframes`/`.aurora-*` classes, and the
+  `.font-display-serif` (Instrument Serif) helper were all removed from `index.css`.
+- Headlines use `font-serif` (Spectral, max weight 700 — use `font-medium`/`font-semibold`,
+  not `font-extrabold`). Eyebrows/labels/numbers use `font-mono` uppercase tracked.
