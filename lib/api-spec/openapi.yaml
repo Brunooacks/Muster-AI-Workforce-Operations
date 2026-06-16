@@ -663,6 +663,14 @@ components:
           type: ["string", "null"]
         bio:
           type: string
+        tagline:
+          type: string
+        monthlyVolume:
+          type: integer
+        headlineKpis:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiMetric"
         currentVerdict:
           type: string
           enum: [promote, mentor, retire, observation]

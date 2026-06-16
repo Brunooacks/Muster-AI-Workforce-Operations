@@ -70,6 +70,12 @@ export const agents = pgTable("agents", {
   status: text("status").$type<AgentStatus>().notNull().default("observation"),
   avatarUrl: text("avatar_url"),
   bio: text("bio").notNull().default(""),
+  tagline: text("tagline").notNull().default(""),
+  monthlyVolume: integer("monthly_volume").notNull().default(0),
+  headlineKpis: jsonb("headline_kpis")
+    .$type<KpiMetric[]>()
+    .notNull()
+    .default([]),
   currentVerdict: text("current_verdict")
     .$type<VerdictType>()
     .notNull()

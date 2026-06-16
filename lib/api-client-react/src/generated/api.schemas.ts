@@ -162,6 +162,23 @@ export const AgentSeverity = {
   stable: 'stable',
 } as const;
 
+export type KpiMetricDirection = typeof KpiMetricDirection[keyof typeof KpiMetricDirection];
+
+
+export const KpiMetricDirection = {
+  up: 'up',
+  down: 'down',
+  flat: 'flat',
+} as const;
+
+export interface KpiMetric {
+  label: string;
+  value: number;
+  unit: string;
+  trend: number;
+  direction?: KpiMetricDirection;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -173,6 +190,9 @@ export interface Agent {
   /** @nullable */
   avatarUrl?: string | null;
   bio: string;
+  tagline?: string;
+  monthlyVolume?: number;
+  headlineKpis?: KpiMetric[];
   currentVerdict: AgentCurrentVerdict;
   verdictConfidence: number;
   severity: AgentSeverity;
@@ -237,23 +257,6 @@ export const KpiLayerSeverity = {
   medium: 'medium',
   stable: 'stable',
 } as const;
-
-export type KpiMetricDirection = typeof KpiMetricDirection[keyof typeof KpiMetricDirection];
-
-
-export const KpiMetricDirection = {
-  up: 'up',
-  down: 'down',
-  flat: 'flat',
-} as const;
-
-export interface KpiMetric {
-  label: string;
-  value: number;
-  unit: string;
-  trend: number;
-  direction?: KpiMetricDirection;
-}
 
 export interface KpiLayer {
   key: KpiLayerKey;

@@ -143,6 +143,15 @@ export const ListAgentsResponseItem = zod.object({
   "status": zod.enum(['observation', 'active', 'flagged', 'retiring', 'retired']),
   "avatarUrl": zod.string().nullish(),
   "bio": zod.string(),
+  "tagline": zod.string().optional(),
+  "monthlyVolume": zod.number().optional(),
+  "headlineKpis": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional()
+})).optional(),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
@@ -201,6 +210,15 @@ export const GetAgentResponse = zod.object({
   "status": zod.enum(['observation', 'active', 'flagged', 'retiring', 'retired']),
   "avatarUrl": zod.string().nullish(),
   "bio": zod.string(),
+  "tagline": zod.string().optional(),
+  "monthlyVolume": zod.number().optional(),
+  "headlineKpis": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional()
+})).optional(),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
@@ -300,6 +318,15 @@ export const UpdateAgentResponse = zod.object({
   "status": zod.enum(['observation', 'active', 'flagged', 'retiring', 'retired']),
   "avatarUrl": zod.string().nullish(),
   "bio": zod.string(),
+  "tagline": zod.string().optional(),
+  "monthlyVolume": zod.number().optional(),
+  "headlineKpis": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional()
+})).optional(),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
@@ -411,6 +438,15 @@ export const UpdateAgentIdentityResponse = zod.object({
   "status": zod.enum(['observation', 'active', 'flagged', 'retiring', 'retired']),
   "avatarUrl": zod.string().nullish(),
   "bio": zod.string(),
+  "tagline": zod.string().optional(),
+  "monthlyVolume": zod.number().optional(),
+  "headlineKpis": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional()
+})).optional(),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),

@@ -7,6 +7,7 @@ import {
   evaluations,
   verdicts,
   type KpiLayer,
+  type KpiMetric,
   type NextAction,
 } from "@workspace/db";
 
@@ -27,6 +28,9 @@ export function toAgentSummary(a: AgentRow) {
     status: a.status,
     avatarUrl: a.avatarUrl ?? null,
     bio: a.bio,
+    tagline: a.tagline,
+    monthlyVolume: a.monthlyVolume,
+    headlineKpis: a.headlineKpis as KpiMetric[],
     currentVerdict: a.currentVerdict,
     verdictConfidence: a.verdictConfidence,
     severity: a.severity,

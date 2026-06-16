@@ -8,6 +8,7 @@
 import type { AgentCurrentVerdict } from './agentCurrentVerdict';
 import type { AgentSeverity } from './agentSeverity';
 import type { AgentStatus } from './agentStatus';
+import type { KpiMetric } from './kpiMetric';
 
 export interface Agent {
   id: string;
@@ -20,6 +21,9 @@ export interface Agent {
   /** @nullable */
   avatarUrl?: string | null;
   bio: string;
+  tagline?: string;
+  monthlyVolume?: number;
+  headlineKpis?: KpiMetric[];
   currentVerdict: AgentCurrentVerdict;
   verdictConfidence: number;
   severity: AgentSeverity;
