@@ -255,6 +255,15 @@ export const ListAgentsResponseItem = zod.object({
   "target": zod.string().optional(),
   "rationale": zod.string().optional()
 })).optional(),
+  "targetMetrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Flattened metrics from the agent\'s latest evaluation that carry a comparable goal. Used by the fleet view to roll up how many metrics are currently off-target.'),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
@@ -404,6 +413,15 @@ export const GetAgentResponse = zod.object({
   "target": zod.string().optional(),
   "rationale": zod.string().optional()
 })).optional(),
+  "targetMetrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Flattened metrics from the agent\'s latest evaluation that carry a comparable goal. Used by the fleet view to roll up how many metrics are currently off-target.'),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
@@ -516,6 +534,15 @@ export const UpdateAgentResponse = zod.object({
   "target": zod.string().optional(),
   "rationale": zod.string().optional()
 })).optional(),
+  "targetMetrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Flattened metrics from the agent\'s latest evaluation that carry a comparable goal. Used by the fleet view to roll up how many metrics are currently off-target.'),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
@@ -640,6 +667,15 @@ export const UpdateAgentIdentityResponse = zod.object({
   "target": zod.string().optional(),
   "rationale": zod.string().optional()
 })).optional(),
+  "targetMetrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Flattened metrics from the agent\'s latest evaluation that carry a comparable goal. Used by the fleet view to roll up how many metrics are currently off-target.'),
   "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
   "verdictConfidence": zod.number(),
   "severity": zod.enum(['critical', 'high', 'medium', 'stable']),

@@ -17,6 +17,7 @@ import {
   Eyebrow,
 } from "@/components/cohort";
 import { platformLabel, platformArea } from "@/lib/platforms";
+import { countMissedGoals } from "@/components/carteira";
 
 type Health = { key: string; label: string; test: (score: number) => boolean };
 
@@ -139,7 +140,9 @@ export default function AgentsPage() {
           </div>
         ) : filteredAgents && filteredAgents.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredAgents.map((agent) => (
+            {filteredAgents.map((agent) => {
+              const missedGoals = countMissedGoals(agent.targetMetrics ?? []);
+              return (
               <Link
                 key={agent.id}
                 href={`/agentes/${agent.id}`}
@@ -191,12 +194,25 @@ export default function AgentsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Eyebrow>Veredito</Eyebrow>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {missedGoals > 0 ? (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md bg-chart-3/10 px-2 py-0.5 font-mono text-xs font-medium text-chart-3"
+                        title={`${missedGoals} ${missedGoals === 1 ? "métrica fora" : "métricas fora"} da meta`}
+                      >
+                        <AlertTriangle className="h-3 w-3" />
+                        {missedGoals} {missedGoals === 1 ? "meta fora" : "metas fora"}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Todas na meta</span>
+                    )}
+                  </div>
                   <VerdictBadge verdict={agent.currentVerdict} />
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-card-border text-sm text-muted-foreground">

@@ -262,6 +262,21 @@ export const METRIC_TARGETS: Record<string, string> = {
 
 const NUM_FMT = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
+/**
+ * Counts how many metrics are currently below their goal, reusing the same
+ * on/off-target logic as the agent detail page. Metrics without a comparable
+ * target (returns `null`) are ignored. Falls back to the domain-default
+ * `METRIC_TARGETS` when a metric carries no explicit target, matching `MetricRow`.
+ */
+export function countMissedGoals(
+  metrics: Array<{ label: string; value: number; target?: string }>,
+): number {
+  return metrics.reduce((count, m) => {
+    const target = m.target ?? METRIC_TARGETS[m.label];
+    return metricTargetStatus(m.value, target) === "off" ? count + 1 : count;
+  }, 0);
+}
+
 export function formatMetric(value: number, unit: string): string {
   if (unit === "R$") return `R$ ${NUM_FMT.format(value)}`;
   if (unit === "R$ mil") return `R$ ${NUM_FMT.format(value)} mil`;

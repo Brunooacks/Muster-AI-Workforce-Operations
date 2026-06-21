@@ -8,6 +8,8 @@ import {
   evaluations,
   verdicts,
   metricPoints,
+  type KpiMetric,
+  type KpiLayer,
 } from "@workspace/db";
 import {
   ListAgentsQueryParams,
@@ -83,7 +85,25 @@ router.get("/agents", requireAuth, async (req, res) => {
         a.platform.toLowerCase().includes(search)),
   );
 
-  const data = ListAgentsResponse.parse(filtered.map(toAgentSummary));
+  // Roll up each agent's latest-evaluation metrics so the fleet view can count
+  // how many are off-target (reusing the client-side metricTargetStatus logic).
+  const evalRows = await db
+    .select()
+    .from(evaluations)
+    .orderBy(desc(evaluations.evaluatedAt));
+  const latestMetricsByAgent = new Map<string, KpiMetric[]>();
+  for (const e of evalRows) {
+    if (latestMetricsByAgent.has(e.agentId)) continue;
+    const layers = (e.layers as KpiLayer[]) ?? [];
+    latestMetricsByAgent.set(
+      e.agentId,
+      layers.flatMap((layer) => layer.metrics),
+    );
+  }
+
+  const data = ListAgentsResponse.parse(
+    filtered.map((a) => toAgentSummary(a, latestMetricsByAgent.get(a.id) ?? [])),
+  );
   res.json(data);
 });
 

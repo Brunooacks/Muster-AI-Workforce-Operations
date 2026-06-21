@@ -24,6 +24,8 @@ export interface Agent {
   tagline?: string;
   monthlyVolume?: number;
   headlineKpis?: KpiMetric[];
+  /** Flattened metrics from the agent's latest evaluation that carry a comparable goal. Used by the fleet view to roll up how many metrics are currently off-target. */
+  targetMetrics?: KpiMetric[];
   currentVerdict: AgentCurrentVerdict;
   verdictConfidence: number;
   severity: AgentSeverity;

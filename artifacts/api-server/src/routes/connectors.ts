@@ -331,7 +331,7 @@ router.post(
       created.push(agent);
     }
 
-    res.status(201).json(created.map(toAgentSummary));
+    res.status(201).json(created.map((a) => toAgentSummary(a)));
   },
 );
 

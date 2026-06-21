@@ -17,7 +17,7 @@ type OwnersRow = typeof agentOwners.$inferSelect;
 type EvaluationRow = typeof evaluations.$inferSelect;
 type VerdictRow = typeof verdicts.$inferSelect;
 
-export function toAgentSummary(a: AgentRow) {
+export function toAgentSummary(a: AgentRow, targetMetrics: KpiMetric[] = []) {
   return {
     id: a.id,
     name: a.name,
@@ -31,6 +31,7 @@ export function toAgentSummary(a: AgentRow) {
     tagline: a.tagline,
     monthlyVolume: a.monthlyVolume,
     headlineKpis: a.headlineKpis as KpiMetric[],
+    targetMetrics,
     currentVerdict: a.currentVerdict,
     verdictConfidence: a.verdictConfidence,
     severity: a.severity,
