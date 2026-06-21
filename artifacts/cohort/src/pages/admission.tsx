@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, ChevronDown } from "lucide-react";
 import { AppLayout } from "@/components/layout";
@@ -14,6 +14,7 @@ import {
 } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -130,6 +131,71 @@ function StepField({
   );
 }
 
+// A single file pulled in via the import-from-URL flow, kept selectable so the
+// user can trim noise before spending an AI analysis on it.
+interface ImportedFile {
+  id: string;
+  path: string;
+  bytes: number;
+  content: string;
+  sourceType: "git" | "url";
+  selected: boolean;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(kb < 10 ? 1 : 0)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+// The server concatenates git files as `===== <path> =====\n<body>` chunks
+// joined by blank lines (see fetch-source.ts). Split that back into per-file
+// bodies so each one can be reviewed and toggled independently. A single URL
+// import has no markers and maps to one file.
+function splitImportedFiles(
+  content: string,
+  files: { path: string; bytes: number }[],
+  sourceType: "git" | "url",
+): ImportedFile[] {
+  const base = `${sourceType}-${Date.now()}`;
+  if (sourceType === "url" || files.length <= 1) {
+    return files.map((f, i) => ({
+      id: `${base}-${i}`,
+      path: f.path,
+      bytes: f.bytes,
+      content,
+      sourceType,
+      selected: true,
+    }));
+  }
+  const parts = content.split(/^===== (.+?) =====$/m);
+  const byPath = new Map<string, string>();
+  for (let i = 1; i < parts.length; i += 2) {
+    const path = parts[i]!.trim();
+    const body = (parts[i + 1] ?? "").replace(/^\n/, "").replace(/\n+$/, "");
+    byPath.set(path, body);
+  }
+  return files.map((f, i) => ({
+    id: `${base}-${i}`,
+    path: f.path,
+    bytes: f.bytes,
+    content: byPath.get(f.path) ?? "",
+    sourceType,
+    selected: true,
+  }));
+}
+
+// Re-serialize selected imported files into the same chunk format the AI sees.
+function serializeImportedFiles(files: ImportedFile[]): string {
+  return files
+    .filter((f) => f.selected)
+    .map((f) =>
+      f.sourceType === "git" ? `===== ${f.path} =====\n${f.content}` : f.content,
+    )
+    .join("\n\n");
+}
+
 export default function AdmissionPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -146,8 +212,24 @@ export default function AdmissionPage() {
   const [aiOpen, setAiOpen] = useState(false);
   const [source, setSource] = useState("");
   const [importUrl, setImportUrl] = useState("");
+  const [importedFiles, setImportedFiles] = useState<ImportedFile[]>([]);
+  const [importTruncated, setImportTruncated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const overLimit = source.length > MAX_CONTENT_LENGTH;
+
+  // The text actually sent to the AI: manually pasted source plus the selected
+  // imported files. Imported content is kept out of the textarea so the file
+  // list stays the source of truth for what gets analyzed.
+  const importedSource = useMemo(
+    () => serializeImportedFiles(importedFiles),
+    [importedFiles],
+  );
+  const effectiveSource = useMemo(
+    () => [source.trim(), importedSource].filter(Boolean).join("\n\n"),
+    [source, importedSource],
+  );
+  const selectedImportedCount = importedFiles.filter((f) => f.selected).length;
+
+  const overLimit = effectiveSource.length > MAX_CONTENT_LENGTH;
 
   const set = <K extends keyof WizardData>(key: K, value: WizardData[K]) =>
     setData((prev) => ({ ...prev, [key]: value }));
@@ -209,13 +291,19 @@ export default function AdmissionPage() {
       { data: { url } },
       {
         onSuccess: (res) => {
-          setSource((prev) => (prev ? `${prev}\n\n${res.content}` : res.content));
+          const parsed = splitImportedFiles(
+            res.content,
+            res.files,
+            res.sourceType,
+          );
+          setImportedFiles((prev) => [...prev, ...parsed]);
+          setImportTruncated((prev) => prev || res.truncated);
           setImportUrl("");
           toast({
             title: "Material importado",
             description: `${res.files.length} arquivo(s) carregado(s)${
               res.truncated ? " (conteúdo truncado pelo limite)" : ""
-            }. Revise e clique em Analisar com IA.`,
+            }. Revise a lista e clique em Analisar com IA.`,
           });
         },
         onError: (err) => {
@@ -240,7 +328,7 @@ export default function AdmissionPage() {
   }
 
   function onAnalyze() {
-    if (source.trim().length < 10) {
+    if (effectiveSource.trim().length < 10) {
       toast({
         variant: "destructive",
         title: "Material insuficiente",
@@ -259,7 +347,7 @@ export default function AdmissionPage() {
     analyze.mutate(
       {
         data: {
-          content: source,
+          content: effectiveSource,
           platform: data.platform || undefined,
           nameHint: data.name || undefined,
         },
@@ -274,6 +362,25 @@ export default function AdmissionPage() {
     const text = await file.text();
     setSource((prev) => (prev ? `${prev}\n\n${text}` : text));
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function toggleImportedFile(id: string) {
+    setImportedFiles((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, selected: !f.selected } : f)),
+    );
+  }
+
+  function removeImportedFile(id: string) {
+    setImportedFiles((prev) => prev.filter((f) => f.id !== id));
+  }
+
+  function setAllImportedSelected(selected: boolean) {
+    setImportedFiles((prev) => prev.map((f) => ({ ...f, selected })));
+  }
+
+  function clearImportedFiles() {
+    setImportedFiles([]);
+    setImportTruncated(false);
   }
 
   function next() {
@@ -474,10 +581,100 @@ export default function AdmissionPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Buscamos os arquivos de código e skills relevantes (limites de tamanho e tipo
-                        aplicados) e os adicionamos ao campo acima. Para repositórios privados, conecte
-                        sua conta GitHub nas integrações do Replit.
+                        aplicados) e os listamos para você revisar antes de analisar. Para
+                        repositórios privados, conecte sua conta GitHub nas integrações do Replit.
                       </p>
                     </div>
+
+                    {importedFiles.length > 0 && (
+                      <div className="space-y-3 rounded-md border border-card-border bg-muted/30 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                            Arquivos importados ({selectedImportedCount}/
+                            {importedFiles.length} selecionados)
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setAllImportedSelected(true)}
+                              disabled={selectedImportedCount === importedFiles.length}
+                            >
+                              Selecionar todos
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setAllImportedSelected(false)}
+                              disabled={selectedImportedCount === 0}
+                            >
+                              Limpar seleção
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={clearImportedFiles}
+                            >
+                              Remover tudo
+                            </Button>
+                          </div>
+                        </div>
+                        {importTruncated && (
+                          <p className="text-xs text-destructive">
+                            Conteúdo truncado pelo limite de tamanho — alguns arquivos
+                            podem não ter sido incluídos por completo.
+                          </p>
+                        )}
+                        <ul className="max-h-64 space-y-1 overflow-y-auto">
+                          {importedFiles.map((file) => (
+                            <li
+                              key={file.id}
+                              className="flex items-center gap-2 rounded-sm px-1 py-1 hover:bg-muted/60"
+                            >
+                              <Checkbox
+                                id={`imported-${file.id}`}
+                                checked={file.selected}
+                                onCheckedChange={() => toggleImportedFile(file.id)}
+                              />
+                              <label
+                                htmlFor={`imported-${file.id}`}
+                                className="min-w-0 flex-1 cursor-pointer truncate font-mono text-xs"
+                                title={file.path}
+                              >
+                                {file.path}
+                              </label>
+                              <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                                {formatBytes(file.bytes)}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => removeImportedFile(file.id)}
+                              >
+                                Remover
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-muted-foreground">
+                          Apenas os arquivos selecionados serão enviados para a análise
+                          com IA.
+                        </p>
+                      </div>
+                    )}
+                    <p
+                      className={`text-right font-mono text-xs ${
+                        overLimit ? "text-destructive" : "text-muted-foreground"
+                      }`}
+                    >
+                      {effectiveSource.length.toLocaleString("pt-BR")} /{" "}
+                      {MAX_CONTENT_LENGTH.toLocaleString("pt-BR")} caracteres
+                    </p>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <Button
                         type="button"
