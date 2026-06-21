@@ -261,6 +261,239 @@ paths:
               schema:
                 $ref: "#/components/schemas/GitHubStatus"
 
+  /discovery/runs:
+    post:
+      operationId: startDiscoveryRun
+      tags: [agents]
+      summary: Start a mass-discovery run
+      description: >-
+        Opens a discovery run that groups the agents found from a source
+        (connector platform, GitHub org, etc.) and stages them as editable
+        drafts before any admission. The rich rule-based / AI enrichment is
+        performed by separate workers; this endpoint persists the run and the
+        bare staged drafts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartDiscoveryRunInput"
+      responses:
+        "201":
+          description: Discovery run started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryRun"
+
+  /discovery/runs/{runId}:
+    get:
+      operationId: getDiscoveryRun
+      tags: [agents]
+      summary: Get a discovery run with progress counts
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Discovery run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryRun"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /discovery/drafts:
+    get:
+      operationId: listAgentDrafts
+      tags: [agents]
+      summary: List staged agent drafts with filters
+      parameters:
+        - name: runId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: reviewStatus
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+        - name: enrichmentStatus
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, rules, enriching, enriched, failed]
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: minConfidence
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Staged drafts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentDraftRecord"
+
+  /discovery/drafts/bulk-approve:
+    post:
+      operationId: bulkApproveAgentDrafts
+      tags: [agents]
+      summary: Approve multiple drafts (promote to fleet)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDraftIdsInput"
+      responses:
+        "200":
+          description: Bulk approval result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkReviewResult"
+
+  /discovery/drafts/bulk-reject:
+    post:
+      operationId: bulkRejectAgentDrafts
+      tags: [agents]
+      summary: Reject multiple drafts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDraftIdsInput"
+      responses:
+        "200":
+          description: Bulk rejection result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkReviewResult"
+
+  /discovery/drafts/{draftId}:
+    patch:
+      operationId: updateAgentDraft
+      tags: [agents]
+      summary: Edit a staged draft before review
+      parameters:
+        - name: draftId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentDraftUpdate"
+      responses:
+        "200":
+          description: Updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDraftRecord"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /discovery/drafts/{draftId}/approve:
+    post:
+      operationId: approveAgentDraft
+      tags: [agents]
+      summary: Approve a draft and promote it to the fleet
+      description: >-
+        Promotes the draft into the real fleet reusing the standard agent
+        admission path (Carteira de Trabalho + seeded initial evaluation), then
+        marks the draft as approved and links it to the created agent.
+      parameters:
+        - name: draftId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Agent admitted from draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Draft already reviewed or agent already admitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /discovery/drafts/{draftId}/reject:
+    post:
+      operationId: rejectAgentDraft
+      tags: [agents]
+      summary: Reject a draft without touching the fleet
+      parameters:
+        - name: draftId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectDraftInput"
+      responses:
+        "200":
+          description: Rejected draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDraftRecord"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /agents/{agentId}:
     get:
       operationId: getAgent
@@ -1451,6 +1684,259 @@ components:
           type: string
         confidence:
           type: number
+
+    StartDiscoveryRunInput:
+      type: object
+      required:
+        - source
+      properties:
+        source:
+          type: string
+          description: Origin kind, e.g. "connector", "github", "manual".
+        sourceRef:
+          type: string
+          description: >-
+            Source reference — e.g. a platform key for a connector, or a GitHub
+            org/repo. For connector sources matching the platform catalog, the
+            run stages a bare draft per discovered agent.
+        note:
+          type: string
+
+    DiscoveryRunCounts:
+      type: object
+      required:
+        - total
+        - pendingReview
+        - approved
+        - rejected
+        - enrichmentPending
+        - enrichmentRules
+        - enriching
+        - enriched
+        - enrichmentFailed
+      properties:
+        total:
+          type: integer
+        pendingReview:
+          type: integer
+        approved:
+          type: integer
+        rejected:
+          type: integer
+        enrichmentPending:
+          type: integer
+        enrichmentRules:
+          type: integer
+        enriching:
+          type: integer
+        enriched:
+          type: integer
+        enrichmentFailed:
+          type: integer
+
+    DiscoveryRun:
+      type: object
+      required:
+        - id
+        - source
+        - status
+        - totalDiscovered
+        - draftsCreated
+        - note
+        - startedAt
+        - createdAt
+        - counts
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+        sourceRef:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        totalDiscovered:
+          type: integer
+        draftsCreated:
+          type: integer
+        note:
+          type: string
+        startedAt:
+          type: string
+        completedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        counts:
+          $ref: "#/components/schemas/DiscoveryRunCounts"
+
+    AgentDraftRecord:
+      type: object
+      required:
+        - id
+        - runId
+        - source
+        - name
+        - role
+        - platform
+        - tagline
+        - bio
+        - shouldDo
+        - shouldNotDo
+        - autonomyLevel
+        - limits
+        - businessCase
+        - proposedMetrics
+        - summary
+        - confidence
+        - enrichmentStatus
+        - reviewStatus
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        runId:
+          type: string
+        source:
+          type: string
+        externalId:
+          type: ["string", "null"]
+        name:
+          type: string
+        role:
+          type: string
+        platform:
+          type: string
+        tagline:
+          type: string
+        bio:
+          type: string
+        shouldDo:
+          type: array
+          items:
+            type: string
+        shouldNotDo:
+          type: array
+          items:
+            type: string
+        autonomyLevel:
+          type: string
+          enum: [autonomous, escalates, restricted]
+        autonomyNotes:
+          type: ["string", "null"]
+        limits:
+          type: array
+          items:
+            type: string
+        businessCase:
+          $ref: "#/components/schemas/DraftBusinessCase"
+        proposedMetrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/DraftMetric"
+        summary:
+          type: string
+        confidence:
+          type: number
+        enrichmentStatus:
+          type: string
+          enum: [pending, rules, enriching, enriched, failed]
+        reviewStatus:
+          type: string
+          enum: [pending, approved, rejected]
+        promotedAgentId:
+          type: ["string", "null"]
+        reviewNote:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    AgentDraftUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        platform:
+          type: string
+        tagline:
+          type: string
+        bio:
+          type: string
+        shouldDo:
+          type: array
+          items:
+            type: string
+        shouldNotDo:
+          type: array
+          items:
+            type: string
+        autonomyLevel:
+          type: string
+          enum: [autonomous, escalates, restricted]
+        autonomyNotes:
+          type: string
+        limits:
+          type: array
+          items:
+            type: string
+        businessCase:
+          $ref: "#/components/schemas/DraftBusinessCase"
+        proposedMetrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/DraftMetric"
+        summary:
+          type: string
+        confidence:
+          type: number
+
+    RejectDraftInput:
+      type: object
+      properties:
+        reason:
+          type: string
+
+    BulkDraftIdsInput:
+      type: object
+      required:
+        - draftIds
+      properties:
+        draftIds:
+          type: array
+          items:
+            type: string
+        reason:
+          type: string
+
+    BulkReviewResult:
+      type: object
+      required:
+        - requested
+        - succeeded
+        - failed
+        - agentIds
+        - draftIds
+      properties:
+        requested:
+          type: integer
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+        agentIds:
+          type: array
+          items:
+            type: string
+        draftIds:
+          type: array
+          items:
+            type: string
 
     ConnectorInput:
       type: object

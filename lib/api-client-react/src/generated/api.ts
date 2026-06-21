@@ -23,14 +23,19 @@ import type {
   Agent,
   AgentDetail,
   AgentDraft,
+  AgentDraftRecord,
+  AgentDraftUpdate,
   AgentInput,
   AgentUpdate,
   Alert,
   AnalyzeSourceInput,
+  BulkDraftIdsInput,
+  BulkReviewResult,
   Connector,
   ConnectorInput,
   DiscoveryImportInput,
   DiscoveryResult,
+  DiscoveryRun,
   Error,
   Evaluation,
   EvaluationMetricUpdate,
@@ -44,9 +49,12 @@ import type {
   GitHubStatus,
   HealthStatus,
   IdentityUpdate,
+  ListAgentDraftsParams,
   ListAgentsParams,
   ListFleetAlertsParams,
   MetricPoint,
+  RejectDraftInput,
+  StartDiscoveryRunInput,
   Verdict,
   VerdictDecisionInput
 } from './api.schemas';
@@ -992,6 +1000,596 @@ export function useGetGitHubStatus<TData = Awaited<ReturnType<typeof getGitHubSt
 
 
 
+
+export const getStartDiscoveryRunUrl = () => {
+
+
+
+
+  return `/api/discovery/runs`
+}
+
+/**
+ * Opens a discovery run that groups the agents found from a source (connector platform, GitHub org, etc.) and stages them as editable drafts before any admission. The rich rule-based / AI enrichment is performed by separate workers; this endpoint persists the run and the bare staged drafts.
+ * @summary Start a mass-discovery run
+ */
+export const startDiscoveryRun = async (startDiscoveryRunInput: StartDiscoveryRunInput, options?: RequestInit): Promise<DiscoveryRun> => {
+
+  return customFetch<DiscoveryRun>(getStartDiscoveryRunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      startDiscoveryRunInput,)
+  }
+);}
+
+
+
+
+export const getStartDiscoveryRunMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startDiscoveryRun>>, TError,{data: BodyType<StartDiscoveryRunInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startDiscoveryRun>>, TError,{data: BodyType<StartDiscoveryRunInput>}, TContext> => {
+
+const mutationKey = ['startDiscoveryRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startDiscoveryRun>>, {data: BodyType<StartDiscoveryRunInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startDiscoveryRun(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartDiscoveryRunMutationResult = NonNullable<Awaited<ReturnType<typeof startDiscoveryRun>>>
+    export type StartDiscoveryRunMutationBody = BodyType<StartDiscoveryRunInput>
+    export type StartDiscoveryRunMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a mass-discovery run
+ */
+export const useStartDiscoveryRun = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startDiscoveryRun>>, TError,{data: BodyType<StartDiscoveryRunInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startDiscoveryRun>>,
+        TError,
+        {data: BodyType<StartDiscoveryRunInput>},
+        TContext
+      > => {
+      return useMutation(getStartDiscoveryRunMutationOptions(options));
+    }
+
+export const getGetDiscoveryRunUrl = (runId: string,) => {
+
+
+
+
+  return `/api/discovery/runs/${runId}`
+}
+
+/**
+ * @summary Get a discovery run with progress counts
+ */
+export const getDiscoveryRun = async (runId: string, options?: RequestInit): Promise<DiscoveryRun> => {
+
+  return customFetch<DiscoveryRun>(getGetDiscoveryRunUrl(runId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDiscoveryRunQueryKey = (runId: string,) => {
+    return [
+    `/api/discovery/runs/${runId}`
+    ] as const;
+    }
+
+
+export const getGetDiscoveryRunQueryOptions = <TData = Awaited<ReturnType<typeof getDiscoveryRun>>, TError = ErrorType<Error>>(runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDiscoveryRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDiscoveryRunQueryKey(runId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDiscoveryRun>>> = ({ signal }) => getDiscoveryRun(runId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(runId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDiscoveryRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDiscoveryRunQueryResult = NonNullable<Awaited<ReturnType<typeof getDiscoveryRun>>>
+export type GetDiscoveryRunQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get a discovery run with progress counts
+ */
+
+export function useGetDiscoveryRun<TData = Awaited<ReturnType<typeof getDiscoveryRun>>, TError = ErrorType<Error>>(
+ runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDiscoveryRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDiscoveryRunQueryOptions(runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAgentDraftsUrl = (params?: ListAgentDraftsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/discovery/drafts?${stringifiedParams}` : `/api/discovery/drafts`
+}
+
+/**
+ * @summary List staged agent drafts with filters
+ */
+export const listAgentDrafts = async (params?: ListAgentDraftsParams, options?: RequestInit): Promise<AgentDraftRecord[]> => {
+
+  return customFetch<AgentDraftRecord[]>(getListAgentDraftsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentDraftsQueryKey = (params?: ListAgentDraftsParams,) => {
+    return [
+    `/api/discovery/drafts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAgentDraftsQueryOptions = <TData = Awaited<ReturnType<typeof listAgentDrafts>>, TError = ErrorType<unknown>>(params?: ListAgentDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentDraftsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentDrafts>>> = ({ signal }) => listAgentDrafts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentDrafts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentDraftsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentDrafts>>>
+export type ListAgentDraftsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List staged agent drafts with filters
+ */
+
+export function useListAgentDrafts<TData = Awaited<ReturnType<typeof listAgentDrafts>>, TError = ErrorType<unknown>>(
+ params?: ListAgentDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentDraftsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBulkApproveAgentDraftsUrl = () => {
+
+
+
+
+  return `/api/discovery/drafts/bulk-approve`
+}
+
+/**
+ * @summary Approve multiple drafts (promote to fleet)
+ */
+export const bulkApproveAgentDrafts = async (bulkDraftIdsInput: BulkDraftIdsInput, options?: RequestInit): Promise<BulkReviewResult> => {
+
+  return customFetch<BulkReviewResult>(getBulkApproveAgentDraftsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkDraftIdsInput,)
+  }
+);}
+
+
+
+
+export const getBulkApproveAgentDraftsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkApproveAgentDrafts>>, TError,{data: BodyType<BulkDraftIdsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkApproveAgentDrafts>>, TError,{data: BodyType<BulkDraftIdsInput>}, TContext> => {
+
+const mutationKey = ['bulkApproveAgentDrafts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkApproveAgentDrafts>>, {data: BodyType<BulkDraftIdsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkApproveAgentDrafts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkApproveAgentDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkApproveAgentDrafts>>>
+    export type BulkApproveAgentDraftsMutationBody = BodyType<BulkDraftIdsInput>
+    export type BulkApproveAgentDraftsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve multiple drafts (promote to fleet)
+ */
+export const useBulkApproveAgentDrafts = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkApproveAgentDrafts>>, TError,{data: BodyType<BulkDraftIdsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkApproveAgentDrafts>>,
+        TError,
+        {data: BodyType<BulkDraftIdsInput>},
+        TContext
+      > => {
+      return useMutation(getBulkApproveAgentDraftsMutationOptions(options));
+    }
+
+export const getBulkRejectAgentDraftsUrl = () => {
+
+
+
+
+  return `/api/discovery/drafts/bulk-reject`
+}
+
+/**
+ * @summary Reject multiple drafts
+ */
+export const bulkRejectAgentDrafts = async (bulkDraftIdsInput: BulkDraftIdsInput, options?: RequestInit): Promise<BulkReviewResult> => {
+
+  return customFetch<BulkReviewResult>(getBulkRejectAgentDraftsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkDraftIdsInput,)
+  }
+);}
+
+
+
+
+export const getBulkRejectAgentDraftsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkRejectAgentDrafts>>, TError,{data: BodyType<BulkDraftIdsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkRejectAgentDrafts>>, TError,{data: BodyType<BulkDraftIdsInput>}, TContext> => {
+
+const mutationKey = ['bulkRejectAgentDrafts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkRejectAgentDrafts>>, {data: BodyType<BulkDraftIdsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkRejectAgentDrafts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkRejectAgentDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkRejectAgentDrafts>>>
+    export type BulkRejectAgentDraftsMutationBody = BodyType<BulkDraftIdsInput>
+    export type BulkRejectAgentDraftsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reject multiple drafts
+ */
+export const useBulkRejectAgentDrafts = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkRejectAgentDrafts>>, TError,{data: BodyType<BulkDraftIdsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkRejectAgentDrafts>>,
+        TError,
+        {data: BodyType<BulkDraftIdsInput>},
+        TContext
+      > => {
+      return useMutation(getBulkRejectAgentDraftsMutationOptions(options));
+    }
+
+export const getUpdateAgentDraftUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/discovery/drafts/${draftId}`
+}
+
+/**
+ * @summary Edit a staged draft before review
+ */
+export const updateAgentDraft = async (draftId: string,
+    agentDraftUpdate: AgentDraftUpdate, options?: RequestInit): Promise<AgentDraftRecord> => {
+
+  return customFetch<AgentDraftRecord>(getUpdateAgentDraftUrl(draftId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentDraftUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateAgentDraftMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgentDraft>>, TError,{draftId: string;data: BodyType<AgentDraftUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAgentDraft>>, TError,{draftId: string;data: BodyType<AgentDraftUpdate>}, TContext> => {
+
+const mutationKey = ['updateAgentDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAgentDraft>>, {draftId: string;data: BodyType<AgentDraftUpdate>}> = (props) => {
+          const {draftId,data} = props ?? {};
+
+          return  updateAgentDraft(draftId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAgentDraftMutationResult = NonNullable<Awaited<ReturnType<typeof updateAgentDraft>>>
+    export type UpdateAgentDraftMutationBody = BodyType<AgentDraftUpdate>
+    export type UpdateAgentDraftMutationError = ErrorType<Error>
+
+    /**
+ * @summary Edit a staged draft before review
+ */
+export const useUpdateAgentDraft = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAgentDraft>>, TError,{draftId: string;data: BodyType<AgentDraftUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAgentDraft>>,
+        TError,
+        {draftId: string;data: BodyType<AgentDraftUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAgentDraftMutationOptions(options));
+    }
+
+export const getApproveAgentDraftUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/discovery/drafts/${draftId}/approve`
+}
+
+/**
+ * Promotes the draft into the real fleet reusing the standard agent admission path (Carteira de Trabalho + seeded initial evaluation), then marks the draft as approved and links it to the created agent.
+ * @summary Approve a draft and promote it to the fleet
+ */
+export const approveAgentDraft = async (draftId: string, options?: RequestInit): Promise<AgentDetail> => {
+
+  return customFetch<AgentDetail>(getApproveAgentDraftUrl(draftId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveAgentDraftMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAgentDraft>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveAgentDraft>>, TError,{draftId: string}, TContext> => {
+
+const mutationKey = ['approveAgentDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveAgentDraft>>, {draftId: string}> = (props) => {
+          const {draftId} = props ?? {};
+
+          return  approveAgentDraft(draftId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveAgentDraftMutationResult = NonNullable<Awaited<ReturnType<typeof approveAgentDraft>>>
+
+    export type ApproveAgentDraftMutationError = ErrorType<Error>
+
+    /**
+ * @summary Approve a draft and promote it to the fleet
+ */
+export const useApproveAgentDraft = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAgentDraft>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveAgentDraft>>,
+        TError,
+        {draftId: string},
+        TContext
+      > => {
+      return useMutation(getApproveAgentDraftMutationOptions(options));
+    }
+
+export const getRejectAgentDraftUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/discovery/drafts/${draftId}/reject`
+}
+
+/**
+ * @summary Reject a draft without touching the fleet
+ */
+export const rejectAgentDraft = async (draftId: string,
+    rejectDraftInput: RejectDraftInput, options?: RequestInit): Promise<AgentDraftRecord> => {
+
+  return customFetch<AgentDraftRecord>(getRejectAgentDraftUrl(draftId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      rejectDraftInput,)
+  }
+);}
+
+
+
+
+export const getRejectAgentDraftMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAgentDraft>>, TError,{draftId: string;data: BodyType<RejectDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectAgentDraft>>, TError,{draftId: string;data: BodyType<RejectDraftInput>}, TContext> => {
+
+const mutationKey = ['rejectAgentDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectAgentDraft>>, {draftId: string;data: BodyType<RejectDraftInput>}> = (props) => {
+          const {draftId,data} = props ?? {};
+
+          return  rejectAgentDraft(draftId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectAgentDraftMutationResult = NonNullable<Awaited<ReturnType<typeof rejectAgentDraft>>>
+    export type RejectAgentDraftMutationBody = BodyType<RejectDraftInput>
+    export type RejectAgentDraftMutationError = ErrorType<Error>
+
+    /**
+ * @summary Reject a draft without touching the fleet
+ */
+export const useRejectAgentDraft = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAgentDraft>>, TError,{draftId: string;data: BodyType<RejectDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectAgentDraft>>,
+        TError,
+        {draftId: string;data: BodyType<RejectDraftInput>},
+        TContext
+      > => {
+      return useMutation(getRejectAgentDraftMutationOptions(options));
+    }
 
 export const getGetAgentUrl = (agentId: string,) => {
 

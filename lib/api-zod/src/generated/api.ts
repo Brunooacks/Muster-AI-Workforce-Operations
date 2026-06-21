@@ -387,6 +387,268 @@ export const GetGitHubStatusResponse = zod.object({
 
 
 /**
+ * Opens a discovery run that groups the agents found from a source (connector platform, GitHub org, etc.) and stages them as editable drafts before any admission. The rich rule-based / AI enrichment is performed by separate workers; this endpoint persists the run and the bare staged drafts.
+ * @summary Start a mass-discovery run
+ */
+export const StartDiscoveryRunBody = zod.object({
+  "source": zod.string().describe('Origin kind, e.g. \"connector\", \"github\", \"manual\".'),
+  "sourceRef": zod.string().optional().describe('Source reference — e.g. a platform key for a connector, or a GitHub org\/repo. For connector sources matching the platform catalog, the run stages a bare draft per discovered agent.'),
+  "note": zod.string().optional()
+})
+
+
+/**
+ * @summary Get a discovery run with progress counts
+ */
+export const GetDiscoveryRunParams = zod.object({
+  "runId": zod.coerce.string()
+})
+
+export const GetDiscoveryRunResponse = zod.object({
+  "id": zod.string(),
+  "source": zod.string(),
+  "sourceRef": zod.string().nullish(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "totalDiscovered": zod.number(),
+  "draftsCreated": zod.number(),
+  "note": zod.string(),
+  "startedAt": zod.string(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "counts": zod.object({
+  "total": zod.number(),
+  "pendingReview": zod.number(),
+  "approved": zod.number(),
+  "rejected": zod.number(),
+  "enrichmentPending": zod.number(),
+  "enrichmentRules": zod.number(),
+  "enriching": zod.number(),
+  "enriched": zod.number(),
+  "enrichmentFailed": zod.number()
+})
+})
+
+
+/**
+ * @summary List staged agent drafts with filters
+ */
+export const ListAgentDraftsQueryParams = zod.object({
+  "runId": zod.coerce.string().optional(),
+  "reviewStatus": zod.enum(['pending', 'approved', 'rejected']).optional(),
+  "enrichmentStatus": zod.enum(['pending', 'rules', 'enriching', 'enriched', 'failed']).optional(),
+  "platform": zod.coerce.string().optional(),
+  "minConfidence": zod.coerce.number().optional(),
+  "search": zod.coerce.string().optional()
+})
+
+export const ListAgentDraftsResponseItem = zod.object({
+  "id": zod.string(),
+  "runId": zod.string(),
+  "source": zod.string(),
+  "externalId": zod.string().nullish(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "platform": zod.string(),
+  "tagline": zod.string(),
+  "bio": zod.string(),
+  "shouldDo": zod.array(zod.string()),
+  "shouldNotDo": zod.array(zod.string()),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']),
+  "autonomyNotes": zod.string().nullish(),
+  "limits": zod.array(zod.string()),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "description": zod.string()
+}),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
+  "rationale": zod.string().optional()
+})),
+  "summary": zod.string(),
+  "confidence": zod.number(),
+  "enrichmentStatus": zod.enum(['pending', 'rules', 'enriching', 'enriched', 'failed']),
+  "reviewStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "promotedAgentId": zod.string().nullish(),
+  "reviewNote": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListAgentDraftsResponse = zod.array(ListAgentDraftsResponseItem)
+
+
+/**
+ * @summary Approve multiple drafts (promote to fleet)
+ */
+export const BulkApproveAgentDraftsBody = zod.object({
+  "draftIds": zod.array(zod.string()),
+  "reason": zod.string().optional()
+})
+
+export const BulkApproveAgentDraftsResponse = zod.object({
+  "requested": zod.number(),
+  "succeeded": zod.number(),
+  "failed": zod.number(),
+  "agentIds": zod.array(zod.string()),
+  "draftIds": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Reject multiple drafts
+ */
+export const BulkRejectAgentDraftsBody = zod.object({
+  "draftIds": zod.array(zod.string()),
+  "reason": zod.string().optional()
+})
+
+export const BulkRejectAgentDraftsResponse = zod.object({
+  "requested": zod.number(),
+  "succeeded": zod.number(),
+  "failed": zod.number(),
+  "agentIds": zod.array(zod.string()),
+  "draftIds": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Edit a staged draft before review
+ */
+export const UpdateAgentDraftParams = zod.object({
+  "draftId": zod.coerce.string()
+})
+
+export const UpdateAgentDraftBody = zod.object({
+  "name": zod.string().optional(),
+  "role": zod.string().optional(),
+  "platform": zod.string().optional(),
+  "tagline": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "shouldDo": zod.array(zod.string()).optional(),
+  "shouldNotDo": zod.array(zod.string()).optional(),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']).optional(),
+  "autonomyNotes": zod.string().optional(),
+  "limits": zod.array(zod.string()).optional(),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "description": zod.string()
+}).optional(),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
+  "rationale": zod.string().optional()
+})).optional(),
+  "summary": zod.string().optional(),
+  "confidence": zod.number().optional()
+})
+
+export const UpdateAgentDraftResponse = zod.object({
+  "id": zod.string(),
+  "runId": zod.string(),
+  "source": zod.string(),
+  "externalId": zod.string().nullish(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "platform": zod.string(),
+  "tagline": zod.string(),
+  "bio": zod.string(),
+  "shouldDo": zod.array(zod.string()),
+  "shouldNotDo": zod.array(zod.string()),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']),
+  "autonomyNotes": zod.string().nullish(),
+  "limits": zod.array(zod.string()),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "description": zod.string()
+}),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
+  "rationale": zod.string().optional()
+})),
+  "summary": zod.string(),
+  "confidence": zod.number(),
+  "enrichmentStatus": zod.enum(['pending', 'rules', 'enriching', 'enriched', 'failed']),
+  "reviewStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "promotedAgentId": zod.string().nullish(),
+  "reviewNote": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * Promotes the draft into the real fleet reusing the standard agent admission path (Carteira de Trabalho + seeded initial evaluation), then marks the draft as approved and links it to the created agent.
+ * @summary Approve a draft and promote it to the fleet
+ */
+export const ApproveAgentDraftParams = zod.object({
+  "draftId": zod.coerce.string()
+})
+
+
+/**
+ * @summary Reject a draft without touching the fleet
+ */
+export const RejectAgentDraftParams = zod.object({
+  "draftId": zod.coerce.string()
+})
+
+export const RejectAgentDraftBody = zod.object({
+  "reason": zod.string().optional()
+})
+
+export const RejectAgentDraftResponse = zod.object({
+  "id": zod.string(),
+  "runId": zod.string(),
+  "source": zod.string(),
+  "externalId": zod.string().nullish(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "platform": zod.string(),
+  "tagline": zod.string(),
+  "bio": zod.string(),
+  "shouldDo": zod.array(zod.string()),
+  "shouldNotDo": zod.array(zod.string()),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']),
+  "autonomyNotes": zod.string().nullish(),
+  "limits": zod.array(zod.string()),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "description": zod.string()
+}),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
+  "rationale": zod.string().optional()
+})),
+  "summary": zod.string(),
+  "confidence": zod.number(),
+  "enrichmentStatus": zod.enum(['pending', 'rules', 'enriching', 'enriched', 'failed']),
+  "reviewStatus": zod.enum(['pending', 'approved', 'rejected']),
+  "promotedAgentId": zod.string().nullish(),
+  "reviewNote": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
  * @summary Get a single agent with full work record
  */
 export const GetAgentParams = zod.object({

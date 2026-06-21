@@ -58,6 +58,7 @@ import {
 } from "../lib/analyze";
 import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
 import { getGitHubStatus } from "../lib/github-auth";
+import { admitAgent, AlreadyAdmittedError } from "../lib/admission";
 
 const router: IRouter = Router();
 
@@ -112,123 +113,35 @@ router.get("/agents", requireAuth, async (req, res) => {
 router.post("/agents", requireAuth, async (req, res) => {
   const body = CreateAgentBody.parse(req.body);
 
-  const externalId = `manual_${slugify(body.name)}_${Date.now()}`;
-  const signals = [
-    "resolution_rate",
-    "handle_time",
-    "adoption_rate",
-    "policy_violations",
-    "value_generated",
-  ];
-  const proposed =
-    body.proposedMetrics && body.proposedMetrics.length > 0
-      ? proposedMetricsFromDraft(externalId, body.proposedMetrics)
-      : buildProposedMetrics(externalId, signals);
-  const scored = scoreEvaluation(externalId, proposed);
-
-  let slug = slugify(body.name);
-  const [clash] = await db.select().from(agents).where(eq(agents.slug, slug));
-  if (clash) slug = `${slug}-${Date.now().toString(36)}`;
-
-  const now = Date.now();
-  const agentId = await db.transaction(async (tx) => {
-    const [agent] = await tx
-      .insert(agents)
-      .values({
-        externalId,
-        name: body.name,
-        slug,
-        role: body.role,
-        platform: body.platform,
-        version: body.version ?? "1.0.0",
-        status: "observation",
-        bio: body.bio,
-        tagline: body.tagline ?? "",
-        currentVerdict: "observation",
-        verdictConfidence: scored.verdictConfidence,
-        severity: scored.severity,
-        healthScore: scored.healthScore,
-        activeAlerts: 0,
-        monthlyValue: 0,
-        monthlyCost: 0,
-      })
-      .returning();
-    if (!agent) throw new Error("Failed to create agent");
-
-    await tx.insert(agentIdentities).values({
-      agentId: agent.id,
+  let agentId: string;
+  try {
+    agentId = await admitAgent({
+      name: body.name,
+      role: body.role,
+      platform: body.platform,
       bio: body.bio,
-      shouldDo: body.shouldDo ?? [],
-      shouldNotDo: body.shouldNotDo ?? [],
-      autonomyLevel: body.autonomyLevel ?? "escalates",
+      version: body.version,
+      tagline: body.tagline,
+      shouldDo: body.shouldDo,
+      shouldNotDo: body.shouldNotDo,
+      autonomyLevel: body.autonomyLevel,
       autonomyNotes: body.autonomyNotes,
-      limits: body.limits ?? [],
-      businessCase: {
-        baseline: body.baseline ?? "",
-        targetPayback: body.targetPayback ?? "",
-        actualPayback: "—",
-        description: body.businessCaseDescription ?? "",
-      },
-      version: 1,
+      limits: body.limits,
+      businessOwner: body.businessOwner,
+      technicalOwner: body.technicalOwner,
+      governanceSponsor: body.governanceSponsor,
+      baseline: body.baseline,
+      targetPayback: body.targetPayback,
+      businessCaseDescription: body.businessCaseDescription,
+      proposedMetrics: body.proposedMetrics,
     });
-
-    await tx.insert(agentOwners).values({
-      agentId: agent.id,
-      businessOwner: body.businessOwner ?? "",
-      technicalOwner: body.technicalOwner ?? "",
-      governanceSponsor: body.governanceSponsor ?? "",
-    });
-
-    await tx.insert(evaluations).values({
-      agentId: agent.id,
-      window: "30d",
-      layers: scored.layers,
-      verdict: "observation",
-      verdictConfidence: scored.verdictConfidence,
-      rationale:
-        "Avaliação inicial gerada na admissão; manter em observação até consolidar dados reais.",
-    });
-
-    await tx.insert(verdicts).values({
-      agentId: agent.id,
-      verdict: "observation",
-      confidence: scored.verdictConfidence,
-      executionWindow: "60 dias",
-      suggestedSponsor: body.governanceSponsor ?? "Comitê",
-      nextActions: [
-        {
-          action: "Coletar 30 dias de métricas reais via conector",
-          owner: "Dono técnico",
-          due: "30 dias",
-        },
-      ],
-      rationale:
-        "Agente recém-admitido; aguardando dados suficientes para um veredito conclusivo.",
-      decision: "pending",
-    });
-
-    await tx.insert(metricPoints).values(
-      Array.from({ length: 14 }, (_, idx) => {
-        const i = 13 - idx;
-        const score = (k: number) =>
-          Math.max(
-            5,
-            Math.min(99, Math.round(scored.layers[k]!.score - i / 2)),
-          );
-        return {
-          agentId: agent.id,
-          timestamp: new Date(now - i * 24 * 60 * 60 * 1000),
-          efficacy: score(0),
-          efficiency: score(1),
-          adoption: score(2),
-          governance: score(3),
-          value: score(4),
-        };
-      }),
-    );
-
-    return agent.id;
-  });
+  } catch (err) {
+    if (err instanceof AlreadyAdmittedError) {
+      res.status(409).json({ error: "Agente já admitido na frota." });
+      return;
+    }
+    throw err;
+  }
 
   const detail = await buildAgentDetail(agentId);
   res.status(201).json(detail);

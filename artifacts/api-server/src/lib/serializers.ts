@@ -4,11 +4,14 @@ import {
   agents,
   agentIdentities,
   agentOwners,
+  agentDrafts,
   evaluations,
   verdicts,
   type KpiLayer,
   type KpiMetric,
   type NextAction,
+  type DraftKpiMetric,
+  type DraftBusinessCase,
 } from "@workspace/db";
 
 type AgentRow = typeof agents.$inferSelect;
@@ -16,6 +19,36 @@ type IdentityRow = typeof agentIdentities.$inferSelect;
 type OwnersRow = typeof agentOwners.$inferSelect;
 type EvaluationRow = typeof evaluations.$inferSelect;
 type VerdictRow = typeof verdicts.$inferSelect;
+type AgentDraftRow = typeof agentDrafts.$inferSelect;
+
+export function toAgentDraftRecord(d: AgentDraftRow) {
+  return {
+    id: d.id,
+    runId: d.runId,
+    source: d.source,
+    externalId: d.externalId ?? null,
+    name: d.name,
+    role: d.role,
+    platform: d.platform,
+    tagline: d.tagline,
+    bio: d.bio,
+    shouldDo: d.shouldDo,
+    shouldNotDo: d.shouldNotDo,
+    autonomyLevel: d.autonomyLevel,
+    autonomyNotes: d.autonomyNotes ?? null,
+    limits: d.limits,
+    businessCase: d.businessCase as DraftBusinessCase,
+    proposedMetrics: d.proposedMetrics as DraftKpiMetric[],
+    summary: d.summary,
+    confidence: d.confidence,
+    enrichmentStatus: d.enrichmentStatus,
+    reviewStatus: d.reviewStatus,
+    promotedAgentId: d.promotedAgentId ?? null,
+    reviewNote: d.reviewNote ?? null,
+    createdAt: d.createdAt.toISOString(),
+    updatedAt: d.updatedAt.toISOString(),
+  };
+}
 
 export function toAgentSummary(a: AgentRow, targetMetrics: KpiMetric[] = []) {
   return {

@@ -618,6 +618,155 @@ export interface AgentDraft {
   confidence: number;
 }
 
+export interface StartDiscoveryRunInput {
+  /** Origin kind, e.g. "connector", "github", "manual". */
+  source: string;
+  /** Source reference — e.g. a platform key for a connector, or a GitHub org/repo. For connector sources matching the platform catalog, the run stages a bare draft per discovered agent. */
+  sourceRef?: string;
+  note?: string;
+}
+
+export interface DiscoveryRunCounts {
+  total: number;
+  pendingReview: number;
+  approved: number;
+  rejected: number;
+  enrichmentPending: number;
+  enrichmentRules: number;
+  enriching: number;
+  enriched: number;
+  enrichmentFailed: number;
+}
+
+export type DiscoveryRunStatus = typeof DiscoveryRunStatus[keyof typeof DiscoveryRunStatus];
+
+
+export const DiscoveryRunStatus = {
+  pending: 'pending',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface DiscoveryRun {
+  id: string;
+  source: string;
+  /** @nullable */
+  sourceRef?: string | null;
+  status: DiscoveryRunStatus;
+  totalDiscovered: number;
+  draftsCreated: number;
+  note: string;
+  startedAt: string;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+  counts: DiscoveryRunCounts;
+}
+
+export type AgentDraftRecordAutonomyLevel = typeof AgentDraftRecordAutonomyLevel[keyof typeof AgentDraftRecordAutonomyLevel];
+
+
+export const AgentDraftRecordAutonomyLevel = {
+  autonomous: 'autonomous',
+  escalates: 'escalates',
+  restricted: 'restricted',
+} as const;
+
+export type AgentDraftRecordEnrichmentStatus = typeof AgentDraftRecordEnrichmentStatus[keyof typeof AgentDraftRecordEnrichmentStatus];
+
+
+export const AgentDraftRecordEnrichmentStatus = {
+  pending: 'pending',
+  rules: 'rules',
+  enriching: 'enriching',
+  enriched: 'enriched',
+  failed: 'failed',
+} as const;
+
+export type AgentDraftRecordReviewStatus = typeof AgentDraftRecordReviewStatus[keyof typeof AgentDraftRecordReviewStatus];
+
+
+export const AgentDraftRecordReviewStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface AgentDraftRecord {
+  id: string;
+  runId: string;
+  source: string;
+  /** @nullable */
+  externalId?: string | null;
+  name: string;
+  role: string;
+  platform: string;
+  tagline: string;
+  bio: string;
+  shouldDo: string[];
+  shouldNotDo: string[];
+  autonomyLevel: AgentDraftRecordAutonomyLevel;
+  /** @nullable */
+  autonomyNotes?: string | null;
+  limits: string[];
+  businessCase: DraftBusinessCase;
+  proposedMetrics: DraftMetric[];
+  summary: string;
+  confidence: number;
+  enrichmentStatus: AgentDraftRecordEnrichmentStatus;
+  reviewStatus: AgentDraftRecordReviewStatus;
+  /** @nullable */
+  promotedAgentId?: string | null;
+  /** @nullable */
+  reviewNote?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AgentDraftUpdateAutonomyLevel = typeof AgentDraftUpdateAutonomyLevel[keyof typeof AgentDraftUpdateAutonomyLevel];
+
+
+export const AgentDraftUpdateAutonomyLevel = {
+  autonomous: 'autonomous',
+  escalates: 'escalates',
+  restricted: 'restricted',
+} as const;
+
+export interface AgentDraftUpdate {
+  name?: string;
+  role?: string;
+  platform?: string;
+  tagline?: string;
+  bio?: string;
+  shouldDo?: string[];
+  shouldNotDo?: string[];
+  autonomyLevel?: AgentDraftUpdateAutonomyLevel;
+  autonomyNotes?: string;
+  limits?: string[];
+  businessCase?: DraftBusinessCase;
+  proposedMetrics?: DraftMetric[];
+  summary?: string;
+  confidence?: number;
+}
+
+export interface RejectDraftInput {
+  reason?: string;
+}
+
+export interface BulkDraftIdsInput {
+  draftIds: string[];
+  reason?: string;
+}
+
+export interface BulkReviewResult {
+  requested: number;
+  succeeded: number;
+  failed: number;
+  agentIds: string[];
+  draftIds: string[];
+}
+
 export interface ConnectorInput {
   platform: string;
   name?: string;
@@ -846,5 +995,34 @@ export const ListAgentsSeverity = {
   high: 'high',
   medium: 'medium',
   stable: 'stable',
+} as const;
+
+export type ListAgentDraftsParams = {
+runId?: string;
+reviewStatus?: ListAgentDraftsReviewStatus;
+enrichmentStatus?: ListAgentDraftsEnrichmentStatus;
+platform?: string;
+minConfidence?: number;
+search?: string;
+};
+
+export type ListAgentDraftsReviewStatus = typeof ListAgentDraftsReviewStatus[keyof typeof ListAgentDraftsReviewStatus];
+
+
+export const ListAgentDraftsReviewStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export type ListAgentDraftsEnrichmentStatus = typeof ListAgentDraftsEnrichmentStatus[keyof typeof ListAgentDraftsEnrichmentStatus];
+
+
+export const ListAgentDraftsEnrichmentStatus = {
+  pending: 'pending',
+  rules: 'rules',
+  enriching: 'enriching',
+  enriched: 'enriched',
+  failed: 'failed',
 } as const;
 

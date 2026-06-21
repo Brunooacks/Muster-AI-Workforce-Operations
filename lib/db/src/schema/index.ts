@@ -221,3 +221,110 @@ export const metricPoints = pgTable("metric_points", {
   governance: doublePrecision("governance").notNull().default(0),
   value: doublePrecision("value").notNull().default(0),
 });
+
+// --- Mass discovery staging -------------------------------------------------
+// Discovered agents are parked as editable drafts (separate from the real
+// fleet) and grouped by a discovery run before any of them is admitted.
+
+export type DiscoveryRunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed";
+
+// Hybrid enrichment lifecycle: rules fill instantly, AI enriches in batch.
+export type DraftEnrichmentStatus =
+  | "pending"
+  | "rules"
+  | "enriching"
+  | "enriched"
+  | "failed";
+
+export type DraftReviewStatus = "pending" | "approved" | "rejected";
+
+export interface DraftKpiMetric {
+  layer: LayerKey;
+  label: string;
+  unit: string;
+  target?: string;
+  // Optional reviewer-set starting/current value (overrides seeded value at
+  // admission so goal-vs-actual reflects reality).
+  value?: number;
+  rationale?: string;
+}
+
+export interface DraftBusinessCase {
+  baseline: string;
+  targetPayback: string;
+  description: string;
+}
+
+export const discoveryRuns = pgTable("discovery_runs", {
+  id: id(),
+  source: text("source").notNull(),
+  sourceRef: text("source_ref"),
+  status: text("status")
+    .$type<DiscoveryRunStatus>()
+    .notNull()
+    .default("pending"),
+  totalDiscovered: integer("total_discovered").notNull().default(0),
+  draftsCreated: integer("drafts_created").notNull().default(0),
+  note: text("note").notNull().default(""),
+  startedAt: timestamp("started_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const agentDrafts = pgTable("agent_drafts", {
+  id: id(),
+  runId: text("run_id")
+    .notNull()
+    .references(() => discoveryRuns.id, { onDelete: "cascade" }),
+  source: text("source").notNull(),
+  externalId: text("external_id"),
+  name: text("name").notNull(),
+  role: text("role").notNull().default(""),
+  platform: text("platform").notNull(),
+  tagline: text("tagline").notNull().default(""),
+  bio: text("bio").notNull().default(""),
+  shouldDo: jsonb("should_do").$type<string[]>().notNull().default([]),
+  shouldNotDo: jsonb("should_not_do").$type<string[]>().notNull().default([]),
+  autonomyLevel: text("autonomy_level")
+    .$type<AutonomyLevel>()
+    .notNull()
+    .default("escalates"),
+  autonomyNotes: text("autonomy_notes"),
+  limits: jsonb("limits").$type<string[]>().notNull().default([]),
+  businessCase: jsonb("business_case")
+    .$type<DraftBusinessCase>()
+    .notNull()
+    .default({ baseline: "", targetPayback: "", description: "" }),
+  proposedMetrics: jsonb("proposed_metrics")
+    .$type<DraftKpiMetric[]>()
+    .notNull()
+    .default([]),
+  summary: text("summary").notNull().default(""),
+  confidence: doublePrecision("confidence").notNull().default(0),
+  enrichmentStatus: text("enrichment_status")
+    .$type<DraftEnrichmentStatus>()
+    .notNull()
+    .default("pending"),
+  reviewStatus: text("review_status")
+    .$type<DraftReviewStatus>()
+    .notNull()
+    .default("pending"),
+  promotedAgentId: text("promoted_agent_id").references(() => agents.id, {
+    onDelete: "set null",
+  }),
+  reviewNote: text("review_note"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
