@@ -226,11 +226,13 @@ export default function AdmissionPage() {
             description:
               status === 429
                 ? "Limite de requisições atingido. Tente novamente em alguns minutos."
-                : status === 404
-                  ? "Repositório ou endereço não encontrado (ou é privado)."
-                  : status === 422
-                    ? "Nenhum conteúdo relevante encontrado no endereço."
-                    : "Não foi possível importar o material desse endereço.",
+                : status === 403
+                  ? "Sua conta GitHub não tem acesso a este repositório. Conecte ou reconecte sua conta GitHub e verifique as permissões."
+                  : status === 404
+                    ? "Repositório ou endereço não encontrado. Se for um repositório privado, conecte sua conta GitHub para importá-lo."
+                    : status === 422
+                      ? "Nenhum conteúdo relevante encontrado no endereço."
+                      : "Não foi possível importar o material desse endereço.",
           });
         },
       },
@@ -472,7 +474,8 @@ export default function AdmissionPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Buscamos os arquivos de código e skills relevantes (limites de tamanho e tipo
-                        aplicados) e os adicionamos ao campo acima.
+                        aplicados) e os adicionamos ao campo acima. Para repositórios privados, conecte
+                        sua conta GitHub nas integrações do Replit.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3">

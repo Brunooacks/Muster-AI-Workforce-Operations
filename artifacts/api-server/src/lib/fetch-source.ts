@@ -1,6 +1,7 @@
 import zlib from "node:zlib";
 import dns from "node:dns/promises";
 import { MAX_CONTENT_LENGTH } from "./analyze";
+import { getGitHubAccessToken } from "./github-auth";
 
 // Guardrails for remote source fetching. Kept conservative so a single import
 // request stays well within model + request limits and can't be abused to pull
@@ -191,9 +192,24 @@ async function assertResolvedHostSafe(hostname: string): Promise<void> {
 // SSRF guard.
 async function safeFetch(start: URL, init?: RequestInit): Promise<Response> {
   let url = start;
+  const startHost = start.hostname;
+  const baseHeaders: Record<string, string> = {
+    "User-Agent": "Cohort-Discovery/1.0",
+    ...((init?.headers as Record<string, string> | undefined) ?? {}),
+  };
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     assertSafeUrl(url.toString());
     await assertResolvedHostSafe(url.hostname);
+
+    // Never forward an Authorization header to a different host. GitHub's
+    // authenticated tarball endpoint 302s to codeload with its own signed
+    // token, so leaking the bearer token to the redirect target (or any other
+    // CDN) would be both unnecessary and unsafe.
+    const headers = { ...baseHeaders };
+    if (url.hostname !== startHost) {
+      delete headers["Authorization"];
+      delete headers["authorization"];
+    }
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -202,10 +218,7 @@ async function safeFetch(start: URL, init?: RequestInit): Promise<Response> {
       res = await fetch(url.toString(), {
         ...init,
         signal: controller.signal,
-        headers: {
-          "User-Agent": "Cohort-Discovery/1.0",
-          ...(init?.headers ?? {}),
-        },
+        headers,
         redirect: "manual",
       });
     } catch (err) {
@@ -338,27 +351,79 @@ function stripTopDir(path: string): string {
   return slash === -1 ? path : path.slice(slash + 1);
 }
 
-async function fetchFromGitHub(ref: GitHubRef): Promise<FetchSourceResult> {
+// Download the repo archive. When a GitHub credential is available (Replit
+// GitHub connector or GITHUB_TOKEN secret) we use the authenticated REST
+// tarball endpoint, which works for BOTH public and private repos. Without a
+// credential we fall back to the unauthenticated codeload path (public only)
+// and surface a clear "connect GitHub" hint on 404.
+async function downloadGitHubArchive(ref: GitHubRef): Promise<Response> {
+  const token = await getGitHubAccessToken();
+
+  if (token) {
+    const refSegment = ref.branch ? `/${encodeURIComponent(ref.branch)}` : "";
+    const apiUrl = `https://api.github.com/repos/${encodeURIComponent(
+      ref.owner,
+    )}/${encodeURIComponent(ref.repo)}/tarball${refSegment}`;
+    const res = await safeFetch(new URL(apiUrl), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    if (res.status === 401) {
+      await res.body?.cancel().catch(() => {});
+      throw new FetchSourceError(
+        "A credencial do GitHub é inválida ou expirou. Reconecte sua conta GitHub e tente novamente.",
+        403,
+      );
+    }
+    if (res.status === 403) {
+      const rateLimited = res.headers.get("x-ratelimit-remaining") === "0";
+      await res.body?.cancel().catch(() => {});
+      throw new FetchSourceError(
+        rateLimited
+          ? "Limite de requisições do GitHub atingido. Tente novamente em alguns minutos."
+          : "Sua conta GitHub não tem acesso a este repositório. Verifique as permissões da conexão.",
+        rateLimited ? 429 : 403,
+      );
+    }
+    if (res.status === 404) {
+      await res.body?.cancel().catch(() => {});
+      throw new FetchSourceError(
+        "Repositório, branch ou caminho não encontrado, ou sua conta GitHub não tem acesso a ele.",
+        404,
+      );
+    }
+    return res;
+  }
+
   const refSegment = ref.branch
     ? `refs/heads/${encodeURIComponent(ref.branch)}`
     : "HEAD";
   const codeloadUrl = `https://codeload.github.com/${encodeURIComponent(
     ref.owner,
   )}/${encodeURIComponent(ref.repo)}/tar.gz/${refSegment}`;
-
   const res = await safeFetch(new URL(codeloadUrl));
   if (res.status === 404) {
+    await res.body?.cancel().catch(() => {});
     throw new FetchSourceError(
-      "Repositório, branch ou caminho não encontrado (ou é privado).",
+      "Repositório, branch ou caminho não encontrado. Se o repositório for privado, conecte sua conta GitHub para importá-lo.",
       404,
     );
   }
   if (res.status === 429) {
+    await res.body?.cancel().catch(() => {});
     throw new FetchSourceError(
       "Limite de requisições do GitHub atingido. Tente novamente em alguns minutos.",
       429,
     );
   }
+  return res;
+}
+
+async function fetchFromGitHub(ref: GitHubRef): Promise<FetchSourceResult> {
+  const res = await downloadGitHubArchive(ref);
   if (!res.ok) {
     await res.body?.cancel().catch(() => {});
     throw new FetchSourceError("Falha ao baixar o repositório.", 502);
