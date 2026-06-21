@@ -409,6 +409,9 @@ export interface DraftMetricInput {
   label: string;
   unit: string;
   target?: string;
+  // Optional reviewer-set starting/current value. When provided it overrides
+  // the deterministically seeded value so goal-vs-actual reflects reality.
+  value?: number;
   rationale?: string;
 }
 
@@ -442,16 +445,23 @@ export function proposedMetricsFromDraft(
       filled.push({ layer, label: def.label, unit: def.unit, target: def.target });
     }
   }
-  return filled.map((d) => ({
-    layer: d.layer,
-    label: d.label,
-    sourceSignal: d.label,
-    value: valueForUnit(rand, d.unit),
-    unit: d.unit,
-    confidence: Math.round((70 + rand() * 28) * 10) / 10,
-    target: d.target,
-    rationale: d.rationale,
-  }));
+  return filled.map((d) => {
+    // Always consume the RNG so confidence and later metrics stay deterministic
+    // whether or not the reviewer supplied a starting value.
+    const seeded = valueForUnit(rand, d.unit);
+    const value =
+      typeof d.value === "number" && Number.isFinite(d.value) ? d.value : seeded;
+    return {
+      layer: d.layer,
+      label: d.label,
+      sourceSignal: d.label,
+      value,
+      unit: d.unit,
+      confidence: Math.round((70 + rand() * 28) * 10) / 10,
+      target: d.target,
+      rationale: d.rationale,
+    };
+  });
 }
 
 export interface ScoredEvaluation {

@@ -63,6 +63,11 @@ const LAYER_LABELS: Record<DraftMetricLayer, string> = {
 
 const MAX_CONTENT_LENGTH = 100_000;
 
+// A draft metric row in the wizard. `valueText` is the editing buffer for the
+// optional reviewer-set starting value, kept as free text so pt-BR decimals
+// (e.g. "4,2") can be typed without the input fighting the parser.
+type MetricRow = Omit<DraftMetric, "value"> & { valueText?: string };
+
 interface WizardData {
   name: string;
   tagline: string;
@@ -209,7 +214,7 @@ export default function AdmissionPage() {
 
   const [step, setStep] = useState(0);
   const [data, setData] = useState<WizardData>(INITIAL);
-  const [metrics, setMetrics] = useState<DraftMetric[] | null>(null);
+  const [metrics, setMetrics] = useState<MetricRow[] | null>(null);
 
   // AI assist (optional)
   const [aiOpen, setAiOpen] = useState(false);
@@ -237,7 +242,7 @@ export default function AdmissionPage() {
   const set = <K extends keyof WizardData>(key: K, value: WizardData[K]) =>
     setData((prev) => ({ ...prev, [key]: value }));
 
-    const updateMetric = (index: number, patch: Partial<DraftMetric>) =>
+    const updateMetric = (index: number, patch: Partial<MetricRow>) =>
       setMetrics((prev) =>
         prev ? prev.map((m, i) => (i === index ? { ...m, ...patch } : m)) : prev,
       );
@@ -246,7 +251,19 @@ export default function AdmissionPage() {
       setMetrics((prev) => (prev ? prev.filter((_, i) => i !== index) : prev));
 
     const addMetric = (layer: DraftMetricLayer) =>
-      setMetrics((prev) => [...(prev ?? []), { layer, label: "", unit: "%", target: "" }]);
+      setMetrics((prev) => [
+        ...(prev ?? []),
+        { layer, label: "", unit: "%", target: "", valueText: "" },
+      ]);
+
+    // Parse the free-text value input (pt-BR comma decimals allowed) into a
+    // number, or undefined when blank/invalid so the server seeds it instead.
+    const parseMetricValue = (raw: string): number | undefined => {
+      const trimmed = raw.trim();
+      if (!trimmed) return undefined;
+      const num = Number(trimmed.replace(/\./g, "").replace(/,/g, "."));
+      return Number.isFinite(num) ? num : undefined;
+    };
 
   const ownersComplete =
     data.businessOwner.trim() && data.technicalOwner.trim() && data.governanceSponsor.trim();
@@ -281,6 +298,10 @@ export default function AdmissionPage() {
           label: m.label.trim(),
           unit: m.unit?.trim() || "%",
           target: m.target?.trim() ?? "",
+          valueText:
+            typeof m.value === "number" && Number.isFinite(m.value)
+              ? String(m.value)
+              : "",
           rationale: m.rationale,
         })) ?? null,
     );
@@ -465,13 +486,17 @@ export default function AdmissionPage() {
       ...(() => {
           const cleaned = (metrics ?? [])
             .filter((m) => m.label.trim())
-            .map((m) => ({
-              layer: m.layer,
-              label: m.label.trim(),
-              unit: m.unit.trim() || "%",
-              target: m.target.trim(),
-              rationale: m.rationale?.trim() || undefined,
-            }));
+            .map((m) => {
+              const value = parseMetricValue(m.valueText ?? "");
+              return {
+                layer: m.layer,
+                label: m.label.trim(),
+                unit: m.unit.trim() || "%",
+                target: m.target.trim(),
+                ...(value !== undefined ? { value } : {}),
+                rationale: m.rationale?.trim() || undefined,
+              };
+            });
           return cleaned.length > 0 ? { proposedMetrics: cleaned } : {};
         })(),
     };
@@ -1002,7 +1027,9 @@ export default function AdmissionPage() {
                     <div>
                       <Eyebrow>Metas das métricas</Eyebrow>
                       <p className="mt-0.5 text-sm text-muted-foreground">
-                        Ajuste a meta e a justificativa de cada métrica antes de admitir.
+                        Ajuste o valor atual, a meta e a justificativa de cada métrica
+                        antes de admitir. Deixe o valor atual em branco para gerá-lo
+                        automaticamente.
                       </p>
                     </div>
                     {LAYER_ORDER.map((layer) => {
@@ -1034,7 +1061,7 @@ export default function AdmissionPage() {
                               key={i}
                               className="space-y-2 rounded-md border border-card-border bg-background/40 p-2"
                             >
-                              <div className="grid grid-cols-[1fr_5rem_6rem_auto] gap-2">
+                              <div className="grid grid-cols-[1fr_4.5rem_5rem_6rem_auto] gap-2">
                                 <Input
                                   value={m.label}
                                   onChange={(e) => updateMetric(i, { label: e.target.value })}
@@ -1046,6 +1073,15 @@ export default function AdmissionPage() {
                                   onChange={(e) => updateMetric(i, { unit: e.target.value })}
                                   placeholder="Unid."
                                   className="text-sm"
+                                />
+                                <Input
+                                  value={m.valueText ?? ""}
+                                  onChange={(e) =>
+                                    updateMetric(i, { valueText: e.target.value })
+                                  }
+                                  inputMode="decimal"
+                                  placeholder="Atual"
+                                  className="text-sm font-mono"
                                 />
                                 <Input
                                   value={m.target}

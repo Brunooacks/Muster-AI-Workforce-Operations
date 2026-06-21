@@ -1271,6 +1271,12 @@ components:
           type: string
         target:
           type: string
+        value:
+          type: number
+          description: >-
+            Optional reviewer-set starting/current value for the metric. When
+            provided during admission it overrides the deterministically seeded
+            value so goal-vs-actual reflects reality.
         rationale:
           type: string
 

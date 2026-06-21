@@ -307,6 +307,7 @@ export const CreateAgentBody = zod.object({
   "label": zod.string(),
   "unit": zod.string(),
   "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
   "rationale": zod.string().optional()
 })).optional()
 })
@@ -345,6 +346,7 @@ export const AnalyzeAgentSourceResponse = zod.object({
   "label": zod.string(),
   "unit": zod.string(),
   "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
   "rationale": zod.string().optional()
 })),
   "summary": zod.string(),

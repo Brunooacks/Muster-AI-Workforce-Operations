@@ -12,5 +12,7 @@ export interface DraftMetric {
   label: string;
   unit: string;
   target: string;
+  /** Optional reviewer-set starting/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality. */
+  value?: number;
   rationale?: string;
 }
