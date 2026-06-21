@@ -33,6 +33,7 @@ import type {
   DiscoveryResult,
   Error,
   Evaluation,
+  EvaluationMetricUpdate,
   FetchSourceInput,
   FetchSourceResult,
   FleetBenchmarks,
@@ -1589,6 +1590,78 @@ export const useDecideVerdict = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDecideVerdictMutationOptions(options));
+    }
+
+export const getUpdateEvaluationMetricUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/evaluation/metric`
+}
+
+/**
+ * @summary Edit a KPI metric's goal (target + rationale) on the latest evaluation
+ */
+export const updateEvaluationMetric = async (agentId: string,
+    evaluationMetricUpdate: EvaluationMetricUpdate, options?: RequestInit): Promise<AgentDetail> => {
+
+  return customFetch<AgentDetail>(getUpdateEvaluationMetricUrl(agentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      evaluationMetricUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateEvaluationMetricMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvaluationMetric>>, TError,{agentId: string;data: BodyType<EvaluationMetricUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEvaluationMetric>>, TError,{agentId: string;data: BodyType<EvaluationMetricUpdate>}, TContext> => {
+
+const mutationKey = ['updateEvaluationMetric'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEvaluationMetric>>, {agentId: string;data: BodyType<EvaluationMetricUpdate>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  updateEvaluationMetric(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEvaluationMetricMutationResult = NonNullable<Awaited<ReturnType<typeof updateEvaluationMetric>>>
+    export type UpdateEvaluationMetricMutationBody = BodyType<EvaluationMetricUpdate>
+    export type UpdateEvaluationMetricMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Edit a KPI metric's goal (target + rationale) on the latest evaluation
+ */
+export const useUpdateEvaluationMetric = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvaluationMetric>>, TError,{agentId: string;data: BodyType<EvaluationMetricUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEvaluationMetric>>,
+        TError,
+        {agentId: string;data: BodyType<EvaluationMetricUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateEvaluationMetricMutationOptions(options));
     }
 
 export const getListConnectorsUrl = () => {

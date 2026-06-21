@@ -352,6 +352,26 @@ export interface AgentDetail {
   currentVerdict?: Verdict;
 }
 
+export type EvaluationMetricUpdateLayerKey = typeof EvaluationMetricUpdateLayerKey[keyof typeof EvaluationMetricUpdateLayerKey];
+
+
+export const EvaluationMetricUpdateLayerKey = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface EvaluationMetricUpdate {
+  layerKey: EvaluationMetricUpdateLayerKey;
+  metricLabel: string;
+  /** @nullable */
+  target?: string | null;
+  /** @nullable */
+  rationale?: string | null;
+}
+
 export interface MetricPoint {
   timestamp: string;
   efficacy: number;

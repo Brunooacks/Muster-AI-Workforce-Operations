@@ -13,6 +13,7 @@ import {
   Terminal,
   Check,
   AlertTriangle,
+  Pencil,
 } from "lucide-react";
 import { metricTargetStatus } from "@workspace/metrics";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,17 @@ type Dict = {
   state: string;
   onTarget: string;
   offTarget: string;
+  editGoal: string;
+  editGoalTitle: string;
+  editGoalDesc: string;
+  targetField: string;
+  targetPlaceholder: string;
+  rationaleField: string;
+  rationalePlaceholder: string;
+  save: string;
+  cancel: string;
+  goalSaved: string;
+  goalSaveError: string;
 };
 
 export const carteiraI18n: Record<Audience, Dict> = {
@@ -138,6 +150,18 @@ export const carteiraI18n: Record<Audience, Dict> = {
     state: "Estado",
     onTarget: "Na meta",
     offTarget: "Fora da meta",
+    editGoal: "Editar meta",
+    editGoalTitle: "Editar meta da métrica",
+    editGoalDesc:
+      "Revise a meta e a justificativa. A mudança vale a partir da avaliação atual.",
+    targetField: "Meta",
+    targetPlaceholder: "ex.: ≥ 85%",
+    rationaleField: "Justificativa",
+    rationalePlaceholder: "Por que esta é a meta certa?",
+    save: "Salvar meta",
+    cancel: "Cancelar",
+    goalSaved: "Meta atualizada",
+    goalSaveError: "Não foi possível salvar a meta.",
   },
   platform: {
     audienceLabel: "Platform",
@@ -203,6 +227,18 @@ export const carteiraI18n: Record<Audience, Dict> = {
     state: "Estado",
     onTarget: "Na meta",
     offTarget: "Fora da meta",
+    editGoal: "Editar target",
+    editGoalTitle: "Editar target da métrica",
+    editGoalDesc:
+      "Ajuste o target e a justificativa. Aplica-se à avaliação atual do agente.",
+    targetField: "Target",
+    targetPlaceholder: "ex.: ≥ 85%",
+    rationaleField: "Justificativa",
+    rationalePlaceholder: "Por que este é o target correto?",
+    save: "Salvar target",
+    cancel: "Cancelar",
+    goalSaved: "Target atualizado",
+    goalSaveError: "Não foi possível salvar o target.",
   },
 };
 
@@ -343,6 +379,8 @@ export function MetricRow({
   targetLabel,
   onTargetLabel = "Na meta",
   offTargetLabel = "Fora da meta",
+  onEdit,
+  editLabel,
 }: {
   label: string;
   value: number;
@@ -354,6 +392,8 @@ export function MetricRow({
   targetLabel: string;
   onTargetLabel?: string;
   offTargetLabel?: string;
+  onEdit?: () => void;
+  editLabel?: string;
 }) {
   const target = targetProp ?? METRIC_TARGETS[label];
   const status = metricTargetStatus(value, target);
@@ -397,16 +437,29 @@ export function MetricRow({
           </div>
         )}
       </div>
-      <div className="flex shrink-0 items-baseline gap-1.5">
-        <span className="font-mono text-sm tabular-nums text-foreground">
-          {formatMetric(value, unit)}
-        </span>
-        {trend !== 0 && (
-          <span className={cn("flex items-center font-mono text-[10px]", trendTone)}>
-            <TrendIcon className="h-3 w-3" />
-            {trend > 0 ? "+" : ""}
-            {NUM_FMT.format(trend)}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-mono text-sm tabular-nums text-foreground">
+            {formatMetric(value, unit)}
           </span>
+          {trend !== 0 && (
+            <span className={cn("flex items-center font-mono text-[10px]", trendTone)}>
+              <TrendIcon className="h-3 w-3" />
+              {trend > 0 ? "+" : ""}
+              {NUM_FMT.format(trend)}
+            </span>
+          )}
+        </div>
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={editLabel ?? "Editar meta"}
+            title={editLabel ?? "Editar meta"}
+            className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
         )}
       </div>
     </div>

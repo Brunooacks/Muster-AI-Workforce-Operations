@@ -42,6 +42,8 @@ export * from './draftMetric';
 export * from './draftMetricLayer';
 export * from './error';
 export * from './evaluation';
+export * from './evaluationMetricUpdate';
+export * from './evaluationMetricUpdateLayerKey';
 export * from './evaluationVerdict';
 export * from './fetchedFile';
 export * from './fetchSourceInput';

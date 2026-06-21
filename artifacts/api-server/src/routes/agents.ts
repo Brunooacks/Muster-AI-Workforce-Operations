@@ -35,6 +35,8 @@ import {
   FetchAgentSourceBody,
   FetchAgentSourceResponse,
   GetGitHubStatusResponse,
+  UpdateEvaluationMetricParams,
+  UpdateEvaluationMetricBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
@@ -486,6 +488,54 @@ router.post(
 
     const data = DecideVerdictResponse.parse(toVerdict(updated!));
     res.json(data);
+  },
+);
+
+router.patch(
+  "/agents/:agentId/evaluation/metric",
+  requireAuth,
+  async (req, res) => {
+    const { agentId } = UpdateEvaluationMetricParams.parse(req.params);
+    const body = UpdateEvaluationMetricBody.parse(req.body);
+
+    const [latest] = await db
+      .select()
+      .from(evaluations)
+      .where(eq(evaluations.agentId, agentId))
+      .orderBy(desc(evaluations.evaluatedAt))
+      .limit(1);
+
+    if (!latest) {
+      res.status(404).json({ error: "No evaluation for this agent" });
+      return;
+    }
+
+    const layers = (latest.layers as KpiLayer[]).map((l) => ({
+      ...l,
+      metrics: l.metrics.map((m) => ({ ...m })),
+    }));
+    const layer = layers.find((l) => l.key === body.layerKey);
+    const metric = layer?.metrics.find((m) => m.label === body.metricLabel);
+
+    if (!layer || !metric) {
+      res.status(404).json({ error: "Metric not found in latest evaluation" });
+      return;
+    }
+
+    if (body.target !== undefined) {
+      metric.target = body.target ?? undefined;
+    }
+    if (body.rationale !== undefined) {
+      metric.rationale = body.rationale ?? undefined;
+    }
+
+    await db
+      .update(evaluations)
+      .set({ layers })
+      .where(eq(evaluations.id, latest.id));
+
+    const detail = await buildAgentDetail(agentId);
+    res.json(detail);
   },
 );
 

@@ -4,14 +4,27 @@ import {
   useGetAgent,
   useGetAgentMetrics,
   useDecideVerdict,
+  useUpdateEvaluationMetric,
   useListFleetAlerts,
   getGetAgentQueryKey,
   getGetAgentMetricsQueryKey,
   getListFleetAlertsQueryKey,
 } from "@workspace/api-client-react";
+import type { EvaluationMetricUpdateLayerKey } from "@workspace/api-client-react";
 import { useParams } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Check,
   X,
@@ -184,6 +197,39 @@ export default function AgentDetailPage() {
   });
 
   const decideVerdict = useDecideVerdict();
+  const updateMetric = useUpdateEvaluationMetric();
+
+  const [editing, setEditing] = useState<{
+    layerKey: EvaluationMetricUpdateLayerKey;
+    metricLabel: string;
+    target: string;
+    rationale: string;
+  } | null>(null);
+
+  const handleSaveGoal = () => {
+    if (!editing) return;
+    updateMetric.mutate(
+      {
+        agentId,
+        data: {
+          layerKey: editing.layerKey,
+          metricLabel: editing.metricLabel,
+          target: editing.target.trim() ? editing.target.trim() : null,
+          rationale: editing.rationale.trim() ? editing.rationale.trim() : null,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: t.goalSaved });
+          setEditing(null);
+          queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agentId) });
+        },
+        onError: () => {
+          toast({ title: "Erro", description: t.goalSaveError, variant: "destructive" });
+        },
+      },
+    );
+  };
 
   const handleDecision = (decision: "approved" | "disagreed" | "exported") => {
     decideVerdict.mutate(
@@ -421,6 +467,15 @@ export default function AgentDetailPage() {
                           targetLabel={t.target}
                           onTargetLabel={t.onTarget}
                           offTargetLabel={t.offTarget}
+                          editLabel={t.editGoal}
+                          onEdit={() =>
+                            setEditing({
+                              layerKey: layer.key as EvaluationMetricUpdateLayerKey,
+                              metricLabel: m.label,
+                              target: m.target ?? "",
+                              rationale: m.rationale ?? "",
+                            })
+                          }
                         />
                       ))}
                     </div>
@@ -578,6 +633,57 @@ export default function AgentDetailPage() {
           <p className="mt-4 text-center font-serif text-sm italic text-muted-foreground">{t.quote}</p>
         </section>
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.editGoalTitle}</DialogTitle>
+            <DialogDescription>{t.editGoalDesc}</DialogDescription>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-4 py-2">
+              <div className="text-sm font-medium text-foreground/90">
+                {editing.metricLabel}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="metric-target">{t.targetField}</Label>
+                <Input
+                  id="metric-target"
+                  value={editing.target}
+                  placeholder={t.targetPlaceholder}
+                  onChange={(e) =>
+                    setEditing((prev) => (prev ? { ...prev, target: e.target.value } : prev))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="metric-rationale">{t.rationaleField}</Label>
+                <Textarea
+                  id="metric-rationale"
+                  value={editing.rationale}
+                  placeholder={t.rationalePlaceholder}
+                  rows={3}
+                  onChange={(e) =>
+                    setEditing((prev) => (prev ? { ...prev, rationale: e.target.value } : prev))
+                  }
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditing(null)}
+              disabled={updateMetric.isPending}
+            >
+              {t.cancel}
+            </Button>
+            <Button onClick={handleSaveGoal} disabled={updateMetric.isPending}>
+              {t.save}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

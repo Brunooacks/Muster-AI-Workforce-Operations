@@ -868,6 +868,126 @@ export const DecideVerdictResponse = zod.object({
 
 
 /**
+ * @summary Edit a KPI metric's goal (target + rationale) on the latest evaluation
+ */
+export const UpdateEvaluationMetricParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const UpdateEvaluationMetricBody = zod.object({
+  "layerKey": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "metricLabel": zod.string(),
+  "target": zod.string().nullish(),
+  "rationale": zod.string().nullish()
+})
+
+export const UpdateEvaluationMetricResponse = zod.object({
+  "agent": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.string(),
+  "platform": zod.string(),
+  "version": zod.string(),
+  "status": zod.enum(['observation', 'active', 'flagged', 'retiring', 'retired']),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string(),
+  "tagline": zod.string().optional(),
+  "monthlyVolume": zod.number().optional(),
+  "headlineKpis": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional(),
+  "targetMetrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Flattened metrics from the agent\'s latest evaluation that carry a comparable goal. Used by the fleet view to roll up how many metrics are currently off-target.'),
+  "currentVerdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
+  "verdictConfidence": zod.number(),
+  "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
+  "healthScore": zod.number(),
+  "activeAlerts": zod.number().optional(),
+  "monthlyValue": zod.number().optional(),
+  "monthlyCost": zod.number().optional(),
+  "admittedAt": zod.string(),
+  "lastEvaluatedAt": zod.string()
+}),
+  "identity": zod.object({
+  "bio": zod.string(),
+  "shouldDo": zod.array(zod.string()),
+  "shouldNotDo": zod.array(zod.string()),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']),
+  "autonomyNotes": zod.string().optional(),
+  "limits": zod.array(zod.string()),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "actualPayback": zod.string(),
+  "description": zod.string()
+}),
+  "version": zod.number()
+}),
+  "owners": zod.object({
+  "businessOwner": zod.string(),
+  "technicalOwner": zod.string(),
+  "governanceSponsor": zod.string()
+}),
+  "latestEvaluation": zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "evaluatedAt": zod.string(),
+  "window": zod.string(),
+  "layers": zod.array(zod.object({
+  "key": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "score": zod.number(),
+  "severity": zod.enum(['critical', 'high', 'medium', 'stable']),
+  "metrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "trend": zod.number(),
+  "direction": zod.enum(['up', 'down', 'flat']).optional(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+}))
+})),
+  "verdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
+  "verdictConfidence": zod.number(),
+  "rationale": zod.string()
+}),
+  "currentVerdict": zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "verdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
+  "confidence": zod.number(),
+  "executionWindow": zod.string(),
+  "suggestedSponsor": zod.string(),
+  "nextActions": zod.array(zod.object({
+  "action": zod.string(),
+  "owner": zod.string(),
+  "due": zod.string()
+})),
+  "rationale": zod.string(),
+  "decision": zod.enum(['pending', 'approved', 'disagreed', 'exported']),
+  "decidedBy": zod.string().nullish(),
+  "decidedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}).optional()
+})
+
+
+/**
  * @summary List platform connectors
  */
 export const ListConnectorsResponseItem = zod.object({
