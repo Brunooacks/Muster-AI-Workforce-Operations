@@ -234,6 +234,17 @@ export default function AdmissionPage() {
   const set = <K extends keyof WizardData>(key: K, value: WizardData[K]) =>
     setData((prev) => ({ ...prev, [key]: value }));
 
+    const updateMetric = (index: number, patch: Partial<DraftMetric>) =>
+      setMetrics((prev) =>
+        prev ? prev.map((m, i) => (i === index ? { ...m, ...patch } : m)) : prev,
+      );
+
+    const removeMetric = (index: number) =>
+      setMetrics((prev) => (prev ? prev.filter((_, i) => i !== index) : prev));
+
+    const addMetric = (layer: DraftMetricLayer) =>
+      setMetrics((prev) => [...(prev ?? []), { layer, label: "", unit: "%", target: "" }]);
+
   const ownersComplete =
     data.businessOwner.trim() && data.technicalOwner.trim() && data.governanceSponsor.trim();
 
@@ -448,7 +459,18 @@ export default function AdmissionPage() {
       baseline: data.baseline.trim() || undefined,
       targetPayback: data.targetPayback.trim() || undefined,
       businessCaseDescription: businessCaseDescription || undefined,
-      ...(metrics && metrics.length > 0 ? { proposedMetrics: metrics } : {}),
+      ...(() => {
+          const cleaned = (metrics ?? [])
+            .filter((m) => m.label.trim())
+            .map((m) => ({
+              layer: m.layer,
+              label: m.label.trim(),
+              unit: m.unit.trim() || "%",
+              target: m.target.trim(),
+              rationale: m.rationale?.trim() || undefined,
+            }));
+          return cleaned.length > 0 ? { proposedMetrics: cleaned } : {};
+        })(),
     };
 
     createAgent.mutate(
@@ -955,7 +977,86 @@ export default function AdmissionPage() {
                 </Select>
               </StepField>
 
-              {/* Resumo */}
+              {metrics && metrics.length > 0 && (
+                  <div className="space-y-4 rounded-xl border border-card-border bg-secondary/30 p-4">
+                    <div>
+                      <Eyebrow>Metas das métricas</Eyebrow>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        Ajuste a meta e a justificativa de cada métrica antes de admitir.
+                      </p>
+                    </div>
+                    {LAYER_ORDER.map((layer) => {
+                      const rows = metrics
+                        .map((m, i) => ({ m, i }))
+                        .filter((x) => x.m.layer === layer);
+                      return (
+                        <div key={layer} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                              {LAYER_LABELS[layer]}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => addMetric(layer)}
+                            >
+                              + Adicionar
+                            </Button>
+                          </div>
+                          {rows.length === 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Nenhuma métrica nesta camada.
+                            </p>
+                          )}
+                          {rows.map(({ m, i }) => (
+                            <div
+                              key={i}
+                              className="space-y-2 rounded-md border border-card-border bg-background/40 p-2"
+                            >
+                              <div className="grid grid-cols-[1fr_5rem_6rem_auto] gap-2">
+                                <Input
+                                  value={m.label}
+                                  onChange={(e) => updateMetric(i, { label: e.target.value })}
+                                  placeholder="Rótulo"
+                                  className="text-sm"
+                                />
+                                <Input
+                                  value={m.unit}
+                                  onChange={(e) => updateMetric(i, { unit: e.target.value })}
+                                  placeholder="Unid."
+                                  className="text-sm"
+                                />
+                                <Input
+                                  value={m.target}
+                                  onChange={(e) => updateMetric(i, { target: e.target.value })}
+                                  placeholder="Meta"
+                                  className="text-sm"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeMetric(i)}
+                                >
+                                  Remover
+                                </Button>
+                              </div>
+                              <Textarea
+                                value={m.rationale ?? ""}
+                                onChange={(e) => updateMetric(i, { rationale: e.target.value })}
+                                placeholder="Justificativa da meta (por que este alvo?)"
+                                className="min-h-[48px] text-sm"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Resumo */}
               <div className="rounded-xl border border-card-border bg-secondary/30 p-4">
                 <Eyebrow>Resumo</Eyebrow>
                 <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
