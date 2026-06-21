@@ -36,3 +36,9 @@ id = "vsyvv7XIFkw5TQxIsxZ2U"
 uri = "file://artifacts/cohort/public/brand/cohort-favicon.svg"
 type = "image"
 title = "Favicon (SVG)"
+
+[[outputs]]
+id = "iEijZFer3shyOI9B23M86"
+uri = "file://README.md"
+type = "text"
+title = "README bilíngue e ilustrado (PT-BR + EN)"
