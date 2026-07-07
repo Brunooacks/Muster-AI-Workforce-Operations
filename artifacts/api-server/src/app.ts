@@ -13,6 +13,7 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { authDevBypass } from "./middlewares/requireAuth";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -44,14 +45,23 @@ app.use(cors({ credentials: true, origin: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
-  })),
-);
+// With the local-dev auth bypass active, Clerk is skipped entirely (it needs
+// a publishable key and would reject every request). requireAuth stamps a
+// fixed dev user instead. Inert in production — see requireAuth.ts.
+if (authDevBypass) {
+  logger.warn(
+    "AUTH_DEV_BYPASS is active — all /api requests run as 'dev-user'. Never use this outside local development.",
+  );
+} else {
+  app.use(
+    clerkMiddleware((req) => ({
+      publishableKey: publishableKeyFromHost(
+        getClerkProxyHost(req) ?? "",
+        process.env.CLERK_PUBLISHABLE_KEY,
+      ),
+    })),
+  );
+}
 
 app.use("/api", router);
 

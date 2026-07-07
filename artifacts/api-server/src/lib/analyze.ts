@@ -161,10 +161,16 @@ export async function analyzeAgentSource(input: {
     "Código e/ou definições de skills do agente a analisar:\n\n" + input.content,
   );
 
+  // Model is env-configurable so self-hosted setups can point the OpenAI
+  // client at any OpenAI-compatible endpoint (e.g. Anthropic's compat API
+  // with a claude-* model, or an internal gateway). Defaults to the value
+  // used on the managed (Replit) integration.
+  const model = process.env.AI_INTEGRATIONS_OPENAI_MODEL ?? "gpt-5.4";
+
   let completion;
   try {
     completion = await openai.chat.completions.create({
-      model: "gpt-5.4",
+      model,
       max_completion_tokens: 8192,
       response_format: { type: "json_object" },
       messages: [
