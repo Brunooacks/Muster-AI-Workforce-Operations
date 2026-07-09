@@ -56,7 +56,6 @@ import {
   Pill,
   StatusBadge,
   VerdictBadge,
-  SeverityBadge,
 } from "@/components/cohort";
 import {
   type Audience,
@@ -68,6 +67,7 @@ import {
   LAYER_ICON,
   LAYER_CAPTION,
   Eyebrow,
+  detectorPresentation,
 } from "@/components/carteira";
 
 const AUTONOMY_LABEL: Record<string, string> = {
@@ -129,6 +129,38 @@ function verdictFromScore(score: number) {
   return "retire";
 }
 
+/* Reference design: month name in serif tinted by verdict, a one-line reading,
+   metric rows, and a full-width verdict bar — "same panel, systemic reading". */
+const SNAPSHOT_TONE: Record<string, { heading: string; subtitle: string; bar: string }> = {
+  promote: {
+    heading: "text-chart-1",
+    subtitle: "Operação estável",
+    bar: "bg-chart-1/20 text-chart-1",
+  },
+  mentor: {
+    heading: "text-chart-2",
+    subtitle: "Desempenho exige atenção",
+    bar: "bg-chart-2/90 text-primary-foreground",
+  },
+  observation: {
+    heading: "text-chart-5",
+    subtitle: "Sob observação",
+    bar: "bg-chart-5/20 text-chart-5",
+  },
+  retire: {
+    heading: "text-chart-4",
+    subtitle: "Qualidade comprometida",
+    bar: "bg-primary text-primary-foreground",
+  },
+};
+
+const VERDICT_BAR_LABEL: Record<string, string> = {
+  promote: "Promover",
+  mentor: "Mentoria",
+  observation: "Observar",
+  retire: "Decisão pendente •",
+};
+
 function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteiraI18n)["gestor"] }) {
   const { data: metrics } = useGetAgentMetrics(agentId, "30d", {
     query: { enabled: !!agentId, queryKey: getGetAgentMetricsQueryKey(agentId, "30d") },
@@ -139,44 +171,61 @@ function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteir
   const pickAt = (frac: number) => metrics[Math.round((metrics.length - 1) * frac)]!;
   const snaps = [pickAt(0), pickAt(0.5), pickAt(1)];
 
+  const monthName = (ts: string) => {
+    const m = new Date(ts).toLocaleDateString("pt-BR", { month: "long" });
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-6 border-b border-card-border pb-6 md:grid-cols-3">
-      {snaps.map((s, i) => {
-        const avg = Math.round((s.efficacy + s.efficiency + s.adoption + s.governance + s.value) / 5);
-        const verdict = verdictFromScore(avg);
-        const dims = [
-          { label: "Eficácia", v: s.efficacy },
-          { label: "Eficiência", v: s.efficiency },
-          { label: "Adoção", v: s.adoption },
-          { label: "Governança", v: s.governance },
-          { label: "Valor", v: s.value },
-        ];
-        const isCurrent = i === snaps.length - 1;
-        return (
-          <div key={i} className={isCurrent ? "" : "opacity-80"}>
-            <div className="mb-3">
-              <h3 className="font-serif text-2xl font-medium tracking-tight">
-                {new Date(s.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-              </h3>
-              <div className="mt-1 flex items-center gap-2">
-                <Eyebrow>{t.health}</Eyebrow>
-                <span className="font-mono text-sm tabular-nums">{avg}</span>
+    <div className="border-b border-card-border pb-6">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        {snaps.map((s, i) => {
+          const avg = Math.round((s.efficacy + s.efficiency + s.adoption + s.governance + s.value) / 5);
+          const verdict = verdictFromScore(avg);
+          const tone = SNAPSHOT_TONE[verdict] ?? SNAPSHOT_TONE.observation!;
+          const isCurrent = i === snaps.length - 1;
+          const dims = [
+            { label: "Eficácia", v: s.efficacy },
+            { label: "Eficiência", v: s.efficiency },
+            { label: "Adoção", v: s.adoption },
+            { label: "Governança", v: s.governance },
+            { label: "Valor", v: s.value },
+          ];
+          return (
+            <div key={i}>
+              <div className="mb-3">
+                <h3 className={`font-serif text-3xl font-medium tracking-tight ${tone.heading}`}>
+                  {monthName(s.timestamp)}
+                </h3>
+                <p className={`mt-0.5 text-xs ${tone.heading}`}>{tone.subtitle}</p>
+              </div>
+              <div className="space-y-1.5 border-t border-card-border pt-3">
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-muted-foreground">{t.health}</span>
+                  <span className="font-mono font-medium tabular-nums">{avg}</span>
+                </div>
+                {dims.map((d) => (
+                  <div key={d.label} className="flex justify-between text-[13px]">
+                    <span className="text-muted-foreground">{d.label}</span>
+                    <span className="font-mono tabular-nums">{Math.round(d.v)}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Full-width verdict bar — current period reads as the open decision */}
+              <div
+                className={`mt-4 flex h-10 items-center justify-center rounded-md text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                  isCurrent ? "bg-primary text-primary-foreground" : tone.bar
+                }`}
+              >
+                {isCurrent ? "Decisão pendente •" : VERDICT_BAR_LABEL[verdict]}
               </div>
             </div>
-            <div className="space-y-1.5 border-t border-card-border pt-3">
-              {dims.map((d) => (
-                <div key={d.label} className="flex justify-between text-[13px]">
-                  <span className="text-muted-foreground">{d.label}</span>
-                  <span className="font-mono tabular-nums">{Math.round(d.v)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3">
-              <VerdictBadge verdict={verdict} />
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      <p className="mt-6 text-center font-serif text-sm italic text-muted-foreground">
+        O mesmo painel. A leitura sistêmica é que muda a decisão.
+      </p>
     </div>
   );
 }
@@ -456,9 +505,6 @@ export default function AgentDetailPage() {
                       </div>
                       <span className="font-serif text-2xl font-medium tabular-nums">{layer.score}</span>
                     </div>
-                    <div className="mb-3">
-                      <SeverityBadge severity={layer.severity} />
-                    </div>
                     <div>
                       {layer.metrics.map((m, idx) => (
                         <MetricRow
@@ -511,25 +557,32 @@ export default function AgentDetailPage() {
             </div>
           ) : agentAlerts.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {agentAlerts.map((alert) => (
-                <div key={alert.id} className={`${cardBase} border-l-4 border-l-chart-3 p-5`}>
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">{alert.patternType}</span>
-                    <SeverityBadge severity={alert.severity} />
-                  </div>
-                  <h3 className="mb-3 font-serif text-lg font-medium leading-tight tracking-tight">{alert.pattern}</h3>
-                  <div className="space-y-3 text-[13px]">
-                    <div>
-                      <Eyebrow>{t.hypothesis}</Eyebrow>
-                      <p className="mt-1 leading-snug text-foreground/80">{alert.hypothesis}</p>
+              {agentAlerts.map((alert) => {
+                const d = detectorPresentation(alert.severity, alert.patternType);
+                return (
+                  <div key={alert.id} className={`${cardBase} border-l-4 ${d.border} p-5`}>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">{alert.patternType}</span>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] ${d.pill}`}
+                      >
+                        {d.pillLabel}
+                      </span>
                     </div>
-                    <div>
-                      <Eyebrow>{t.action}</Eyebrow>
-                      <p className="mt-1 font-medium leading-snug text-foreground/90">{alert.recommendation}</p>
+                    <h3 className="mb-3 font-serif text-xl font-medium leading-tight tracking-tight">{alert.pattern}</h3>
+                    <div className="space-y-3 text-[13px]">
+                      <div>
+                        <Eyebrow>{t.hypothesis}</Eyebrow>
+                        <p className="mt-1 leading-snug text-foreground/80">{alert.hypothesis}</p>
+                      </div>
+                      <div>
+                        <Eyebrow>{t.action}</Eyebrow>
+                        <p className="mt-1 font-semibold leading-snug text-foreground/90">{alert.recommendation}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>

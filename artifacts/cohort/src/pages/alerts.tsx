@@ -13,7 +13,8 @@ import { ShieldCheck, Eye, AlertTriangle, Activity, Lightbulb, SlidersHorizontal
 import { Link } from "wouter";
 import { useState } from "react";
 import { ErrorState } from "@/components/query-state";
-import { PageHeading, StatCard, SeverityBadge, FilterChip, Pill, Eyebrow } from "@/components/cohort";
+import { PageHeading, StatCard, FilterChip, Pill, Eyebrow } from "@/components/cohort";
+import { detectorPresentation } from "@/components/carteira";
 
 const SEVERITY_FILTERS: { key: string; label: string }[] = [
   { key: "all", label: "Todas" },
@@ -126,56 +127,63 @@ export default function AlertsPage() {
               </div>
             ) : filteredAlerts && filteredAlerts.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
-                {filteredAlerts.map((alert) => (
-                  <Card key={alert.id} className="flex flex-col">
-                    <CardHeader className="space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <CardTitle className="flex items-center gap-2 font-serif text-lg font-medium tracking-tight">
-                          <Eye
-                            className={`h-4 w-4 shrink-0 ${
-                              alert.severity === "critical" ? "text-chart-4" : "text-chart-3"
-                            }`}
-                          />
+                {filteredAlerts.map((alert) => {
+                  const d = detectorPresentation(alert.severity, alert.patternType);
+                  return (
+                    <Card key={alert.id} className={`flex flex-col border-l-4 ${d.border}`}>
+                      <CardHeader className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {alert.patternType || "Padrão antagônico"}
+                          </span>
+                          <span
+                            className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] ${d.pill}`}
+                          >
+                            {d.pillLabel}
+                          </span>
+                        </div>
+                        <CardTitle className="font-serif text-xl font-medium leading-tight tracking-tight">
                           {alert.pattern}
                         </CardTitle>
-                        <SeverityBadge severity={alert.severity} />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span>
-                          Agente:{" "}
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span>
+                            Agente:{" "}
+                            <Link
+                              href={`/agentes/${alert.agentId}`}
+                              className="font-medium text-foreground hover:underline"
+                            >
+                              {alert.agentName}
+                            </Link>
+                          </span>
+                          <StatusBadge status={alert.status} />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex flex-1 flex-col gap-3">
+                        <div className="space-y-1">
+                          <Eyebrow>Hipótese</Eyebrow>
+                          <p className="text-[13px] leading-snug text-foreground/80">{alert.hypothesis}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Eyebrow>Recomendação</Eyebrow>
+                          <p className="text-[13px] font-semibold leading-snug text-foreground/90">
+                            {alert.recommendation}
+                          </p>
+                        </div>
+                        <div className="mt-auto flex items-center justify-between pt-2 text-xs text-muted-foreground">
+                          <span className="font-mono tabular-nums">
+                            Detectado em {new Date(alert.detectedAt).toLocaleDateString("pt-BR")}
+                          </span>
                           <Link
                             href={`/agentes/${alert.agentId}`}
-                            className="font-medium text-foreground hover:underline"
+                            className="font-medium text-primary hover:underline"
                           >
-                            {alert.agentName}
+                            Ver agente
                           </Link>
-                        </span>
-                        <StatusBadge status={alert.status} />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex flex-1 flex-col gap-3">
-                      <div className="space-y-1">
-                        <Eyebrow>Hipótese do comitê</Eyebrow>
-                        <p className="text-sm text-muted-foreground">{alert.hypothesis}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Eyebrow>Recomendação</Eyebrow>
-                        <p className="text-sm text-muted-foreground">{alert.recommendation}</p>
-                      </div>
-                      <div className="mt-auto flex items-center justify-between pt-2 text-xs text-muted-foreground">
-                        <span className="font-mono tabular-nums">
-                          Detectado em {new Date(alert.detectedAt).toLocaleDateString("pt-BR")}
-                        </span>
-                        <Link
-                          href={`/agentes/${alert.agentId}`}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          Ver agente
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : alerts && alerts.length > 0 ? (
               <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-card-border text-sm text-muted-foreground">

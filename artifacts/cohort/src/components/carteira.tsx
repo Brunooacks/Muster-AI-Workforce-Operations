@@ -11,7 +11,6 @@ import {
   Minus,
   Briefcase,
   Terminal,
-  Check,
   AlertTriangle,
   Pencil,
 } from "lucide-react";
@@ -367,6 +366,41 @@ export function Pillar({
   );
 }
 
+/* ── Per-metric status pill (reference: CRÍTICA/ALTA/MÉDIA/ESTÁVEL) ── */
+export type MetricPillStatus = "stable" | "medium" | "high" | "critical";
+
+const METRIC_PILL: Record<MetricPillStatus, { label: string; className: string }> = {
+  stable: { label: "Estável", className: "bg-chart-1/15 text-chart-1" },
+  medium: { label: "Média", className: "bg-chart-2/20 text-chart-2" },
+  high: { label: "Alta", className: "bg-chart-3/18 text-chart-3" },
+  critical: { label: "Crítica", className: "bg-chart-4/15 text-chart-4" },
+};
+
+/**
+ * Reference-design status per metric row: on-target → Estável; off-target →
+ * Alta, escalating to Crítica when the miss is ≥15% of the goal; a target we
+ * can't compare (e.g. "baseline ±20%") → Média (needs human reading).
+ */
+export function metricPillStatus(
+  value: number,
+  target: string | undefined,
+): MetricPillStatus | null {
+  if (!target || target === "—" || target === "-") return null;
+  const status = metricTargetStatus(value, target);
+  if (status === null) return "medium";
+  if (status === "on") return "stable";
+  const num = parseFloat(target.replace(/,/g, ".").match(/-?\d+(?:\.\d+)?/)?.[0] ?? "");
+  if (!Number.isFinite(num) || num === 0) return "high";
+  return Math.abs(value - num) / Math.abs(num) >= 0.15 ? "critical" : "high";
+}
+
+/** Trend delta in the reference notation: percentage metrics move in "pp". */
+export function formatTrendDelta(trend: number, unit: string): string {
+  const sign = trend > 0 ? "+" : "";
+  const n = NUM_FMT.format(trend);
+  return unit === "%" ? `${sign}${n}pp` : `${sign}${n}`;
+}
+
 /* ── MetricRow: one KPI line inside a layer card ──────────── */
 export function MetricRow({
   label,
@@ -376,9 +410,6 @@ export function MetricRow({
   direction,
   target: targetProp,
   rationale,
-  targetLabel,
-  onTargetLabel = "Na meta",
-  offTargetLabel = "Fora da meta",
   onEdit,
   editLabel,
 }: {
@@ -389,81 +420,111 @@ export function MetricRow({
   direction?: "up" | "down" | "flat";
   target?: string;
   rationale?: string;
-  targetLabel: string;
+  targetLabel?: string;
   onTargetLabel?: string;
   offTargetLabel?: string;
   onEdit?: () => void;
   editLabel?: string;
 }) {
   const target = targetProp ?? METRIC_TARGETS[label];
-  const status = metricTargetStatus(value, target);
-  const StatusIcon = status === "on" ? Check : AlertTriangle;
+  const pill = metricPillStatus(value, target);
+  const offTarget = pill === "high" || pill === "critical";
   const TrendIcon =
     direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus;
-  const trendTone =
-    direction === "up"
-      ? "text-chart-1"
-      : direction === "down"
-        ? "text-chart-3"
-        : "text-muted-foreground";
 
   return (
-    <div className="flex items-start justify-between gap-2 border-b border-card-border/60 py-2 last:border-0">
-      <div className="min-w-0">
-        <div
-          className="text-[13px] leading-tight text-foreground/90"
-          title={rationale}
-        >
-          {label}
+    <div className="border-b border-card-border/60 py-2.5 last:border-0">
+      <div className="flex items-start justify-between gap-3">
+        {/* Label with the goal right below it, in quiet mono — reference layout */}
+        <div className="min-w-0">
+          <div className="text-[13px] leading-tight text-foreground/90">{label}</div>
+          {target && (
+            <div className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">
+              {target}
+            </div>
+          )}
         </div>
-        {target && (
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
-            <span>
-              {targetLabel}: {target}
+        <div className="flex shrink-0 items-center gap-2.5">
+          {/* Value in prominent mono + trend arrow + delta, all quiet ink */}
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-mono text-[15px] font-medium tabular-nums text-foreground">
+              {formatMetric(value, unit)}
             </span>
-            {status && (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-0.5 rounded-full px-1.5 py-px font-medium",
-                  status === "on"
-                    ? "bg-chart-1/15 text-chart-1"
-                    : "bg-chart-3/15 text-chart-3",
-                )}
-              >
-                <StatusIcon className="h-2.5 w-2.5" strokeWidth={2.25} />
-                {status === "on" ? onTargetLabel : offTargetLabel}
+            {trend !== 0 && (
+              <span className="flex items-center gap-0.5 font-mono text-[10.5px] text-foreground/60">
+                <TrendIcon className="h-3 w-3" strokeWidth={1.75} />
+                {formatTrendDelta(trend, unit)}
               </span>
             )}
           </div>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-mono text-sm tabular-nums text-foreground">
-            {formatMetric(value, unit)}
-          </span>
-          {trend !== 0 && (
-            <span className={cn("flex items-center font-mono text-[10px]", trendTone)}>
-              <TrendIcon className="h-3 w-3" />
-              {trend > 0 ? "+" : ""}
-              {NUM_FMT.format(trend)}
+          {pill && (
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em]",
+                METRIC_PILL[pill].className,
+              )}
+            >
+              {METRIC_PILL[pill].label}
             </span>
           )}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={editLabel ?? "Editar meta"}
+              title={editLabel ?? "Editar meta"}
+              className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
         </div>
-        {onEdit && (
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={editLabel ?? "Editar meta"}
-            title={editLabel ?? "Editar meta"}
-            className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Pencil className="h-3 w-3" />
-          </button>
-        )}
       </div>
+      {/* Context annotation (reference: "⚠ Valor inflado por queda em qualidade") */}
+      {rationale && (
+        <div className="mt-1 flex items-start gap-1.5 text-[11px] italic text-muted-foreground">
+          {offTarget && (
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-chart-3" strokeWidth={1.75} />
+          )}
+          <span className="leading-snug">{rationale}</span>
+        </div>
+      )}
     </div>
   );
+}
+
+/* ── Detector de Vitória Ilusória — reference presentation ── */
+/** Left-border tone + pill wording per severity, matching the reference
+ *  screens: VITÓRIA ILUSÓRIA CRÍTICA / ALERTA ANTAGÔNICO / SINAL ANTECEDENTE. */
+export function detectorPresentation(severity: string, patternType?: string) {
+  switch (severity) {
+    case "critical":
+      return {
+        border: "border-l-chart-4",
+        pill: "bg-chart-4/15 text-chart-4",
+        pillLabel: patternType?.toLowerCase().includes("vitória")
+          ? "Vitória ilusória crítica"
+          : "Crítica",
+      };
+    case "antecedent":
+      return {
+        border: "border-l-chart-2",
+        pill: "bg-chart-2/20 text-chart-2",
+        pillLabel: "Sinal antecedente",
+      };
+    case "medium":
+      return {
+        border: "border-l-chart-2",
+        pill: "bg-chart-2/20 text-chart-2",
+        pillLabel: "Alerta antagônico",
+      };
+    default:
+      return {
+        border: "border-l-chart-3",
+        pill: "bg-chart-3/18 text-chart-3",
+        pillLabel: "Alerta antagônico",
+      };
+  }
 }
 
 /* ── AudienceToggle: Gestor ↔ Platform pill switch ────────── */
