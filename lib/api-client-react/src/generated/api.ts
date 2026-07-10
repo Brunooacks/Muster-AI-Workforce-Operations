@@ -31,6 +31,10 @@ import type {
   AnalyzeSourceInput,
   BulkDraftIdsInput,
   BulkReviewResult,
+  CatalogMetric,
+  CatalogMetricInput,
+  CatalogMetricUpdate,
+  CatalogVertical,
   Connector,
   ConnectorInput,
   DiscoveryImportInput,
@@ -2551,5 +2555,295 @@ export const useImportDiscoveredAgents = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getImportDiscoveredAgentsMutationOptions(options));
+    }
+
+export const getListCatalogMetricsUrl = () => {
+
+
+
+
+  return `/api/catalog/metrics`
+}
+
+/**
+ * @summary List the metric catalog grouped by business vertical
+ */
+export const listCatalogMetrics = async ( options?: RequestInit): Promise<CatalogVertical[]> => {
+
+  return customFetch<CatalogVertical[]>(getListCatalogMetricsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCatalogMetricsQueryKey = () => {
+    return [
+    `/api/catalog/metrics`
+    ] as const;
+    }
+
+
+export const getListCatalogMetricsQueryOptions = <TData = Awaited<ReturnType<typeof listCatalogMetrics>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCatalogMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCatalogMetricsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCatalogMetrics>>> = ({ signal }) => listCatalogMetrics({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCatalogMetrics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCatalogMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof listCatalogMetrics>>>
+export type ListCatalogMetricsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the metric catalog grouped by business vertical
+ */
+
+export function useListCatalogMetrics<TData = Awaited<ReturnType<typeof listCatalogMetrics>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCatalogMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCatalogMetricsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCatalogMetricUrl = () => {
+
+
+
+
+  return `/api/catalog/metrics`
+}
+
+/**
+ * @summary Create a tailor-made custom metric
+ */
+export const createCatalogMetric = async (catalogMetricInput: CatalogMetricInput, options?: RequestInit): Promise<CatalogMetric> => {
+
+  return customFetch<CatalogMetric>(getCreateCatalogMetricUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      catalogMetricInput,)
+  }
+);}
+
+
+
+
+export const getCreateCatalogMetricMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCatalogMetric>>, TError,{data: BodyType<CatalogMetricInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCatalogMetric>>, TError,{data: BodyType<CatalogMetricInput>}, TContext> => {
+
+const mutationKey = ['createCatalogMetric'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCatalogMetric>>, {data: BodyType<CatalogMetricInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCatalogMetric(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCatalogMetricMutationResult = NonNullable<Awaited<ReturnType<typeof createCatalogMetric>>>
+    export type CreateCatalogMetricMutationBody = BodyType<CatalogMetricInput>
+    export type CreateCatalogMetricMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a tailor-made custom metric
+ */
+export const useCreateCatalogMetric = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCatalogMetric>>, TError,{data: BodyType<CatalogMetricInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCatalogMetric>>,
+        TError,
+        {data: BodyType<CatalogMetricInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCatalogMetricMutationOptions(options));
+    }
+
+export const getUpdateCatalogMetricUrl = (metricKey: string,) => {
+
+
+
+
+  return `/api/catalog/metrics/${metricKey}`
+}
+
+/**
+ * @summary Update a catalog metric
+ */
+export const updateCatalogMetric = async (metricKey: string,
+    catalogMetricUpdate: CatalogMetricUpdate, options?: RequestInit): Promise<CatalogMetric> => {
+
+  return customFetch<CatalogMetric>(getUpdateCatalogMetricUrl(metricKey),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      catalogMetricUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCatalogMetricMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCatalogMetric>>, TError,{metricKey: string;data: BodyType<CatalogMetricUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCatalogMetric>>, TError,{metricKey: string;data: BodyType<CatalogMetricUpdate>}, TContext> => {
+
+const mutationKey = ['updateCatalogMetric'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCatalogMetric>>, {metricKey: string;data: BodyType<CatalogMetricUpdate>}> = (props) => {
+          const {metricKey,data} = props ?? {};
+
+          return  updateCatalogMetric(metricKey,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCatalogMetricMutationResult = NonNullable<Awaited<ReturnType<typeof updateCatalogMetric>>>
+    export type UpdateCatalogMetricMutationBody = BodyType<CatalogMetricUpdate>
+    export type UpdateCatalogMetricMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a catalog metric
+ */
+export const useUpdateCatalogMetric = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCatalogMetric>>, TError,{metricKey: string;data: BodyType<CatalogMetricUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCatalogMetric>>,
+        TError,
+        {metricKey: string;data: BodyType<CatalogMetricUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCatalogMetricMutationOptions(options));
+    }
+
+export const getDeleteCatalogMetricUrl = (metricKey: string,) => {
+
+
+
+
+  return `/api/catalog/metrics/${metricKey}`
+}
+
+/**
+ * @summary Delete a custom metric (seeded metrics cannot be deleted)
+ */
+export const deleteCatalogMetric = async (metricKey: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCatalogMetricUrl(metricKey),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCatalogMetricMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCatalogMetric>>, TError,{metricKey: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCatalogMetric>>, TError,{metricKey: string}, TContext> => {
+
+const mutationKey = ['deleteCatalogMetric'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCatalogMetric>>, {metricKey: string}> = (props) => {
+          const {metricKey} = props ?? {};
+
+          return  deleteCatalogMetric(metricKey,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCatalogMetricMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCatalogMetric>>>
+
+    export type DeleteCatalogMetricMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a custom metric (seeded metrics cannot be deleted)
+ */
+export const useDeleteCatalogMetric = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCatalogMetric>>, TError,{metricKey: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCatalogMetric>>,
+        TError,
+        {metricKey: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCatalogMetricMutationOptions(options));
     }
 

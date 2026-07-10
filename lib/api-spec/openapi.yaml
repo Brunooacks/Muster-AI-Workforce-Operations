@@ -780,6 +780,76 @@ paths:
                 items:
                   $ref: "#/components/schemas/Agent"
 
+  /catalog/metrics:
+    get:
+      operationId: listCatalogMetrics
+      tags: [catalog]
+      summary: List the metric catalog grouped by business vertical
+      responses:
+        "200":
+          description: Metric catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogVertical"
+    post:
+      operationId: createCatalogMetric
+      tags: [catalog]
+      summary: Create a tailor-made custom metric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogMetricInput"
+      responses:
+        "201":
+          description: Metric created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogMetric"
+
+  /catalog/metrics/{metricKey}:
+    patch:
+      operationId: updateCatalogMetric
+      tags: [catalog]
+      summary: Update a catalog metric
+      parameters:
+        - name: metricKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogMetricUpdate"
+      responses:
+        "200":
+          description: Updated metric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogMetric"
+    delete:
+      operationId: deleteCatalogMetric
+      tags: [catalog]
+      summary: Delete a custom metric (seeded metrics cannot be deleted)
+      parameters:
+        - name: metricKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -2243,3 +2313,100 @@ components:
           type: number
         fleetAvgAccuracy:
           type: number
+
+    CatalogMetric:
+      type: object
+      required:
+        - key
+        - vertical
+        - layer
+        - label
+        - unit
+        - target
+        - description
+        - rationale
+        - isCustom
+      properties:
+        key:
+          type: string
+        vertical:
+          type: string
+        layer:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+        unit:
+          type: string
+        target:
+          type: string
+        description:
+          type: string
+        rationale:
+          type: string
+        isCustom:
+          type: boolean
+
+    CatalogVertical:
+      type: object
+      required:
+        - key
+        - label
+        - description
+        - icon
+        - metrics
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogMetric"
+
+    CatalogMetricInput:
+      type: object
+      required:
+        - vertical
+        - layer
+        - label
+      properties:
+        vertical:
+          type: string
+        layer:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+          minLength: 1
+        unit:
+          type: string
+        target:
+          type: string
+        description:
+          type: string
+        rationale:
+          type: string
+
+    CatalogMetricUpdate:
+      type: object
+      properties:
+        layer:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+          minLength: 1
+        unit:
+          type: string
+        target:
+          type: string
+        description:
+          type: string
+        rationale:
+          type: string

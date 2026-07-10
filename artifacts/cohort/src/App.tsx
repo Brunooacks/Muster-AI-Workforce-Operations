@@ -18,6 +18,7 @@ import AdmissionPage from "@/pages/admission";
 import ConnectorsPage from "@/pages/connectors";
 import AlertsPage from "@/pages/alerts";
 import GovernancePage from "@/pages/governanca";
+import MetricasPage from "@/pages/metricas";
 import BenchmarksPage from "@/pages/benchmarks";
 import SettingsPage from "@/pages/configuracoes";
 import ProfilePage from "@/pages/perfil";
@@ -236,6 +237,9 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/governanca">
               <ProtectedRoute component={GovernancePage} />
+            </Route>
+            <Route path="/metricas">
+              <ProtectedRoute component={MetricasPage} />
             </Route>
             <Route path="/benchmarks">
               <ProtectedRoute component={BenchmarksPage} />

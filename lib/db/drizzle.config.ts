@@ -1,5 +1,4 @@
 import { defineConfig } from "drizzle-kit";
-import path from "path";
 
 // `generate` only reads the schema + snapshots in ./drizzle and never connects,
 // so it must work offline (CI, contributors without a DB). A real DATABASE_URL
@@ -10,8 +9,10 @@ const url =
   "postgresql://placeholder:placeholder@localhost:5432/placeholder";
 
 export default defineConfig({
-  schema: path.join(__dirname, "./src/schema/index.ts"),
-  out: path.join(__dirname, "./drizzle"),
+  // Paths are relative to this package (all db scripts run with cwd=lib/db):
+  // drizzle-kit mishandles absolute `out` paths when reading back snapshots.
+  schema: "./src/schema/index.ts",
+  out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
     url,
