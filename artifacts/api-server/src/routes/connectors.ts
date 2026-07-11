@@ -8,6 +8,7 @@ import {
   evaluations,
   verdicts,
   connectors,
+  connectorCredentials,
   metricPoints,
 } from "@workspace/db";
 import {
@@ -17,14 +18,18 @@ import {
   DiscoverAgentsResponse,
   ImportDiscoveredAgentsParams,
   ImportDiscoveredAgentsBody,
+  RegisterConnectorBody,
+  TestConnectorResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { toAgentSummary } from "../lib/serializers";
 import {
   PLATFORM_CATALOG,
   buildProposedMetrics,
+  proposedMetricsFromDraft,
   scoreEvaluation,
 } from "../lib/discovery";
+import { getConnectorImpl } from "../lib/connectors/registry";
 
 const router: IRouter = Router();
 
@@ -120,6 +125,94 @@ router.post("/connectors", requireAuth, async (req, res) => {
   });
 });
 
+// ── R3: real connector registration ─────────────────────────────────────────
+
+async function loadCredential(connectorId: string): Promise<{ token: string | null }> {
+  const [row] = await db
+    .select()
+    .from(connectorCredentials)
+    .where(eq(connectorCredentials.connectorId, connectorId))
+    .limit(1);
+  return { token: row?.credential ?? null };
+}
+
+router.post("/connectors/register", requireAuth, async (req, res) => {
+  const body = RegisterConnectorBody.parse(req.body);
+
+  const impl = getConnectorImpl(body.platform);
+  if (!impl) {
+    res.status(422).json({
+      error: `Plataforma "${body.platform}" ainda não tem conector real. Disponível: github.`,
+    });
+    return;
+  }
+
+  const test = await impl.testConnection({ token: body.token ?? null });
+
+  const [connector] = await db
+    .insert(connectors)
+    .values({
+      platform: body.platform,
+      name: body.name,
+      status: test.ok ? "connected" : "available",
+      category: "Conector real",
+      agentsDiscovered: 0,
+      lastSyncAt: test.ok ? new Date() : null,
+    })
+    .returning();
+
+  if (body.token && body.token.trim()) {
+    await db.insert(connectorCredentials).values({
+      connectorId: connector!.id,
+      authMethod: "token",
+      credential: body.token.trim(),
+    });
+  } else {
+    await db.insert(connectorCredentials).values({
+      connectorId: connector!.id,
+      authMethod: "env",
+      credential: null,
+    });
+  }
+
+  res.status(201).json({
+    connector: {
+      id: connector!.id,
+      platform: connector!.platform,
+      name: connector!.name,
+      status: connector!.status,
+      agentsDiscovered: connector!.agentsDiscovered,
+      category: connector!.category,
+      lastSyncAt: connector!.lastSyncAt?.toISOString() ?? null,
+    },
+    test,
+  });
+});
+
+router.post("/connectors/:connectorId/test", requireAuth, async (req, res) => {
+  const connectorId = req.params.connectorId as string;
+  const [connector] = await db
+    .select()
+    .from(connectors)
+    .where(eq(connectors.id, connectorId))
+    .limit(1);
+  if (!connector) {
+    res.status(404).json({ error: "Conector não encontrado." });
+    return;
+  }
+  const impl = getConnectorImpl(connector.platform);
+  if (!impl) {
+    res.json(TestConnectorResponse.parse({
+      ok: false,
+      message: "Conector de demonstração — sem credencial para testar.",
+    }));
+    return;
+  }
+  const cred = await loadCredential(connectorId);
+  const result = await impl.testConnection(cred);
+  res.json(TestConnectorResponse.parse(result));
+});
+
 router.post(
   "/connectors/:connectorId/discover",
   requireAuth,
@@ -134,6 +227,58 @@ router.post(
     const platformKey = connector
       ? connector.platform
       : connectorId.replace(/^catalog_/, "");
+
+    // Real implementation first: live discovery on the platform.
+    const impl = connector ? getConnectorImpl(platformKey) : undefined;
+    if (connector && impl) {
+      const cred = await loadCredential(connector.id);
+      const candidates = await impl.discoverAgents(cred);
+
+      const importedExternalIds = new Set(
+        (await db.select({ externalId: agents.externalId }).from(agents))
+          .map((r) => r.externalId)
+          .filter((x): x is string => Boolean(x)),
+      );
+
+      const discoveredAgents = candidates.map((c) => {
+        // Real candidates carry detection signals, not KPI signals — frame a
+        // full 5-layer metric proposal from the catalog defaults instead.
+        const proposedMetrics = proposedMetricsFromDraft(c.externalId, []);
+        const scored = scoreEvaluation(c.externalId, proposedMetrics);
+        return {
+          externalId: c.externalId,
+          name: c.name,
+          role: c.description || c.stack || "Agente descoberto",
+          platform: platformKey,
+          signals: c.signals,
+          proposedMetrics,
+          proposedVerdict: scored.verdict,
+          confidence: c.confidence,
+          alreadyImported: importedExternalIds.has(c.externalId),
+        };
+      });
+
+      await db
+        .update(connectors)
+        .set({
+          status: "connected",
+          agentsDiscovered: discoveredAgents.length,
+          lastSyncAt: new Date(),
+        })
+        .where(eq(connectors.id, connector.id));
+
+      res.json(
+        DiscoverAgentsResponse.parse({
+          connectorId,
+          platform: platformKey,
+          discoveredAt: new Date().toISOString(),
+          agentsFound: discoveredAgents.length,
+          agents: discoveredAgents,
+          coverageNote: `Descoberta REAL via ${impl.displayName}: ${discoveredAgents.length} candidato(s) a agente encontrados. Métricas iniciais enquadradas pelo catálogo — refine no pré-assessment.`,
+        }),
+      );
+      return;
+    }
 
     const catalog = PLATFORM_CATALOG.find((p) => p.platform === platformKey);
     if (!catalog) {

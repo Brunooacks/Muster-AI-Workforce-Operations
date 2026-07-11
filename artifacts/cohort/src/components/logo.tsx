@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Cohort brand symbol — three ascending chevrons ("Camadas Ascendentes").
+ * Muster brand symbol — three ascending chevrons ("Camadas Ascendentes").
  * Theme-aware: strokes use CSS tokens so it adapts to light/dark automatically.
  */
-export function CohortMark({ className }: { className?: string }) {
+export function MusterMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 64 64"

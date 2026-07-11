@@ -355,3 +355,42 @@ export const catalogMetrics = pgTable("catalog_metrics", {
     .notNull()
     .defaultNow(),
 });
+
+// --- Real connectors (R3) -----------------------------------------------------
+// Credentials for registered connectors. The credential column is NEVER
+// serialized in API responses — only its presence (hasCredential) is exposed.
+export type ConnectorAuthMethod = "token" | "env" | "none";
+
+export const connectorCredentials = pgTable("connector_credentials", {
+  id: id(),
+  connectorId: text("connector_id")
+    .notNull()
+    .unique()
+    .references(() => connectors.id, { onDelete: "cascade" }),
+  authMethod: text("auth_method").$type<ConnectorAuthMethod>().notNull().default("token"),
+  // Plaintext at rest for local dev; production must move to a KMS/vault.
+  credential: text("credential"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// --- Telemetry (R6) -----------------------------------------------------------
+// Raw execution events reported by agents (SDK/reporter). Aggregations derive
+// the real 5-layer evaluation; when an agent has no events the evaluation
+// falls back to the seeded demo scoring (flagged as dataSource="seeded").
+export type AgentEventKind = "execution" | "error" | "escalation" | "feedback";
+
+export const agentEvents = pgTable("agent_events", {
+  id: id(),
+  agentId: text("agent_id")
+    .notNull()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  ts: timestamp("ts", { withTimezone: true }).notNull().defaultNow(),
+  kind: text("kind").$type<AgentEventKind>().notNull().default("execution"),
+  durationMs: integer("duration_ms"),
+  costCents: integer("cost_cents"),
+  tokensIn: integer("tokens_in"),
+  tokensOut: integer("tokens_out"),
+  success: integer("success"), // 1/0/null — drizzle boolean-as-int keeps parity with is_custom
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+});

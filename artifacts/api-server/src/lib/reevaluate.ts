@@ -15,7 +15,7 @@ import { scoreEvaluation, type ProposedMetric } from "./discovery";
 // stored evaluation's layers. The measured value/unit/target are the source of
 // truth for goal attainment, so reconstructing from them lets us re-run the
 // current scoring logic without inventing new numbers.
-function metricsFromLayers(layers: KpiLayer[]): ProposedMetric[] {
+export function metricsFromLayers(layers: KpiLayer[]): ProposedMetric[] {
   const metrics: ProposedMetric[] = [];
   for (const layer of layers) {
     for (const m of layer.metrics) {

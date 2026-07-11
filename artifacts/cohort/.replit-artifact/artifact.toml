@@ -15,10 +15,10 @@ paths = [ "/" ]
 localPort = 19087
 
 [services.development]
-run = "pnpm --filter @workspace/cohort run dev"
+run = "pnpm --filter @workspace/muster run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/cohort", "run", "build" ]
+build = [ "pnpm", "--filter", "@workspace/muster", "run", "build" ]
 publicDir = "artifacts/cohort/dist/public"
 serve = "static"
 

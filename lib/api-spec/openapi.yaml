@@ -850,6 +850,143 @@ paths:
         "204":
           description: Deleted
 
+  /connectors/register:
+    post:
+      operationId: registerConnector
+      tags: [connectors]
+      summary: Register a real connector with a credential and test it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterConnectorInput"
+      responses:
+        "201":
+          description: Connector registered (test result included)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterConnectorResult"
+
+  /connectors/{connectorId}/test:
+    post:
+      operationId: testConnector
+      tags: [connectors]
+      summary: Test a registered connector's credential against the live platform
+      parameters:
+        - name: connectorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorTestResult"
+
+  /discovery/pre-assess:
+    post:
+      operationId: preAssessAgentSource
+      tags: [agents]
+      summary: Heuristic pre-assessment of an agent repository (no AI key needed)
+      description: >-
+        Fetches the repository, understands the agent via static heuristics
+        (stack detection, README dossier parsing, KPI-table extraction) and
+        returns a pre-filled Carteira de Trabalho draft with per-field
+        confidence, framing missing metrics from the metric catalog. Works
+        without any AI credential; when one is configured the AI analyzer can
+        refine this draft afterwards.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreAssessInput"
+      responses:
+        "200":
+          description: Pre-assessment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreAssessResult"
+
+  /agents/{agentId}/events:
+    post:
+      operationId: ingestAgentEvent
+      tags: [agents]
+      summary: Ingest a telemetry event (execution, error, escalation) for an agent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentEventInput"
+      responses:
+        "202":
+          description: Event accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accepted]
+                properties:
+                  accepted:
+                    type: boolean
+
+  /agents/{agentId}/telemetry/{window}:
+    get:
+      operationId: getAgentTelemetry
+      tags: [agents]
+      summary: Aggregated telemetry summary for an agent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: window
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: ["7d", "30d", "90d"]
+      responses:
+        "200":
+          description: Telemetry summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetrySummary"
+
+  /agents/{agentId}/reevaluate:
+    post:
+      operationId: reevaluateAgent
+      tags: [agents]
+      summary: Recompute the agent evaluation — from real telemetry when available
+      responses:
+        "200":
+          description: Reevaluation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReevaluateOutcome"
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+
 components:
   schemas:
     HealthStatus:
@@ -2410,3 +2547,141 @@ components:
           type: string
         rationale:
           type: string
+
+    ConnectorTestResult:
+      type: object
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+
+    RegisterConnectorInput:
+      type: object
+      required: [platform, name]
+      properties:
+        platform:
+          type: string
+          description: Platform key (e.g. github). Must have a real connector implementation.
+        name:
+          type: string
+          minLength: 1
+        token:
+          type: ["string", "null"]
+          description: Credential (PAT/API key). Omit to use ambient env credentials.
+
+    RegisterConnectorResult:
+      type: object
+      required: [connector, test]
+      properties:
+        connector:
+          $ref: "#/components/schemas/Connector"
+        test:
+          $ref: "#/components/schemas/ConnectorTestResult"
+
+    PreAssessInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          minLength: 8
+        nameHint:
+          type: string
+
+    PreAssessResult:
+      type: object
+      required: [draft, fieldConfidence, platform, signals]
+      properties:
+        draft:
+          $ref: "#/components/schemas/AgentDraft"
+        fieldConfidence:
+          type: object
+          additionalProperties:
+            type: number
+        platform:
+          type: ["string", "null"]
+        signals:
+          type: array
+          items:
+            type: string
+
+    AgentEventInput:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [execution, error, escalation, feedback]
+        durationMs:
+          type: number
+        costCents:
+          type: number
+        tokensIn:
+          type: number
+        tokensOut:
+          type: number
+        success:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+
+    TelemetrySummary:
+      type: object
+      required:
+        - windowDays
+        - totalExecutions
+        - totalCostCents
+        - executionsPerDay
+        - activeDays
+      properties:
+        windowDays:
+          type: number
+        totalExecutions:
+          type: number
+        successRate:
+          type: ["number", "null"]
+        avgDurationMs:
+          type: ["number", "null"]
+        p95DurationMs:
+          type: ["number", "null"]
+        totalCostCents:
+          type: number
+        avgCostCentsPerExecution:
+          type: ["number", "null"]
+        executionsPerDay:
+          type: number
+        escalationRate:
+          type: ["number", "null"]
+        errorRate:
+          type: ["number", "null"]
+        activeDays:
+          type: number
+        firstEventAt:
+          type: ["string", "null"]
+        lastEventAt:
+          type: ["string", "null"]
+
+    ReevaluateOutcome:
+      type: object
+      required: [agentId, changed, healthScore, verdict, dataSource, rationale]
+      properties:
+        agentId:
+          type: string
+        changed:
+          type: boolean
+        healthScore:
+          type: number
+        verdict:
+          type: string
+          enum: [promote, mentor, retire, observation]
+        dataSource:
+          type: string
+          enum: [telemetry, seeded, mixed]
+        rationale:
+          type: string
+        rulesFired:
+          type: array
+          items:
+            type: string
