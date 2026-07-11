@@ -25,6 +25,7 @@ import type {
   AgentDraft,
   AgentDraftRecord,
   AgentDraftUpdate,
+  AgentEventInput,
   AgentInput,
   AgentUpdate,
   Alert,
@@ -37,6 +38,7 @@ import type {
   CatalogVertical,
   Connector,
   ConnectorInput,
+  ConnectorTestResult,
   DiscoveryImportInput,
   DiscoveryResult,
   DiscoveryRun,
@@ -53,12 +55,19 @@ import type {
   GitHubStatus,
   HealthStatus,
   IdentityUpdate,
+  IngestAgentEvent202,
   ListAgentDraftsParams,
   ListAgentsParams,
   ListFleetAlertsParams,
   MetricPoint,
+  PreAssessInput,
+  PreAssessResult,
+  ReevaluateOutcome,
+  RegisterConnectorInput,
+  RegisterConnectorResult,
   RejectDraftInput,
   StartDiscoveryRunInput,
+  TelemetrySummary,
   Verdict,
   VerdictDecisionInput
 } from './api.schemas';
@@ -2845,5 +2854,442 @@ export const useDeleteCatalogMetric = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteCatalogMetricMutationOptions(options));
+    }
+
+export const getRegisterConnectorUrl = () => {
+
+
+
+
+  return `/api/connectors/register`
+}
+
+/**
+ * @summary Register a real connector with a credential and test it
+ */
+export const registerConnector = async (registerConnectorInput: RegisterConnectorInput, options?: RequestInit): Promise<RegisterConnectorResult> => {
+
+  return customFetch<RegisterConnectorResult>(getRegisterConnectorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      registerConnectorInput,)
+  }
+);}
+
+
+
+
+export const getRegisterConnectorMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerConnector>>, TError,{data: BodyType<RegisterConnectorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerConnector>>, TError,{data: BodyType<RegisterConnectorInput>}, TContext> => {
+
+const mutationKey = ['registerConnector'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerConnector>>, {data: BodyType<RegisterConnectorInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerConnector(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterConnectorMutationResult = NonNullable<Awaited<ReturnType<typeof registerConnector>>>
+    export type RegisterConnectorMutationBody = BodyType<RegisterConnectorInput>
+    export type RegisterConnectorMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register a real connector with a credential and test it
+ */
+export const useRegisterConnector = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerConnector>>, TError,{data: BodyType<RegisterConnectorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerConnector>>,
+        TError,
+        {data: BodyType<RegisterConnectorInput>},
+        TContext
+      > => {
+      return useMutation(getRegisterConnectorMutationOptions(options));
+    }
+
+export const getTestConnectorUrl = (connectorId: string,) => {
+
+
+
+
+  return `/api/connectors/${connectorId}/test`
+}
+
+/**
+ * @summary Test a registered connector's credential against the live platform
+ */
+export const testConnector = async (connectorId: string, options?: RequestInit): Promise<ConnectorTestResult> => {
+
+  return customFetch<ConnectorTestResult>(getTestConnectorUrl(connectorId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getTestConnectorMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testConnector>>, TError,{connectorId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testConnector>>, TError,{connectorId: string}, TContext> => {
+
+const mutationKey = ['testConnector'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testConnector>>, {connectorId: string}> = (props) => {
+          const {connectorId} = props ?? {};
+
+          return  testConnector(connectorId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestConnectorMutationResult = NonNullable<Awaited<ReturnType<typeof testConnector>>>
+
+    export type TestConnectorMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Test a registered connector's credential against the live platform
+ */
+export const useTestConnector = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testConnector>>, TError,{connectorId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof testConnector>>,
+        TError,
+        {connectorId: string},
+        TContext
+      > => {
+      return useMutation(getTestConnectorMutationOptions(options));
+    }
+
+export const getPreAssessAgentSourceUrl = () => {
+
+
+
+
+  return `/api/discovery/pre-assess`
+}
+
+/**
+ * Fetches the repository, understands the agent via static heuristics (stack detection, README dossier parsing, KPI-table extraction) and returns a pre-filled Carteira de Trabalho draft with per-field confidence, framing missing metrics from the metric catalog. Works without any AI credential; when one is configured the AI analyzer can refine this draft afterwards.
+ * @summary Heuristic pre-assessment of an agent repository (no AI key needed)
+ */
+export const preAssessAgentSource = async (preAssessInput: PreAssessInput, options?: RequestInit): Promise<PreAssessResult> => {
+
+  return customFetch<PreAssessResult>(getPreAssessAgentSourceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      preAssessInput,)
+  }
+);}
+
+
+
+
+export const getPreAssessAgentSourceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof preAssessAgentSource>>, TError,{data: BodyType<PreAssessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof preAssessAgentSource>>, TError,{data: BodyType<PreAssessInput>}, TContext> => {
+
+const mutationKey = ['preAssessAgentSource'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof preAssessAgentSource>>, {data: BodyType<PreAssessInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  preAssessAgentSource(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreAssessAgentSourceMutationResult = NonNullable<Awaited<ReturnType<typeof preAssessAgentSource>>>
+    export type PreAssessAgentSourceMutationBody = BodyType<PreAssessInput>
+    export type PreAssessAgentSourceMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Heuristic pre-assessment of an agent repository (no AI key needed)
+ */
+export const usePreAssessAgentSource = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof preAssessAgentSource>>, TError,{data: BodyType<PreAssessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof preAssessAgentSource>>,
+        TError,
+        {data: BodyType<PreAssessInput>},
+        TContext
+      > => {
+      return useMutation(getPreAssessAgentSourceMutationOptions(options));
+    }
+
+export const getIngestAgentEventUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/events`
+}
+
+/**
+ * @summary Ingest a telemetry event (execution, error, escalation) for an agent
+ */
+export const ingestAgentEvent = async (agentId: string,
+    agentEventInput: AgentEventInput, options?: RequestInit): Promise<IngestAgentEvent202> => {
+
+  return customFetch<IngestAgentEvent202>(getIngestAgentEventUrl(agentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentEventInput,)
+  }
+);}
+
+
+
+
+export const getIngestAgentEventMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext> => {
+
+const mutationKey = ['ingestAgentEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestAgentEvent>>, {agentId: string;data: BodyType<AgentEventInput>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  ingestAgentEvent(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestAgentEventMutationResult = NonNullable<Awaited<ReturnType<typeof ingestAgentEvent>>>
+    export type IngestAgentEventMutationBody = BodyType<AgentEventInput>
+    export type IngestAgentEventMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Ingest a telemetry event (execution, error, escalation) for an agent
+ */
+export const useIngestAgentEvent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestAgentEvent>>,
+        TError,
+        {agentId: string;data: BodyType<AgentEventInput>},
+        TContext
+      > => {
+      return useMutation(getIngestAgentEventMutationOptions(options));
+    }
+
+export const getGetAgentTelemetryUrl = (agentId: string,
+    window: '7d' | '30d' | '90d',) => {
+
+
+
+
+  return `/api/agents/${agentId}/telemetry/${window}`
+}
+
+/**
+ * @summary Aggregated telemetry summary for an agent
+ */
+export const getAgentTelemetry = async (agentId: string,
+    window: '7d' | '30d' | '90d', options?: RequestInit): Promise<TelemetrySummary> => {
+
+  return customFetch<TelemetrySummary>(getGetAgentTelemetryUrl(agentId,window),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentTelemetryQueryKey = (agentId: string,
+    window: '7d' | '30d' | '90d',) => {
+    return [
+    `/api/agents/${agentId}/telemetry/${window}`
+    ] as const;
+    }
+
+
+export const getGetAgentTelemetryQueryOptions = <TData = Awaited<ReturnType<typeof getAgentTelemetry>>, TError = ErrorType<unknown>>(agentId: string,
+    window: '7d' | '30d' | '90d', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentTelemetry>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentTelemetryQueryKey(agentId,window);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentTelemetry>>> = ({ signal }) => getAgentTelemetry(agentId,window, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId && window), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentTelemetry>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentTelemetryQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentTelemetry>>>
+export type GetAgentTelemetryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Aggregated telemetry summary for an agent
+ */
+
+export function useGetAgentTelemetry<TData = Awaited<ReturnType<typeof getAgentTelemetry>>, TError = ErrorType<unknown>>(
+ agentId: string,
+    window: '7d' | '30d' | '90d', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentTelemetry>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentTelemetryQueryOptions(agentId,window,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReevaluateAgentUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/reevaluate`
+}
+
+/**
+ * @summary Recompute the agent evaluation — from real telemetry when available
+ */
+export const reevaluateAgent = async (agentId: string, options?: RequestInit): Promise<ReevaluateOutcome> => {
+
+  return customFetch<ReevaluateOutcome>(getReevaluateAgentUrl(agentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getReevaluateAgentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reevaluateAgent>>, TError,{agentId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reevaluateAgent>>, TError,{agentId: string}, TContext> => {
+
+const mutationKey = ['reevaluateAgent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reevaluateAgent>>, {agentId: string}> = (props) => {
+          const {agentId} = props ?? {};
+
+          return  reevaluateAgent(agentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReevaluateAgentMutationResult = NonNullable<Awaited<ReturnType<typeof reevaluateAgent>>>
+
+    export type ReevaluateAgentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Recompute the agent evaluation — from real telemetry when available
+ */
+export const useReevaluateAgent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reevaluateAgent>>, TError,{agentId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reevaluateAgent>>,
+        TError,
+        {agentId: string},
+        TContext
+      > => {
+      return useMutation(getReevaluateAgentMutationOptions(options));
     }
 

@@ -1008,6 +1008,119 @@ export interface CatalogMetricUpdate {
   rationale?: string;
 }
 
+export interface ConnectorTestResult {
+  ok: boolean;
+  message: string;
+}
+
+export interface RegisterConnectorInput {
+  /** Platform key (e.g. github). Must have a real connector implementation. */
+  platform: string;
+  /** @minLength 1 */
+  name: string;
+  /**
+     * Credential (PAT/API key). Omit to use ambient env credentials.
+     * @nullable
+     */
+  token?: string | null;
+}
+
+export interface RegisterConnectorResult {
+  connector: Connector;
+  test: ConnectorTestResult;
+}
+
+export interface PreAssessInput {
+  /** @minLength 8 */
+  url: string;
+  nameHint?: string;
+}
+
+export type PreAssessResultFieldConfidence = {[key: string]: number};
+
+export interface PreAssessResult {
+  draft: AgentDraft;
+  fieldConfidence: PreAssessResultFieldConfidence;
+  /** @nullable */
+  platform: string | null;
+  signals: string[];
+}
+
+export type AgentEventInputKind = typeof AgentEventInputKind[keyof typeof AgentEventInputKind];
+
+
+export const AgentEventInputKind = {
+  execution: 'execution',
+  error: 'error',
+  escalation: 'escalation',
+  feedback: 'feedback',
+} as const;
+
+export type AgentEventInputMetadata = { [key: string]: unknown };
+
+export interface AgentEventInput {
+  kind?: AgentEventInputKind;
+  durationMs?: number;
+  costCents?: number;
+  tokensIn?: number;
+  tokensOut?: number;
+  success?: boolean;
+  metadata?: AgentEventInputMetadata;
+}
+
+export interface TelemetrySummary {
+  windowDays: number;
+  totalExecutions: number;
+  /** @nullable */
+  successRate?: number | null;
+  /** @nullable */
+  avgDurationMs?: number | null;
+  /** @nullable */
+  p95DurationMs?: number | null;
+  totalCostCents: number;
+  /** @nullable */
+  avgCostCentsPerExecution?: number | null;
+  executionsPerDay: number;
+  /** @nullable */
+  escalationRate?: number | null;
+  /** @nullable */
+  errorRate?: number | null;
+  activeDays: number;
+  /** @nullable */
+  firstEventAt?: string | null;
+  /** @nullable */
+  lastEventAt?: string | null;
+}
+
+export type ReevaluateOutcomeVerdict = typeof ReevaluateOutcomeVerdict[keyof typeof ReevaluateOutcomeVerdict];
+
+
+export const ReevaluateOutcomeVerdict = {
+  promote: 'promote',
+  mentor: 'mentor',
+  retire: 'retire',
+  observation: 'observation',
+} as const;
+
+export type ReevaluateOutcomeDataSource = typeof ReevaluateOutcomeDataSource[keyof typeof ReevaluateOutcomeDataSource];
+
+
+export const ReevaluateOutcomeDataSource = {
+  telemetry: 'telemetry',
+  seeded: 'seeded',
+  mixed: 'mixed',
+} as const;
+
+export interface ReevaluateOutcome {
+  agentId: string;
+  changed: boolean;
+  healthScore: number;
+  verdict: ReevaluateOutcomeVerdict;
+  dataSource: ReevaluateOutcomeDataSource;
+  rationale: string;
+  rulesFired?: string[];
+}
+
 export type ListFleetAlertsParams = {
 severity?: ListFleetAlertsSeverity;
 status?: ListFleetAlertsStatus;
@@ -1099,4 +1212,8 @@ export const ListAgentDraftsEnrichmentStatus = {
   enriched: 'enriched',
   failed: 'failed',
 } as const;
+
+export type IngestAgentEvent202 = {
+  accepted: boolean;
+};
 

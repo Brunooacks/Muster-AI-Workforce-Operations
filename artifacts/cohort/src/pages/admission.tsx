@@ -6,6 +6,7 @@ import {
   useCreateAgent,
   useAnalyzeAgentSource,
   useFetchAgentSource,
+  usePreAssessAgentSource,
   useListConnectors,
   useGetGitHubStatus,
   type AgentDraft,
@@ -208,6 +209,7 @@ export default function AdmissionPage() {
   const createAgent = useCreateAgent();
   const analyze = useAnalyzeAgentSource();
   const fetchSource = useFetchAgentSource();
+  const preAssess = usePreAssessAgentSource();
   const { data: connectors } = useListConnectors();
   const { data: githubStatus, isLoading: githubStatusLoading } =
     useGetGitHubStatus();
@@ -358,6 +360,32 @@ export default function AdmissionPage() {
                       : "Não foi possível importar o material desse endereço.",
           });
         },
+      },
+    );
+  }
+
+  // Pre-assessment (R4): heuristics over the repo, no AI key — fetches the
+  // source server-side, frames metrics from the catalog and fills the whole
+  // wizard via the same applyDraft used by the AI analyzer.
+  function onPreAssess() {
+    const url = importUrl.trim();
+    if (!url) return;
+    preAssess.mutate(
+      { data: { url, nameHint: data.name || undefined } },
+      {
+        onSuccess: (r) => {
+          applyDraft(r.draft);
+          toast({
+            title: "Pré-assessment concluído",
+            description: `Stack: ${r.platform ?? "não identificada"} · ${r.signals.length} sinal(is) · confiança ${Math.round(r.draft.confidence)}%. Revise os campos e admita.`,
+          });
+        },
+        onError: () =>
+          toast({
+            variant: "destructive",
+            title: "Pré-assessment falhou",
+            description: "Verifique a URL do repositório e tente novamente.",
+          }),
       },
     );
   }
@@ -645,11 +673,19 @@ export default function AdmissionPage() {
                         >
                           {fetchSource.isPending ? "Importando..." : "Importar"}
                         </Button>
+                        <Button
+                          type="button"
+                          onClick={onPreAssess}
+                          disabled={preAssess.isPending || !importUrl.trim()}
+                        >
+                          {preAssess.isPending ? "Avaliando…" : "⚡ Pré-assessment"}
+                        </Button>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Buscamos os arquivos de código e skills relevantes (limites de tamanho e tipo
-                        aplicados) e os listamos para você revisar antes de analisar. Para
-                        repositórios privados, conecte sua conta GitHub nas integrações do Replit.
+                        <strong>Pré-assessment</strong> entende o repositório sem IA: detecta a
+                        stack, extrai papel/limites/KPIs do dossiê e enquadra as métricas pelo
+                        catálogo — preenchendo a carteira inteira para revisão. "Importar" apenas
+                        carrega os arquivos para a análise com IA.
                       </p>
                     </div>
 

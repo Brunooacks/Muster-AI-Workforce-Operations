@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Fingerprint, Layers, Gavel, AlertTriangle, Users, Plug } from "lucide-react";
-import { CohortMark } from "@/components/logo";
+import { MusterMark } from "@/components/logo";
 import { OpsSchematic } from "@/components/ops-schematic";
 
 /* ── Ticker de vereditos (pregão da frota) ─────────────────── */
@@ -124,7 +124,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-primary/20 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
           <div className="flex items-center gap-2.5">
-            <CohortMark className="h-7 w-7" />
+            <MusterMark className="h-7 w-7" />
             <span className="font-serif text-lg font-medium tracking-tight">Muster</span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
               AI Workforce Operations
@@ -251,7 +251,7 @@ export default function LandingPage() {
       <footer className="border-t border-primary/20">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           <span className="flex items-center gap-2">
-            <CohortMark className="h-4 w-4" /> Muster · AI Workforce Operations
+            <MusterMark className="h-4 w-4" /> Muster · AI Workforce Operations
           </span>
           <span>Identidade · Avaliação · Veredito</span>
         </div>

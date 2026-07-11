@@ -5,7 +5,7 @@ Muster é uma plataforma plug-and-play que dá às frotas de agentes de IA (mult
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port via `PORT`)
-- `pnpm --filter @workspace/cohort run dev` — run the web frontend
+- `pnpm --filter @workspace/muster run dev` — run the web frontend
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec

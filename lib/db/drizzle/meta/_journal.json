@@ -15,6 +15,13 @@
       "when": 1783570303087,
       "tag": "0001_foamy_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783738197922,
+      "tag": "0002_youthful_marrow",
+      "breakpoints": true
     }
   ]
 }

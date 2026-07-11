@@ -4,16 +4,38 @@ import {
   useConnectPlatform,
   useDiscoverAgents,
   useImportDiscoveredAgents,
+  useRegisterConnector,
 } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link2, Search, Check, Download, Plug } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Link2, Search, Check, Download, Plug, Plus } from "lucide-react";
 import { ErrorState } from "@/components/query-state";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { getListConnectorsQueryKey } from "@workspace/api-client-react";
 import { PageHeading, Pill, Eyebrow } from "@/components/cohort";
+
+// Platforms with a REAL connector implementation; the rest of the list still
+// comes from the demo catalog until their connectors land (R3 incremental).
+const REAL_PLATFORMS = [{ key: "github", label: "GitHub" }];
 
 export default function ConnectorsPage() {
   const { data: connectors, isLoading, isError, refetch } = useListConnectors();
@@ -22,9 +44,39 @@ export default function ConnectorsPage() {
   const connectPlatform = useConnectPlatform();
   const discoverAgents = useDiscoverAgents();
   const importAgents = useImportDiscoveredAgents();
+  const registerConnector = useRegisterConnector();
 
   const [discoveringId, setDiscoveringId] = useState<string | null>(null);
   const [discoveryResult, setDiscoveryResult] = useState<any>(null);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [regForm, setRegForm] = useState({ platform: "github", name: "", token: "" });
+
+  const handleRegister = () => {
+    if (!regForm.name.trim()) return;
+    registerConnector.mutate(
+      {
+        data: {
+          platform: regForm.platform,
+          name: regForm.name.trim(),
+          token: regForm.token.trim() || null,
+        },
+      },
+      {
+        onSuccess: (r) => {
+          toast({
+            title: r.test.ok ? "Conector conectado" : "Conector cadastrado — credencial pendente",
+            description: r.test.message,
+            variant: r.test.ok ? undefined : "destructive",
+          });
+          setRegisterOpen(false);
+          setRegForm({ platform: "github", name: "", token: "" });
+          queryClient.invalidateQueries({ queryKey: getListConnectorsQueryKey() });
+        },
+        onError: () =>
+          toast({ title: "Erro ao cadastrar conector", variant: "destructive" }),
+      },
+    );
+  };
 
   const handleConnect = (platform: string) => {
     connectPlatform.mutate(
@@ -77,6 +129,12 @@ export default function ConnectorsPage() {
           eyebrow="Conta · Integrações"
           title="Conectores"
           subtitle="Conecte plataformas para descobrir agentes e importar suas métricas propostas automaticamente."
+          action={
+            <Button onClick={() => setRegisterOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Cadastrar conector
+            </Button>
+          }
         />
 
         {discoveryResult && (
@@ -211,6 +269,76 @@ export default function ConnectorsPage() {
           </Card>
         )}
       </div>
+
+      {/* Cadastro de conector real (R3) */}
+      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cadastrar conector</DialogTitle>
+            <DialogDescription>
+              Conecte uma plataforma real. A credencial é testada na hora e fica armazenada
+              apenas no seu banco — nunca é exibida de volta.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Plataforma</Label>
+              <Select
+                value={regForm.platform}
+                onValueChange={(v) => setRegForm((p) => ({ ...p, platform: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REAL_PLATFORMS.map((p) => (
+                    <SelectItem key={p.key} value={p.key}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                AWS Bedrock, Azure AI e Vertex chegam nas próximas iterações do R3.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-name">Nome do conector</Label>
+              <Input
+                id="reg-name"
+                value={regForm.name}
+                placeholder="ex.: GitHub — org principal"
+                onChange={(e) => setRegForm((p) => ({ ...p, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-token">Token (PAT)</Label>
+              <Input
+                id="reg-token"
+                type="password"
+                value={regForm.token}
+                placeholder="ghp_… (opcional — vazio usa GITHUB_TOKEN do ambiente)"
+                onChange={(e) => setRegForm((p) => ({ ...p, token: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Escopo mínimo: leitura de repositórios. Fine-grained PAT com{" "}
+                <code className="font-mono">contents:read</code> é suficiente.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegisterOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRegister}
+              disabled={!regForm.name.trim() || registerConnector.isPending}
+            >
+              {registerConnector.isPending ? "Testando conexão…" : "Cadastrar e testar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

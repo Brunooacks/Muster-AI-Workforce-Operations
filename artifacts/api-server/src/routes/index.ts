@@ -5,6 +5,7 @@ import agentsRouter from "./agents";
 import discoveryRouter from "./discovery";
 import connectorsRouter from "./connectors";
 import catalogRouter from "./catalog";
+import telemetryRouter from "./telemetry";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(agentsRouter);
 router.use(discoveryRouter);
 router.use(connectorsRouter);
 router.use(catalogRouter);
+router.use(telemetryRouter);
 
 export default router;

@@ -1,9 +1,9 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="artifacts/cohort/public/brand/cohort-lockup-on-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="artifacts/cohort/public/brand/cohort-lockup-on-light.png">
-  <img alt="Muster" src="artifacts/cohort/public/brand/cohort-lockup-on-light.png" width="320">
+  <source media="(prefers-color-scheme: dark)" srcset="artifacts/cohort/public/brand/muster-lockup-on-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="artifacts/cohort/public/brand/muster-lockup-on-light.svg">
+  <img alt="Muster" src="artifacts/cohort/public/brand/muster-lockup-on-light.svg" width="320">
 </picture>
 
 ### AI Workforce Operations
@@ -151,7 +151,7 @@ pnpm --filter @workspace/db run push        # dev: push rápido do schema
 pnpm --filter @workspace/api-server run dev
 
 # 5. Em outro terminal, subir o frontend web
-pnpm --filter @workspace/cohort run dev
+pnpm --filter @workspace/muster run dev
 ```
 
 Comandos úteis:
@@ -317,7 +317,7 @@ pnpm --filter @workspace/db run push        # dev: fast schema push
 pnpm --filter @workspace/api-server run dev
 
 # 5. In another terminal, start the web frontend
-pnpm --filter @workspace/cohort run dev
+pnpm --filter @workspace/muster run dev
 ```
 
 Useful commands:

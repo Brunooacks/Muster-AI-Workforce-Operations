@@ -27,7 +27,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/lib/app-shell";
 import { Eyebrow, Pill } from "@/components/cohort";
-import { CohortMark } from "@/components/logo";
+import { MusterMark } from "@/components/logo";
 import { useGetFleetSummary } from "@workspace/api-client-react";
 import { platformLabel } from "@/lib/platforms";
 import { getTrialInfo } from "@/lib/plan";
@@ -195,7 +195,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 function Wordmark() {
   return (
     <div className="flex items-center gap-2.5">
-      <CohortMark className="h-7 w-7 shrink-0" />
+      <MusterMark className="h-7 w-7 shrink-0" />
       <div className="flex flex-col">
         <span className="font-serif text-2xl font-medium leading-none tracking-tight text-foreground">
           Muster

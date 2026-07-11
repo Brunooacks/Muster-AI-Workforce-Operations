@@ -1400,3 +1400,136 @@ export const DeleteCatalogMetricParams = zod.object({
 })
 
 
+/**
+ * @summary Register a real connector with a credential and test it
+ */
+
+
+
+export const RegisterConnectorBody = zod.object({
+  "platform": zod.string().describe('Platform key (e.g. github). Must have a real connector implementation.'),
+  "name": zod.string().min(1),
+  "token": zod.string().nullish().describe('Credential (PAT\/API key). Omit to use ambient env credentials.')
+})
+
+
+/**
+ * @summary Test a registered connector's credential against the live platform
+ */
+export const TestConnectorParams = zod.object({
+  "connectorId": zod.coerce.string()
+})
+
+export const TestConnectorResponse = zod.object({
+  "ok": zod.boolean(),
+  "message": zod.string()
+})
+
+
+/**
+ * Fetches the repository, understands the agent via static heuristics (stack detection, README dossier parsing, KPI-table extraction) and returns a pre-filled Carteira de Trabalho draft with per-field confidence, framing missing metrics from the metric catalog. Works without any AI credential; when one is configured the AI analyzer can refine this draft afterwards.
+ * @summary Heuristic pre-assessment of an agent repository (no AI key needed)
+ */
+export const preAssessAgentSourceBodyUrlMin = 8;
+
+
+
+export const PreAssessAgentSourceBody = zod.object({
+  "url": zod.string().min(preAssessAgentSourceBodyUrlMin),
+  "nameHint": zod.string().optional()
+})
+
+export const PreAssessAgentSourceResponse = zod.object({
+  "draft": zod.object({
+  "name": zod.string(),
+  "role": zod.string(),
+  "tagline": zod.string(),
+  "bio": zod.string(),
+  "shouldDo": zod.array(zod.string()),
+  "shouldNotDo": zod.array(zod.string()),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']),
+  "autonomyNotes": zod.string().optional(),
+  "limits": zod.array(zod.string()),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "description": zod.string()
+}),
+  "proposedMetrics": zod.array(zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
+  "rationale": zod.string().optional()
+})),
+  "summary": zod.string(),
+  "confidence": zod.number()
+}),
+  "fieldConfidence": zod.record(zod.string(), zod.number()),
+  "platform": zod.string().nullable(),
+  "signals": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Ingest a telemetry event (execution, error, escalation) for an agent
+ */
+export const IngestAgentEventParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const IngestAgentEventBody = zod.object({
+  "kind": zod.enum(['execution', 'error', 'escalation', 'feedback']).optional(),
+  "durationMs": zod.number().optional(),
+  "costCents": zod.number().optional(),
+  "tokensIn": zod.number().optional(),
+  "tokensOut": zod.number().optional(),
+  "success": zod.boolean().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
+ * @summary Aggregated telemetry summary for an agent
+ */
+export const GetAgentTelemetryParams = zod.object({
+  "agentId": zod.coerce.string(),
+  "window": zod.enum(['7d', '30d', '90d'])
+})
+
+export const GetAgentTelemetryResponse = zod.object({
+  "windowDays": zod.number(),
+  "totalExecutions": zod.number(),
+  "successRate": zod.number().nullish(),
+  "avgDurationMs": zod.number().nullish(),
+  "p95DurationMs": zod.number().nullish(),
+  "totalCostCents": zod.number(),
+  "avgCostCentsPerExecution": zod.number().nullish(),
+  "executionsPerDay": zod.number(),
+  "escalationRate": zod.number().nullish(),
+  "errorRate": zod.number().nullish(),
+  "activeDays": zod.number(),
+  "firstEventAt": zod.string().nullish(),
+  "lastEventAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Recompute the agent evaluation — from real telemetry when available
+ */
+export const ReevaluateAgentParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ReevaluateAgentResponse = zod.object({
+  "agentId": zod.string(),
+  "changed": zod.boolean(),
+  "healthScore": zod.number(),
+  "verdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
+  "dataSource": zod.enum(['telemetry', 'seeded', 'mixed']),
+  "rationale": zod.string(),
+  "rulesFired": zod.array(zod.string()).optional()
+})
+
+
