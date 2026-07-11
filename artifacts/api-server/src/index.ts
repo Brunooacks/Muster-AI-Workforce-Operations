@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureSeed } from "./lib/seed";
+import { ensureCatalogSeed } from "./lib/catalog-seed";
 import { backfillAgentScores } from "./lib/reevaluate";
 
 const rawPort = process.env["PORT"];
@@ -20,6 +21,10 @@ if (Number.isNaN(port) || port <= 0) {
 ensureSeed()
   .catch((err) => {
     logger.error({ err }, "Failed to seed database");
+  })
+  .then(() => ensureCatalogSeed())
+  .catch((err) => {
+    logger.error({ err }, "Failed to seed metric catalog");
   })
   .then(() => backfillAgentScores())
   .catch((err) => {

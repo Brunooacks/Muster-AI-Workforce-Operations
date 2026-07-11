@@ -934,6 +934,80 @@ export interface FleetBenchmarks {
   fleetAvgAccuracy: number;
 }
 
+export type CatalogMetricLayer = typeof CatalogMetricLayer[keyof typeof CatalogMetricLayer];
+
+
+export const CatalogMetricLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface CatalogMetric {
+  key: string;
+  vertical: string;
+  layer: CatalogMetricLayer;
+  label: string;
+  unit: string;
+  target: string;
+  description: string;
+  rationale: string;
+  isCustom: boolean;
+}
+
+export interface CatalogVertical {
+  key: string;
+  label: string;
+  description: string;
+  icon: string;
+  metrics: CatalogMetric[];
+}
+
+export type CatalogMetricInputLayer = typeof CatalogMetricInputLayer[keyof typeof CatalogMetricInputLayer];
+
+
+export const CatalogMetricInputLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface CatalogMetricInput {
+  vertical: string;
+  layer: CatalogMetricInputLayer;
+  /** @minLength 1 */
+  label: string;
+  unit?: string;
+  target?: string;
+  description?: string;
+  rationale?: string;
+}
+
+export type CatalogMetricUpdateLayer = typeof CatalogMetricUpdateLayer[keyof typeof CatalogMetricUpdateLayer];
+
+
+export const CatalogMetricUpdateLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface CatalogMetricUpdate {
+  layer?: CatalogMetricUpdateLayer;
+  /** @minLength 1 */
+  label?: string;
+  unit?: string;
+  target?: string;
+  description?: string;
+  rationale?: string;
+}
+
 export type ListFleetAlertsParams = {
 severity?: ListFleetAlertsSeverity;
 status?: ListFleetAlertsStatus;

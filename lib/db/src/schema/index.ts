@@ -328,3 +328,30 @@ export const agentDrafts = pgTable("agent_drafts", {
     .notNull()
     .defaultNow(),
 });
+
+// --- Metric catalog (R2) ------------------------------------------------------
+// Pre-populated library of deep metrics organized by business vertical, plus
+// tailor-made custom metrics created by the user. Seeded rows carry
+// isCustom=false and are re-seeded on boot when the table is empty.
+
+export const catalogMetrics = pgTable("catalog_metrics", {
+  id: id(),
+  // Unique kebab-case key, e.g. "acuracia-das-decisoes".
+  key: text("key").notNull().unique(),
+  // One of the vertical keys defined in the metric catalog seed
+  // (negocios, tecnologia, operacoes, suporte-ti, risco-compliance, financeiro).
+  vertical: text("vertical").notNull(),
+  layer: text("layer").$type<LayerKey>().notNull(),
+  label: text("label").notNull(),
+  unit: text("unit").notNull().default(""),
+  target: text("target").notNull().default("—"),
+  description: text("description").notNull().default(""),
+  rationale: text("rationale").notNull().default(""),
+  isCustom: integer("is_custom").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

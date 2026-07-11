@@ -8,6 +8,7 @@ import {
   Plug,
   ShieldAlert,
   Scale,
+  Gauge,
   BarChart3,
   Compass,
   Sparkles,
@@ -54,6 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { name: "Detector de vitória ilusória", href: "/alertas", icon: ShieldAlert },
       { name: "Governança", href: "/governanca", icon: Scale },
+      { name: "Métricas", href: "/metricas", icon: Gauge },
       { name: "Benchmarks", href: "/benchmarks", icon: BarChart3 },
     ],
   },

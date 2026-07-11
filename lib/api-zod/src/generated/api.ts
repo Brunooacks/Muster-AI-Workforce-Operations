@@ -1320,3 +1320,83 @@ export const ImportDiscoveredAgentsBody = zod.object({
 })
 
 
+/**
+ * @summary List the metric catalog grouped by business vertical
+ */
+export const ListCatalogMetricsResponseItem = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "icon": zod.string(),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "vertical": zod.string(),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "description": zod.string(),
+  "rationale": zod.string(),
+  "isCustom": zod.boolean()
+}))
+})
+export const ListCatalogMetricsResponse = zod.array(ListCatalogMetricsResponseItem)
+
+
+/**
+ * @summary Create a tailor-made custom metric
+ */
+
+
+
+export const CreateCatalogMetricBody = zod.object({
+  "vertical": zod.string(),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string().min(1),
+  "unit": zod.string().optional(),
+  "target": zod.string().optional(),
+  "description": zod.string().optional(),
+  "rationale": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a catalog metric
+ */
+export const UpdateCatalogMetricParams = zod.object({
+  "metricKey": zod.coerce.string()
+})
+
+
+
+
+export const UpdateCatalogMetricBody = zod.object({
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']).optional(),
+  "label": zod.string().min(1).optional(),
+  "unit": zod.string().optional(),
+  "target": zod.string().optional(),
+  "description": zod.string().optional(),
+  "rationale": zod.string().optional()
+})
+
+export const UpdateCatalogMetricResponse = zod.object({
+  "key": zod.string(),
+  "vertical": zod.string(),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "description": zod.string(),
+  "rationale": zod.string(),
+  "isCustom": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a custom metric (seeded metrics cannot be deleted)
+ */
+export const DeleteCatalogMetricParams = zod.object({
+  "metricKey": zod.coerce.string()
+})
+
+
