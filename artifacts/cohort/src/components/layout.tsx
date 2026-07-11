@@ -198,7 +198,7 @@ function Wordmark() {
       <CohortMark className="h-7 w-7 shrink-0" />
       <div className="flex flex-col">
         <span className="font-serif text-2xl font-medium leading-none tracking-tight text-foreground">
-          Cohort
+          Muster
         </span>
         <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
           AI Workforce Operations

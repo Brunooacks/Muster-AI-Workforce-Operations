@@ -1,6 +1,6 @@
-# Cohort
+# Muster (ex-Cohort)
 
-Cohort é uma plataforma plug-and-play que dá às frotas de agentes de IA (multi-plataforma) identidade, carteira de trabalho, análise de desempenho em 5 camadas e governança — para decidir entre **Promover, Mentorar ou Aposentar** cada agente.
+Muster é uma plataforma plug-and-play que dá às frotas de agentes de IA (multi-plataforma) identidade, carteira de trabalho, análise de desempenho em 5 camadas e governança — para decidir entre **Promover, Mentorar ou Aposentar** cada agente.
 
 ## Run & Operate
 
@@ -48,12 +48,11 @@ Cohort é uma plataforma plug-and-play que dá às frotas de agentes de IA (mult
 - **Veredito** — Promover / Mentorar / Aposentar, com confiança, janela de execução e plano de ação.
 - **Detector de Vitória Ilusória** — sinaliza padrões enganosos de sucesso.
 - **Comitê / Governança da Frota** — donos de negócio/técnico/sponsor por agente.
-- UI inteiramente em português do Brasil. Design "Trincheira": papel creme quente, verde-floresta, tipografia serifada editorial (Spectral) + mono (IBM Plex Mono).
+- UI inteiramente em português do Brasil. Design "Ops Room": void verde-escuro, phosphor, creme quente, tipografia serifada editorial (Spectral) + mono (IBM Plex Mono).
 
 ## User preferences
 
-- **Design (app autenticado):** "Trincheira — AI Workforce Operations" (réplica fiel das 13 telas de referência). Fundo creme quente `42 30% 93%`, primária verde-floresta `158 27% 19%`; títulos e números grandes em **serif Spectral**, dados tabulares em **mono IBM Plex Mono**; eyebrows uppercase tracked; pills de status (sage/ocre/terracota/vermelho/azul). Supersede o "Neutro Notion"/sage anterior (que por sua vez superou o dark-amber rejeitado).
-- **Design (landing pública):** MESMO tema claro "Trincheira" do app — creme + verde-floresta + serifada Spectral + mono IBM Plex Mono, puxando os tokens CSS do app (`bg-background`, `bg-primary`, `text-chart-*`). Headline serif com gradiente itálico `primary→chart-1→chart-2`. Isto **supersede** a antiga landing DARK Veltrix (coral/aurora removidos). Ver `.agents/memory/landing-vs-app-theme.md`.
+- **Design (app + landing, 2026-07-10):** "Ops Room — Sala de Operações" (conceito B dos protótipos, escolhido pelo usuário). Chão void `160 18% 7%` (#0e1512), primária phosphor `148 29% 61%` (#7fb89a), texto creme quente `43 38% 90%` (#efe9da); status ochre/terracota/red/steel (`--chart-2..5`); títulos e números grandes em **serif Spectral**, dados tabulares em **mono IBM Plex Mono**; eyebrows uppercase tracked; scanlines sutis no body; ticker de vereditos e esquema SVG animado (`components/ops-schematic.tsx`) na landing. **Supersede a "Trincheira" clara** (creme+verde-floresta), que por sua vez superou o "Neutro Notion" e o dark-amber. A estrutura editorial da Trincheira (seções numeradas, pills, serif+mono) permanece — só o chão mudou de papel para sala escura.
 - **Idioma da UI:** português do Brasil.
 - **Vocabulário do produto:** Frota, Carteira de Trabalho, Veredito, Admissão, Comitê, Detector de Vitória Ilusória.
 - **Sem acoplamento específico do Replit** na lógica do produto.

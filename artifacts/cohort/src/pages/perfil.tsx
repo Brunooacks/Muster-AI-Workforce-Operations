@@ -104,7 +104,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between gap-4 border-b border-card-border py-3">
               <div>
                 <div className="text-sm font-medium text-foreground">Vocabulário padrão</div>
-                <div className="text-xs text-muted-foreground">Como a Cohort fala com você</div>
+                <div className="text-xs text-muted-foreground">Como o Muster fala com você</div>
               </div>
               <div className="flex items-center rounded-full border border-border bg-card p-0.5">
                 {(

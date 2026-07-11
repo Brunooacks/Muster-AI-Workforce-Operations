@@ -79,7 +79,7 @@ function WorkspaceSection() {
             <div className="text-sm font-medium text-foreground">Nome do workspace</div>
             <div className="text-xs text-muted-foreground">Visível para toda a equipe</div>
           </div>
-          <span className="font-mono text-sm text-foreground">Cohort</span>
+          <span className="font-mono text-sm text-foreground">Muster</span>
         </div>
         <div className="flex items-center justify-between gap-4 px-5 py-4">
           <div>

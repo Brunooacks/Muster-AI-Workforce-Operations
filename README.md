@@ -3,7 +3,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="artifacts/cohort/public/brand/cohort-lockup-on-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="artifacts/cohort/public/brand/cohort-lockup-on-light.png">
-  <img alt="Cohort" src="artifacts/cohort/public/brand/cohort-lockup-on-light.png" width="320">
+  <img alt="Muster" src="artifacts/cohort/public/brand/cohort-lockup-on-light.png" width="320">
 </picture>
 
 ### AI Workforce Operations
@@ -33,7 +33,7 @@
 
 ## 🇧🇷 Português
 
-> O Cohort é uma plataforma **plug-and-play** que dá às frotas de agentes de IA (multi-plataforma) **identidade, carteira de trabalho, análise de desempenho em 5 camadas e governança** — para decidir, com confiança, entre **Promover, Mentorar ou Aposentar** cada agente.
+> O Muster é uma plataforma **plug-and-play** que dá às frotas de agentes de IA (multi-plataforma) **identidade, carteira de trabalho, análise de desempenho em 5 camadas e governança** — para decidir, com confiança, entre **Promover, Mentorar ou Aposentar** cada agente.
 
 ### Índice
 
@@ -49,7 +49,7 @@
 
 ### O problema
 
-Equipes estão colocando dezenas — em breve, milhares — de agentes de IA em produção, mas sem nenhuma camada de **RH e governança** para eles. Ninguém sabe ao certo quais agentes geram valor, quais estão "trapaceando" métricas, quem é o dono de cada um, ou quando aposentar um agente. O Cohort trata cada agente como um **colaborador**: com carteira de trabalho, avaliação periódica, cadeia de responsabilidade e um veredito acionável.
+Equipes estão colocando dezenas — em breve, milhares — de agentes de IA em produção, mas sem nenhuma camada de **RH e governança** para eles. Ninguém sabe ao certo quais agentes geram valor, quais estão "trapaceando" métricas, quem é o dono de cada um, ou quando aposentar um agente. O Muster trata cada agente como um **colaborador**: com carteira de trabalho, avaliação periódica, cadeia de responsabilidade e um veredito acionável.
 
 ### Funcionalidades
 
@@ -84,7 +84,7 @@ Equipes estão colocando dezenas — em breve, milhares — de agentes de IA em 
 flowchart LR
     U[👤 Usuário<br/>Gestor / Comitê] -->|HTTPS + Clerk| W
 
-    subgraph Cohort
+    subgraph Muster
       W[Web · React + Vite<br/>shadcn/ui]
       A[API · Express 5<br/>requireAuth · Zod]
       DB[(PostgreSQL<br/>Drizzle ORM)]
@@ -199,7 +199,7 @@ Veja **[`.env.example`](.env.example)** para o catálogo completo (self-hosted v
 
 ## 🇺🇸 English
 
-> Cohort is a **plug-and-play** platform that gives multi-platform fleets of AI agents **identity, a work record, 5-layer performance analysis, and governance** — so you can confidently decide whether to **Promote, Mentor, or Retire** each agent.
+> Muster is a **plug-and-play** platform that gives multi-platform fleets of AI agents **identity, a work record, 5-layer performance analysis, and governance** — so you can confidently decide whether to **Promote, Mentor, or Retire** each agent.
 
 ### Table of contents
 
@@ -215,7 +215,7 @@ Veja **[`.env.example`](.env.example)** para o catálogo completo (self-hosted v
 
 ### The problem
 
-Teams are shipping dozens — soon thousands — of AI agents to production with **no HR or governance layer** for them. Nobody really knows which agents create value, which are gaming their metrics, who owns each one, or when to retire one. Cohort treats every agent like an **employee**: with a work record, periodic evaluation, a chain of responsibility, and an actionable verdict.
+Teams are shipping dozens — soon thousands — of AI agents to production with **no HR or governance layer** for them. Nobody really knows which agents create value, which are gaming their metrics, who owns each one, or when to retire one. Muster treats every agent like an **employee**: with a work record, periodic evaluation, a chain of responsibility, and an actionable verdict.
 
 ### Features
 
@@ -250,7 +250,7 @@ Teams are shipping dozens — soon thousands — of AI agents to production with
 flowchart LR
     U[👤 User<br/>Manager / Committee] -->|HTTPS + Clerk| W
 
-    subgraph Cohort
+    subgraph Muster
       W[Web · React + Vite<br/>shadcn/ui]
       A[API · Express 5<br/>requireAuth · Zod]
       DB[(PostgreSQL<br/>Drizzle ORM)]
@@ -363,8 +363,8 @@ See **[`.env.example`](.env.example)** for the full catalog (self-hosted vs Repl
 
 <div align="center">
 
-A interface do Cohort é **inteiramente em português do Brasil**, com o design *Trincheira* — papel creme quente, verde-floresta e tipografia serifada editorial.
+A interface do Muster é **inteiramente em português do Brasil**, com o design *Trincheira* — papel creme quente, verde-floresta e tipografia serifada editorial.
 <br/>
-*Cohort's interface is **entirely in Brazilian Portuguese**, with the "Trincheira" design — warm cream paper, forest green, and editorial serif typography.*
+*Muster's interface is **entirely in Brazilian Portuguese**, with the "Trincheira" design — warm cream paper, forest green, and editorial serif typography.*
 
 </div>

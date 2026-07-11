@@ -53,41 +53,41 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: "hsl(158 27% 19%)",
-    colorForeground: "hsl(30 15% 15%)",
-    colorMutedForeground: "hsl(30 10% 45%)",
-    colorDanger: "hsl(0 70% 50%)",
-    colorBackground: "hsl(0 0% 100%)",
-    colorInput: "hsl(40 10% 90%)",
-    colorInputForeground: "hsl(30 15% 15%)",
-    colorNeutral: "hsl(40 10% 90%)",
+    colorPrimary: "hsl(148 29% 61%)",
+    colorForeground: "hsl(43 38% 90%)",
+    colorMutedForeground: "hsl(150 8% 57%)",
+    colorDanger: "hsl(6 55% 55%)",
+    colorBackground: "hsl(158 15% 9%)",
+    colorInput: "hsl(156 12% 14%)",
+    colorInputForeground: "hsl(43 38% 90%)",
+    colorNeutral: "hsl(152 12% 22%)",
     fontFamily: "Inter, system-ui, sans-serif",
     borderRadius: "0.5rem",
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden border border-[hsl(40_10%_92%)] shadow-sm",
+    cardBox: "bg-card rounded-2xl w-[440px] max-w-full overflow-hidden border border-card-border shadow-lg",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    headerTitle: "text-2xl font-semibold tracking-tight text-[hsl(30_15%_15%)]",
-    headerSubtitle: "text-sm text-[hsl(30_10%_45%)]",
-    socialButtonsBlockButtonText: "text-[hsl(30_15%_15%)] font-medium",
-    formFieldLabel: "text-sm font-medium text-[hsl(30_15%_15%)]",
-    footerActionLink: "text-[hsl(158_27%_19%)] hover:text-[hsl(158_30%_14%)] font-medium",
-    footerActionText: "text-[hsl(30_10%_45%)]",
-    dividerText: "text-[hsl(30_10%_45%)] text-xs font-medium uppercase tracking-wider",
-    identityPreviewEditButton: "text-[hsl(158_27%_19%)] hover:bg-[hsl(40_15%_94%)]",
-    formFieldSuccessText: "text-[hsl(158_27%_19%)] text-sm",
-    alertText: "text-[hsl(0_70%_50%)] text-sm",
+    headerTitle: "text-2xl font-semibold tracking-tight text-foreground",
+    headerSubtitle: "text-sm text-muted-foreground",
+    socialButtonsBlockButtonText: "text-foreground font-medium",
+    formFieldLabel: "text-sm font-medium text-foreground",
+    footerActionLink: "text-primary hover:text-primary/80 font-medium",
+    footerActionText: "text-muted-foreground",
+    dividerText: "text-muted-foreground text-xs font-medium uppercase tracking-wider",
+    identityPreviewEditButton: "text-primary hover:bg-secondary",
+    formFieldSuccessText: "text-primary text-sm",
+    alertText: "text-destructive text-sm",
     logoBox: "h-8 flex items-center justify-center mb-6",
     logoImage: "h-full w-auto",
-    socialButtonsBlockButton: "border border-[hsl(40_10%_90%)] hover:bg-[hsl(40_15%_95%)] transition-colors",
-    formButtonPrimary: "bg-[hsl(158_27%_19%)] hover:bg-[hsl(158_30%_14%)] text-white shadow-sm transition-colors",
-    formFieldInput: "border border-[hsl(40_10%_90%)] rounded-md focus:ring-2 focus:ring-[hsl(158_27%_19%)] focus:border-transparent transition-shadow placeholder:text-[hsl(30_10%_45%)]",
+    socialButtonsBlockButton: "border border-card-border hover:bg-secondary transition-colors",
+    formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors",
+    formFieldInput: "border border-input rounded-md bg-secondary/40 focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow placeholder:text-muted-foreground",
     footerAction: "mt-6",
-    dividerLine: "bg-[hsl(40_10%_90%)]",
-    alert: "bg-[hsl(0_70%_95%)] border border-[hsl(0_70%_80%)] rounded-md p-3",
-    otpCodeFieldInput: "border border-[hsl(40_10%_90%)] focus:ring-2 focus:ring-[hsl(158_27%_19%)]",
+    dividerLine: "bg-card-border",
+    alert: "bg-destructive/10 border border-destructive/40 rounded-md p-3",
+    otpCodeFieldInput: "border border-input focus:ring-2 focus:ring-primary",
     formFieldRow: "mb-4",
     main: "flex flex-col gap-4",
   },
@@ -109,7 +109,16 @@ function SignUpPage() {
   );
 }
 
+// With the local dev auth bypass the mock session is ALWAYS signed-in, which
+// would make "/" redirect straight to /comando and leave the landing page
+// unreachable (and "Sair" apparently broken, since it lands back on /comando).
+// In bypass mode "/" always shows the landing; "Entrar" leads to the app.
+const authDevBypass = import.meta.env.VITE_AUTH_DEV_BYPASS === "true";
+
 function HomeRedirect() {
+  if (authDevBypass) {
+    return <LandingPage />;
+  }
   return (
     <>
       <Show when="signed-in">

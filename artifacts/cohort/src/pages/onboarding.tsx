@@ -94,7 +94,7 @@ export default function OnboardingPage() {
         {/* Stepper */}
         <div className="mb-8 flex items-center justify-between">
           <span className="font-serif text-xl font-medium tracking-tight text-foreground">
-            Cohort
+            Muster
           </span>
           <button
             type="button"
@@ -144,7 +144,7 @@ export default function OnboardingPage() {
               Vamos montar sua frota
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-              A Cohort dá identidade, carteira de trabalho e análise de desempenho aos seus agentes
+              O Muster dá identidade, carteira de trabalho e análise de desempenho aos seus agentes
               de IA — em três passos rápidos você terá sua primeira frota mapeada.
             </p>
             <div className="mt-6 grid gap-3 text-left sm:grid-cols-3">
