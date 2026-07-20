@@ -33,6 +33,7 @@ import {
 import { ErrorState } from "@/components/query-state";
 import { PageHeading, Eyebrow, FilterChip, Pill } from "@/components/cohort";
 import { LAYER_ICON } from "@/components/carteira";
+import { useLang, type Lang } from "@/lib/i18n";
 import {
   Briefcase,
   Cpu,
@@ -59,15 +60,172 @@ const VERTICAL_ICON: Record<string, LucideIcon> = {
   Layers,
 };
 
-const LAYER_LABEL: Record<string, string> = {
-  efficacy: "Eficácia",
-  efficiency: "Eficiência",
-  adoption: "Adoção",
-  governance: "Governança",
-  value: "Valor",
+const LAYER_ORDER = ["efficacy", "efficiency", "adoption", "governance", "value"] as const;
+
+/* ── Dicionário da página (pt canônico · en · es) ─────────── */
+
+const PT = {
+  bcGov: "Governança",
+  bcMetrics: "Métricas",
+  eyebrow: "Governança",
+  title: "Biblioteca de Métricas",
+  subtitle: (n: number) =>
+    `Catálogo profundo por vertical de negócio — ${n} métricas prontas, mais as suas tailor-made. Toda métrica declara camada, meta e o racional que sustenta o veredito.`,
+  newMetric: "Nova métrica",
+  errLoad: "Não foi possível carregar o catálogo",
+  verticalEyebrow: "Vertical",
+  layers: {
+    efficacy: "Eficácia",
+    efficiency: "Eficiência",
+    adoption: "Adoção",
+    governance: "Governança",
+    value: "Valor",
+  } as Record<string, string>,
+  customPill: "Custom",
+  editAria: "Editar métrica",
+  deleteAria: "Excluir métrica",
+  dialogEditTitle: "Editar métrica",
+  dialogNewTitle: "Nova métrica tailor-made",
+  dialogDescStandard: "Métrica do catálogo padrão: apenas meta, descrição e racional são editáveis.",
+  dialogDescNew:
+    "Defina a métrica no vocabulário do seu negócio. Ela fica disponível na admissão e nas avaliações.",
+  labelVertical: "Vertical",
+  labelLayer: "Camada",
+  labelName: "Nome da métrica",
+  phName: "ex.: Propostas geradas por semana",
+  labelUnit: "Unidade",
+  phUnit: "%, s, R$, /dia…",
+  labelTarget: "Meta",
+  phTarget: "ex.: ≥ 85%",
+  labelDesc: "Descrição",
+  phDesc: "O que esta métrica mede?",
+  labelRationale: "Racional do veredito",
+  phRationale: "Por que ela sustenta a decisão de promover/mentorar/aposentar?",
+  cancel: "Cancelar",
+  save: "Salvar",
+  create: "Criar métrica",
+  delTitle: "Excluir métrica",
+  delDesc: (label: string) =>
+    `“${label}” será removida do catálogo. Avaliações existentes não são alteradas.`,
+  delBtn: "Excluir",
+  toastUpdated: "Métrica atualizada",
+  toastUpdateErr: "Erro ao atualizar métrica",
+  toastCreated: "Métrica criada",
+  toastCreateErr: "Erro ao criar métrica",
+  toastDeleted: "Métrica excluída",
+  toastDeleteErrTitle: "Não foi possível excluir",
+  toastDeleteErrDesc: "Métricas do catálogo padrão não podem ser excluídas.",
 };
 
-const LAYER_ORDER = ["efficacy", "efficiency", "adoption", "governance", "value"] as const;
+type Dict = typeof PT;
+
+const L: Record<Lang, Dict> = {
+  pt: PT,
+  en: {
+    bcGov: "Governance",
+    bcMetrics: "Metrics",
+    eyebrow: "Governance",
+    title: "Metrics Library",
+    subtitle: (n: number) =>
+      `Deep catalog per business vertical — ${n} ready-made metrics, plus your tailor-made ones. Every metric declares layer, target and the rationale that supports the verdict.`,
+    newMetric: "New metric",
+    errLoad: "Could not load the catalog",
+    verticalEyebrow: "Vertical",
+    layers: {
+      efficacy: "Efficacy",
+      efficiency: "Efficiency",
+      adoption: "Adoption",
+      governance: "Governance",
+      value: "Value",
+    },
+    customPill: "Custom",
+    editAria: "Edit metric",
+    deleteAria: "Delete metric",
+    dialogEditTitle: "Edit metric",
+    dialogNewTitle: "New tailor-made metric",
+    dialogDescStandard: "Standard catalog metric: only target, description and rationale are editable.",
+    dialogDescNew:
+      "Define the metric in your business vocabulary. It becomes available at admission and in evaluations.",
+    labelVertical: "Vertical",
+    labelLayer: "Layer",
+    labelName: "Metric name",
+    phName: "e.g.: Proposals generated per week",
+    labelUnit: "Unit",
+    phUnit: "%, s, R$, /day…",
+    labelTarget: "Target",
+    phTarget: "e.g.: ≥ 85%",
+    labelDesc: "Description",
+    phDesc: "What does this metric measure?",
+    labelRationale: "Verdict rationale",
+    phRationale: "Why does it support the decision to promote/mentor/retire?",
+    cancel: "Cancel",
+    save: "Save",
+    create: "Create metric",
+    delTitle: "Delete metric",
+    delDesc: (label: string) =>
+      `“${label}” will be removed from the catalog. Existing evaluations are not changed.`,
+    delBtn: "Delete",
+    toastUpdated: "Metric updated",
+    toastUpdateErr: "Error updating metric",
+    toastCreated: "Metric created",
+    toastCreateErr: "Error creating metric",
+    toastDeleted: "Metric deleted",
+    toastDeleteErrTitle: "Could not delete",
+    toastDeleteErrDesc: "Standard catalog metrics cannot be deleted.",
+  },
+  es: {
+    bcGov: "Gobernanza",
+    bcMetrics: "Métricas",
+    eyebrow: "Gobernanza",
+    title: "Biblioteca de Métricas",
+    subtitle: (n: number) =>
+      `Catálogo profundo por vertical de negocio — ${n} métricas listas, más las tuyas tailor-made. Toda métrica declara capa, meta y el racional que sustenta el veredicto.`,
+    newMetric: "Nueva métrica",
+    errLoad: "No fue posible cargar el catálogo",
+    verticalEyebrow: "Vertical",
+    layers: {
+      efficacy: "Eficacia",
+      efficiency: "Eficiencia",
+      adoption: "Adopción",
+      governance: "Gobernanza",
+      value: "Valor",
+    },
+    customPill: "Personalizada",
+    editAria: "Editar métrica",
+    deleteAria: "Eliminar métrica",
+    dialogEditTitle: "Editar métrica",
+    dialogNewTitle: "Nueva métrica tailor-made",
+    dialogDescStandard: "Métrica del catálogo estándar: solo la meta, la descripción y el racional son editables.",
+    dialogDescNew:
+      "Define la métrica en el vocabulario de tu negocio. Queda disponible en la admisión y en las evaluaciones.",
+    labelVertical: "Vertical",
+    labelLayer: "Capa",
+    labelName: "Nombre de la métrica",
+    phName: "ej.: Propuestas generadas por semana",
+    labelUnit: "Unidad",
+    phUnit: "%, s, R$, /día…",
+    labelTarget: "Meta",
+    phTarget: "ej.: ≥ 85%",
+    labelDesc: "Descripción",
+    phDesc: "¿Qué mide esta métrica?",
+    labelRationale: "Racional del veredicto",
+    phRationale: "¿Por qué sustenta la decisión de ascender/mentoría/retirar?",
+    cancel: "Cancelar",
+    save: "Guardar",
+    create: "Crear métrica",
+    delTitle: "Eliminar métrica",
+    delDesc: (label: string) =>
+      `“${label}” será eliminada del catálogo. Las evaluaciones existentes no se modifican.`,
+    delBtn: "Eliminar",
+    toastUpdated: "Métrica actualizada",
+    toastUpdateErr: "Error al actualizar la métrica",
+    toastCreated: "Métrica creada",
+    toastCreateErr: "Error al crear la métrica",
+    toastDeleted: "Métrica eliminada",
+    toastDeleteErrTitle: "No fue posible eliminar",
+    toastDeleteErrDesc: "Las métricas del catálogo estándar no pueden eliminarse.",
+  },
+};
 
 type MetricForm = {
   key?: string; // present when editing
@@ -94,6 +252,8 @@ const EMPTY_FORM = (vertical: string): MetricForm => ({
 
 export default function MetricasPage() {
   const { toast } = useToast();
+  const { lang } = useLang();
+  const t = L[lang];
   const { data: verticals, isLoading, isError, refetch } = useListCatalogMetrics();
   const createMetric = useCreateCatalogMetric();
   const updateMetric = useUpdateCatalogMetric();
@@ -126,11 +286,11 @@ export default function MetricasPage() {
         { metricKey: form.key, data: common },
         {
           onSuccess: () => {
-            toast({ title: "Métrica atualizada" });
+            toast({ title: t.toastUpdated });
             setForm(null);
             invalidate();
           },
-          onError: () => toast({ title: "Erro ao atualizar métrica", variant: "destructive" }),
+          onError: () => toast({ title: t.toastUpdateErr, variant: "destructive" }),
         },
       );
     } else {
@@ -138,11 +298,11 @@ export default function MetricasPage() {
         { data: { ...common, vertical: form.vertical } },
         {
           onSuccess: () => {
-            toast({ title: "Métrica criada" });
+            toast({ title: t.toastCreated });
             setForm(null);
             invalidate();
           },
-          onError: () => toast({ title: "Erro ao criar métrica", variant: "destructive" }),
+          onError: () => toast({ title: t.toastCreateErr, variant: "destructive" }),
         },
       );
     }
@@ -154,14 +314,14 @@ export default function MetricasPage() {
       { metricKey: confirmDelete.key },
       {
         onSuccess: () => {
-          toast({ title: "Métrica excluída" });
+          toast({ title: t.toastDeleted });
           setConfirmDelete(null);
           invalidate();
         },
         onError: () =>
           toast({
-            title: "Não foi possível excluir",
-            description: "Métricas do catálogo padrão não podem ser excluídas.",
+            title: t.toastDeleteErrTitle,
+            description: t.toastDeleteErrDesc,
             variant: "destructive",
           }),
       },
@@ -171,22 +331,22 @@ export default function MetricasPage() {
   const totalMetrics = verticals?.reduce((n, v) => n + v.metrics.length, 0) ?? 0;
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Governança" }, { label: "Métricas" }]}>
+    <AppLayout breadcrumbs={[{ label: t.bcGov }, { label: t.bcMetrics }]}>
       <div className="space-y-7 animate-in fade-in duration-500">
         <PageHeading
-          eyebrow="Governança"
-          title="Biblioteca de Métricas"
-          subtitle={`Catálogo profundo por vertical de negócio — ${totalMetrics} métricas prontas, mais as suas tailor-made. Toda métrica declara camada, meta e o racional que sustenta o veredito.`}
+          eyebrow={t.eyebrow}
+          title={t.title}
+          subtitle={t.subtitle(totalMetrics)}
           action={
             <Button onClick={() => setForm(EMPTY_FORM(current?.key ?? "negocios"))}>
               <Plus className="mr-2 h-4 w-4" />
-              Nova métrica
+              {t.newMetric}
             </Button>
           }
         />
 
         {isError ? (
-          <ErrorState title="Não foi possível carregar o catálogo" onRetry={() => refetch()} />
+          <ErrorState title={t.errLoad} onRetry={() => refetch()} />
         ) : isLoading || !verticals ? (
           <div className="space-y-4">
             <Skeleton className="h-10 w-full max-w-2xl rounded-full" />
@@ -196,7 +356,7 @@ export default function MetricasPage() {
           <>
             {/* Vertical selector */}
             <div className="flex flex-wrap items-center gap-2">
-              <Eyebrow>Vertical</Eyebrow>
+              <Eyebrow>{t.verticalEyebrow}</Eyebrow>
               {verticals.map((v) => (
                 <FilterChip
                   key={v.key}
@@ -237,7 +397,7 @@ export default function MetricasPage() {
                         <div className="mb-3 flex items-center gap-2.5">
                           <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
                           <h3 className="font-serif text-lg font-medium leading-none tracking-tight">
-                            {LAYER_LABEL[layerKey]}
+                            {t.layers[layerKey]}
                           </h3>
                         </div>
                         <div>
@@ -253,7 +413,7 @@ export default function MetricasPage() {
                                     <span className="text-[13px] leading-tight text-foreground/90">
                                       {m.label}
                                     </span>
-                                    {m.isCustom && <Pill tone="blue">Custom</Pill>}
+                                    {m.isCustom && <Pill tone="blue">{t.customPill}</Pill>}
                                   </div>
                                   <div className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">
                                     {m.target}
@@ -263,7 +423,7 @@ export default function MetricasPage() {
                                 <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                                   <button
                                     type="button"
-                                    aria-label="Editar métrica"
+                                    aria-label={t.editAria}
                                     onClick={() =>
                                       setForm({
                                         key: m.key,
@@ -284,7 +444,7 @@ export default function MetricasPage() {
                                   {m.isCustom && (
                                     <button
                                       type="button"
-                                      aria-label="Excluir métrica"
+                                      aria-label={t.deleteAria}
                                       onClick={() => setConfirmDelete(m)}
                                       className="rounded-md p-1 text-muted-foreground/60 hover:bg-muted hover:text-chart-4"
                                     >
@@ -315,18 +475,16 @@ export default function MetricasPage() {
       <Dialog open={!!form} onOpenChange={(open) => !open && setForm(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{form?.key ? "Editar métrica" : "Nova métrica tailor-made"}</DialogTitle>
+            <DialogTitle>{form?.key ? t.dialogEditTitle : t.dialogNewTitle}</DialogTitle>
             <DialogDescription>
-              {form?.key && !form.isCustom
-                ? "Métrica do catálogo padrão: apenas meta, descrição e racional são editáveis."
-                : "Defina a métrica no vocabulário do seu negócio. Ela fica disponível na admissão e nas avaliações."}
+              {form?.key && !form.isCustom ? t.dialogDescStandard : t.dialogDescNew}
             </DialogDescription>
           </DialogHeader>
           {form && (
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Vertical</Label>
+                  <Label>{t.labelVertical}</Label>
                   <Select
                     value={form.vertical}
                     onValueChange={(v) => setForm((p) => (p ? { ...p, vertical: v } : p))}
@@ -345,7 +503,7 @@ export default function MetricasPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Camada</Label>
+                  <Label>{t.labelLayer}</Label>
                   <Select
                     value={form.layer}
                     onValueChange={(v) => setForm((p) => (p ? { ...p, layer: v } : p))}
@@ -357,7 +515,7 @@ export default function MetricasPage() {
                     <SelectContent>
                       {LAYER_ORDER.map((l) => (
                         <SelectItem key={l} value={l}>
-                          {LAYER_LABEL[l]}
+                          {t.layers[l]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -365,52 +523,52 @@ export default function MetricasPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="m-label">Nome da métrica</Label>
+                <Label htmlFor="m-label">{t.labelName}</Label>
                 <Input
                   id="m-label"
                   value={form.label}
-                  placeholder="ex.: Propostas geradas por semana"
+                  placeholder={t.phName}
                   disabled={!!form.key && !form.isCustom}
                   onChange={(e) => setForm((p) => (p ? { ...p, label: e.target.value } : p))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="m-unit">Unidade</Label>
+                  <Label htmlFor="m-unit">{t.labelUnit}</Label>
                   <Input
                     id="m-unit"
                     value={form.unit}
-                    placeholder="%, s, R$, /dia…"
+                    placeholder={t.phUnit}
                     disabled={!!form.key && !form.isCustom}
                     onChange={(e) => setForm((p) => (p ? { ...p, unit: e.target.value } : p))}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="m-target">Meta</Label>
+                  <Label htmlFor="m-target">{t.labelTarget}</Label>
                   <Input
                     id="m-target"
                     value={form.target}
-                    placeholder="ex.: ≥ 85%"
+                    placeholder={t.phTarget}
                     onChange={(e) => setForm((p) => (p ? { ...p, target: e.target.value } : p))}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="m-desc">Descrição</Label>
+                <Label htmlFor="m-desc">{t.labelDesc}</Label>
                 <Input
                   id="m-desc"
                   value={form.description}
-                  placeholder="O que esta métrica mede?"
+                  placeholder={t.phDesc}
                   onChange={(e) => setForm((p) => (p ? { ...p, description: e.target.value } : p))}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="m-rationale">Racional do veredito</Label>
+                <Label htmlFor="m-rationale">{t.labelRationale}</Label>
                 <Textarea
                   id="m-rationale"
                   rows={2}
                   value={form.rationale}
-                  placeholder="Por que ela sustenta a decisão de promover/mentorar/aposentar?"
+                  placeholder={t.phRationale}
                   onChange={(e) => setForm((p) => (p ? { ...p, rationale: e.target.value } : p))}
                 />
               </div>
@@ -418,13 +576,13 @@ export default function MetricasPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setForm(null)}>
-              Cancelar
+              {t.cancel}
             </Button>
             <Button
               onClick={handleSave}
               disabled={!form?.label.trim() || createMetric.isPending || updateMetric.isPending}
             >
-              {form?.key ? "Salvar" : "Criar métrica"}
+              {form?.key ? t.save : t.create}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -434,18 +592,17 @@ export default function MetricasPage() {
       <Dialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Excluir métrica</DialogTitle>
+            <DialogTitle>{t.delTitle}</DialogTitle>
             <DialogDescription>
-              “{confirmDelete?.label}” será removida do catálogo. Avaliações existentes não são
-              alteradas.
+              {t.delDesc(confirmDelete?.label ?? "")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDelete(null)}>
-              Cancelar
+              {t.cancel}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleteMetric.isPending}>
-              Excluir
+              {t.delBtn}
             </Button>
           </DialogFooter>
         </DialogContent>

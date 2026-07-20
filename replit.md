@@ -53,7 +53,7 @@ Muster é uma plataforma plug-and-play que dá às frotas de agentes de IA (mult
 ## User preferences
 
 - **Design (app + landing, 2026-07-10):** "Ops Room — Sala de Operações" (conceito B dos protótipos, escolhido pelo usuário). Chão void `160 18% 7%` (#0e1512), primária phosphor `148 29% 61%` (#7fb89a), texto creme quente `43 38% 90%` (#efe9da); status ochre/terracota/red/steel (`--chart-2..5`); títulos e números grandes em **serif Spectral**, dados tabulares em **mono IBM Plex Mono**; eyebrows uppercase tracked; scanlines sutis no body; ticker de vereditos e esquema SVG animado (`components/ops-schematic.tsx`) na landing. **Supersede a "Trincheira" clara** (creme+verde-floresta), que por sua vez superou o "Neutro Notion" e o dark-amber. A estrutura editorial da Trincheira (seções numeradas, pills, serif+mono) permanece — só o chão mudou de papel para sala escura.
-- **Idioma da UI:** português do Brasil.
+- **Idiomas da UI (2026-07-11):** trilíngue — pt-BR (canônico), en, es. Seletor 🌐 na topbar (landing e app), persistido em localStorage (`muster:lang`), auto-detecção pelo navegador no primeiro acesso. Padrão: dicionários locais por página (`Record<Lang, Dict>` + `useLang()` — ver landing.tsx como referência). Dados de API (nomes, papéis, catálogo) nunca são traduzidos.
 - **Vocabulário do produto:** Frota, Carteira de Trabalho, Veredito, Admissão, Comitê, Detector de Vitória Ilusória.
 - **Sem acoplamento específico do Replit** na lógica do produto.
 

@@ -69,15 +69,152 @@ import {
   Eyebrow,
   detectorPresentation,
 } from "@/components/carteira";
+import { useLang, localeOf, type Lang } from "@/lib/i18n";
 
-const AUTONOMY_LABEL: Record<string, string> = {
-  autonomous: "Autônomo",
-  escalates: "Escala quando necessário",
-  restricted: "Restrito",
+const AUTONOMY_LABEL: Record<Lang, Record<string, string>> = {
+  pt: {
+    autonomous: "Autônomo",
+    escalates: "Escala quando necessário",
+    restricted: "Restrito",
+  },
+  en: {
+    autonomous: "Autonomous",
+    escalates: "Escalates when needed",
+    restricted: "Restricted",
+  },
+  es: {
+    autonomous: "Autónomo",
+    escalates: "Escala cuando es necesario",
+    restricted: "Restringido",
+  },
 };
+
+/* ── Page-level chrome strings (breadcrumbs, states, toasts, chart) ── */
+type PageDict = {
+  breadcrumbPortfolio: string;
+  breadcrumbLoading: string;
+  breadcrumbError: string;
+  breadcrumbNotFound: string;
+  loadErrorTitle: string;
+  notFoundBody: string;
+  metricsErrorTitle: string;
+  metricsEmpty: string;
+  series: { value: string; efficacy: string; efficiency: string; adoption: string; governance: string };
+  evalEmpty: string;
+  detectorError: string;
+  pendingCommittee: string;
+  pendingBar: string;
+  historyQuote: string;
+  toastDecisionTitle: string;
+  toastDecisionDesc: (decision: "approved" | "disagreed" | "exported") => string;
+  toastErrorTitle: string;
+  toastDecisionError: string;
+};
+
+const PAGE_I18N: Record<Lang, PageDict> = {
+  pt: {
+    breadcrumbPortfolio: "Portfólio",
+    breadcrumbLoading: "Carregando…",
+    breadcrumbError: "Erro",
+    breadcrumbNotFound: "Não encontrado",
+    loadErrorTitle: "Não foi possível carregar o agente",
+    notFoundBody: "Agente não encontrado.",
+    metricsErrorTitle: "Não foi possível carregar as métricas",
+    metricsEmpty: "Nenhum dado de métrica disponível para os últimos 30 dias.",
+    series: {
+      value: "Valor",
+      efficacy: "Eficácia",
+      efficiency: "Eficiência",
+      adoption: "Adoção",
+      governance: "Governança",
+    },
+    evalEmpty: "Avaliação ainda não disponível para este agente.",
+    detectorError: "Não foi possível carregar o detector de padrões agora.",
+    pendingCommittee: "Decisão pendente · aguardando o comitê",
+    pendingBar: "Decisão pendente •",
+    historyQuote: "O mesmo painel. A leitura sistêmica é que muda a decisão.",
+    toastDecisionTitle: "Decisão registrada",
+    toastDecisionDesc: (decision) =>
+      `Veredito ${
+        decision === "approved" ? "aprovado" : decision === "disagreed" ? "discordado" : "exportado"
+      } com sucesso.`,
+    toastErrorTitle: "Erro",
+    toastDecisionError: "Não foi possível registrar a decisão.",
+  },
+  en: {
+    breadcrumbPortfolio: "Portfolio",
+    breadcrumbLoading: "Loading…",
+    breadcrumbError: "Error",
+    breadcrumbNotFound: "Not found",
+    loadErrorTitle: "Could not load the agent",
+    notFoundBody: "Agent not found.",
+    metricsErrorTitle: "Could not load metrics",
+    metricsEmpty: "No metric data available for the last 30 days.",
+    series: {
+      value: "Value",
+      efficacy: "Efficacy",
+      efficiency: "Efficiency",
+      adoption: "Adoption",
+      governance: "Governance",
+    },
+    evalEmpty: "Evaluation not yet available for this agent.",
+    detectorError: "Could not load the pattern detector right now.",
+    pendingCommittee: "Decision pending · awaiting the committee",
+    pendingBar: "Decision pending •",
+    historyQuote: "The same panel. The systemic reading is what changes the decision.",
+    toastDecisionTitle: "Decision recorded",
+    toastDecisionDesc: (decision) =>
+      `Verdict ${
+        decision === "approved" ? "approved" : decision === "disagreed" ? "disputed" : "exported"
+      } successfully.`,
+    toastErrorTitle: "Error",
+    toastDecisionError: "Could not record the decision.",
+  },
+  es: {
+    breadcrumbPortfolio: "Portafolio",
+    breadcrumbLoading: "Cargando…",
+    breadcrumbError: "Error",
+    breadcrumbNotFound: "No encontrado",
+    loadErrorTitle: "No fue posible cargar el agente",
+    notFoundBody: "Agente no encontrado.",
+    metricsErrorTitle: "No fue posible cargar las métricas",
+    metricsEmpty: "Ningún dato de métricas disponible para los últimos 30 días.",
+    series: {
+      value: "Valor",
+      efficacy: "Eficacia",
+      efficiency: "Eficiencia",
+      adoption: "Adopción",
+      governance: "Gobernanza",
+    },
+    evalEmpty: "Evaluación aún no disponible para este agente.",
+    detectorError: "No fue posible cargar el detector de patrones ahora.",
+    pendingCommittee: "Decisión pendiente · esperando al comité",
+    pendingBar: "Decisión pendiente •",
+    historyQuote: "El mismo panel. La lectura sistémica es la que cambia la decisión.",
+    toastDecisionTitle: "Decisión registrada",
+    toastDecisionDesc: (decision) =>
+      `Veredicto ${
+        decision === "approved" ? "aprobado" : decision === "disagreed" ? "objetado" : "exportado"
+      } con éxito.`,
+    toastErrorTitle: "Error",
+    toastDecisionError: "No fue posible registrar la decisión.",
+  },
+};
+
+/** "3ª" (pt/es) vs "3rd" (en) for the generation/version line. */
+function versionOrdinal(n: number, lang: Lang): string {
+  if (lang !== "en") return `${n}ª`;
+  const rem10 = n % 10;
+  const rem100 = n % 100;
+  const suffix =
+    rem100 >= 11 && rem100 <= 13 ? "th" : rem10 === 1 ? "st" : rem10 === 2 ? "nd" : rem10 === 3 ? "rd" : "th";
+  return `${n}${suffix}`;
+}
 
 /* ── Section 03: deterministic timeline from metric series ── */
 function MetricChart({ agentId }: { agentId: string }) {
+  const { lang } = useLang();
+  const p = PAGE_I18N[lang];
   const { data: metrics, isLoading, isError, refetch } = useGetAgentMetrics(
     agentId,
     "30d",
@@ -86,17 +223,17 @@ function MetricChart({ agentId }: { agentId: string }) {
 
   if (isLoading) return <Skeleton className="h-64 w-full rounded-lg" />;
   if (isError)
-    return <ErrorState compact title="Não foi possível carregar as métricas" onRetry={() => refetch()} />;
+    return <ErrorState compact title={p.metricsErrorTitle} onRetry={() => refetch()} />;
   if (!metrics || metrics.length === 0)
     return (
       <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-card-border bg-muted/20 text-sm text-muted-foreground">
-        Nenhum dado de métrica disponível para os últimos 30 dias.
+        {p.metricsEmpty}
       </div>
     );
 
   const formattedData = metrics.map((m) => ({
     ...m,
-    date: new Date(m.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+    date: new Date(m.timestamp).toLocaleDateString(localeOf(lang), { day: "2-digit", month: "short" }),
   }));
 
   return (
@@ -111,11 +248,11 @@ function MetricChart({ agentId }: { agentId: string }) {
             itemStyle={{ color: "hsl(var(--foreground))" }}
           />
           <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-          <Line type="monotone" dataKey="value" name="Valor" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="efficacy" name="Eficácia" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="efficiency" name="Eficiência" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="adoption" name="Adoção" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="governance" name="Governança" stroke="hsl(var(--chart-5))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="value" name={p.series.value} stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="efficacy" name={p.series.efficacy} stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="efficiency" name={p.series.efficiency} stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="adoption" name={p.series.adoption} stroke="hsl(var(--chart-4))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="governance" name={p.series.governance} stroke="hsl(var(--chart-5))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -131,37 +268,76 @@ function verdictFromScore(score: number) {
 
 /* Reference design: month name in serif tinted by verdict, a one-line reading,
    metric rows, and a full-width verdict bar — "same panel, systemic reading". */
-const SNAPSHOT_TONE: Record<string, { heading: string; subtitle: string; bar: string }> = {
+const SNAPSHOT_TONE: Record<string, { heading: string; bar: string }> = {
   promote: {
     heading: "text-chart-1",
-    subtitle: "Operação estável",
     bar: "bg-chart-1/20 text-chart-1",
   },
   mentor: {
     heading: "text-chart-2",
-    subtitle: "Desempenho exige atenção",
     bar: "bg-chart-2/90 text-primary-foreground",
   },
   observation: {
     heading: "text-chart-5",
-    subtitle: "Sob observação",
     bar: "bg-chart-5/20 text-chart-5",
   },
   retire: {
     heading: "text-chart-4",
-    subtitle: "Qualidade comprometida",
     bar: "bg-primary text-primary-foreground",
   },
 };
 
-const VERDICT_BAR_LABEL: Record<string, string> = {
-  promote: "Promover",
-  mentor: "Mentoria",
-  observation: "Observar",
-  retire: "Decisão pendente •",
+const SNAPSHOT_SUBTITLE: Record<Lang, Record<string, string>> = {
+  pt: {
+    promote: "Operação estável",
+    mentor: "Desempenho exige atenção",
+    observation: "Sob observação",
+    retire: "Qualidade comprometida",
+  },
+  en: {
+    promote: "Stable operation",
+    mentor: "Performance needs attention",
+    observation: "Under observation",
+    retire: "Quality compromised",
+  },
+  es: {
+    promote: "Operación estable",
+    mentor: "El desempeño exige atención",
+    observation: "Bajo observación",
+    retire: "Calidad comprometida",
+  },
 };
 
-function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteiraI18n)["gestor"] }) {
+const VERDICT_BAR_LABEL: Record<Lang, Record<string, string>> = {
+  pt: {
+    promote: "Promover",
+    mentor: "Mentoria",
+    observation: "Observar",
+    retire: "Decisão pendente •",
+  },
+  en: {
+    promote: "Promote",
+    mentor: "Mentorship",
+    observation: "Observe",
+    retire: "Decision pending •",
+  },
+  es: {
+    promote: "Ascender",
+    mentor: "Mentoría",
+    observation: "Observar",
+    retire: "Decisión pendiente •",
+  },
+};
+
+const SNAPSHOT_DIMS: Record<Lang, [string, string, string, string, string]> = {
+  pt: ["Eficácia", "Eficiência", "Adoção", "Governança", "Valor"],
+  en: ["Efficacy", "Efficiency", "Adoption", "Governance", "Value"],
+  es: ["Eficacia", "Eficiencia", "Adopción", "Gobernanza", "Valor"],
+};
+
+function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteiraI18n)["pt"]["gestor"] }) {
+  const { lang } = useLang();
+  const p = PAGE_I18N[lang];
   const { data: metrics } = useGetAgentMetrics(agentId, "30d", {
     query: { enabled: !!agentId, queryKey: getGetAgentMetricsQueryKey(agentId, "30d") },
   });
@@ -172,7 +348,7 @@ function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteir
   const snaps = [pickAt(0), pickAt(0.5), pickAt(1)];
 
   const monthName = (ts: string) => {
-    const m = new Date(ts).toLocaleDateString("pt-BR", { month: "long" });
+    const m = new Date(ts).toLocaleDateString(localeOf(lang), { month: "long" });
     return m.charAt(0).toUpperCase() + m.slice(1);
   };
 
@@ -183,13 +359,15 @@ function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteir
           const avg = Math.round((s.efficacy + s.efficiency + s.adoption + s.governance + s.value) / 5);
           const verdict = verdictFromScore(avg);
           const tone = SNAPSHOT_TONE[verdict] ?? SNAPSHOT_TONE.observation!;
+          const subtitle = SNAPSHOT_SUBTITLE[lang][verdict] ?? "";
           const isCurrent = i === snaps.length - 1;
+          const dimLabels = SNAPSHOT_DIMS[lang];
           const dims = [
-            { label: "Eficácia", v: s.efficacy },
-            { label: "Eficiência", v: s.efficiency },
-            { label: "Adoção", v: s.adoption },
-            { label: "Governança", v: s.governance },
-            { label: "Valor", v: s.value },
+            { label: dimLabels[0], v: s.efficacy },
+            { label: dimLabels[1], v: s.efficiency },
+            { label: dimLabels[2], v: s.adoption },
+            { label: dimLabels[3], v: s.governance },
+            { label: dimLabels[4], v: s.value },
           ];
           return (
             <div key={i}>
@@ -197,7 +375,7 @@ function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteir
                 <h3 className={`font-serif text-3xl font-medium tracking-tight ${tone.heading}`}>
                   {monthName(s.timestamp)}
                 </h3>
-                <p className={`mt-0.5 text-xs ${tone.heading}`}>{tone.subtitle}</p>
+                <p className={`mt-0.5 text-xs ${tone.heading}`}>{subtitle}</p>
               </div>
               <div className="space-y-1.5 border-t border-card-border pt-3">
                 <div className="flex justify-between text-[13px]">
@@ -217,14 +395,14 @@ function TimelineSnapshots({ agentId, t }: { agentId: string; t: (typeof carteir
                   isCurrent ? "bg-primary text-primary-foreground" : tone.bar
                 }`}
               >
-                {isCurrent ? "Decisão pendente •" : VERDICT_BAR_LABEL[verdict]}
+                {isCurrent ? p.pendingBar : VERDICT_BAR_LABEL[lang][verdict]}
               </div>
             </div>
           );
         })}
       </div>
       <p className="mt-6 text-center font-serif text-sm italic text-muted-foreground">
-        O mesmo painel. A leitura sistêmica é que muda a decisão.
+        {p.historyQuote}
       </p>
     </div>
   );
@@ -234,8 +412,10 @@ export default function AgentDetailPage() {
   const params = useParams();
   const agentId = params.id as string;
   const { toast } = useToast();
+  const { lang } = useLang();
   const [audience, setAudience] = useState<Audience>("gestor");
-  const t = carteiraI18n[audience];
+  const t = carteiraI18n[lang][audience];
+  const p = PAGE_I18N[lang];
 
   const { data: detail, isLoading, isError, refetch } = useGetAgent(agentId, {
     query: { enabled: !!agentId, queryKey: getGetAgentQueryKey(agentId) },
@@ -274,7 +454,7 @@ export default function AgentDetailPage() {
           queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agentId) });
         },
         onError: () => {
-          toast({ title: "Erro", description: t.goalSaveError, variant: "destructive" });
+          toast({ title: p.toastErrorTitle, description: t.goalSaveError, variant: "destructive" });
         },
       },
     );
@@ -286,15 +466,13 @@ export default function AgentDetailPage() {
       {
         onSuccess: () => {
           toast({
-            title: "Decisão registrada",
-            description: `Veredito ${
-              decision === "approved" ? "aprovado" : decision === "disagreed" ? "discordado" : "exportado"
-            } com sucesso.`,
+            title: p.toastDecisionTitle,
+            description: p.toastDecisionDesc(decision),
           });
           queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agentId) });
         },
         onError: () => {
-          toast({ title: "Erro", description: "Não foi possível registrar a decisão.", variant: "destructive" });
+          toast({ title: p.toastErrorTitle, description: p.toastDecisionError, variant: "destructive" });
         },
       },
     );
@@ -302,7 +480,7 @@ export default function AgentDetailPage() {
 
   if (isLoading) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Portfólio", href: "/agentes" }, { label: "Carregando…" }]}>
+      <AppLayout breadcrumbs={[{ label: p.breadcrumbPortfolio, href: "/agentes" }, { label: p.breadcrumbLoading }]}>
         <div className="mx-auto max-w-6xl space-y-6">
           <Skeleton className="h-36 w-full rounded-xl" />
           <Skeleton className="h-[400px] w-full rounded-xl" />
@@ -313,16 +491,16 @@ export default function AgentDetailPage() {
 
   if (isError) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Portfólio", href: "/agentes" }, { label: "Erro" }]}>
-        <ErrorState title="Não foi possível carregar o agente" onRetry={() => refetch()} />
+      <AppLayout breadcrumbs={[{ label: p.breadcrumbPortfolio, href: "/agentes" }, { label: p.breadcrumbError }]}>
+        <ErrorState title={p.loadErrorTitle} onRetry={() => refetch()} />
       </AppLayout>
     );
   }
 
   if (!detail) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Portfólio", href: "/agentes" }, { label: "Não encontrado" }]}>
-        <div className="flex h-64 items-center justify-center text-muted-foreground">Agente não encontrado.</div>
+      <AppLayout breadcrumbs={[{ label: p.breadcrumbPortfolio, href: "/agentes" }, { label: p.breadcrumbNotFound }]}>
+        <div className="flex h-64 items-center justify-center text-muted-foreground">{p.notFoundBody}</div>
       </AppLayout>
     );
   }
@@ -334,7 +512,7 @@ export default function AgentDetailPage() {
   const cardBase = "rounded-xl border border-card-border bg-card";
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Portfólio", href: "/agentes" }, { label: agent.name }]}>
+    <AppLayout breadcrumbs={[{ label: p.breadcrumbPortfolio, href: "/agentes" }, { label: agent.name }]}>
       <div className="mx-auto max-w-6xl space-y-12 animate-in fade-in duration-500">
         {/* Audience toggle */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -367,15 +545,15 @@ export default function AgentDetailPage() {
                     <span className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
                       {t.sinceLabel}{" "}
-                      {new Date(agent.admittedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                      {new Date(agent.admittedAt).toLocaleDateString(localeOf(lang), { day: "2-digit", month: "short", year: "numeric" })}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <RefreshCw className="h-3.5 w-3.5" />
-                      {identity.version}ª {t.versionLabel}
+                      {versionOrdinal(identity.version, lang)} {t.versionLabel}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Activity className="h-3.5 w-3.5" />
-                      {(agent.monthlyVolume ?? 0).toLocaleString("pt-BR")} {t.executionsLabel}
+                      {(agent.monthlyVolume ?? 0).toLocaleString(localeOf(lang))} {t.executionsLabel}
                     </span>
                   </div>
                 </div>
@@ -438,7 +616,7 @@ export default function AgentDetailPage() {
                   <div>
                     <Eyebrow>{t.level}</Eyebrow>
                     <div className="mt-1">
-                      <Pill tone="blue">{AUTONOMY_LABEL[identity.autonomyLevel] ?? identity.autonomyLevel}</Pill>
+                      <Pill tone="blue">{AUTONOMY_LABEL[lang][identity.autonomyLevel] ?? identity.autonomyLevel}</Pill>
                     </div>
                     {identity.autonomyNotes && (
                       <p className="mt-2 text-[13px] leading-snug text-foreground/80">{identity.autonomyNotes}</p>
@@ -500,7 +678,7 @@ export default function AgentDetailPage() {
                         <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
                         <div>
                           <h3 className="font-serif text-lg font-medium leading-none tracking-tight">{layer.label}</h3>
-                          <p className="mt-1 text-[11px] text-muted-foreground">{LAYER_CAPTION[layer.key]?.[audience]}</p>
+                          <p className="mt-1 text-[11px] text-muted-foreground">{LAYER_CAPTION[lang][layer.key]?.[audience]}</p>
                         </div>
                       </div>
                       <span className="font-serif text-2xl font-medium tabular-nums">{layer.score}</span>
@@ -531,7 +709,7 @@ export default function AgentDetailPage() {
             </div>
           ) : (
             <div className={`${cardBase} flex h-32 items-center justify-center text-sm text-muted-foreground`}>
-              Avaliação ainda não disponível para este agente.
+              {p.evalEmpty}
             </div>
           )}
         </section>
@@ -553,12 +731,12 @@ export default function AgentDetailPage() {
           {alertsError ? (
             <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>
               <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3" />
-              Não foi possível carregar o detector de padrões agora.
+              {p.detectorError}
             </div>
           ) : agentAlerts.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {agentAlerts.map((alert) => {
-                const d = detectorPresentation(alert.severity, alert.patternType);
+                const d = detectorPresentation(alert.severity, alert.patternType, lang);
                 return (
                   <div key={alert.id} className={`${cardBase} border-l-4 ${d.border} p-5`}>
                     <div className="mb-3 flex items-center justify-between gap-2">
@@ -667,7 +845,7 @@ export default function AgentDetailPage() {
               <div className="flex flex-col items-start justify-between gap-3 border-t border-card-border bg-background/60 px-6 py-4 sm:flex-row sm:items-center">
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
                   <AlertTriangle className="h-3.5 w-3.5" />
-                  Decisão pendente · aguardando o comitê
+                  {p.pendingCommittee}
                 </span>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => handleDecision("exported")} disabled={decideVerdict.isPending}>

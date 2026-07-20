@@ -16,7 +16,95 @@ import { PageHeading, Eyebrow, AgentDisc, Pill } from "@/components/cohort";
 import { useAppShell } from "@/lib/app-shell";
 import { useListAgents } from "@workspace/api-client-react";
 import { platformLabel } from "@/lib/platforms";
+import { useLang, localeOf, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+
+/* ── Dicionário da página (pt canônico · en · es) ─────────── */
+
+const PT = {
+  bcAccount: "Conta",
+  bcProfile: "Perfil",
+  eyebrow: "Conta · Perfil",
+  title: "Seu perfil",
+  subtitle: "Seus dados pessoais, preferências de visualização e os agentes que você acompanha.",
+  userFallback: "Usuário",
+  fieldFirstName: "Nome",
+  fieldLastName: "Sobrenome",
+  fieldEmail: "E-mail",
+  fieldMemberSince: "Membro desde",
+  prefsTitle: "Preferências de visualização",
+  vocabLabel: "Vocabulário padrão",
+  vocabDesc: "Como o Muster fala com você",
+  vocabGestor: "Gestor",
+  vocabPlatform: "Platform",
+  themeLabel: "Tema",
+  themeDesc: "Light editorial ou dark mode",
+  themeLight: "Light editorial",
+  themeDark: "Dark",
+  themeAuto: "Automático",
+  langLabel: "Idioma",
+  langDesc: "Idioma da interface",
+  followTitle: "Agentes que você acompanha",
+  followEmpty: "Você ainda não acompanha nenhum agente. Admita agentes para começar.",
+};
+
+type Dict = typeof PT;
+
+const L: Record<Lang, Dict> = {
+  pt: PT,
+  en: {
+    bcAccount: "Account",
+    bcProfile: "Profile",
+    eyebrow: "Account · Profile",
+    title: "Your profile",
+    subtitle: "Your personal details, display preferences and the agents you follow.",
+    userFallback: "User",
+    fieldFirstName: "First name",
+    fieldLastName: "Last name",
+    fieldEmail: "E-mail",
+    fieldMemberSince: "Member since",
+    prefsTitle: "Display preferences",
+    vocabLabel: "Default vocabulary",
+    vocabDesc: "How Muster speaks to you",
+    vocabGestor: "Manager",
+    vocabPlatform: "Platform",
+    themeLabel: "Theme",
+    themeDesc: "Light editorial or dark mode",
+    themeLight: "Light editorial",
+    themeDark: "Dark",
+    themeAuto: "Automatic",
+    langLabel: "Language",
+    langDesc: "Interface language",
+    followTitle: "Agents you follow",
+    followEmpty: "You don't follow any agents yet. Admit agents to get started.",
+  },
+  es: {
+    bcAccount: "Cuenta",
+    bcProfile: "Perfil",
+    eyebrow: "Cuenta · Perfil",
+    title: "Tu perfil",
+    subtitle: "Tus datos personales, preferencias de visualización y los agentes que sigues.",
+    userFallback: "Usuario",
+    fieldFirstName: "Nombre",
+    fieldLastName: "Apellido",
+    fieldEmail: "Correo electrónico",
+    fieldMemberSince: "Miembro desde",
+    prefsTitle: "Preferencias de visualización",
+    vocabLabel: "Vocabulario predeterminado",
+    vocabDesc: "Cómo te habla Muster",
+    vocabGestor: "Gestor",
+    vocabPlatform: "Platform",
+    themeLabel: "Tema",
+    themeDesc: "Light editorial o modo oscuro",
+    themeLight: "Light editorial",
+    themeDark: "Dark",
+    themeAuto: "Automático",
+    langLabel: "Idioma",
+    langDesc: "Idioma de la interfaz",
+    followTitle: "Agentes que sigues",
+    followEmpty: "Aún no sigues ningún agente. Admite agentes para comenzar.",
+  },
+};
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -33,18 +121,20 @@ export default function ProfilePage() {
   const { user, isLoaded } = useUser();
   const { perspective, setPerspective } = useAppShell();
   const { data: agents, isLoading } = useListAgents();
+  const { lang } = useLang();
+  const t = L[lang];
   const [theme, setTheme] = useState("light");
   const [language, setLanguage] = useState("pt-BR");
 
   const followed = (agents ?? []).slice(0, 4);
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Conta" }, { label: "Perfil" }]}>
+    <AppLayout breadcrumbs={[{ label: t.bcAccount }, { label: t.bcProfile }]}>
       <div className="mx-auto max-w-3xl space-y-7 animate-in fade-in duration-500">
         <PageHeading
-          eyebrow="Conta · Perfil"
-          title="Seu perfil"
-          subtitle="Seus dados pessoais, preferências de visualização e os agentes que você acompanha."
+          eyebrow={t.eyebrow}
+          title={t.title}
+          subtitle={t.subtitle}
         />
 
         {/* Identidade */}
@@ -67,11 +157,11 @@ export default function ProfilePage() {
                     className="h-16 w-16 rounded-full border border-border object-cover"
                   />
                 ) : (
-                  <AgentDisc name={user?.fullName ?? "Usuário"} size="lg" />
+                  <AgentDisc name={user?.fullName ?? t.userFallback} size="lg" />
                 )}
                 <div className="min-w-0">
                   <h2 className="font-serif text-xl font-medium tracking-tight text-foreground">
-                    {user?.fullName || "Usuário"}
+                    {user?.fullName || t.userFallback}
                   </h2>
                   <p className="truncate text-sm text-muted-foreground">
                     {user?.primaryEmailAddress?.emailAddress}
@@ -79,14 +169,14 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Nome" value={user?.firstName} />
-                <Field label="Sobrenome" value={user?.lastName} />
-                <Field label="E-mail" value={user?.primaryEmailAddress?.emailAddress} />
+                <Field label={t.fieldFirstName} value={user?.firstName} />
+                <Field label={t.fieldLastName} value={user?.lastName} />
+                <Field label={t.fieldEmail} value={user?.primaryEmailAddress?.emailAddress} />
                 <Field
-                  label="Membro desde"
+                  label={t.fieldMemberSince}
                   value={
                     user?.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString("pt-BR")
+                      ? new Date(user.createdAt).toLocaleDateString(localeOf(lang))
                       : undefined
                   }
                 />
@@ -98,19 +188,19 @@ export default function ProfilePage() {
         {/* Preferências de visualização */}
         <Card className="p-6">
           <h3 className="mb-4 font-serif text-lg font-medium tracking-tight text-foreground">
-            Preferências de visualização
+            {t.prefsTitle}
           </h3>
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-4 border-b border-card-border py-3">
               <div>
-                <div className="text-sm font-medium text-foreground">Vocabulário padrão</div>
-                <div className="text-xs text-muted-foreground">Como o Muster fala com você</div>
+                <div className="text-sm font-medium text-foreground">{t.vocabLabel}</div>
+                <div className="text-xs text-muted-foreground">{t.vocabDesc}</div>
               </div>
               <div className="flex items-center rounded-full border border-border bg-card p-0.5">
                 {(
                   [
-                    { value: "gestor", label: "Gestor", icon: Briefcase },
-                    { value: "platform", label: "Platform", icon: Terminal },
+                    { value: "gestor", label: t.vocabGestor, icon: Briefcase },
+                    { value: "platform", label: t.vocabPlatform, icon: Terminal },
                   ] as const
                 ).map((opt) => (
                   <button
@@ -133,25 +223,25 @@ export default function ProfilePage() {
 
             <div className="flex items-center justify-between gap-4 border-b border-card-border py-3">
               <div>
-                <div className="text-sm font-medium text-foreground">Tema</div>
-                <div className="text-xs text-muted-foreground">Light editorial ou dark mode</div>
+                <div className="text-sm font-medium text-foreground">{t.themeLabel}</div>
+                <div className="text-xs text-muted-foreground">{t.themeDesc}</div>
               </div>
               <Select value={theme} onValueChange={setTheme}>
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">Light editorial</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="auto">Automático</SelectItem>
+                  <SelectItem value="light">{t.themeLight}</SelectItem>
+                  <SelectItem value="dark">{t.themeDark}</SelectItem>
+                  <SelectItem value="auto">{t.themeAuto}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex items-center justify-between gap-4 py-3">
               <div>
-                <div className="text-sm font-medium text-foreground">Idioma</div>
-                <div className="text-xs text-muted-foreground">Idioma da interface</div>
+                <div className="text-sm font-medium text-foreground">{t.langLabel}</div>
+                <div className="text-xs text-muted-foreground">{t.langDesc}</div>
               </div>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger className="w-44">
@@ -170,7 +260,7 @@ export default function ProfilePage() {
         {/* Agentes que acompanha */}
         <Card className="p-6">
           <h3 className="mb-4 font-serif text-lg font-medium tracking-tight text-foreground">
-            Agentes que você acompanha
+            {t.followTitle}
           </h3>
           {isLoading ? (
             <div className="space-y-3">
@@ -201,7 +291,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Você ainda não acompanha nenhum agente. Admita agentes para começar.
+              {t.followEmpty}
             </p>
           )}
         </Card>

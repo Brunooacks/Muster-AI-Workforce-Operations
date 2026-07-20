@@ -18,26 +18,186 @@ import { Users, Gavel, AlertTriangle, Activity, ArrowRight, ShieldCheck } from "
 import { ErrorState } from "@/components/query-state";
 import { PageHeading, StatCard, VerdictBadge, Pill, AgentDisc } from "@/components/cohort";
 import { platformLabel } from "@/lib/platforms";
+import { useLang, localeOf, type Lang } from "@/lib/i18n";
+
+/* ── Dicionário do Comando (pt canônico · en · es) ─────────── */
+
+interface ComandoDict {
+  breadcrumbSection: string;
+  breadcrumbPage: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  viewFullPanel: string;
+  errorTitle: string;
+  errorDesc: string;
+  statAgents: string;
+  platformsConnected: string;
+  statPending: string;
+  pendingDelta: string;
+  statAlerts: string;
+  alertsDelta: string;
+  statHealth: string;
+  healthDelta: string;
+  pendingCardDesc: string;
+  confidence: string;
+  window: string;
+  review: string;
+  noPendingTitle: string;
+  noPendingDesc: string;
+  recentTitle: string;
+  recentDesc: string;
+  noDecisions: string;
+  alertsTitle: string;
+  alertsDesc: string;
+  viewAll: string;
+  noActiveAlerts: string;
+  decisions: Record<string, string>;
+}
+
+const L: Record<Lang, ComandoDict> = {
+  pt: {
+    breadcrumbSection: "Operação",
+    breadcrumbPage: "Comando",
+    eyebrow: "Operação",
+    title: "Comando",
+    subtitle:
+      "Seu posto de comando: decisões do comitê pendentes, vereditos recentes e o pulso geral da frota.",
+    viewFullPanel: "Ver painel completo",
+    errorTitle: "Não foi possível carregar o comando",
+    errorDesc: "Tente novamente em instantes.",
+    statAgents: "Total de agentes",
+    platformsConnected: "plataformas conectadas",
+    statPending: "Decisões pendentes",
+    pendingDelta: "Aguardando o comitê",
+    statAlerts: "Alertas ativos",
+    alertsDelta: "Padrões ilusórios detectados",
+    statHealth: "Saúde média",
+    healthDelta: "Índice consolidado da frota",
+    pendingCardDesc: "Vereditos propostos aguardando aprovação do comitê",
+    confidence: "Confiança",
+    window: "Janela:",
+    review: "Revisar",
+    noPendingTitle: "Nenhuma decisão pendente",
+    noPendingDesc: "O comitê está em dia com os vereditos.",
+    recentTitle: "Decisões recentes",
+    recentDesc: "Histórico de vereditos resolvidos pelo comitê",
+    noDecisions: "Nenhuma decisão registrada ainda.",
+    alertsTitle: "Alertas",
+    alertsDesc: "Detector de Vitória Ilusória",
+    viewAll: "Ver todos",
+    noActiveAlerts: "Nenhum alerta ativo.",
+    decisions: {
+      pending: "Pendente",
+      approved: "Aprovada",
+      disagreed: "Discordada",
+      exported: "Exportada",
+    },
+  },
+  en: {
+    breadcrumbSection: "Operations",
+    breadcrumbPage: "Command",
+    eyebrow: "Operations",
+    title: "Command",
+    subtitle:
+      "Your command post: pending committee decisions, recent verdicts and the overall pulse of the fleet.",
+    viewFullPanel: "View full panel",
+    errorTitle: "Could not load the command view",
+    errorDesc: "Try again in a moment.",
+    statAgents: "Total agents",
+    platformsConnected: "platforms connected",
+    statPending: "Pending decisions",
+    pendingDelta: "Awaiting the committee",
+    statAlerts: "Active alerts",
+    alertsDelta: "Illusory patterns detected",
+    statHealth: "Average health",
+    healthDelta: "Consolidated fleet index",
+    pendingCardDesc: "Proposed verdicts awaiting committee approval",
+    confidence: "Confidence",
+    window: "Window:",
+    review: "Review",
+    noPendingTitle: "No pending decisions",
+    noPendingDesc: "The committee is up to date on verdicts.",
+    recentTitle: "Recent decisions",
+    recentDesc: "History of verdicts resolved by the committee",
+    noDecisions: "No decisions recorded yet.",
+    alertsTitle: "Alerts",
+    alertsDesc: "Illusory Victory Detector",
+    viewAll: "View all",
+    noActiveAlerts: "No active alerts.",
+    decisions: {
+      pending: "Pending",
+      approved: "Approved",
+      disagreed: "Disagreed",
+      exported: "Exported",
+    },
+  },
+  es: {
+    breadcrumbSection: "Operación",
+    breadcrumbPage: "Mando",
+    eyebrow: "Operación",
+    title: "Mando",
+    subtitle:
+      "Tu puesto de mando: decisiones del comité pendientes, veredictos recientes y el pulso general de la flota.",
+    viewFullPanel: "Ver panel completo",
+    errorTitle: "No fue posible cargar el mando",
+    errorDesc: "Inténtalo de nuevo en unos instantes.",
+    statAgents: "Total de agentes",
+    platformsConnected: "plataformas conectadas",
+    statPending: "Decisiones pendientes",
+    pendingDelta: "A la espera del comité",
+    statAlerts: "Alertas activas",
+    alertsDelta: "Patrones ilusorios detectados",
+    statHealth: "Salud media",
+    healthDelta: "Índice consolidado de la flota",
+    pendingCardDesc: "Veredictos propuestos a la espera de la aprobación del comité",
+    confidence: "Confianza",
+    window: "Ventana:",
+    review: "Revisar",
+    noPendingTitle: "Ninguna decisión pendiente",
+    noPendingDesc: "El comité está al día con los veredictos.",
+    recentTitle: "Decisiones recientes",
+    recentDesc: "Historial de veredictos resueltos por el comité",
+    noDecisions: "Aún no hay decisiones registradas.",
+    alertsTitle: "Alertas",
+    alertsDesc: "Detector de Victoria Ilusoria",
+    viewAll: "Ver todas",
+    noActiveAlerts: "Ninguna alerta activa.",
+    decisions: {
+      pending: "Pendiente",
+      approved: "Aprobada",
+      disagreed: "En desacuerdo",
+      exported: "Exportada",
+    },
+  },
+};
 
 const cardTitleSerif = "font-serif text-xl font-medium tracking-tight";
 
-const DECISION_MAP: Record<string, { label: string; tone: "sage" | "ochre" | "terracotta" | "blue" | "muted" }> = {
-  pending: { label: "Pendente", tone: "ochre" },
-  approved: { label: "Aprovada", tone: "sage" },
-  disagreed: { label: "Discordada", tone: "terracotta" },
-  exported: { label: "Exportada", tone: "blue" },
+const DECISION_TONES: Record<string, "sage" | "ochre" | "terracotta" | "blue"> = {
+  pending: "ochre",
+  approved: "sage",
+  disagreed: "terracotta",
+  exported: "blue",
 };
 
 function DecisionBadge({ decision }: { decision: string }) {
-  const d = DECISION_MAP[decision] ?? { label: decision, tone: "muted" as const };
-  return <Pill tone={d.tone}>{d.label}</Pill>;
+  const { lang } = useLang();
+  const t = L[lang];
+  const tone = DECISION_TONES[decision] ?? ("muted" as const);
+  const label = t.decisions[decision] ?? decision;
+  return <Pill tone={tone}>{label}</Pill>;
 }
 
-function fmtDate(value?: string | null) {
-  return value ? new Date(value).toLocaleDateString("pt-BR") : "—";
+function fmtDate(value: string | null | undefined, locale: string) {
+  return value ? new Date(value).toLocaleDateString(locale) : "—";
 }
 
 export default function CommandPage() {
+  const { lang } = useLang();
+  const t = L[lang];
+  const locale = localeOf(lang);
+
   const {
     data: summary,
     isLoading: loadingSummary,
@@ -70,16 +230,16 @@ export default function CommandPage() {
       }) ?? [];
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Operação" }, { label: "Comando" }]}>
+    <AppLayout breadcrumbs={[{ label: t.breadcrumbSection }, { label: t.breadcrumbPage }]}>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <PageHeading
-          eyebrow="Operação"
-          title="Comando"
-          subtitle="Seu posto de comando: decisões do comitê pendentes, vereditos recentes e o pulso geral da frota."
+          eyebrow={t.eyebrow}
+          title={t.title}
+          subtitle={t.subtitle}
           action={
             <Button asChild variant="outline">
               <Link href="/frota">
-                Ver painel completo <ArrowRight className="ml-2 h-4 w-4" />
+                {t.viewFullPanel} <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           }
@@ -87,8 +247,8 @@ export default function CommandPage() {
 
         {hasError && (
           <ErrorState
-            title="Não foi possível carregar o comando"
-            description="Tente novamente em instantes."
+            title={t.errorTitle}
+            description={t.errorDesc}
             onRetry={() => {
               if (errorSummary) refetchSummary();
               if (errorDecisions) refetchDecisions();
@@ -108,34 +268,34 @@ export default function CommandPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={Users}
-              label="Total de agentes"
+              label={t.statAgents}
               value={summary.totalAgents}
-              delta={`${summary.connectedPlatforms} plataformas conectadas`}
+              delta={`${summary.connectedPlatforms} ${t.platformsConnected}`}
             />
             <StatCard
               icon={Gavel}
-              label="Decisões pendentes"
+              label={t.statPending}
               value={summary.pendingDecisions}
-              delta="Aguardando o comitê"
+              delta={t.pendingDelta}
               tone={summary.pendingDecisions > 0 ? "warn" : "neutral"}
             />
             <StatCard
               icon={AlertTriangle}
-              label="Alertas ativos"
+              label={t.statAlerts}
               value={summary.activeAlerts}
-              delta="Padrões ilusórios detectados"
+              delta={t.alertsDelta}
               tone={summary.activeAlerts > 0 ? "down" : "neutral"}
             />
             <StatCard
               icon={Activity}
-              label="Saúde média"
+              label={t.statHealth}
               value={
                 <span>
                   {summary.avgHealthScore}
                   <span className="text-xl text-muted-foreground">/100</span>
                 </span>
               }
-              delta="Índice consolidado da frota"
+              delta={t.healthDelta}
             />
           </div>
         ) : null}
@@ -145,9 +305,9 @@ export default function CommandPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                <Gavel className="h-4 w-4 text-chart-2" /> Decisões pendentes
+                <Gavel className="h-4 w-4 text-chart-2" /> {t.statPending}
               </CardTitle>
-              <CardDescription>Vereditos propostos aguardando aprovação do comitê</CardDescription>
+              <CardDescription>{t.pendingCardDesc}</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
@@ -182,14 +342,14 @@ export default function CommandPage() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="font-mono">{platformLabel(d.platform)}</span>
                       <span>
-                        Confiança{" "}
+                        {t.confidence}{" "}
                         <span className="font-mono tabular-nums text-foreground">{d.confidence}%</span>
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Janela: {d.executionWindow}</span>
+                      <span className="text-xs text-muted-foreground">{t.window} {d.executionWindow}</span>
                       <Button asChild size="sm" variant="outline">
-                        <Link href={`/agentes/${d.agentId}`}>Revisar</Link>
+                        <Link href={`/agentes/${d.agentId}`}>{t.review}</Link>
                       </Button>
                     </div>
                   </div>
@@ -198,8 +358,8 @@ export default function CommandPage() {
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-card-border bg-muted/30 p-8 text-center">
                 <ShieldCheck className="mb-2 h-8 w-8 text-chart-1 opacity-50" />
-                <p className="text-sm font-medium">Nenhuma decisão pendente</p>
-                <p className="text-xs text-muted-foreground">O comitê está em dia com os vereditos.</p>
+                <p className="text-sm font-medium">{t.noPendingTitle}</p>
+                <p className="text-xs text-muted-foreground">{t.noPendingDesc}</p>
               </div>
             )}
           </CardContent>
@@ -209,8 +369,8 @@ export default function CommandPage() {
         <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className={cardTitleSerif}>Decisões recentes</CardTitle>
-              <CardDescription>Histórico de vereditos resolvidos pelo comitê</CardDescription>
+              <CardTitle className={cardTitleSerif}>{t.recentTitle}</CardTitle>
+              <CardDescription>{t.recentDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {loadingDecisions ? (
@@ -231,7 +391,7 @@ export default function CommandPage() {
                           {d.agentName}
                         </Link>
                         <span className="truncate text-xs text-muted-foreground">
-                          {d.decidedBy ?? "—"} · {fmtDate(d.decidedAt)}
+                          {d.decidedBy ?? "—"} · {fmtDate(d.decidedAt, locale)}
                         </span>
                       </div>
                     </div>
@@ -243,7 +403,7 @@ export default function CommandPage() {
                 ))
               ) : (
                 <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
-                  Nenhuma decisão registrada ainda.
+                  {t.noDecisions}
                 </div>
               )}
             </CardContent>
@@ -253,15 +413,15 @@ export default function CommandPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                  <AlertTriangle className="h-4 w-4 text-chart-3" /> Alertas
+                  <AlertTriangle className="h-4 w-4 text-chart-3" /> {t.alertsTitle}
                 </CardTitle>
-                <CardDescription>Detector de Vitória Ilusória</CardDescription>
+                <CardDescription>{t.alertsDesc}</CardDescription>
               </div>
               <Link
                 href="/alertas"
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
               >
-                Ver todos <ArrowRight className="h-3.5 w-3.5" />
+                {t.viewAll} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -280,7 +440,7 @@ export default function CommandPage() {
                 ))
               ) : (
                 <div className="flex h-24 items-center justify-center text-center text-sm text-muted-foreground">
-                  Nenhum alerta ativo.
+                  {t.noActiveAlerts}
                 </div>
               )}
             </CardContent>

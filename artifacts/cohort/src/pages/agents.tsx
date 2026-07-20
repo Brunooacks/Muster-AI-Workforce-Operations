@@ -18,14 +18,121 @@ import {
 } from "@/components/cohort";
 import { platformLabel, platformArea } from "@/lib/platforms";
 import { countMissedGoals } from "@/components/carteira";
+import { useLang, type Lang } from "@/lib/i18n";
 
-type Health = { key: string; label: string; test: (score: number) => boolean };
+/* ── Dicionário de Agentes (pt canônico · en · es) ─────────── */
+
+type HealthKey = "all" | "healthy" | "attention" | "critical";
+
+interface AgentsDict {
+  breadcrumbSection: string;
+  breadcrumbPage: string;
+  eyebrow: string;
+  title: string;
+  subtitleStats: (total: number, attention: number, onboarding: number) => string;
+  subtitleFallback: string;
+  registerAgent: string;
+  healthTabs: Record<HealthKey, string>;
+  healthEyebrow: string;
+  areaEyebrow: string;
+  allAreas: string;
+  errorTitle: string;
+  netValueLabel: string;
+  goalsOffTitle: (n: number) => string;
+  goalsOff: (n: number) => string;
+  allOnTarget: string;
+  noAgentsFiltered: string;
+  noAgentsFound: string;
+}
+
+const L: Record<Lang, AgentsDict> = {
+  pt: {
+    breadcrumbSection: "Operação",
+    breadcrumbPage: "Agentes",
+    eyebrow: "Operação",
+    title: "Agentes",
+    subtitleStats: (total, attention, onboarding) =>
+      `${total} agentes na frota · ${attention} precisam de atenção · ${onboarding} em onboarding`,
+    subtitleFallback: "Carteira de trabalho e desempenho de toda a frota.",
+    registerAgent: "Cadastrar agente",
+    healthTabs: {
+      all: "Todos",
+      healthy: "Saudáveis",
+      attention: "Atenção",
+      critical: "Críticos",
+    },
+    healthEyebrow: "Saúde",
+    areaEyebrow: "Área",
+    allAreas: "Todas",
+    errorTitle: "Não foi possível carregar os agentes",
+    netValueLabel: "Valor líq.",
+    goalsOffTitle: (n) => `${n} ${n === 1 ? "métrica fora" : "métricas fora"} da meta`,
+    goalsOff: (n) => `${n} ${n === 1 ? "meta fora" : "metas fora"}`,
+    allOnTarget: "Todas na meta",
+    noAgentsFiltered: "Nenhum agente para os filtros atuais.",
+    noAgentsFound: "Nenhum agente encontrado.",
+  },
+  en: {
+    breadcrumbSection: "Operations",
+    breadcrumbPage: "Agents",
+    eyebrow: "Operations",
+    title: "Agents",
+    subtitleStats: (total, attention, onboarding) =>
+      `${total} agents in the fleet · ${attention} need attention · ${onboarding} onboarding`,
+    subtitleFallback: "Work Record and performance for the entire fleet.",
+    registerAgent: "Register agent",
+    healthTabs: {
+      all: "All",
+      healthy: "Healthy",
+      attention: "Attention",
+      critical: "Critical",
+    },
+    healthEyebrow: "Health",
+    areaEyebrow: "Area",
+    allAreas: "All",
+    errorTitle: "Could not load agents",
+    netValueLabel: "Net value",
+    goalsOffTitle: (n) => `${n} ${n === 1 ? "metric off" : "metrics off"} target`,
+    goalsOff: (n) => `${n} ${n === 1 ? "goal off" : "goals off"}`,
+    allOnTarget: "All on target",
+    noAgentsFiltered: "No agents match the current filters.",
+    noAgentsFound: "No agents found.",
+  },
+  es: {
+    breadcrumbSection: "Operación",
+    breadcrumbPage: "Agentes",
+    eyebrow: "Operación",
+    title: "Agentes",
+    subtitleStats: (total, attention, onboarding) =>
+      `${total} agentes en la flota · ${attention} necesitan atención · ${onboarding} en onboarding`,
+    subtitleFallback: "Expediente Laboral y desempeño de toda la flota.",
+    registerAgent: "Registrar agente",
+    healthTabs: {
+      all: "Todos",
+      healthy: "Saludables",
+      attention: "Atención",
+      critical: "Críticos",
+    },
+    healthEyebrow: "Salud",
+    areaEyebrow: "Área",
+    allAreas: "Todas",
+    errorTitle: "No fue posible cargar los agentes",
+    netValueLabel: "Valor neto",
+    goalsOffTitle: (n) => `${n} ${n === 1 ? "métrica fuera" : "métricas fuera"} de la meta`,
+    goalsOff: (n) => `${n} ${n === 1 ? "meta fuera" : "metas fuera"}`,
+    allOnTarget: "Todas en meta",
+    noAgentsFiltered: "Ningún agente para los filtros actuales.",
+    noAgentsFound: "Ningún agente encontrado.",
+  },
+};
+
+type Health = { key: HealthKey; test: (score: number) => boolean };
 
 const HEALTH_TABS: Health[] = [
-  { key: "all", label: "Todos", test: () => true },
-  { key: "healthy", label: "Saudáveis", test: (s) => s >= 80 },
-  { key: "attention", label: "Atenção", test: (s) => s >= 60 && s < 80 },
-  { key: "critical", label: "Críticos", test: (s) => s < 60 },
+  { key: "all", test: () => true },
+  { key: "healthy", test: (s) => s >= 80 },
+  { key: "attention", test: (s) => s >= 60 && s < 80 },
+  { key: "critical", test: (s) => s < 60 },
 ];
 
 function formatCurrencyK(value: number) {
@@ -39,6 +146,8 @@ function healthTone(score: number) {
 }
 
 export default function AgentsPage() {
+  const { lang } = useLang();
+  const t = L[lang];
   const { search, perspective } = useAppShell();
   const [healthTab, setHealthTab] = useState<string>("all");
   const [areaFilter, setAreaFilter] = useState<string>("all");
@@ -52,7 +161,7 @@ export default function AgentsPage() {
     return Array.from(set).sort();
   }, [agents]);
 
-  const activeHealth = HEALTH_TABS.find((t) => t.key === healthTab) ?? HEALTH_TABS[0];
+  const activeHealth = HEALTH_TABS.find((tab) => tab.key === healthTab) ?? HEALTH_TABS[0];
 
   const filteredAgents = agents?.filter(
     (a) =>
@@ -71,21 +180,21 @@ export default function AgentsPage() {
   const onboarding = agents?.filter((a) => a.status === "observation").length ?? 0;
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Operação" }, { label: "Agentes" }]}>
+    <AppLayout breadcrumbs={[{ label: t.breadcrumbSection }, { label: t.breadcrumbPage }]}>
       <div className="space-y-7 animate-in fade-in duration-500">
         <PageHeading
-          eyebrow="Operação"
-          title="Agentes"
+          eyebrow={t.eyebrow}
+          title={t.title}
           subtitle={
             agents
-              ? `${agents.length} agentes na frota · ${needAttention} precisam de atenção · ${onboarding} em onboarding`
-              : "Carteira de trabalho e desempenho de toda a frota."
+              ? t.subtitleStats(agents.length, needAttention, onboarding)
+              : t.subtitleFallback
           }
           action={
             <Button asChild>
               <Link href="/admissao">
                 <Plus className="mr-2 h-4 w-4" />
-                Cadastrar agente
+                {t.registerAgent}
               </Link>
             </Button>
           }
@@ -93,15 +202,15 @@ export default function AgentsPage() {
 
         {/* Health tabs */}
         <div className="flex flex-wrap items-center gap-2">
-          <Eyebrow>Saúde</Eyebrow>
-          {HEALTH_TABS.map((t) => (
+          <Eyebrow>{t.healthEyebrow}</Eyebrow>
+          {HEALTH_TABS.map((tab) => (
             <FilterChip
-              key={t.key}
-              active={healthTab === t.key}
-              onClick={() => setHealthTab(t.key)}
-              count={healthCount(t)}
+              key={tab.key}
+              active={healthTab === tab.key}
+              onClick={() => setHealthTab(tab.key)}
+              count={healthCount(tab)}
             >
-              {t.label}
+              {t.healthTabs[tab.key]}
             </FilterChip>
           ))}
         </div>
@@ -111,10 +220,10 @@ export default function AgentsPage() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-              <Eyebrow>Área</Eyebrow>
+              <Eyebrow>{t.areaEyebrow}</Eyebrow>
             </span>
             <FilterChip active={areaFilter === "all"} onClick={() => setAreaFilter("all")}>
-              Todas
+              {t.allAreas}
             </FilterChip>
             {areas.map((area) => (
               <FilterChip
@@ -129,7 +238,7 @@ export default function AgentsPage() {
         )}
 
         {isError ? (
-          <ErrorState title="Não foi possível carregar os agentes" onRetry={() => refetch()} />
+          <ErrorState title={t.errorTitle} onRetry={() => refetch()} />
         ) : isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array(6)
@@ -174,7 +283,7 @@ export default function AgentsPage() {
 
                 <div className="grid grid-cols-2 gap-3 border-t border-card-border pt-3">
                   <div className="space-y-0.5">
-                    <Eyebrow>Saúde</Eyebrow>
+                    <Eyebrow>{t.healthEyebrow}</Eyebrow>
                     <div className="flex items-center gap-1.5">
                       {agent.activeAlerts ? (
                         <AlertTriangle className="h-3.5 w-3.5 text-chart-3" />
@@ -185,7 +294,7 @@ export default function AgentsPage() {
                     </div>
                   </div>
                   <div className="space-y-0.5">
-                    <Eyebrow>Valor líq.</Eyebrow>
+                    <Eyebrow>{t.netValueLabel}</Eyebrow>
                     <span className="font-mono text-lg font-medium tabular-nums">
                       {typeof agent.monthlyValue === "number" && typeof agent.monthlyCost === "number"
                         ? formatCurrencyK(agent.monthlyValue - agent.monthlyCost)
@@ -199,13 +308,13 @@ export default function AgentsPage() {
                     {missedGoals > 0 ? (
                       <span
                         className="inline-flex items-center gap-1 rounded-md bg-chart-3/10 px-2 py-0.5 font-mono text-xs font-medium text-chart-3"
-                        title={`${missedGoals} ${missedGoals === 1 ? "métrica fora" : "métricas fora"} da meta`}
+                        title={t.goalsOffTitle(missedGoals)}
                       >
                         <AlertTriangle className="h-3 w-3" />
-                        {missedGoals} {missedGoals === 1 ? "meta fora" : "metas fora"}
+                        {t.goalsOff(missedGoals)}
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Todas na meta</span>
+                      <span className="text-xs text-muted-foreground">{t.allOnTarget}</span>
                     )}
                   </div>
                   <VerdictBadge verdict={agent.currentVerdict} />
@@ -217,8 +326,8 @@ export default function AgentsPage() {
         ) : (
           <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-card-border text-sm text-muted-foreground">
             {agents && agents.length > 0
-              ? "Nenhum agente para os filtros atuais."
-              : "Nenhum agente encontrado."}
+              ? t.noAgentsFiltered
+              : t.noAgentsFound}
           </div>
         )}
       </div>
