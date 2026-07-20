@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLang, type Lang } from "@/lib/i18n";
 
 /* ── Eyebrow: tiny uppercase tracked microlabel ───────────── */
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
@@ -110,42 +111,129 @@ export function Pill({
   );
 }
 
-const STATUS_MAP: Record<string, { label: string; tone: Tone }> = {
-  active: { label: "Ativo", tone: "sage" },
-  flagged: { label: "Em alerta", tone: "terracotta" },
-  observation: { label: "Probation", tone: "ochre" },
-  retiring: { label: "Recalibrando", tone: "blue" },
-  retired: { label: "Aposentado", tone: "muted" },
+const STATUS_TONE: Record<string, Tone> = {
+  active: "sage",
+  flagged: "terracotta",
+  observation: "ochre",
+  retiring: "blue",
+  retired: "muted",
 };
+
+const STATUS_LABEL: Record<Lang, Record<string, string>> = {
+  pt: {
+    active: "Ativo",
+    flagged: "Em alerta",
+    observation: "Probation",
+    retiring: "Recalibrando",
+    retired: "Aposentado",
+  },
+  en: {
+    active: "Active",
+    flagged: "Flagged",
+    observation: "Probation",
+    retiring: "Recalibrating",
+    retired: "Retired",
+  },
+  es: {
+    active: "Activo",
+    flagged: "En alerta",
+    observation: "Probation",
+    retiring: "Recalibrando",
+    retired: "Retirado",
+  },
+};
+
+/** Lang-aware status label for non-component call sites. */
+export function statusLabel(status: string, lang: Lang): string {
+  return STATUS_LABEL[lang][status] ?? status;
+}
 
 export function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_MAP[status] ?? { label: status, tone: "muted" as Tone };
-  return <Pill tone={s.tone}>{s.label}</Pill>;
+  const { lang } = useLang();
+  const tone = STATUS_TONE[status] ?? ("muted" as Tone);
+  return <Pill tone={tone}>{statusLabel(status, lang)}</Pill>;
 }
 
-const VERDICT_MAP: Record<string, { label: string; tone: Tone }> = {
-  promote: { label: "Promover", tone: "sage" },
-  mentor: { label: "Mentorar", tone: "ochre" },
-  retire: { label: "Aposentar", tone: "terracotta" },
-  observation: { label: "Observar", tone: "blue" },
+const VERDICT_TONE: Record<string, Tone> = {
+  promote: "sage",
+  mentor: "ochre",
+  retire: "terracotta",
+  observation: "blue",
 };
+
+const VERDICT_LABEL: Record<Lang, Record<string, string>> = {
+  pt: {
+    promote: "Promover",
+    mentor: "Mentorar",
+    retire: "Aposentar",
+    observation: "Observar",
+  },
+  en: {
+    promote: "Promote",
+    mentor: "Mentor",
+    retire: "Retire",
+    observation: "Observe",
+  },
+  es: {
+    promote: "Ascender",
+    mentor: "Mentoría",
+    retire: "Retirar",
+    observation: "Observar",
+  },
+};
+
+/** Lang-aware verdict label for non-component call sites. */
+export function verdictLabel(verdict: string, lang: Lang): string {
+  return VERDICT_LABEL[lang][verdict] ?? verdict;
+}
 
 export function VerdictBadge({ verdict }: { verdict: string }) {
-  const v = VERDICT_MAP[verdict] ?? { label: verdict, tone: "muted" as Tone };
-  return <Pill tone={v.tone}>{v.label}</Pill>;
+  const { lang } = useLang();
+  const tone = VERDICT_TONE[verdict] ?? ("muted" as Tone);
+  return <Pill tone={tone}>{verdictLabel(verdict, lang)}</Pill>;
 }
 
-const SEVERITY_MAP: Record<string, { label: string; tone: Tone }> = {
-  critical: { label: "Crítica", tone: "red" },
-  high: { label: "Alta", tone: "terracotta" },
-  medium: { label: "Média", tone: "ochre" },
-  antecedent: { label: "Antecedente", tone: "blue" },
-  stable: { label: "Estável", tone: "sage" },
+const SEVERITY_TONE: Record<string, Tone> = {
+  critical: "red",
+  high: "terracotta",
+  medium: "ochre",
+  antecedent: "blue",
+  stable: "sage",
 };
 
+const SEVERITY_LABEL: Record<Lang, Record<string, string>> = {
+  pt: {
+    critical: "Crítica",
+    high: "Alta",
+    medium: "Média",
+    antecedent: "Antecedente",
+    stable: "Estável",
+  },
+  en: {
+    critical: "Critical",
+    high: "High",
+    medium: "Medium",
+    antecedent: "Antecedent",
+    stable: "Stable",
+  },
+  es: {
+    critical: "Crítica",
+    high: "Alta",
+    medium: "Media",
+    antecedent: "Antecedente",
+    stable: "Estable",
+  },
+};
+
+/** Lang-aware severity label for non-component call sites. */
+export function severityLabel(severity: string, lang: Lang): string {
+  return SEVERITY_LABEL[lang][severity] ?? severity;
+}
+
 export function SeverityBadge({ severity }: { severity: string }) {
-  const s = SEVERITY_MAP[severity] ?? { label: severity, tone: "muted" as Tone };
-  return <Pill tone={s.tone}>{s.label}</Pill>;
+  const { lang } = useLang();
+  const tone = SEVERITY_TONE[severity] ?? ("muted" as Tone);
+  return <Pill tone={tone}>{severityLabel(severity, lang)}</Pill>;
 }
 
 /* ── FilterChip: pill toggle with optional count ────────────── */

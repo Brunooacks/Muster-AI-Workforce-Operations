@@ -29,6 +29,8 @@ import { useAppShell } from "@/lib/app-shell";
 import { Eyebrow, Pill } from "@/components/cohort";
 import { MusterMark } from "@/components/logo";
 import { useGetFleetSummary } from "@workspace/api-client-react";
+import { useLang, type Lang } from "@/lib/i18n";
+import { LangSwitcher } from "@/components/lang-switcher";
 import { platformLabel } from "@/lib/platforms";
 import { getTrialInfo } from "@/lib/plan";
 
@@ -41,34 +43,118 @@ interface LayoutProps {
 type NavItem = { name: string; href: string; icon: typeof Users };
 type NavGroup = { label: string; items: NavItem[] };
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Operação",
-    items: [
-      { name: "Comando", href: "/comando", icon: Compass },
-      { name: "Agentes", href: "/agentes", icon: Users },
-      { name: "Frota", href: "/frota", icon: LayoutGrid },
-    ],
+// Rotas e ícones são fixos; só os rótulos variam por idioma.
+const NAV_LABELS: Record<Lang, {
+  groups: [string, string, string];
+  items: Record<string, string>;
+  signOut: string;
+  search: string;
+  notifications: string;
+  help: string;
+  connectors: string;
+}> = {
+  pt: {
+    groups: ["Operação", "Governança", "Conta"],
+    items: {
+      "/comando": "Comando",
+      "/agentes": "Agentes",
+      "/frota": "Frota",
+      "/alertas": "Detector de vitória ilusória",
+      "/governanca": "Governança",
+      "/metricas": "Métricas",
+      "/benchmarks": "Benchmarks",
+      "/admissao": "Admissão",
+      "/conectores": "Conectores",
+      "/configuracoes": "Configurações",
+      "/perfil": "Perfil",
+    },
+    signOut: "Sair",
+    search: "Buscar agente, papel, plataforma…",
+    notifications: "Notificações",
+    help: "Ajuda",
+    connectors: "Conectores",
   },
-  {
-    label: "Governança",
-    items: [
-      { name: "Detector de vitória ilusória", href: "/alertas", icon: ShieldAlert },
-      { name: "Governança", href: "/governanca", icon: Scale },
-      { name: "Métricas", href: "/metricas", icon: Gauge },
-      { name: "Benchmarks", href: "/benchmarks", icon: BarChart3 },
-    ],
+  en: {
+    groups: ["Operations", "Governance", "Account"],
+    items: {
+      "/comando": "Command",
+      "/agentes": "Agents",
+      "/frota": "Fleet",
+      "/alertas": "Illusory victory detector",
+      "/governanca": "Governance",
+      "/metricas": "Metrics",
+      "/benchmarks": "Benchmarks",
+      "/admissao": "Admission",
+      "/conectores": "Connectors",
+      "/configuracoes": "Settings",
+      "/perfil": "Profile",
+    },
+    signOut: "Sign out",
+    search: "Search agent, role, platform…",
+    notifications: "Notifications",
+    help: "Help",
+    connectors: "Connectors",
   },
-  {
-    label: "Conta",
-    items: [
-      { name: "Admissão", href: "/admissao", icon: UserPlus },
-      { name: "Conectores", href: "/conectores", icon: Plug },
-      { name: "Configurações", href: "/configuracoes", icon: Settings },
-      { name: "Perfil", href: "/perfil", icon: UserCircle },
-    ],
+  es: {
+    groups: ["Operación", "Gobernanza", "Cuenta"],
+    items: {
+      "/comando": "Mando",
+      "/agentes": "Agentes",
+      "/frota": "Flota",
+      "/alertas": "Detector de victoria ilusoria",
+      "/governanca": "Gobernanza",
+      "/metricas": "Métricas",
+      "/benchmarks": "Benchmarks",
+      "/admissao": "Admisión",
+      "/conectores": "Conectores",
+      "/configuracoes": "Configuración",
+      "/perfil": "Perfil",
+    },
+    signOut: "Cerrar sesión",
+    search: "Buscar agente, rol, plataforma…",
+    notifications: "Notificaciones",
+    help: "Ayuda",
+    connectors: "Conectores",
   },
-];
+};
+
+/** Atalho para o idioma ativo dentro de JSX (chamada incondicional por render). */
+function useLangValue(): Lang {
+  return useLang().lang;
+}
+
+function navGroups(lang: Lang): NavGroup[] {
+  const l = NAV_LABELS[lang];
+  const item = (href: string, icon: NavItem["icon"]): NavItem => ({
+    name: l.items[href] ?? href,
+    href,
+    icon,
+  });
+  return [
+    {
+      label: l.groups[0],
+      items: [item("/comando", Compass), item("/agentes", Users), item("/frota", LayoutGrid)],
+    },
+    {
+      label: l.groups[1],
+      items: [
+        item("/alertas", ShieldAlert),
+        item("/governanca", Scale),
+        item("/metricas", Gauge),
+        item("/benchmarks", BarChart3),
+      ],
+    },
+    {
+      label: l.groups[2],
+      items: [
+        item("/admissao", UserPlus),
+        item("/conectores", Plug),
+        item("/configuracoes", Settings),
+        item("/perfil", UserCircle),
+      ],
+    },
+  ];
+}
 
 function isActiveRoute(location: string, href: string) {
   return location === href || location.startsWith(href + "/");
@@ -156,10 +242,11 @@ function PlanCard({ onNavigate }: { onNavigate?: () => void }) {
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
+  const { lang } = useLang();
   return (
     <div className="space-y-6">
       <nav className="space-y-6">
-        {NAV_GROUPS.map((group) => (
+        {navGroups(lang).map((group) => (
           <div key={group.label} className="space-y-1.5">
             <Eyebrow className="px-3">{group.label}</Eyebrow>
             <div className="space-y-0.5">
@@ -235,7 +322,7 @@ function UserCard({ onSignOut, onNavigate }: { onSignOut: () => void; onNavigate
         onClick={onSignOut}
       >
         <LogOut className="mr-2 h-4 w-4" />
-        Sair
+        {NAV_LABELS[useLangValue()].signOut}
       </Button>
     </div>
   );
@@ -301,7 +388,7 @@ function GlobalSearch() {
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Buscar agente, papel, plataforma…"
+        placeholder={NAV_LABELS[useLangValue()].search}
         className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground/30"
         aria-label="Buscar"
       />
@@ -381,10 +468,11 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             <GlobalSearch />
             <PerspectiveToggle />
-            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Notificações">
+            <LangSwitcher />
+            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={NAV_LABELS[useLangValue()].notifications}>
               <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Ajuda">
+            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={NAV_LABELS[useLangValue()].help}>
               <HelpCircle className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </Button>
             <TopbarAvatar />

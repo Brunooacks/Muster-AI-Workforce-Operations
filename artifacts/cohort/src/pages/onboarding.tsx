@@ -17,14 +17,138 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { completeOnboarding } from "@/lib/onboarding";
 import { platformLabel } from "@/lib/platforms";
+import { useLang, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const STEPS = ["Boas-vindas", "Conectar fonte", "Mapear agentes"];
+/* ── Dicionário da página (pt canônico · en · es) ─────────── */
+
+const PT = {
+  steps: ["Boas-vindas", "Conectar fonte", "Mapear agentes"],
+  skip: "Pular configuração",
+  welcomeEyebrow: "Bem-vindo",
+  welcomeTitle: "Vamos montar sua frota",
+  welcomeSub:
+    "O Muster dá identidade, carteira de trabalho e análise de desempenho aos seus agentes de IA — em três passos rápidos você terá sua primeira frota mapeada.",
+  features: [
+    { t: "Conecte uma fonte", d: "Plug-and-play" },
+    { t: "Descubra agentes", d: "Mapeamento automático" },
+    { t: "Admita na frota", d: "Com 1 clique" },
+  ],
+  start: "Começar",
+  step2Eyebrow: "Passo 2",
+  step2Title: "Conecte uma fonte",
+  step2Sub: "Vincule uma plataforma e rode o discovery para encontrar seus agentes.",
+  connected: "Conectado",
+  available: "Disponível",
+  discovering: "Descobrindo…",
+  runDiscovery: "Rodar discovery",
+  connect: "Conectar",
+  back: "Voltar",
+  doLater: "Fazer isso depois",
+  step3Eyebrow: "Passo 3",
+  step3Title: "Confirme os agentes",
+  step3Fallback: "Revise os agentes descobertos e admita-os na sua frota.",
+  agentMeta: (role: string, n: number, c: number) => `${role} · ${n} métricas · ${c}%`,
+  alreadyInFleet: "Já na frota",
+  newPill: "Novo",
+  admitting: "Admitindo…",
+  admitFinish: "Admitir e concluir",
+  toastSourceConnected: "Fonte conectada",
+  toastSourceDesc: (platform: string) => `${platform} vinculada.`,
+  toastErr: "Erro",
+  toastDiscoverFail: "Falha ao descobrir agentes.",
+  toastFleetStarted: "Frota iniciada",
+  toastAdmitted: (n: number) => `${n} agentes admitidos.`,
+};
+
+type Dict = typeof PT;
+
+const L: Record<Lang, Dict> = {
+  pt: PT,
+  en: {
+    steps: ["Welcome", "Connect source", "Map agents"],
+    skip: "Skip setup",
+    welcomeEyebrow: "Welcome",
+    welcomeTitle: "Let's build your fleet",
+    welcomeSub:
+      "Muster gives your AI agents identity, a work record and performance analysis — in three quick steps you'll have your first fleet mapped.",
+    features: [
+      { t: "Connect a source", d: "Plug-and-play" },
+      { t: "Discover agents", d: "Automatic mapping" },
+      { t: "Admit to the fleet", d: "In 1 click" },
+    ],
+    start: "Start",
+    step2Eyebrow: "Step 2",
+    step2Title: "Connect a source",
+    step2Sub: "Link a platform and run discovery to find your agents.",
+    connected: "Connected",
+    available: "Available",
+    discovering: "Discovering…",
+    runDiscovery: "Run discovery",
+    connect: "Connect",
+    back: "Back",
+    doLater: "Do this later",
+    step3Eyebrow: "Step 3",
+    step3Title: "Confirm the agents",
+    step3Fallback: "Review the discovered agents and admit them to your fleet.",
+    agentMeta: (role: string, n: number, c: number) => `${role} · ${n} metrics · ${c}%`,
+    alreadyInFleet: "Already in the fleet",
+    newPill: "New",
+    admitting: "Admitting…",
+    admitFinish: "Admit and finish",
+    toastSourceConnected: "Source connected",
+    toastSourceDesc: (platform: string) => `${platform} linked.`,
+    toastErr: "Error",
+    toastDiscoverFail: "Failed to discover agents.",
+    toastFleetStarted: "Fleet started",
+    toastAdmitted: (n: number) => `${n} agents admitted.`,
+  },
+  es: {
+    steps: ["Bienvenida", "Conectar fuente", "Mapear agentes"],
+    skip: "Omitir configuración",
+    welcomeEyebrow: "Bienvenido",
+    welcomeTitle: "Vamos a montar tu flota",
+    welcomeSub:
+      "Muster da identidad, expediente laboral y análisis de desempeño a tus agentes de IA — en tres pasos rápidos tendrás tu primera flota mapeada.",
+    features: [
+      { t: "Conecta una fuente", d: "Plug-and-play" },
+      { t: "Descubre agentes", d: "Mapeo automático" },
+      { t: "Admite en la flota", d: "Con 1 clic" },
+    ],
+    start: "Comenzar",
+    step2Eyebrow: "Paso 2",
+    step2Title: "Conecta una fuente",
+    step2Sub: "Vincula una plataforma y ejecuta el discovery para encontrar tus agentes.",
+    connected: "Conectado",
+    available: "Disponible",
+    discovering: "Descubriendo…",
+    runDiscovery: "Ejecutar discovery",
+    connect: "Conectar",
+    back: "Volver",
+    doLater: "Hacerlo después",
+    step3Eyebrow: "Paso 3",
+    step3Title: "Confirma los agentes",
+    step3Fallback: "Revisa los agentes descubiertos y admítelos en tu flota.",
+    agentMeta: (role: string, n: number, c: number) => `${role} · ${n} métricas · ${c}%`,
+    alreadyInFleet: "Ya en la flota",
+    newPill: "Nuevo",
+    admitting: "Admitiendo…",
+    admitFinish: "Admitir y concluir",
+    toastSourceConnected: "Fuente conectada",
+    toastSourceDesc: (platform: string) => `${platform} vinculada.`,
+    toastErr: "Error",
+    toastDiscoverFail: "Fallo al descubrir agentes.",
+    toastFleetStarted: "Flota iniciada",
+    toastAdmitted: (n: number) => `${n} agentes admitidos.`,
+  },
+};
 
 export default function OnboardingPage() {
   const [, setLocation] = useLocation();
   const { user } = useUser();
   const { toast } = useToast();
+  const { lang } = useLang();
+  const t = L[lang];
   const [step, setStep] = useState(0);
   const [discovery, setDiscovery] = useState<DiscoveryResult | null>(null);
   const [discoveringId, setDiscoveringId] = useState<string | null>(null);
@@ -44,7 +168,7 @@ export default function OnboardingPage() {
       { data: { platform } },
       {
         onSuccess: () => {
-          toast({ title: "Fonte conectada", description: `${platformLabel(platform)} vinculada.` });
+          toast({ title: t.toastSourceConnected, description: t.toastSourceDesc(platformLabel(platform)) });
           queryClient.invalidateQueries({ queryKey: getListConnectorsQueryKey() });
         },
       },
@@ -63,7 +187,7 @@ export default function OnboardingPage() {
         },
         onError: () => {
           setDiscoveringId(null);
-          toast({ title: "Erro", description: "Falha ao descobrir agentes.", variant: "destructive" });
+          toast({ title: t.toastErr, description: t.toastDiscoverFail, variant: "destructive" });
         },
       },
     );
@@ -80,7 +204,7 @@ export default function OnboardingPage() {
       { connectorId: discovery.connectorId, data: { externalIds: ids } },
       {
         onSuccess: () => {
-          toast({ title: "Frota iniciada", description: `${ids.length} agentes admitidos.` });
+          toast({ title: t.toastFleetStarted, description: t.toastAdmitted(ids.length) });
           queryClient.invalidateQueries({ queryKey: getListConnectorsQueryKey() });
           finish();
         },
@@ -101,12 +225,12 @@ export default function OnboardingPage() {
             onClick={finish}
             className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            Pular configuração
+            {t.skip}
           </button>
         </div>
 
         <div className="mb-8 flex items-center gap-2">
-          {STEPS.map((label, i) => (
+          {t.steps.map((label, i) => (
             <div key={label} className="flex flex-1 items-center gap-2">
               <div
                 className={cn(
@@ -128,7 +252,7 @@ export default function OnboardingPage() {
               >
                 {label}
               </span>
-              {i < STEPS.length - 1 && <div className="h-px flex-1 bg-border" />}
+              {i < t.steps.length - 1 && <div className="h-px flex-1 bg-border" />}
             </div>
           ))}
         </div>
@@ -139,19 +263,18 @@ export default function OnboardingPage() {
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Compass className="h-7 w-7" strokeWidth={1.75} />
             </div>
-            <Eyebrow>Bem-vindo</Eyebrow>
+            <Eyebrow>{t.welcomeEyebrow}</Eyebrow>
             <h1 className="mt-2 font-serif text-3xl font-medium tracking-tight text-foreground">
-              Vamos montar sua frota
+              {t.welcomeTitle}
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-              O Muster dá identidade, carteira de trabalho e análise de desempenho aos seus agentes
-              de IA — em três passos rápidos você terá sua primeira frota mapeada.
+              {t.welcomeSub}
             </p>
             <div className="mt-6 grid gap-3 text-left sm:grid-cols-3">
               {[
-                { icon: Plug, t: "Conecte uma fonte", d: "Plug-and-play" },
-                { icon: Sparkles, t: "Descubra agentes", d: "Mapeamento automático" },
-                { icon: Check, t: "Admita na frota", d: "Com 1 clique" },
+                { icon: Plug, ...t.features[0]! },
+                { icon: Sparkles, ...t.features[1]! },
+                { icon: Check, ...t.features[2]! },
               ].map((f) => (
                 <div key={f.t} className="rounded-xl border border-card-border bg-secondary/30 p-4">
                   <f.icon className="mb-2 h-5 w-5 text-chart-2" strokeWidth={1.75} />
@@ -161,7 +284,7 @@ export default function OnboardingPage() {
               ))}
             </div>
             <Button className="mt-8 w-full sm:w-auto" onClick={() => setStep(1)}>
-              Começar <ArrowRight className="ml-1.5 h-4 w-4" />
+              {t.start} <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
           </Card>
         )}
@@ -170,12 +293,12 @@ export default function OnboardingPage() {
         {step === 1 && (
           <Card className="overflow-hidden animate-in fade-in duration-300">
             <div className="border-b border-card-border px-6 py-5">
-              <Eyebrow>Passo 2</Eyebrow>
+              <Eyebrow>{t.step2Eyebrow}</Eyebrow>
               <h2 className="mt-1 font-serif text-2xl font-medium tracking-tight text-foreground">
-                Conecte uma fonte
+                {t.step2Title}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Vincule uma plataforma e rode o discovery para encontrar seus agentes.
+                {t.step2Sub}
               </p>
             </div>
             <div className="divide-y divide-card-border">
@@ -196,7 +319,7 @@ export default function OnboardingPage() {
                             {connector.name}
                           </span>
                           <Pill tone={connected ? "sage" : "muted"}>
-                            {connected ? "Conectado" : "Disponível"}
+                            {connected ? t.connected : t.available}
                           </Pill>
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground">
@@ -213,10 +336,10 @@ export default function OnboardingPage() {
                           disabled={discoveringId === connector.id}
                         >
                           {discoveringId === connector.id ? (
-                            "Descobrindo…"
+                            t.discovering
                           ) : (
                             <>
-                              <Sparkles className="mr-1.5 h-4 w-4" /> Rodar discovery
+                              <Sparkles className="mr-1.5 h-4 w-4" /> {t.runDiscovery}
                             </>
                           )}
                         </Button>
@@ -226,7 +349,7 @@ export default function OnboardingPage() {
                           onClick={() => handleConnect(connector.platform)}
                           disabled={connectPlatform.isPending}
                         >
-                          <Link2 className="mr-1.5 h-4 w-4" /> Conectar
+                          <Link2 className="mr-1.5 h-4 w-4" /> {t.connect}
                         </Button>
                       )}
                     </div>
@@ -236,10 +359,10 @@ export default function OnboardingPage() {
             </div>
             <div className="flex items-center justify-between border-t border-card-border px-6 py-4">
               <Button variant="ghost" size="sm" onClick={() => setStep(0)}>
-                Voltar
+                {t.back}
               </Button>
               <Button variant="ghost" size="sm" onClick={finish}>
-                Fazer isso depois
+                {t.doLater}
               </Button>
             </div>
           </Card>
@@ -249,13 +372,12 @@ export default function OnboardingPage() {
         {step === 2 && (
           <Card className="overflow-hidden animate-in fade-in duration-300">
             <div className="border-b border-card-border px-6 py-5">
-              <Eyebrow>Passo 3</Eyebrow>
+              <Eyebrow>{t.step3Eyebrow}</Eyebrow>
               <h2 className="mt-1 font-serif text-2xl font-medium tracking-tight text-foreground">
-                Confirme os agentes
+                {t.step3Title}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {discovery?.coverageNote ??
-                  "Revise os agentes descobertos e admita-os na sua frota."}
+                {discovery?.coverageNote ?? t.step3Fallback}
               </p>
             </div>
             <div className="divide-y divide-card-border">
@@ -266,25 +388,25 @@ export default function OnboardingPage() {
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium text-foreground">{agent.name}</div>
                       <div className="truncate text-xs text-muted-foreground">
-                        {agent.role} · {agent.proposedMetrics.length} métricas · {agent.confidence}%
+                        {t.agentMeta(agent.role, agent.proposedMetrics.length, agent.confidence)}
                       </div>
                     </div>
                   </div>
                   {agent.alreadyImported ? (
-                    <Pill tone="sage">Já na frota</Pill>
+                    <Pill tone="sage">{t.alreadyInFleet}</Pill>
                   ) : (
-                    <Pill tone="ochre">Novo</Pill>
+                    <Pill tone="ochre">{t.newPill}</Pill>
                   )}
                 </div>
               ))}
             </div>
             <div className="flex items-center justify-between border-t border-card-border px-6 py-4">
               <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
-                Voltar
+                {t.back}
               </Button>
               <Button onClick={handleImportAll} disabled={importAgents.isPending}>
                 <Download className="mr-1.5 h-4 w-4" />
-                {importAgents.isPending ? "Admitindo…" : "Admitir e concluir"}
+                {importAgents.isPending ? t.admitting : t.admitFinish}
               </Button>
             </div>
           </Card>

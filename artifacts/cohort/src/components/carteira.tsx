@@ -17,6 +17,7 @@ import {
 import { metricTargetStatus } from "@workspace/metrics";
 import { cn } from "@/lib/utils";
 import { Eyebrow } from "@/components/cohort";
+import { useLang, type Lang } from "@/lib/i18n";
 
 export { metricTargetStatus };
 
@@ -84,7 +85,7 @@ type Dict = {
   goalSaveError: string;
 };
 
-export const carteiraI18n: Record<Audience, Dict> = {
+const carteiraPt: Record<Audience, Dict> = {
   gestor: {
     audienceLabel: "Gestor",
     audienceHint: "Vista de gestor — linguagem de pessoas, decisões e ROI",
@@ -241,6 +242,326 @@ export const carteiraI18n: Record<Audience, Dict> = {
   },
 };
 
+const carteiraEn: Record<Audience, Dict> = {
+  gestor: {
+    audienceLabel: "Manager",
+    audienceHint: "Manager view — language of people, decisions and ROI",
+    sec01: {
+      title: "Work Record",
+      caption: "Identity, role and chain of responsibility of the agent",
+    },
+    sec02: {
+      title: "Performance Review",
+      caption: "Five performance layers · current window",
+    },
+    sec03: {
+      title: "Review History",
+      caption: "Performance trajectory over time",
+    },
+    sec04: {
+      title: "Illusory Victory Detector",
+      caption: "Antagonistic patterns isolated dashboards can't see",
+    },
+    sec05: {
+      title: "Committee Recommendation",
+      caption: "Synthesis for the portfolio meeting",
+    },
+    jobDescription: "Job Description",
+    mustDo: "Must do",
+    mustNotDo: "Must not do",
+    goodWork: "Definition of good work",
+    responsibility: "Responsibility",
+    businessOwner: "Business owner",
+    techOwner: "Technical owner",
+    governance: "Governance",
+    autonomy: "Autonomy",
+    level: "Decision boundary",
+    escalates: "Escalates to human",
+    limits: "Operational limits",
+    origin: "Origin (Business Case)",
+    baseline: "Pre-agent baseline",
+    paybackTarget: "Payback target",
+    paybackReal: "Actual payback",
+    sinceLabel: "In production since",
+    versionLabel: "generation",
+    executionsLabel: "runs this month",
+    target: "Goal",
+    health: "Overall health",
+    recommendedRoute: "Recommended decision",
+    confidence: "Model confidence",
+    window: "Execution window",
+    sponsor: "Action sponsor",
+    rationaleLabel: "System reading",
+    nextActions: "Next actions",
+    owner: "Owner",
+    in: "In",
+    detected: "Detected",
+    hypothesis: "Hypothesis",
+    action: "Recommendation",
+    approve: "Approve plan",
+    disagree: "Disagree with the system",
+    export: "Export for committee",
+    noAlerts:
+      "No antagonistic pattern detected in recent weeks. We keep monitoring.",
+    quote: "Read one indicator only, and you celebrate. Read the system, and you intervene.",
+    state: "State",
+    onTarget: "On target",
+    offTarget: "Off target",
+    editGoal: "Edit goal",
+    editGoalTitle: "Edit metric goal",
+    editGoalDesc:
+      "Review the goal and the rationale. The change applies from the current review onward.",
+    targetField: "Goal",
+    targetPlaceholder: "e.g. ≥ 85%",
+    rationaleField: "Rationale",
+    rationalePlaceholder: "Why is this the right goal?",
+    save: "Save goal",
+    cancel: "Cancel",
+    goalSaved: "Goal updated",
+    goalSaveError: "Could not save the goal.",
+  },
+  platform: {
+    audienceLabel: "Platform",
+    audienceHint: "Technical view — engineering vocabulary, metrics and traces",
+    sec01: {
+      title: "Agent Registry",
+      caption: "ID, ownership chain and autonomy boundaries",
+    },
+    sec02: {
+      title: "Metrics Dashboard",
+      caption: "5-layer KPI framework · current window",
+    },
+    sec03: {
+      title: "Performance Trajectory",
+      caption: "Same agent, temporal snapshots",
+    },
+    sec04: {
+      title: "Antagonistic Pattern Detector",
+      caption: "Cross-metric anomalies invisible to single-metric dashboards",
+    },
+    sec05: {
+      title: "System Recommendation",
+      caption: "Auto-generated routing decision with evidence",
+    },
+    jobDescription: "Spec / Boundaries",
+    mustDo: "Positive scope",
+    mustNotDo: "Negative scope",
+    goodWork: "Definition of done",
+    responsibility: "Ownership",
+    businessOwner: "Business owner",
+    techOwner: "Tech owner",
+    governance: "Governance",
+    autonomy: "Autonomy config",
+    level: "Autonomous decisions",
+    escalates: "Escalation triggers",
+    limits: "Operational limits",
+    origin: "Business case",
+    baseline: "Pre-deploy baseline",
+    paybackTarget: "Target payback",
+    paybackReal: "Actual payback",
+    sinceLabel: "In production since",
+    versionLabel: "version",
+    executionsLabel: "runs / month",
+    target: "Target",
+    health: "Health score",
+    recommendedRoute: "Recommended route",
+    confidence: "Model confidence",
+    window: "Execution window",
+    sponsor: "Sponsor",
+    rationaleLabel: "System reading",
+    nextActions: "Next actions",
+    owner: "Owner",
+    in: "In",
+    detected: "Detected",
+    hypothesis: "Hypothesis",
+    action: "Action",
+    approve: "Approve plan",
+    disagree: "System override",
+    export: "Export traces",
+    noAlerts:
+      "No antagonistic pattern in recent weeks. Monitoring continuously.",
+    quote: "Read one metric, celebrate. Read the system, intervene.",
+    state: "State",
+    onTarget: "On target",
+    offTarget: "Off target",
+    editGoal: "Edit target",
+    editGoalTitle: "Edit metric target",
+    editGoalDesc:
+      "Adjust the target and the rationale. Applies to the agent's current review.",
+    targetField: "Target",
+    targetPlaceholder: "e.g. ≥ 85%",
+    rationaleField: "Rationale",
+    rationalePlaceholder: "Why is this the right target?",
+    save: "Save target",
+    cancel: "Cancel",
+    goalSaved: "Target updated",
+    goalSaveError: "Could not save the target.",
+  },
+};
+
+const carteiraEs: Record<Audience, Dict> = {
+  gestor: {
+    audienceLabel: "Gestor",
+    audienceHint: "Vista de gestor — lenguaje de personas, decisiones y ROI",
+    sec01: {
+      title: "Expediente Laboral",
+      caption: "Identidad, rol y cadena de responsabilidad del agente",
+    },
+    sec02: {
+      title: "Evaluación de Desempeño",
+      caption: "Cinco capas de desempeño · ventana actual",
+    },
+    sec03: {
+      title: "Historial de Evaluaciones",
+      caption: "Trayectoria de desempeño a lo largo del tiempo",
+    },
+    sec04: {
+      title: "Detector de Victoria Ilusoria",
+      caption: "Patrones antagónicos que los dashboards aislados no ven",
+    },
+    sec05: {
+      title: "Recomendación para el Comité",
+      caption: "Síntesis para la reunión de portafolio",
+    },
+    jobDescription: "Job Description",
+    mustDo: "Debe hacer",
+    mustNotDo: "No debe hacer",
+    goodWork: "Criterio de buen trabajo",
+    responsibility: "Responsabilidad",
+    businessOwner: "Dueño de negocio",
+    techOwner: "Dueño técnico",
+    governance: "Gobernanza",
+    autonomy: "Autonomía",
+    level: "Frontera de decisión",
+    escalates: "Escala a humano",
+    limits: "Límites operativos",
+    origin: "Origen (Business Case)",
+    baseline: "Baseline pre-agente",
+    paybackTarget: "Meta de payback",
+    paybackReal: "Payback real",
+    sinceLabel: "En producción desde",
+    versionLabel: "generación",
+    executionsLabel: "ejecuciones en el mes",
+    target: "Meta",
+    health: "Salud general",
+    recommendedRoute: "Decisión recomendada",
+    confidence: "Confianza del modelo",
+    window: "Ventana de ejecución",
+    sponsor: "Sponsor de la acción",
+    rationaleLabel: "Lectura del sistema",
+    nextActions: "Próximas acciones",
+    owner: "Responsable",
+    in: "En",
+    detected: "Detectado",
+    hypothesis: "Hipótesis",
+    action: "Recomendación",
+    approve: "Aprobar plan",
+    disagree: "Discrepar del sistema",
+    export: "Exportar para el comité",
+    noAlerts:
+      "Ningún patrón antagónico detectado en las últimas semanas. Seguimos monitoreando.",
+    quote: "Quien lee solo un indicador, celebra. Quien lee el sistema, interviene.",
+    state: "Estado",
+    onTarget: "En la meta",
+    offTarget: "Fuera de la meta",
+    editGoal: "Editar meta",
+    editGoalTitle: "Editar meta de la métrica",
+    editGoalDesc:
+      "Revise la meta y la justificación. El cambio aplica desde la evaluación actual.",
+    targetField: "Meta",
+    targetPlaceholder: "ej.: ≥ 85%",
+    rationaleField: "Justificación",
+    rationalePlaceholder: "¿Por qué es esta la meta correcta?",
+    save: "Guardar meta",
+    cancel: "Cancelar",
+    goalSaved: "Meta actualizada",
+    goalSaveError: "No fue posible guardar la meta.",
+  },
+  platform: {
+    audienceLabel: "Platform",
+    audienceHint: "Vista técnica — vocabulario de ingeniería, métricas y traces",
+    sec01: {
+      title: "Registro del Agente",
+      caption: "ID, cadena de propiedad y fronteras de autonomía",
+    },
+    sec02: {
+      title: "Dashboard de Métricas",
+      caption: "Framework de KPI en 5 capas · ventana actual",
+    },
+    sec03: {
+      title: "Trayectoria de Desempeño",
+      caption: "Mismo agente, snapshots temporales",
+    },
+    sec04: {
+      title: "Detector de Patrones Antagónicos",
+      caption: "Anomalías cruzadas invisibles para dashboards de métrica única",
+    },
+    sec05: {
+      title: "Recomendación del Sistema",
+      caption: "Decisión de ruteo autogenerada con evidencias",
+    },
+    jobDescription: "Spec / Boundaries",
+    mustDo: "Alcance positivo",
+    mustNotDo: "Alcance negativo",
+    goodWork: "Definición de listo",
+    responsibility: "Ownership",
+    businessOwner: "Business owner",
+    techOwner: "Tech owner",
+    governance: "Gobernanza",
+    autonomy: "Config. de autonomía",
+    level: "Decisiones autónomas",
+    escalates: "Disparadores de escalamiento",
+    limits: "Límites operativos",
+    origin: "Business case",
+    baseline: "Baseline pre-deploy",
+    paybackTarget: "Payback objetivo",
+    paybackReal: "Payback real",
+    sinceLabel: "En producción desde",
+    versionLabel: "versión",
+    executionsLabel: "ejecuciones / mes",
+    target: "Target",
+    health: "Health score",
+    recommendedRoute: "Ruta recomendada",
+    confidence: "Confianza del modelo",
+    window: "Ventana de ejecución",
+    sponsor: "Sponsor",
+    rationaleLabel: "Lectura del sistema",
+    nextActions: "Próximas acciones",
+    owner: "Owner",
+    in: "En",
+    detected: "Detected",
+    hypothesis: "Hypothesis",
+    action: "Action",
+    approve: "Aprobar plan",
+    disagree: "Override del sistema",
+    export: "Exportar traces",
+    noAlerts:
+      "Ningún patrón antagónico en las últimas semanas. Monitoreando continuamente.",
+    quote: "Read one metric, celebrate. Read the system, intervene.",
+    state: "Estado",
+    onTarget: "En la meta",
+    offTarget: "Fuera de la meta",
+    editGoal: "Editar target",
+    editGoalTitle: "Editar target de la métrica",
+    editGoalDesc:
+      "Ajuste el target y la justificación. Aplica a la evaluación actual del agente.",
+    targetField: "Target",
+    targetPlaceholder: "ej.: ≥ 85%",
+    rationaleField: "Justificación",
+    rationalePlaceholder: "¿Por qué es este el target correcto?",
+    save: "Guardar target",
+    cancel: "Cancelar",
+    goalSaved: "Target actualizado",
+    goalSaveError: "No fue posible guardar el target.",
+  },
+};
+
+export const carteiraI18n: Record<Lang, Record<Audience, Dict>> = {
+  pt: carteiraPt,
+  en: carteiraEn,
+  es: carteiraEs,
+};
+
 /* ── Layer presentation metadata ──────────────────────────── */
 export const LAYER_ICON: Record<string, LucideIcon> = {
   efficacy: Target,
@@ -250,15 +571,37 @@ export const LAYER_ICON: Record<string, LucideIcon> = {
   value: Award,
 };
 
-export const LAYER_CAPTION: Record<string, Record<Audience, string>> = {
-  efficacy: { gestor: "O agente resolve mesmo?", platform: "Resolve de verdade?" },
-  efficiency: { gestor: "O agente é viável?", platform: "Unit economics viável?" },
-  adoption: { gestor: "A organização usa?", platform: "A org está usando?" },
-  governance: {
-    gestor: "É seguro deixar rodando?",
-    platform: "Seguro em produção?",
+export const LAYER_CAPTION: Record<Lang, Record<string, Record<Audience, string>>> = {
+  pt: {
+    efficacy: { gestor: "O agente resolve mesmo?", platform: "Resolve de verdade?" },
+    efficiency: { gestor: "O agente é viável?", platform: "Unit economics viável?" },
+    adoption: { gestor: "A organização usa?", platform: "A org está usando?" },
+    governance: {
+      gestor: "É seguro deixar rodando?",
+      platform: "Seguro em produção?",
+    },
+    value: { gestor: "Vale o investimento?", platform: "Vale o investimento?" },
   },
-  value: { gestor: "Vale o investimento?", platform: "Vale o investimento?" },
+  en: {
+    efficacy: { gestor: "Does the agent actually solve it?", platform: "Does it truly solve?" },
+    efficiency: { gestor: "Is the agent viable?", platform: "Viable unit economics?" },
+    adoption: { gestor: "Does the organization use it?", platform: "Is the org using it?" },
+    governance: {
+      gestor: "Is it safe to keep it running?",
+      platform: "Safe in production?",
+    },
+    value: { gestor: "Worth the investment?", platform: "Worth the investment?" },
+  },
+  es: {
+    efficacy: { gestor: "¿El agente realmente resuelve?", platform: "¿Resuelve de verdad?" },
+    efficiency: { gestor: "¿El agente es viable?", platform: "¿Unit economics viable?" },
+    adoption: { gestor: "¿La organización lo usa?", platform: "¿La org lo está usando?" },
+    governance: {
+      gestor: "¿Es seguro dejarlo corriendo?",
+      platform: "¿Seguro en producción?",
+    },
+    value: { gestor: "¿Vale la inversión?", platform: "¿Vale la inversión?" },
+  },
 };
 
 /* ── Domain-default targets per metric (spec Parte 2) ─────── */
@@ -369,12 +712,23 @@ export function Pillar({
 /* ── Per-metric status pill (reference: CRÍTICA/ALTA/MÉDIA/ESTÁVEL) ── */
 export type MetricPillStatus = "stable" | "medium" | "high" | "critical";
 
-const METRIC_PILL: Record<MetricPillStatus, { label: string; className: string }> = {
-  stable: { label: "Estável", className: "bg-chart-1/15 text-chart-1" },
-  medium: { label: "Média", className: "bg-chart-2/20 text-chart-2" },
-  high: { label: "Alta", className: "bg-chart-3/18 text-chart-3" },
-  critical: { label: "Crítica", className: "bg-chart-4/15 text-chart-4" },
+const METRIC_PILL_CLASS: Record<MetricPillStatus, string> = {
+  stable: "bg-chart-1/15 text-chart-1",
+  medium: "bg-chart-2/20 text-chart-2",
+  high: "bg-chart-3/18 text-chart-3",
+  critical: "bg-chart-4/15 text-chart-4",
 };
+
+const METRIC_PILL_LABEL: Record<Lang, Record<MetricPillStatus, string>> = {
+  pt: { stable: "Estável", medium: "Média", high: "Alta", critical: "Crítica" },
+  en: { stable: "Stable", medium: "Medium", high: "High", critical: "Critical" },
+  es: { stable: "Estable", medium: "Media", high: "Alta", critical: "Crítica" },
+};
+
+/** Lang-aware label for the per-metric status pill. */
+export function metricPillLabel(status: MetricPillStatus, lang: Lang): string {
+  return METRIC_PILL_LABEL[lang][status];
+}
 
 /**
  * Reference-design status per metric row: on-target → Estável; off-target →
@@ -426,6 +780,7 @@ export function MetricRow({
   onEdit?: () => void;
   editLabel?: string;
 }) {
+  const { lang } = useLang();
   const target = targetProp ?? METRIC_TARGETS[label];
   const pill = metricPillStatus(value, target);
   const offTarget = pill === "high" || pill === "critical";
@@ -461,10 +816,10 @@ export function MetricRow({
             <span
               className={cn(
                 "inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em]",
-                METRIC_PILL[pill].className,
+                METRIC_PILL_CLASS[pill],
               )}
             >
-              {METRIC_PILL[pill].label}
+              {metricPillLabel(pill, lang)}
             </span>
           )}
           {onEdit && (
@@ -494,40 +849,75 @@ export function MetricRow({
 }
 
 /* ── Detector de Vitória Ilusória — reference presentation ── */
+const DETECTOR_PILL_LABEL: Record<
+  Lang,
+  { criticalIllusory: string; critical: string; antecedent: string; antagonistic: string }
+> = {
+  pt: {
+    criticalIllusory: "Vitória ilusória crítica",
+    critical: "Crítica",
+    antecedent: "Sinal antecedente",
+    antagonistic: "Alerta antagônico",
+  },
+  en: {
+    criticalIllusory: "Critical illusory victory",
+    critical: "Critical",
+    antecedent: "Antecedent signal",
+    antagonistic: "Antagonistic alert",
+  },
+  es: {
+    criticalIllusory: "Victoria ilusoria crítica",
+    critical: "Crítica",
+    antecedent: "Señal antecedente",
+    antagonistic: "Alerta antagónica",
+  },
+};
+
 /** Left-border tone + pill wording per severity, matching the reference
  *  screens: VITÓRIA ILUSÓRIA CRÍTICA / ALERTA ANTAGÔNICO / SINAL ANTECEDENTE. */
-export function detectorPresentation(severity: string, patternType?: string) {
+export function detectorPresentation(
+  severity: string,
+  patternType?: string,
+  lang: Lang = "pt",
+) {
+  const labels = DETECTOR_PILL_LABEL[lang];
   switch (severity) {
     case "critical":
       return {
         border: "border-l-chart-4",
         pill: "bg-chart-4/15 text-chart-4",
         pillLabel: patternType?.toLowerCase().includes("vitória")
-          ? "Vitória ilusória crítica"
-          : "Crítica",
+          ? labels.criticalIllusory
+          : labels.critical,
       };
     case "antecedent":
       return {
         border: "border-l-chart-2",
         pill: "bg-chart-2/20 text-chart-2",
-        pillLabel: "Sinal antecedente",
+        pillLabel: labels.antecedent,
       };
     case "medium":
       return {
         border: "border-l-chart-2",
         pill: "bg-chart-2/20 text-chart-2",
-        pillLabel: "Alerta antagônico",
+        pillLabel: labels.antagonistic,
       };
     default:
       return {
         border: "border-l-chart-3",
         pill: "bg-chart-3/18 text-chart-3",
-        pillLabel: "Alerta antagônico",
+        pillLabel: labels.antagonistic,
       };
   }
 }
 
 /* ── AudienceToggle: Gestor ↔ Platform pill switch ────────── */
+const AUDIENCE_TOGGLE_LABEL: Record<Lang, Record<Audience, string>> = {
+  pt: { gestor: "Gestor", platform: "Platform" },
+  en: { gestor: "Manager", platform: "Platform" },
+  es: { gestor: "Gestor", platform: "Platform" },
+};
+
 export function AudienceToggle({
   audience,
   onChange,
@@ -535,6 +925,7 @@ export function AudienceToggle({
   audience: Audience;
   onChange: (a: Audience) => void;
 }) {
+  const { lang } = useLang();
   const opt = (value: Audience, label: string, Icon: LucideIcon) => (
     <button
       type="button"
@@ -552,8 +943,8 @@ export function AudienceToggle({
   );
   return (
     <div className="inline-flex items-center gap-0.5 rounded-full border border-card-border bg-card p-1">
-      {opt("gestor", "Gestor", Briefcase)}
-      {opt("platform", "Platform", Terminal)}
+      {opt("gestor", AUDIENCE_TOGGLE_LABEL[lang].gestor, Briefcase)}
+      {opt("platform", AUDIENCE_TOGGLE_LABEL[lang].platform, Terminal)}
     </div>
   );
 }

@@ -13,8 +13,78 @@ import { TrendingUp, Target } from "lucide-react";
 import { ErrorState } from "@/components/query-state";
 import { PageHeading, StatCard, AgentDisc } from "@/components/cohort";
 import { platformLabel } from "@/lib/platforms";
+import { useLang, type Lang } from "@/lib/i18n";
 
 const cardTitleSerif = "font-serif text-xl font-medium tracking-tight";
+
+/* ── Dicionário da página (pt canônico · en · es) ─────────── */
+
+const PT = {
+  bcGov: "Governança",
+  bcBench: "Benchmarks",
+  eyebrow: "Governança",
+  title: "Benchmarks da Frota",
+  subtitle:
+    "Comparativo interno de retorno sobre investimento e acurácia entre todos os agentes da frota.",
+  errTitle: "Não foi possível carregar os benchmarks",
+  errDesc: "Tente novamente em instantes.",
+  roiAvgLabel: "ROI médio da frota",
+  roiAvgDelta: "Retorno sobre investimento consolidado",
+  accAvgLabel: "Acurácia média da frota",
+  accAvgDelta: "Qualidade média das respostas",
+  roiRankTitle: "Ranking por ROI",
+  roiRankDesc: "Maior retorno sobre investimento na frota",
+  roiEmpty: "Sem dados de ROI.",
+  accRankTitle: "Ranking por acurácia",
+  accRankDesc: "Maior qualidade de resposta na frota",
+  accEmpty: "Sem dados de acurácia.",
+};
+
+type Dict = typeof PT;
+
+const L: Record<Lang, Dict> = {
+  pt: PT,
+  en: {
+    bcGov: "Governance",
+    bcBench: "Benchmarks",
+    eyebrow: "Governance",
+    title: "Fleet Benchmarks",
+    subtitle:
+      "Internal comparison of return on investment and accuracy across every agent in the fleet.",
+    errTitle: "Could not load the benchmarks",
+    errDesc: "Try again in a moment.",
+    roiAvgLabel: "Fleet average ROI",
+    roiAvgDelta: "Consolidated return on investment",
+    accAvgLabel: "Fleet average accuracy",
+    accAvgDelta: "Average answer quality",
+    roiRankTitle: "Ranking by ROI",
+    roiRankDesc: "Highest return on investment in the fleet",
+    roiEmpty: "No ROI data.",
+    accRankTitle: "Ranking by accuracy",
+    accRankDesc: "Highest answer quality in the fleet",
+    accEmpty: "No accuracy data.",
+  },
+  es: {
+    bcGov: "Gobernanza",
+    bcBench: "Benchmarks",
+    eyebrow: "Gobernanza",
+    title: "Benchmarks de la Flota",
+    subtitle:
+      "Comparativo interno de retorno sobre la inversión y precisión entre todos los agentes de la flota.",
+    errTitle: "No fue posible cargar los benchmarks",
+    errDesc: "Inténtalo de nuevo en unos instantes.",
+    roiAvgLabel: "ROI promedio de la flota",
+    roiAvgDelta: "Retorno sobre la inversión consolidado",
+    accAvgLabel: "Precisión promedio de la flota",
+    accAvgDelta: "Calidad promedio de las respuestas",
+    roiRankTitle: "Ranking por ROI",
+    roiRankDesc: "Mayor retorno sobre la inversión en la flota",
+    roiEmpty: "Sin datos de ROI.",
+    accRankTitle: "Ranking por precisión",
+    accRankDesc: "Mayor calidad de respuesta en la flota",
+    accEmpty: "Sin datos de precisión.",
+  },
+};
 
 function formatCurrencyK(value: number) {
   return `R$ ${(value / 1000).toFixed(1)}k`;
@@ -71,23 +141,25 @@ function RankRow({
 
 export default function BenchmarksPage() {
   const { data, isLoading, isError, refetch } = useGetFleetBenchmarks();
+  const { lang } = useLang();
+  const t = L[lang];
 
   const maxRoi = Math.max(1, ...(data?.byRoi.map((a) => Math.abs(a.roiPercent)) ?? [1]));
   const maxAcc = Math.max(1, ...(data?.byAccuracy.map((a) => a.accuracy) ?? [1]));
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Governança" }, { label: "Benchmarks" }]}>
+    <AppLayout breadcrumbs={[{ label: t.bcGov }, { label: t.bcBench }]}>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <PageHeading
-          eyebrow="Governança"
-          title="Benchmarks da Frota"
-          subtitle="Comparativo interno de retorno sobre investimento e acurácia entre todos os agentes da frota."
+          eyebrow={t.eyebrow}
+          title={t.title}
+          subtitle={t.subtitle}
         />
 
         {isError ? (
           <ErrorState
-            title="Não foi possível carregar os benchmarks"
-            description="Tente novamente em instantes."
+            title={t.errTitle}
+            description={t.errDesc}
             onRetry={() => refetch()}
           />
         ) : (
@@ -102,21 +174,21 @@ export default function BenchmarksPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <StatCard
                   icon={TrendingUp}
-                  label="ROI médio da frota"
+                  label={t.roiAvgLabel}
                   value={`${data.fleetAvgRoi > 0 ? "+" : ""}${data.fleetAvgRoi}%`}
-                  delta="Retorno sobre investimento consolidado"
+                  delta={t.roiAvgDelta}
                   tone="up"
                 />
                 <StatCard
                   icon={Target}
-                  label="Acurácia média da frota"
+                  label={t.accAvgLabel}
                   value={
                     <span>
                       {data.fleetAvgAccuracy}
                       <span className="text-xl text-muted-foreground">/100</span>
                     </span>
                   }
-                  delta="Qualidade média das respostas"
+                  delta={t.accAvgDelta}
                 />
               </div>
             ) : null}
@@ -126,9 +198,9 @@ export default function BenchmarksPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                    <TrendingUp className="h-4 w-4 text-chart-1" /> Ranking por ROI
+                    <TrendingUp className="h-4 w-4 text-chart-1" /> {t.roiRankTitle}
                   </CardTitle>
-                  <CardDescription>Maior retorno sobre investimento na frota</CardDescription>
+                  <CardDescription>{t.roiRankDesc}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {isLoading ? (
@@ -149,7 +221,7 @@ export default function BenchmarksPage() {
                     ))
                   ) : (
                     <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
-                      Sem dados de ROI.
+                      {t.roiEmpty}
                     </div>
                   )}
                 </CardContent>
@@ -159,9 +231,9 @@ export default function BenchmarksPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                    <Target className="h-4 w-4 text-chart-5" /> Ranking por acurácia
+                    <Target className="h-4 w-4 text-chart-5" /> {t.accRankTitle}
                   </CardTitle>
-                  <CardDescription>Maior qualidade de resposta na frota</CardDescription>
+                  <CardDescription>{t.accRankDesc}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {isLoading ? (
@@ -182,7 +254,7 @@ export default function BenchmarksPage() {
                     ))
                   ) : (
                     <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
-                      Sem dados de acurácia.
+                      {t.accEmpty}
                     </div>
                   )}
                 </CardContent>

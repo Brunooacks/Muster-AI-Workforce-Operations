@@ -28,19 +28,46 @@ const SOURCES = [
   { y: 293, label: "COPILOT" },
 ];
 
-const LAYERS = [
-  { y: 130, label: "EFICÁCIA", dur: "2.4s", begin: "0s" },
-  { y: 170, label: "EFICIÊNCIA", dur: "2.1s", begin: ".4s" },
-  { y: 210, label: "ADOÇÃO", dur: "2.7s", begin: ".2s" },
-  { y: 250, label: "GOVERNANÇA", dur: "2.2s", begin: ".7s" },
-  { y: 290, label: "VALOR", dur: "2.5s", begin: ".1s" },
+const LAYER_ROWS = [
+  { y: 130, dur: "2.4s", begin: "0s" },
+  { y: 170, dur: "2.1s", begin: ".4s" },
+  { y: 210, dur: "2.7s", begin: ".2s" },
+  { y: 250, dur: "2.2s", begin: ".7s" },
+  { y: 290, dur: "2.5s", begin: ".1s" },
 ];
 
-const VERDICTS = [
-  { y: 78, label: "▲ PROMOVER", color: PHOSPHOR, stroke: "rgba(127,184,154,.6)" },
-  { y: 193, label: "◆ MENTORAR", color: OCHRE, stroke: "rgba(200,155,75,.55)" },
-  { y: 308, label: "▼ APOSENTAR", color: TERRA, stroke: "rgba(200,100,80,.55)" },
+const VERDICT_ROWS = [
+  { y: 78, symbol: "▲", color: PHOSPHOR, stroke: "rgba(127,184,154,.6)" },
+  { y: 193, symbol: "◆", color: OCHRE, stroke: "rgba(200,155,75,.55)" },
+  { y: 308, symbol: "▼", color: TERRA, stroke: "rgba(200,100,80,.55)" },
 ];
+
+/** Translatable labels — defaults are pt-BR (canonical product vocabulary). */
+export interface OpsSchematicLabels {
+  connectors: string;
+  admission: string;
+  workRecord: string;
+  evaluation: string;
+  detector: string;
+  alert: string;
+  verdictTitle: string;
+  layers: [string, string, string, string, string];
+  verdicts: [string, string, string];
+  aria: string;
+}
+
+export const OPS_LABELS_PT: OpsSchematicLabels = {
+  connectors: "CONECTORES",
+  admission: "ADMISSÃO",
+  workRecord: "CARTEIRA DE TRABALHO",
+  evaluation: "AVALIAÇÃO · 5 CAMADAS",
+  detector: "DETECTOR DE VITÓRIA ILUSÓRIA",
+  alert: "ROI ↑ + ACURÁCIA ↓",
+  verdictTitle: "VEREDITO DO COMITÊ",
+  layers: ["EFICÁCIA", "EFICIÊNCIA", "ADOÇÃO", "GOVERNANÇA", "VALOR"],
+  verdicts: ["PROMOVER", "MENTORAR", "APOSENTAR"],
+  aria: "Esquema animado do pipeline do Muster: conectores alimentam a admissão, agentes atravessam a avaliação em cinco camadas sob o detector de vitória ilusória e saem com veredito de promover, mentorar ou aposentar.",
+};
 
 const DOTS: Array<{ path: string; color: string; dur: string; begin: string; opacity?: number }> = [
   { path: "#ops-j-promote", color: PHOSPHOR, dur: "7.5s", begin: "0s" },
@@ -50,18 +77,24 @@ const DOTS: Array<{ path: string; color: string; dur: string; begin: string; opa
   { path: "#ops-j-retire", color: TERRA, dur: "9.8s", begin: "2.3s" },
 ];
 
-export function OpsSchematic({ className }: { className?: string }) {
+export function OpsSchematic({
+  className,
+  labels = OPS_LABELS_PT,
+}: {
+  className?: string;
+  labels?: OpsSchematicLabels;
+}) {
   return (
     <svg
       viewBox="0 0 1120 430"
       role="img"
-      aria-label="Esquema animado do pipeline do Muster: conectores alimentam a admissão, agentes atravessam a avaliação em cinco camadas sob o detector de vitória ilusória e saem com veredito de promover, mentorar ou aposentar."
+      aria-label={labels.aria}
       className={className}
       fontFamily="'IBM Plex Mono', Menlo, monospace"
     >
       {/* ── Conectores (fontes) ── */}
       <text x="28" y="38" fill={EYEBROW} fontSize="9" letterSpacing=".22em">
-        CONECTORES
+        {labels.connectors}
       </text>
       {SOURCES.map((s) => (
         <g key={s.label}>
@@ -81,23 +114,23 @@ export function OpsSchematic({ className }: { className?: string }) {
       {/* ── Admissão ── */}
       <rect x="250" y="166" width="122" height="48" {...box} />
       <text x="311" y="186" textAnchor="middle" fill={CREAM} fontSize="11.5" letterSpacing=".16em">
-        ADMISSÃO
+        {labels.admission}
       </text>
       <text x="311" y="202" textAnchor="middle" fill={MUTED} fontSize="8.5" letterSpacing=".14em">
-        CARTEIRA DE TRABALHO
+        {labels.workRecord}
       </text>
       <path className="ops-flow" d="M372,190 L440,190" />
 
       {/* ── Detector (acima do núcleo) ── */}
       <rect x="470" y="16" width="240" height="32" fill={box.fill} stroke="rgba(200,155,75,.5)" rx={5} />
       <text x="590" y="36" textAnchor="middle" fill={OCHRE} fontSize="10" letterSpacing=".14em">
-        DETECTOR DE VITÓRIA ILUSÓRIA
+        {labels.detector}
       </text>
       <line x1="560" y1="48" x2="560" y2="126" stroke="rgba(127,184,154,.18)" strokeDasharray="2 4" />
       <line x1="640" y1="48" x2="640" y2="286" stroke="rgba(127,184,154,.18)" strokeDasharray="2 4" />
       <g>
         <text x="726" y="30" fill={TERRA} fontSize="9.5" letterSpacing=".1em">
-          ROI ↑ + ACURÁCIA ↓
+          {labels.alert}
           <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.55;.6;.9;1" dur="6s" repeatCount="indefinite" />
         </text>
         <circle cx="716" cy="26" r="3" fill={TERRA}>
@@ -108,12 +141,12 @@ export function OpsSchematic({ className }: { className?: string }) {
       {/* ── Núcleo: avaliação 5 camadas ── */}
       <rect x="440" y="80" width="300" height="260" fill={box.fill} stroke="rgba(127,184,154,.55)" rx={5} />
       <text x="456" y="103" fill={CREAM} fontSize="10.5" letterSpacing=".16em">
-        AVALIAÇÃO · 5 CAMADAS
+        {labels.evaluation}
       </text>
-      {LAYERS.map((l) => (
-        <g key={l.label}>
+      {LAYER_ROWS.map((l, i) => (
+        <g key={l.y}>
           <text x="456" y={l.y + 4} fill={MUTED} fontSize="9" letterSpacing=".12em">
-            {l.label}
+            {labels.layers[i]}
           </text>
           <line x1="545" y1={l.y} x2="724" y2={l.y} stroke="rgba(127,184,154,.18)" />
           <circle cx="724" cy={l.y} r="2.5" fill={PHOSPHOR}>
@@ -141,13 +174,13 @@ export function OpsSchematic({ className }: { className?: string }) {
 
       {/* ── Vereditos ── */}
       <text x="900" y="66" fill={EYEBROW} fontSize="9" letterSpacing=".22em">
-        VEREDITO DO COMITÊ
+        {labels.verdictTitle}
       </text>
-      {VERDICTS.map((v) => (
-        <g key={v.label}>
+      {VERDICT_ROWS.map((v, i) => (
+        <g key={v.y}>
           <rect x="900" y={v.y} width="192" height="44" fill={box.fill} stroke={v.stroke} rx={5} />
           <text x="922" y={v.y + 27} fill={v.color} fontSize="11.5" letterSpacing=".16em">
-            {v.label}
+            {v.symbol} {labels.verdicts[i]}
           </text>
         </g>
       ))}
