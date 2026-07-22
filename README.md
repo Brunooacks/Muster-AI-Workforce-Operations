@@ -59,6 +59,7 @@ Equipes estão colocando dezenas — em breve, milhares — de agentes de IA em 
 - **Detector de Vitória Ilusória** — sinaliza padrões enganosos de sucesso (ex.: ROI sobe enquanto a qualidade despenca).
 - **Comitê / Governança da Frota** — dono de negócio, dono técnico e sponsor de governança por agente.
 - **Conectores plug-ready** — catálogo de plataformas modelado para que conectores reais possam ser plugados sem mudar a UI.
+- **Telemetria real (R6)** — agentes em execução reportam eventos (execução, erro, escalação, custo, tokens) via o SDK `@workspace/telemetry-reporter`; o Muster armazena em `agent_events`, agrega por janela (7/30/90d) e recalcula a avaliação de 5 camadas com **regras de decisão auditáveis** — o veredito passa a vir de dados reais, não de seed.
 
 ### Telas
 
@@ -106,6 +107,7 @@ flowchart LR
 - **DB:** PostgreSQL + Drizzle ORM
 - **Validação:** Zod + drizzle-zod
 - **Codegen de API:** Orval (a partir de um spec OpenAPI — contrato primeiro)
+- **Telemetria:** SDK `@workspace/telemetry-reporter` (zero dependências, fire-and-forget) → `POST /agents/:id/events` → tabela `agent_events` → agregação em janelas + regras de decisão auditáveis
 - **Build:** esbuild
 
 ### Estrutura do monorepo
@@ -120,8 +122,9 @@ flowchart LR
 │   ├── db/               # Schema Drizzle (fonte da verdade do banco)
 │   ├── api-spec/         # Spec OpenAPI + codegen
 │   ├── api-zod/          # Schemas Zod gerados
-│   └── api-client-react/ # Hooks React Query gerados
-├── scripts/              # Utilitários do workspace
+│   ├── api-client-react/ # Hooks React Query gerados
+│   └── telemetry-reporter/ # SDK que agentes usam p/ reportar telemetria
+├── scripts/              # Utilitários do workspace (inclui simulate-telemetry)
 ├── docs/screenshots/     # Imagens usadas neste README
 └── pnpm-workspace.yaml
 ```
@@ -219,6 +222,7 @@ Teams are shipping dozens — soon thousands — of AI agents to production with
 - **Illusory Victory Detector** — flags deceptive success patterns (e.g. ROI rising while quality collapses).
 - **Committee / Fleet Governance** — a business owner, technical owner, and governance sponsor per agent.
 - **Plug-ready connectors** — a platform catalog modeled so real connectors can be swapped in without UI changes.
+- **Real telemetry (R6)** — running agents report events (execution, error, escalation, cost, tokens) through the `@workspace/telemetry-reporter` SDK; Muster stores them in `agent_events`, aggregates per window (7/30/90d) and recomputes the 5-layer evaluation with **auditable decision rules** — verdicts come from real data, not seeds.
 
 ### Screens
 
@@ -266,6 +270,7 @@ flowchart LR
 - **DB:** PostgreSQL + Drizzle ORM
 - **Validation:** Zod + drizzle-zod
 - **API codegen:** Orval (from an OpenAPI spec — contract first)
+- **Telemetry:** `@workspace/telemetry-reporter` SDK (zero-dependency, fire-and-forget) → `POST /agents/:id/events` → `agent_events` table → windowed aggregation + auditable decision rules
 - **Build:** esbuild
 
 ### Monorepo structure
@@ -280,8 +285,9 @@ flowchart LR
 │   ├── db/               # Drizzle schema (DB source of truth)
 │   ├── api-spec/         # OpenAPI spec + codegen
 │   ├── api-zod/          # Generated Zod schemas
-│   └── api-client-react/ # Generated React Query hooks
-├── scripts/              # Workspace utilities
+│   ├── api-client-react/ # Generated React Query hooks
+│   └── telemetry-reporter/ # SDK agents embed to report telemetry
+├── scripts/              # Workspace utilities (includes simulate-telemetry)
 ├── docs/screenshots/     # Images used in this README
 └── pnpm-workspace.yaml
 ```

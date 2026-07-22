@@ -6,9 +6,12 @@ import {
   useDecideVerdict,
   useUpdateEvaluationMetric,
   useListFleetAlerts,
+  useGetAgentTelemetry,
+  useReevaluateAgent,
   getGetAgentQueryKey,
   getGetAgentMetricsQueryKey,
   getListFleetAlertsQueryKey,
+  getGetAgentTelemetryQueryKey,
 } from "@workspace/api-client-react";
 import type { EvaluationMetricUpdateLayerKey } from "@workspace/api-client-react";
 import { useParams } from "wouter";
@@ -256,6 +259,191 @@ function MetricChart({ agentId }: { agentId: string }) {
         </LineChart>
       </ResponsiveContainer>
     </div>
+  );
+}
+
+/* ── Telemetria operacional: eventos reais reportados pelo conector ── */
+const TELEMETRY_WINDOWS = ["7d", "30d", "90d"] as const;
+type TelemetryWindow = (typeof TELEMETRY_WINDOWS)[number];
+
+const DATA_SOURCE_LABEL: Record<string, string> = {
+  telemetry: "Dados reais",
+  mixed: "Misto (real + demo)",
+  seeded: "Demo (seed)",
+};
+
+function formatBRL(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function formatMs(ms: number): string {
+  return ms >= 1000 ? `${(ms / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}s` : `${Math.round(ms)}ms`;
+}
+
+function formatPct(rate: number): string {
+  return `${Math.round(rate * 100)}%`;
+}
+
+function TelemetrySection({
+  agentId,
+  audience,
+  cardBase,
+}: {
+  agentId: string;
+  audience: Audience;
+  cardBase: string;
+}) {
+  const { toast } = useToast();
+  const [window, setWindow] = useState<TelemetryWindow>("30d");
+
+  const { data: summary, isLoading, isError, refetch } = useGetAgentTelemetry(agentId, window, {
+    query: { enabled: !!agentId, queryKey: getGetAgentTelemetryQueryKey(agentId, window) },
+  });
+  const reevaluate = useReevaluateAgent();
+
+  const handleReevaluate = () => {
+    reevaluate.mutate(
+      { agentId },
+      {
+        onSuccess: (outcome) => {
+          toast({
+            title: `Reavaliado — ${DATA_SOURCE_LABEL[outcome.dataSource] ?? outcome.dataSource}`,
+            description: `Veredito: ${outcome.verdict} · saúde ${outcome.healthScore}. ${outcome.rationale}`,
+          });
+          queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agentId) });
+          queryClient.invalidateQueries({ queryKey: getGetAgentMetricsQueryKey(agentId, "30d") });
+          queryClient.invalidateQueries({ queryKey: getListFleetAlertsQueryKey() });
+        },
+        onError: () => {
+          toast({
+            title: "Erro",
+            description: "Não foi possível reavaliar com a telemetria.",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
+  const caption =
+    audience === "gestor"
+      ? "O que o agente de fato executou — eventos reportados em produção, não estimativas."
+      : "Eventos ingeridos via POST /agents/:id/events (SDK @workspace/telemetry-reporter).";
+
+  const stats =
+    summary && summary.totalExecutions > 0
+      ? [
+          {
+            label: "Execuções",
+            value: summary.totalExecutions.toLocaleString("pt-BR"),
+            detail: `${summary.executionsPerDay.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}/dia · ${summary.activeDays} dias ativos`,
+          },
+          {
+            label: "Taxa de sucesso",
+            value: summary.successRate != null ? formatPct(summary.successRate) : "—",
+            detail:
+              summary.errorRate != null ? `erros ${formatPct(summary.errorRate)} das execuções` : "sem erros reportados",
+          },
+          {
+            label: "Latência p95",
+            value: summary.p95DurationMs != null ? formatMs(summary.p95DurationMs) : "—",
+            detail: summary.avgDurationMs != null ? `média ${formatMs(summary.avgDurationMs)}` : "—",
+          },
+          {
+            label: "Custo na janela",
+            value: formatBRL(summary.totalCostCents),
+            detail:
+              summary.avgCostCentsPerExecution != null
+                ? `${formatBRL(summary.avgCostCentsPerExecution)}/execução`
+                : "—",
+          },
+          {
+            label: "Escalações",
+            value: summary.escalationRate != null ? formatPct(summary.escalationRate) : "—",
+            detail: "pedidos de ajuda humana",
+          },
+        ]
+      : [];
+
+  return (
+    <section>
+      <SectionHeader number="03" title="Telemetria Operacional" caption={caption} />
+      <div className={cardBase}>
+        <div className="flex flex-col gap-3 border-b border-card-border p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-1.5">
+            {TELEMETRY_WINDOWS.map((w) => (
+              <Button
+                key={w}
+                variant={w === window ? "secondary" : "ghost"}
+                size="sm"
+                className="font-mono text-xs"
+                onClick={() => setWindow(w)}
+              >
+                {w}
+              </Button>
+            ))}
+          </div>
+          <Button size="sm" onClick={handleReevaluate} disabled={reevaluate.isPending}>
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${reevaluate.isPending ? "animate-spin" : ""}`} />
+            Reavaliar com telemetria
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="p-6">
+            <Skeleton className="h-24 w-full rounded-lg" />
+          </div>
+        ) : isError ? (
+          <div className="p-6">
+            <ErrorState compact title="Não foi possível carregar a telemetria" onRetry={() => refetch()} />
+          </div>
+        ) : !summary || summary.totalExecutions === 0 ? (
+          <div className="flex flex-col items-center gap-2 p-10 text-center">
+            <Activity className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+            <p className="text-sm text-muted-foreground">
+              Nenhum evento reportado nos últimos {window.replace("d", " dias")}.
+            </p>
+            <p className="max-w-md text-xs text-muted-foreground/80">
+              Conecte o agente com o reporter (<span className="font-mono">@workspace/telemetry-reporter</span>) ou
+              rode <span className="font-mono">pnpm --filter @workspace/scripts run simulate-telemetry</span> para
+              simular execuções.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 divide-y divide-card-border sm:grid-cols-2 sm:divide-x lg:grid-cols-5 lg:divide-y-0">
+              {stats.map((s) => (
+                <div key={s.label} className="p-5">
+                  <Eyebrow>{s.label}</Eyebrow>
+                  <div className="mt-2 font-serif text-3xl font-medium leading-none tabular-nums">{s.value}</div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">{s.detail}</p>
+                </div>
+              ))}
+            </div>
+            {(summary.firstEventAt || summary.lastEventAt) && (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-card-border px-5 py-3 text-[11px] text-muted-foreground">
+                {summary.firstEventAt && (
+                  <span>
+                    Primeiro evento:{" "}
+                    <span className="font-mono">
+                      {new Date(summary.firstEventAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </span>
+                )}
+                {summary.lastEventAt && (
+                  <span>
+                    Último evento:{" "}
+                    <span className="font-mono">
+                      {new Date(summary.lastEventAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </span>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -714,9 +902,12 @@ export default function AgentDetailPage() {
           )}
         </section>
 
-        {/* ===== 03 · Histórico ===== */}
+        {/* ===== 03 · Telemetria Operacional ===== */}
+        <TelemetrySection agentId={agentId} audience={audience} cardBase={cardBase} />
+
+        {/* ===== 04 · Histórico ===== */}
         <section>
-          <SectionHeader number="03" title={t.sec03.title} caption={t.sec03.caption} />
+          <SectionHeader number="04" title={t.sec03.title} caption={t.sec03.caption} />
           <div className={`${cardBase} p-6`}>
             <TimelineSnapshots agentId={agentId} t={t} />
             <div className="pt-6">
@@ -725,9 +916,9 @@ export default function AgentDetailPage() {
           </div>
         </section>
 
-        {/* ===== 04 · Detector de Vitória Ilusória ===== */}
+        {/* ===== 05 · Detector de Vitória Ilusória ===== */}
         <section>
-          <SectionHeader number="04" title={t.sec04.title} caption={t.sec04.caption} />
+          <SectionHeader number="05" title={t.sec04.title} caption={t.sec04.caption} />
           {alertsError ? (
             <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>
               <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3" />
@@ -770,9 +961,9 @@ export default function AgentDetailPage() {
           )}
         </section>
 
-        {/* ===== 05 · Recomendação para o Comitê ===== */}
+        {/* ===== 06 · Recomendação para o Comitê ===== */}
         <section>
-          <SectionHeader number="05" title={t.sec05.title} caption={t.sec05.caption} />
+          <SectionHeader number="06" title={t.sec05.title} caption={t.sec05.caption} />
           <div className={`${cardBase} overflow-hidden`}>
             <div className="grid grid-cols-1 md:grid-cols-12">
               <div className="border-b border-card-border bg-secondary/30 p-6 md:col-span-4 md:border-b-0 md:border-r">

@@ -2613,6 +2613,12 @@ components:
         kind:
           type: string
           enum: [execution, error, escalation, feedback]
+        # Optional occurrence time (ISO 8601). Agents that batch or replay
+        # events report the real execution time; when omitted the server
+        # stamps the event with "now".
+        ts:
+          type: string
+          format: date-time
         durationMs:
           type: number
         costCents:

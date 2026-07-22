@@ -1060,6 +1060,7 @@ export type AgentEventInputMetadata = { [key: string]: unknown };
 
 export interface AgentEventInput {
   kind?: AgentEventInputKind;
+  ts?: string;
   durationMs?: number;
   costCents?: number;
   tokensIn?: number;

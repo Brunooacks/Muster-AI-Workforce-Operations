@@ -12,6 +12,13 @@ Cohort é o **RH e a governança da força de trabalho de IA**: identidade, cart
 - ✅ **Modo dev local** (PR #2): auth bypass seguro p/ localhost, proxy `/api`, modelo de IA configurável
 - ✅ **Frota de teste real**: [cohort-test-agents](https://github.com/Brunooacks/cohort-test-agents) (LangChain, Claude, Copilot) admitidos na frota local
 - ✅ Pipeline real de fetch de código do GitHub (`POST /discovery/fetch`)
+- ✅ **R6 (núcleo) — Telemetria real**: SDK `@workspace/telemetry-reporter` (conector
+  fire-and-forget que agentes embutem), ingest `POST /agents/:id/events` com `ts`
+  opcional (backfill/batch), armazenamento em `agent_events`, agregação em janelas
+  7/30/90d, reavaliação 5 camadas telemetry-first com regras auditáveis, seção
+  "Telemetria Operacional" no detalhe do agente e simulador de frota
+  (`pnpm --filter @workspace/scripts run simulate-telemetry`). Pendências R6:
+  coleta passiva via conectores (usage APIs) e reavaliação agendada (cron).
 
 ---
 

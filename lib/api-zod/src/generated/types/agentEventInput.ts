@@ -10,6 +10,7 @@ import type { AgentEventInputMetadata } from './agentEventInputMetadata';
 
 export interface AgentEventInput {
   kind?: AgentEventInputKind;
+  ts?: Date;
   durationMs?: number;
   costCents?: number;
   tokensIn?: number;

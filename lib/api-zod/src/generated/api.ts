@@ -1481,6 +1481,7 @@ export const IngestAgentEventParams = zod.object({
 
 export const IngestAgentEventBody = zod.object({
   "kind": zod.enum(['execution', 'error', 'escalation', 'feedback']).optional(),
+  "ts": zod.coerce.date().optional(),
   "durationMs": zod.number().optional(),
   "costCents": zod.number().optional(),
   "tokensIn": zod.number().optional(),

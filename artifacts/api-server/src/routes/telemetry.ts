@@ -56,8 +56,20 @@ router.post("/agents/:agentId/events", requireAuth, async (req, res) => {
     return;
   }
 
+  // Optional occurrence time: agents that batch/replay events report the real
+  // execution time; invalid dates are rejected instead of silently becoming now.
+  let ts: Date | undefined;
+  if (body.ts !== undefined) {
+    ts = new Date(body.ts);
+    if (Number.isNaN(ts.getTime())) {
+      res.status(400).json({ error: "Campo ts inválido — use ISO 8601." });
+      return;
+    }
+  }
+
   await db.insert(agentEvents).values({
     agentId,
+    ...(ts ? { ts } : {}),
     kind: (body.kind ?? "execution") as AgentEventRow["kind"],
     durationMs: body.durationMs != null ? Math.round(body.durationMs) : null,
     costCents: body.costCents != null ? Math.round(body.costCents) : null,
