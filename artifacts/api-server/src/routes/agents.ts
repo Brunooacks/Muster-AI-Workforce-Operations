@@ -363,43 +363,49 @@ router.post(
     const { agentId } = DecideVerdictParams.parse(req.params);
     const body = DecideVerdictBody.parse(req.body);
 
-    const [current] = await db
-      .select()
-      .from(verdicts)
-      .where(and(eq(verdicts.agentId, agentId), eq(verdicts.decision, "pending")))
-      .orderBy(desc(verdicts.createdAt))
-      .limit(1);
+    const updated = await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select()
+        .from(verdicts)
+        .where(and(eq(verdicts.agentId, agentId), eq(verdicts.decision, "pending")))
+        .orderBy(desc(verdicts.createdAt))
+        .limit(1);
 
-    if (!current) {
+      if (!current) return null;
+
+      const [updatedVerdict] = await tx
+        .update(verdicts)
+        .set({
+          decision: body.decision,
+          decidedBy: req.userId ?? "Comitê",
+          decidedAt: new Date(),
+          rationale: body.reason ?? current.rationale,
+        })
+        .where(eq(verdicts.id, current.id))
+        .returning();
+
+      if (body.decision === "approved" && updatedVerdict) {
+        const statusByVerdict = {
+          promote: "active",
+          mentor: "active",
+          observation: "observation",
+          retire: "retiring",
+        } as const;
+        await tx
+          .update(agents)
+          .set({ status: statusByVerdict[updatedVerdict.verdict] })
+          .where(eq(agents.id, agentId));
+      }
+
+      return updatedVerdict;
+    });
+
+    if (!updated) {
       res.status(404).json({ error: "No pending verdict for this agent" });
       return;
     }
 
-    const [updated] = await db
-      .update(verdicts)
-      .set({
-        decision: body.decision,
-        decidedBy: body.decidedBy ?? req.userId ?? "Comitê",
-        decidedAt: new Date(),
-        rationale: body.reason ?? current.rationale,
-      })
-      .where(eq(verdicts.id, current.id))
-      .returning();
-
-    if (body.decision === "approved" && updated) {
-      const statusByVerdict = {
-        promote: "active",
-        mentor: "active",
-        observation: "observation",
-        retire: "retiring",
-      } as const;
-      await db
-        .update(agents)
-        .set({ status: statusByVerdict[updated.verdict] })
-        .where(eq(agents.id, agentId));
-    }
-
-    const data = DecideVerdictResponse.parse(toVerdict(updated!));
+    const data = DecideVerdictResponse.parse(toVerdict(updated));
     res.json(data);
   },
 );

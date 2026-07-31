@@ -181,6 +181,36 @@ const SIGNAL_MAP: Record<
     unit: "%",
     target: "≥ 80%",
   },
+  acuracia_decisoes: {
+    layer: "efficacy",
+    label: "Acurácia das decisões",
+    unit: "%",
+    target: "≥ 85%",
+  },
+  tarefas_concluidas: {
+    layer: "efficacy",
+    label: "Tarefas concluídas",
+    unit: "%",
+    target: "≥ 90%",
+  },
+  cliente_volta_72h: {
+    layer: "efficacy",
+    label: "Cliente volta em 72h",
+    unit: "%",
+    target: "≤ 15%",
+  },
+  uso_correto_ferramentas: {
+    layer: "efficacy",
+    label: "Uso correto de ferramentas",
+    unit: "%",
+    target: "≥ 95%",
+  },
+  respostas_inventadas: {
+    layer: "efficacy",
+    label: "Respostas inventadas",
+    unit: "%",
+    target: "≤ 2%",
+  },
 
   handle_time: {
     layer: "efficiency",
@@ -217,6 +247,30 @@ const SIGNAL_MAP: Record<
     label: "Custo por execução",
     unit: "R$",
     target: "R$ 0,10–0,40",
+  },
+  custo_atendimento: {
+    layer: "efficiency",
+    label: "Custo por atendimento",
+    unit: "R$",
+    target: "R$ 0,10–0,40",
+  },
+  tempo_resposta: {
+    layer: "efficiency",
+    label: "Tempo de resposta",
+    unit: "s",
+    target: "< 3 s",
+  },
+  volume_processamento: {
+    layer: "efficiency",
+    label: "Volume de processamento",
+    unit: "execuções",
+    target: "—",
+  },
+  casos_retrabalho_interno: {
+    layer: "efficiency",
+    label: "Casos com retrabalho interno",
+    unit: "%",
+    target: "≤ 5%",
   },
 
   adoption_rate: {
@@ -261,6 +315,30 @@ const SIGNAL_MAP: Record<
     unit: "neg.",
     target: "—",
   },
+  volume_processado: {
+    layer: "adoption",
+    label: "Volume processado",
+    unit: "/dia",
+    target: "—",
+  },
+  captura_demanda_elegivel: {
+    layer: "adoption",
+    label: "Captura de demanda elegível",
+    unit: "%",
+    target: "≥ 70%",
+  },
+  time_corrige_saida: {
+    layer: "adoption",
+    label: "Time corrige a saída",
+    unit: "%",
+    target: "≤ 8%",
+  },
+  nps_interno_time: {
+    layer: "adoption",
+    label: "NPS interno do time",
+    unit: "pts",
+    target: "≥ 40",
+  },
 
   policy_violations: {
     layer: "governance",
@@ -304,6 +382,36 @@ const SIGNAL_MAP: Record<
     unit: "%",
     target: "≤ 5%",
   },
+  tentativas_fora_escopo: {
+    layer: "governance",
+    label: "Tentativas fora do escopo",
+    unit: "neg.",
+    target: "0",
+  },
+  escalonamento_correto: {
+    layer: "governance",
+    label: "Escalonamento correto",
+    unit: "%",
+    target: "≥ 80%",
+  },
+  mudanca_comportamento: {
+    layer: "governance",
+    label: "Mudança de comportamento",
+    unit: "sinal",
+    target: "—",
+  },
+  exposicao_dado_sensivel: {
+    layer: "governance",
+    label: "Exposição de dado sensível",
+    unit: "neg.",
+    target: "0",
+  },
+  trilha_auditoria: {
+    layer: "governance",
+    label: "Trilha de auditoria",
+    unit: "%",
+    target: "≥ 99%",
+  },
 
   csat: { layer: "value", label: "CSAT", unit: "/5", target: "≥ 4,2/5" },
   value_generated: {
@@ -313,6 +421,36 @@ const SIGNAL_MAP: Record<
     target: "—",
   },
   win_rate: { layer: "value", label: "Win rate", unit: "%", target: "—" },
+  retorno_investimento: {
+    layer: "value",
+    label: "Retorno sobre investimento",
+    unit: "x",
+    target: "≥ 3x",
+  },
+  receita_influenciada: {
+    layer: "value",
+    label: "Receita influenciada",
+    unit: "R$ mil",
+    target: "—",
+  },
+  horas_humanas_liberadas: {
+    layer: "value",
+    label: "Horas humanas liberadas",
+    unit: "h",
+    target: "≥ 160",
+  },
+  custo_total_mensal: {
+    layer: "value",
+    label: "Custo total mensal",
+    unit: "R$ mil",
+    target: "—",
+  },
+  tempo_ate_primeiro_valor: {
+    layer: "value",
+    label: "Tempo até primeiro valor",
+    unit: "d",
+    target: "≤ 45 d",
+  },
 };
 
 const LAYER_LABELS: Record<LayerKey, string> = {
@@ -386,6 +524,7 @@ export function valueForUnit(rand: () => number, unit: string): number {
 export function buildProposedMetrics(
   externalId: string,
   signals: string[],
+  valueOverrides: Record<string, number> = {},
 ): ProposedMetric[] {
   const rand = seededRandom(externalId);
   return signals
@@ -396,7 +535,7 @@ export function buildProposedMetrics(
         layer: meta.layer,
         label: meta.label,
         sourceSignal: signal,
-        value: valueForUnit(rand, meta.unit),
+        value: valueOverrides[signal] ?? valueForUnit(rand, meta.unit),
         unit: meta.unit,
         confidence: Math.round((70 + rand() * 28) * 10) / 10,
         target: meta.target,

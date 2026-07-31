@@ -5,10 +5,8 @@ import { logger } from "./logger";
 // Populates the metric catalog from the built-in seed on first boot. Runs only
 // when the table is empty so tailor-made edits/deletions are never overwritten.
 export async function ensureCatalogSeed(): Promise<void> {
-  const existing = await db.select({ id: catalogMetrics.id }).from(catalogMetrics).limit(1);
-  if (existing.length > 0) return;
-
-  logger.info("Seeding metric catalog...");
+  const existing = await db.select({ key: catalogMetrics.key }).from(catalogMetrics);
+  const existingKeys = new Set(existing.map((row) => row.key));
   const rows = METRIC_CATALOG.flatMap((vertical) =>
     vertical.metrics.map((m) => ({
       key: m.key,
@@ -21,7 +19,9 @@ export async function ensureCatalogSeed(): Promise<void> {
       rationale: m.rationale,
       isCustom: 0,
     })),
-  );
+  ).filter((row) => !existingKeys.has(row.key));
+  if (rows.length === 0) return;
+
   await db.insert(catalogMetrics).values(rows);
-  logger.info({ metrics: rows.length }, "Metric catalog seeded.");
+  logger.info({ metrics: rows.length }, "Metric catalog entries seeded.");
 }

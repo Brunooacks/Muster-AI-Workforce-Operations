@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import {
   db,
   agents,
@@ -70,6 +70,7 @@ interface SeedAgentSpec {
   actualPayback: string;
   caseDescription: string;
   signals: string[];
+  valueOverrides?: Record<string, number>;
   monthlyValue: number;
   monthlyCost: number;
   healthScore: number;
@@ -87,6 +88,58 @@ interface SeedAgentSpec {
     recommendation: string;
   }[];
 }
+
+const JULIA_REFERENCE_SIGNALS = [
+  "acuracia_decisoes",
+  "tarefas_concluidas",
+  "cliente_volta_72h",
+  "uso_correto_ferramentas",
+  "respostas_inventadas",
+  "custo_atendimento",
+  "tempo_resposta",
+  "volume_processamento",
+  "casos_retrabalho_interno",
+  "volume_processado",
+  "captura_demanda_elegivel",
+  "time_corrige_saida",
+  "nps_interno_time",
+  "tentativas_fora_escopo",
+  "escalonamento_correto",
+  "mudanca_comportamento",
+  "exposicao_dado_sensivel",
+  "trilha_auditoria",
+  "retorno_investimento",
+  "receita_influenciada",
+  "horas_humanas_liberadas",
+  "custo_total_mensal",
+  "tempo_ate_primeiro_valor",
+];
+
+const JULIA_REFERENCE_VALUES: Record<string, number> = {
+  acuracia_decisoes: 72,
+  tarefas_concluidas: 91,
+  cliente_volta_72h: 24,
+  uso_correto_ferramentas: 88,
+  respostas_inventadas: 3.2,
+  custo_atendimento: 0.18,
+  tempo_resposta: 1.2,
+  volume_processamento: 4800,
+  casos_retrabalho_interno: 2,
+  volume_processado: 14230,
+  captura_demanda_elegivel: 83,
+  time_corrige_saida: 14,
+  nps_interno_time: 28,
+  tentativas_fora_escopo: 2,
+  escalonamento_correto: 64,
+  mudanca_comportamento: 1,
+  exposicao_dado_sensivel: 0,
+  trilha_auditoria: 99.8,
+  retorno_investimento: 12,
+  receita_influenciada: 2100,
+  horas_humanas_liberadas: 1240,
+  custo_total_mensal: 18.2,
+  tempo_ate_primeiro_valor: 32,
+};
 
 const SEED_AGENTS: SeedAgentSpec[] = [
   {
@@ -128,14 +181,8 @@ const SEED_AGENTS: SeedAgentSpec[] = [
     actualPayback: "Volume acima, qualidade abaixo",
     caseDescription:
       "Acelerar o speed-to-lead e aumentar a conversão de inbound qualificado.",
-    signals: [
-      "lead_conversion",
-      "qualification_accuracy",
-      "speed_to_lead",
-      "rep_adoption",
-      "revenue_influenced",
-      "cost_per_run",
-    ],
+    signals: JULIA_REFERENCE_SIGNALS,
+    valueOverrides: JULIA_REFERENCE_VALUES,
     monthlyValue: 110400,
     monthlyCost: 9200,
     healthScore: 64,
@@ -656,6 +703,7 @@ export async function ensureSeed(): Promise<void> {
     .select({ count: sql<number>`count(*)::int` })
     .from(agents);
   if (existing && existing.count > 0) {
+    await backfillJuliaReferenceMetrics();
     return;
   }
 
@@ -663,7 +711,11 @@ export async function ensureSeed(): Promise<void> {
 
   await db.transaction(async (tx) => {
     for (const spec of SEED_AGENTS) {
-      const proposed = buildProposedMetrics(spec.externalId, spec.signals);
+      const proposed = buildProposedMetrics(
+        spec.externalId,
+        spec.signals,
+        spec.valueOverrides,
+      );
       const scored = scoreEvaluation(spec.externalId, proposed);
 
       const [agent] = await tx
@@ -795,4 +847,55 @@ export async function ensureSeed(): Promise<void> {
   });
 
   logger.info("Seed complete.");
+}
+
+async function backfillJuliaReferenceMetrics(): Promise<void> {
+  if (process.env.NODE_ENV === "production") return;
+
+  const [agent] = await db
+    .select({ id: agents.id })
+    .from(agents)
+    .where(eq(agents.externalId, "AGT-COM-007"))
+    .limit(1);
+  if (!agent) return;
+
+  const [latest] = await db
+    .select()
+    .from(evaluations)
+    .where(eq(evaluations.agentId, agent.id))
+    .orderBy(desc(evaluations.evaluatedAt))
+    .limit(1);
+  if (!latest) return;
+
+  const existingLabels = new Set(
+    latest.layers.flatMap((layer) => layer.metrics.map((metric) => metric.label)),
+  );
+  const missing = buildProposedMetrics(
+    "AGT-COM-007",
+    JULIA_REFERENCE_SIGNALS,
+    JULIA_REFERENCE_VALUES,
+  ).filter((metric) => !existingLabels.has(metric.label));
+  if (missing.length === 0) return;
+
+  const layers = latest.layers.map((layer) => ({
+    ...layer,
+    metrics: [...layer.metrics],
+  }));
+  for (const metric of missing) {
+    const layer = layers.find((candidate) => candidate.key === metric.layer);
+    layer?.metrics.push({
+      label: metric.label,
+      value: metric.value,
+      unit: metric.unit,
+      trend: 0,
+      direction: "flat",
+      ...(metric.target ? { target: metric.target } : {}),
+    });
+  }
+
+  await db
+    .update(evaluations)
+    .set({ layers })
+    .where(eq(evaluations.id, latest.id));
+  logger.info({ metrics: missing.length }, "Backfilled reference metrics for Julia");
 }

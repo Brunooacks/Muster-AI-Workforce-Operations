@@ -101,6 +101,14 @@ describe("buildProposedMetrics", () => {
       expect(m.confidence).toBeLessThanOrEqual(98);
     }
   });
+
+  it("honors reference values when a seeded agent provides overrides", () => {
+    const metrics = buildProposedMetrics("julia", ["acuracia_decisoes", "retorno_investimento"], {
+      acuracia_decisoes: 72,
+      retorno_investimento: 12,
+    });
+    expect(metrics.map((metric) => metric.value)).toEqual([72, 12]);
+  });
 });
 
 describe("proposedMetricsFromDraft", () => {

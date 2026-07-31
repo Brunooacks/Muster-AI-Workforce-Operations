@@ -170,6 +170,17 @@ export const METRIC_CATALOG: MetricVertical[] = [
           "É o sinal-mestre de eficácia técnica: abaixo da meta, o agente vai para mentoria antes de qualquer expansão.",
       },
       {
+        key: "tarefas-concluidas",
+        layer: "efficacy",
+        label: "Tarefas concluídas",
+        unit: "%",
+        target: "≥ 90%",
+        description:
+          "Mede o percentual de tarefas finalizadas pelo agente sem abandono ou intervenção adicional.",
+        rationale:
+          "Conclusão consistente mostra que o agente entrega o trabalho completo, não apenas uma resposta plausível.",
+      },
+      {
         key: "uso-correto-ferramentas",
         layer: "efficacy",
         label: "Uso correto de ferramentas",
@@ -309,6 +320,28 @@ export const METRIC_CATALOG: MetricVertical[] = [
           "Mede a quantidade de casos, documentos ou transações processados pelo agente por dia.",
         rationale:
           "Volume estável ou crescente mostra que a operação de fato roteia trabalho para o agente.",
+      },
+      {
+        key: "volume-processamento",
+        layer: "efficiency",
+        label: "Volume de processamento",
+        unit: "execuções",
+        target: "—",
+        description:
+          "Mede a capacidade de processamento do agente na janela operacional avaliada.",
+        rationale:
+          "Volume contextualiza as demais métricas e evita conclusões baseadas em uma amostra pequena.",
+      },
+      {
+        key: "captura-demanda-elegivel",
+        layer: "adoption",
+        label: "Captura de demanda elegível",
+        unit: "%",
+        target: "≥ 70%",
+        description:
+          "Mede quanto da demanda elegível é efetivamente direcionada para o agente.",
+        rationale:
+          "Baixa captura indica que a organização ainda não incorporou o agente ao fluxo real de trabalho.",
       },
       {
         key: "sla-cumprido",
@@ -591,6 +624,17 @@ export const METRIC_CATALOG: MetricVertical[] = [
           "Mede o número de alterações de prompt, modelo ou ferramenta em produção sem aprovação formal.",
         rationale:
           "Mudança não aprovada invalida a homologação anterior — o agente em produção deixa de ser o agente avaliado.",
+      },
+      {
+        key: "mudanca-comportamento",
+        layer: "governance",
+        label: "Mudança de comportamento",
+        unit: "sinal",
+        target: "—",
+        description:
+          "Sinaliza alteração relevante no padrão de respostas antes de uma degradação agregada aparecer.",
+        rationale:
+          "Mudança silenciosa é um indicador antecedente: permite investigar antes que a qualidade e o valor caiam.",
       },
       {
         key: "aderencia-guardrails",

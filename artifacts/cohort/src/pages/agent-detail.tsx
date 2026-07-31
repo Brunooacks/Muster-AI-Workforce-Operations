@@ -112,6 +112,12 @@ type PageDict = {
   toastDecisionDesc: (decision: "approved" | "disagreed" | "exported") => string;
   toastErrorTitle: string;
   toastDecisionError: string;
+  decisionDialogTitle: string;
+  decisionDialogDesc: string;
+  decisionReasonLabel: string;
+  decisionReasonPlaceholder: string;
+  decisionCancel: string;
+  decisionConfirm: string;
 };
 
 const PAGE_I18N: Record<Lang, PageDict> = {
@@ -143,6 +149,12 @@ const PAGE_I18N: Record<Lang, PageDict> = {
       } com sucesso.`,
     toastErrorTitle: "Erro",
     toastDecisionError: "Não foi possível registrar a decisão.",
+    decisionDialogTitle: "Registrar decisão",
+    decisionDialogDesc: "Adicione o contexto que deverá acompanhar esta decisão no histórico.",
+    decisionReasonLabel: "Justificativa",
+    decisionReasonPlaceholder: "O que sustentou esta decisão?",
+    decisionCancel: "Cancelar",
+    decisionConfirm: "Confirmar decisão",
   },
   en: {
     breadcrumbPortfolio: "Portfolio",
@@ -172,6 +184,12 @@ const PAGE_I18N: Record<Lang, PageDict> = {
       } successfully.`,
     toastErrorTitle: "Error",
     toastDecisionError: "Could not record the decision.",
+    decisionDialogTitle: "Record decision",
+    decisionDialogDesc: "Add the context that should accompany this decision in the history.",
+    decisionReasonLabel: "Rationale",
+    decisionReasonPlaceholder: "What supported this decision?",
+    decisionCancel: "Cancel",
+    decisionConfirm: "Confirm decision",
   },
   es: {
     breadcrumbPortfolio: "Portafolio",
@@ -201,6 +219,12 @@ const PAGE_I18N: Record<Lang, PageDict> = {
       } con éxito.`,
     toastErrorTitle: "Error",
     toastDecisionError: "No fue posible registrar la decisión.",
+    decisionDialogTitle: "Registrar decisión",
+    decisionDialogDesc: "Añade el contexto que debe acompañar esta decisión en el historial.",
+    decisionReasonLabel: "Justificación",
+    decisionReasonPlaceholder: "¿Qué sustentó esta decisión?",
+    decisionCancel: "Cancelar",
+    decisionConfirm: "Confirmar decisión",
   },
 };
 
@@ -622,6 +646,10 @@ export default function AgentDetailPage() {
     target: string;
     rationale: string;
   } | null>(null);
+  const [decisionRequest, setDecisionRequest] = useState<{
+    decision: "approved" | "disagreed" | "exported";
+    reason: string;
+  } | null>(null);
 
   const handleSaveGoal = () => {
     if (!editing) return;
@@ -648,15 +676,16 @@ export default function AgentDetailPage() {
     );
   };
 
-  const handleDecision = (decision: "approved" | "disagreed" | "exported") => {
+  const handleDecision = (decision: "approved" | "disagreed" | "exported", reason: string) => {
     decideVerdict.mutate(
-      { agentId, data: { decision } },
+      { agentId, data: { decision, reason: reason.trim() || undefined } },
       {
         onSuccess: () => {
           toast({
             title: p.toastDecisionTitle,
             description: p.toastDecisionDesc(decision),
           });
+          setDecisionRequest(null);
           queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agentId) });
         },
         onError: () => {
@@ -664,6 +693,11 @@ export default function AgentDetailPage() {
         },
       },
     );
+  };
+
+  const confirmDecision = () => {
+    if (!decisionRequest) return;
+    handleDecision(decisionRequest.decision, decisionRequest.reason);
   };
 
   if (isLoading) {
@@ -1039,13 +1073,13 @@ export default function AgentDetailPage() {
                   {p.pendingCommittee}
                 </span>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleDecision("exported")} disabled={decideVerdict.isPending}>
+                  <Button variant="ghost" size="sm" onClick={() => setDecisionRequest({ decision: "exported", reason: "" })} disabled={decideVerdict.isPending}>
                     {t.export}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDecision("disagreed")} disabled={decideVerdict.isPending}>
+                  <Button variant="outline" size="sm" onClick={() => setDecisionRequest({ decision: "disagreed", reason: "" })} disabled={decideVerdict.isPending}>
                     <X className="mr-1 h-4 w-4" /> {t.disagree}
                   </Button>
-                  <Button size="sm" onClick={() => handleDecision("approved")} disabled={decideVerdict.isPending}>
+                  <Button size="sm" onClick={() => setDecisionRequest({ decision: "approved", reason: "" })} disabled={decideVerdict.isPending}>
                     <Check className="mr-1 h-4 w-4" /> {t.approve}
                   </Button>
                 </div>
@@ -1102,6 +1136,35 @@ export default function AgentDetailPage() {
             </Button>
             <Button onClick={handleSaveGoal} disabled={updateMetric.isPending}>
               {t.save}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!decisionRequest} onOpenChange={(open) => !open && setDecisionRequest(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{p.decisionDialogTitle}</DialogTitle>
+            <DialogDescription>{p.decisionDialogDesc}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="decision-reason">{p.decisionReasonLabel}</Label>
+            <Textarea
+              id="decision-reason"
+              value={decisionRequest?.reason ?? ""}
+              placeholder={p.decisionReasonPlaceholder}
+              onChange={(e) =>
+                setDecisionRequest((prev) => (prev ? { ...prev, reason: e.target.value } : prev))
+              }
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDecisionRequest(null)} disabled={decideVerdict.isPending}>
+              {p.decisionCancel}
+            </Button>
+            <Button onClick={confirmDecision} disabled={decideVerdict.isPending}>
+              {p.decisionConfirm}
             </Button>
           </DialogFooter>
         </DialogContent>
