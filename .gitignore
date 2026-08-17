@@ -44,7 +44,7 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Local tool caches
 .cache/
 .local/
 
@@ -55,3 +55,6 @@ Thumbs.db
 
 # Claude Code local configs (machine-specific paths)
 .claude/
+
+# Artefatos de verificação do gauntlet (screenshots, logs)
+output/

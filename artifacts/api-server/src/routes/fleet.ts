@@ -17,11 +17,15 @@ import {
   GetFleetKpisResponse,
   ListFleetAlertsQueryParams,
   ListFleetAlertsResponse,
+  UpdateFleetAlertParams,
+  UpdateFleetAlertBody,
+  UpdateFleetAlertResponse,
   ListFleetDecisionsResponse,
   GetFleetGovernanceResponse,
   GetFleetBenchmarksResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { applyAlertUpdate } from "../lib/alert-workflow";
 
 const router: IRouter = Router();
 
@@ -248,6 +252,10 @@ router.get("/fleet/alerts", requireAuth, async (req, res) => {
       recommendation: alerts.recommendation,
       detectedAt: alerts.detectedAt,
       status: alerts.status,
+      assignedTo: alerts.assignedTo,
+      dueAt: alerts.dueAt,
+      acknowledgedAt: alerts.acknowledgedAt,
+      resolvedAt: alerts.resolvedAt,
     })
     .from(alerts)
     .innerJoin(agents, eq(alerts.agentId, agents.id))
@@ -266,6 +274,54 @@ router.get("/fleet/alerts", requireAuth, async (req, res) => {
     })),
   );
 
+  res.json(data);
+});
+
+router.patch("/fleet/alerts/:alertId", requireAuth, async (req, res) => {
+  const { alertId } = UpdateFleetAlertParams.parse(req.params);
+  const body = UpdateFleetAlertBody.parse(req.body);
+
+  const [current] = await db
+    .select()
+    .from(alerts)
+    .where(eq(alerts.id, alertId))
+    .limit(1);
+  if (!current) {
+    res.status(404).json({ error: "Alerta não encontrado." });
+    return;
+  }
+
+  const nextState = applyAlertUpdate(
+    current,
+    {
+      status: body.status,
+      assignedTo: body.assignedTo,
+      dueAt: body.dueAt,
+    },
+    new Date(),
+  );
+  const [updated] = await db
+    .update(alerts)
+    .set({
+      status: nextState.status,
+      assignedTo: nextState.assignedTo,
+      dueAt: nextState.dueAt,
+      acknowledgedAt: nextState.acknowledgedAt,
+      resolvedAt: nextState.resolvedAt,
+    })
+    .where(eq(alerts.id, alertId))
+    .returning();
+
+  const [agent] = await db
+    .select({ name: agents.name })
+    .from(agents)
+    .where(eq(agents.id, updated!.agentId))
+    .limit(1);
+  const data = UpdateFleetAlertResponse.parse({
+    ...updated,
+    agentName: agent?.name ?? "Agente",
+    detectedAt: updated!.detectedAt.toISOString(),
+  });
   res.json(data);
 });
 

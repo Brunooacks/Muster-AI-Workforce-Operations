@@ -419,10 +419,9 @@ function stripTopDir(path: string): string {
 }
 
 // Download the GitHub repo archive. When a GitHub credential is available
-// (Replit GitHub connector or GITHUB_TOKEN secret) we use the authenticated
-// REST tarball endpoint, which works for BOTH public and private repos. Without
-// a credential we fall back to the unauthenticated codeload path (public only)
-// and surface a clear "connect GitHub" hint on 404.
+// (GITHUB_TOKEN or a compatible environment variable) we use the authenticated
+// REST tarball endpoint, which works for both public and private repos. Without
+// a credential we fall back to the unauthenticated codeload path (public only).
 async function downloadGitHubArchive(ref: GitHubRef): Promise<Response> {
   const token = await getGitHubAccessToken();
 

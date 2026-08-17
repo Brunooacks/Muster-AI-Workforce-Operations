@@ -1,5 +1,9 @@
 import { AppLayout } from "@/components/layout";
-import { useListFleetAlerts } from "@workspace/api-client-react";
+import {
+  getListFleetAlertsQueryKey,
+  useListFleetAlerts,
+  useUpdateFleetAlert,
+} from "@workspace/api-client-react";
 import {
   Card,
   CardContent,
@@ -9,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ShieldCheck, Eye, AlertTriangle, Activity, Lightbulb, SlidersHorizontal } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -16,6 +22,8 @@ import { ErrorState } from "@/components/query-state";
 import { PageHeading, StatCard, FilterChip, Pill, Eyebrow } from "@/components/cohort";
 import { detectorPresentation } from "@/components/carteira";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type AlertsDict = {
   breadcrumbGov: string;
@@ -43,6 +51,17 @@ type AlertsDict = {
   emptyTitle: string;
   emptyDesc: string;
   statuses: { active: string; acknowledged: string; resolved: string };
+  assignee: string;
+  assigneePlaceholder: string;
+  dueDate: string;
+  saveAction: string;
+  acknowledge: string;
+  resolve: string;
+  reopen: string;
+  saved: string;
+  saveError: string;
+  overdue: string;
+  dueSoon: string;
 };
 
 const alertsI18n: Record<Lang, AlertsDict> = {
@@ -73,6 +92,17 @@ const alertsI18n: Record<Lang, AlertsDict> = {
     emptyTitle: "Nenhum alerta ativo.",
     emptyDesc: "A frota está operando sem contradições lógicas.",
     statuses: { active: "Ativo", acknowledged: "Reconhecido", resolved: "Resolvido" },
+    assignee: "Responsável",
+    assigneePlaceholder: "Nome ou time responsável",
+    dueDate: "Prazo",
+    saveAction: "Salvar ação",
+    acknowledge: "Reconhecer",
+    resolve: "Resolver",
+    reopen: "Reabrir",
+    saved: "Ação do alerta atualizada",
+    saveError: "Não foi possível atualizar o alerta.",
+    overdue: "Prazo vencido",
+    dueSoon: "Prazo próximo",
   },
   en: {
     breadcrumbGov: "Governance",
@@ -101,6 +131,17 @@ const alertsI18n: Record<Lang, AlertsDict> = {
     emptyTitle: "No active alerts.",
     emptyDesc: "The fleet is operating without logical contradictions.",
     statuses: { active: "Active", acknowledged: "Acknowledged", resolved: "Resolved" },
+    assignee: "Assignee",
+    assigneePlaceholder: "Owner or team",
+    dueDate: "Due date",
+    saveAction: "Save action",
+    acknowledge: "Acknowledge",
+    resolve: "Resolve",
+    reopen: "Reopen",
+    saved: "Alert action updated",
+    saveError: "Could not update the alert.",
+    overdue: "Overdue",
+    dueSoon: "Due soon",
   },
   es: {
     breadcrumbGov: "Gobernanza",
@@ -129,6 +170,17 @@ const alertsI18n: Record<Lang, AlertsDict> = {
     emptyTitle: "Ninguna alerta activa.",
     emptyDesc: "La flota está operando sin contradicciones lógicas.",
     statuses: { active: "Activo", acknowledged: "Reconocido", resolved: "Resuelto" },
+    assignee: "Responsable",
+    assigneePlaceholder: "Nombre o equipo responsable",
+    dueDate: "Plazo",
+    saveAction: "Guardar acción",
+    acknowledge: "Reconocer",
+    resolve: "Resolver",
+    reopen: "Reabrir",
+    saved: "Acción de alerta actualizada",
+    saveError: "No fue posible actualizar la alerta.",
+    overdue: "Plazo vencido",
+    dueSoon: "Plazo próximo",
   },
 };
 
@@ -146,11 +198,54 @@ function StatusBadge({ status, t }: { status: string; t: AlertsDict }) {
   return <Pill tone={STATUS_TONE[status] ?? "muted"}>{label}</Pill>;
 }
 
+function deadlineState(
+  dueAt: string | null | undefined,
+  status: string,
+): "overdue" | "dueSoon" | null {
+  if (!dueAt || status === "resolved") return null;
+  const remaining = Date.parse(dueAt) - Date.now();
+  if (remaining < 0) return "overdue";
+  if (remaining <= 3 * 24 * 60 * 60 * 1000) return "dueSoon";
+  return null;
+}
+
 export default function AlertsPage() {
   const { lang } = useLang();
   const t = alertsI18n[lang];
+  const { toast } = useToast();
   const { data: alerts, isLoading, isError, refetch } = useListFleetAlerts();
+  const updateAlert = useUpdateFleetAlert();
   const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [drafts, setDrafts] = useState<Record<string, { assignedTo: string; dueAt: string }>>({});
+
+  const draftFor = (alert: NonNullable<typeof alerts>[number]) =>
+    drafts[alert.id] ?? {
+      assignedTo: alert.assignedTo ?? "",
+      dueAt: alert.dueAt ? alert.dueAt.slice(0, 10) : "",
+    };
+
+  const updateDraft = (alertId: string, changes: Partial<{ assignedTo: string; dueAt: string }>) => {
+    setDrafts((current) => ({
+      ...current,
+      [alertId]: { ...(current[alertId] ?? { assignedTo: "", dueAt: "" }), ...changes },
+    }));
+  };
+
+  const saveAlert = (
+    alertId: string,
+    data: { status?: "active" | "acknowledged" | "resolved"; assignedTo?: string | null; dueAt?: string | null },
+  ) => {
+    updateAlert.mutate(
+      { alertId, data },
+      {
+        onSuccess: () => {
+          toast({ title: t.saved });
+          queryClient.invalidateQueries({ queryKey: getListFleetAlertsQueryKey() });
+        },
+        onError: () => toast({ title: t.saveError, variant: "destructive" }),
+      },
+    );
+  };
 
   const severityFilters: { key: string; label: string }[] = [
     { key: "all", label: t.filters.all },
@@ -197,9 +292,9 @@ export default function AlertsPage() {
                 <StatCard
                   icon={Activity}
                   label={t.statActive}
-                  value={alerts.length}
+                  value={alerts.filter((alert) => alert.status !== "resolved").length}
                   delta={t.statActiveDelta}
-                  tone={alerts.length > 0 ? "down" : "neutral"}
+                  tone={alerts.some((alert) => alert.status !== "resolved") ? "down" : "neutral"}
                 />
                 <StatCard
                   icon={AlertTriangle}
@@ -250,6 +345,8 @@ export default function AlertsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 {filteredAlerts.map((alert) => {
                   const d = detectorPresentation(alert.severity, alert.patternType, lang);
+                  const draft = draftFor(alert);
+                  const deadline = deadlineState(alert.dueAt, alert.status);
                   return (
                     <Card key={alert.id} className={`flex flex-col border-l-4 ${d.border}`}>
                       <CardHeader className="space-y-2">
@@ -300,6 +397,80 @@ export default function AlertsPage() {
                           >
                             {t.viewAgent}
                           </Link>
+                        </div>
+                        <div className="grid gap-3 rounded-lg border border-card-border bg-muted/20 p-3 sm:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`alert-owner-${alert.id}`} className="text-[10px] uppercase tracking-[0.08em]">
+                              {t.assignee}
+                            </Label>
+                            <Input
+                              id={`alert-owner-${alert.id}`}
+                              value={draft.assignedTo}
+                              placeholder={t.assigneePlaceholder}
+                              onChange={(event) => updateDraft(alert.id, { assignedTo: event.target.value })}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`alert-due-${alert.id}`} className="flex items-center justify-between text-[10px] uppercase tracking-[0.08em]">
+                              <span>{t.dueDate}</span>
+                              {deadline && (
+                                <span className={deadline === "overdue" ? "text-chart-3" : "text-chart-2"}>
+                                  {deadline === "overdue" ? t.overdue : t.dueSoon}
+                                </span>
+                              )}
+                            </Label>
+                            <Input
+                              id={`alert-due-${alert.id}`}
+                              type="date"
+                              value={draft.dueAt}
+                              onChange={(event) => updateDraft(alert.id, { dueAt: event.target.value })}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="flex flex-wrap justify-end gap-2 sm:col-span-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={updateAlert.isPending}
+                              onClick={() =>
+                                saveAlert(alert.id, {
+                                  assignedTo: draft.assignedTo.trim() || null,
+                                  dueAt: draft.dueAt ? `${draft.dueAt}T23:59:59.999Z` : null,
+                                })
+                              }
+                            >
+                              {t.saveAction}
+                            </Button>
+                            {alert.status === "active" && (
+                              <Button
+                                size="sm"
+                                disabled={updateAlert.isPending}
+                                onClick={() => saveAlert(alert.id, { status: "acknowledged" })}
+                              >
+                                {t.acknowledge}
+                              </Button>
+                            )}
+                            {alert.status === "acknowledged" && (
+                              <Button
+                                size="sm"
+                                disabled={updateAlert.isPending}
+                                onClick={() => saveAlert(alert.id, { status: "resolved" })}
+                              >
+                                {t.resolve}
+                              </Button>
+                            )}
+                            {alert.status === "resolved" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={updateAlert.isPending}
+                                onClick={() => saveAlert(alert.id, { status: "active" })}
+                              >
+                                {t.reopen}
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { ensureSeed } from "./lib/seed";
 import { ensureCatalogSeed } from "./lib/catalog-seed";
 import { backfillAgentScores } from "./lib/reevaluate";
+import { seededEvaluationsAllowed } from "./lib/evaluation-policy";
 
 const rawPort = process.env["PORT"];
 
@@ -18,7 +19,13 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-ensureSeed()
+const allowSeeded = seededEvaluationsAllowed();
+
+(allowSeeded
+  ? ensureSeed()
+  : Promise.resolve().then(() => {
+      logger.info("Demo fleet seed disabled; starting without fabricated agent data.");
+    }))
   .catch((err) => {
     logger.error({ err }, "Failed to seed database");
   })
@@ -26,7 +33,7 @@ ensureSeed()
   .catch((err) => {
     logger.error({ err }, "Failed to seed metric catalog");
   })
-  .then(() => backfillAgentScores())
+  .then(() => (allowSeeded ? backfillAgentScores() : undefined))
   .catch((err) => {
     logger.error({ err }, "Failed to backfill agent scores");
   })

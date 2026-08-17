@@ -7,8 +7,7 @@
  * without a Clerk project — pair it with `AUTH_DEV_BYPASS=true` on the API.
  *
  * Only the symbols the app actually uses are implemented:
- * ClerkProvider, Show, SignIn, SignUp, useUser, useClerk,
- * publishableKeyFromHost (from /internal).
+ * ClerkProvider, Show, SignIn, SignUp, useUser, useClerk.
  */
 import type { ReactNode } from "react";
 
@@ -79,12 +78,4 @@ export function useClerk() {
       window.location.href = opts?.redirectUrl || "/";
     },
   };
-}
-
-/** Mirror of `@clerk/react/internal`'s helper — any non-empty key satisfies App.tsx. */
-export function publishableKeyFromHost(
-  _host: string,
-  fallback?: string,
-): string {
-  return fallback || "pk_test_dev-bypass";
 }

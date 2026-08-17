@@ -411,6 +411,31 @@ export interface Alert {
   recommendation: string;
   detectedAt: string;
   status: AlertStatus;
+  /** @nullable */
+  assignedTo?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
+  /** @nullable */
+  acknowledgedAt?: string | null;
+  /** @nullable */
+  resolvedAt?: string | null;
+}
+
+export type UpdateFleetAlertInputStatus = typeof UpdateFleetAlertInputStatus[keyof typeof UpdateFleetAlertInputStatus];
+
+
+export const UpdateFleetAlertInputStatus = {
+  active: 'active',
+  acknowledged: 'acknowledged',
+  resolved: 'resolved',
+} as const;
+
+export interface UpdateFleetAlertInput {
+  status?: UpdateFleetAlertInputStatus;
+  /** @nullable */
+  assignedTo?: string | null;
+  /** @nullable */
+  dueAt?: string | null;
 }
 
 export type ConnectorStatus = typeof ConnectorStatus[keyof typeof ConnectorStatus];
@@ -431,6 +456,151 @@ export interface Connector {
   category: string;
   /** @nullable */
   lastSyncAt?: string | null;
+}
+
+export type ConnectorCapabilityMode = typeof ConnectorCapabilityMode[keyof typeof ConnectorCapabilityMode];
+
+
+export const ConnectorCapabilityMode = {
+  live: 'live',
+  'contract-ready': 'contract-ready',
+  planned: 'planned',
+} as const;
+
+export type ConnectorCapabilityCapabilities = {
+  testConnection: boolean;
+  discoverAgents: boolean;
+  collectTelemetry: boolean;
+  collectMetrics: boolean;
+  sendFeedback: boolean;
+  exportDecisions: boolean;
+};
+
+export interface ConnectorCapability {
+  platform: string;
+  label: string;
+  mode: ConnectorCapabilityMode;
+  capabilities: ConnectorCapabilityCapabilities;
+  transport: string[];
+  note: string;
+}
+
+export type ExternalAgentEnvelopeContractVersion = typeof ExternalAgentEnvelopeContractVersion[keyof typeof ExternalAgentEnvelopeContractVersion];
+
+
+export const ExternalAgentEnvelopeContractVersion = {
+  'musteragent-ingestionv1': 'muster.agent-ingestion.v1',
+} as const;
+
+export type ExternalAgentEnvelopeSource = {
+  platform: string;
+  tenant?: string;
+  connectorId?: string;
+  environment?: string;
+  reference?: string;
+};
+
+export type ExternalAgentEnvelopeAgentMetadata = { [key: string]: unknown };
+
+export type ExternalAgentEnvelopeAgent = {
+  externalId: string;
+  name: string;
+  version?: string;
+  runtime?: string;
+  url?: string;
+  metadata?: ExternalAgentEnvelopeAgentMetadata;
+};
+
+export type ExternalAgentExecutionStatus = typeof ExternalAgentExecutionStatus[keyof typeof ExternalAgentExecutionStatus];
+
+
+export const ExternalAgentExecutionStatus = {
+  success: 'success',
+  error: 'error',
+  escalated: 'escalated',
+  running: 'running',
+} as const;
+
+export type ExternalAgentExecutionMetadata = { [key: string]: unknown };
+
+export interface ExternalAgentExecution {
+  id?: string;
+  startedAt?: string;
+  completedAt?: string;
+  status?: ExternalAgentExecutionStatus;
+  durationMs?: number;
+  costCents?: number;
+  tokensIn?: number;
+  tokensOut?: number;
+  metadata?: ExternalAgentExecutionMetadata;
+}
+
+export type ExternalAgentObservationKind = typeof ExternalAgentObservationKind[keyof typeof ExternalAgentObservationKind];
+
+
+export const ExternalAgentObservationKind = {
+  observed: 'observed',
+  inferred: 'inferred',
+  synthetic: 'synthetic',
+} as const;
+
+export type ExternalAgentObservationLineageItem = {
+  stage: string;
+  name: string;
+  ref?: string;
+};
+
+export interface ExternalAgentObservation {
+  metricKey: string;
+  label: string;
+  value: number;
+  unit: string;
+  kind?: ExternalAgentObservationKind;
+  confidence?: number;
+  sampleSize?: number;
+  capturedAt?: string;
+  lineage?: ExternalAgentObservationLineageItem[];
+}
+
+export type ExternalAgentFeedbackKind = typeof ExternalAgentFeedbackKind[keyof typeof ExternalAgentFeedbackKind];
+
+
+export const ExternalAgentFeedbackKind = {
+  positive: 'positive',
+  negative: 'negative',
+  correction: 'correction',
+  escalation: 'escalation',
+} as const;
+
+export type ExternalAgentFeedbackMetadata = { [key: string]: unknown };
+
+export interface ExternalAgentFeedback {
+  kind: ExternalAgentFeedbackKind;
+  score?: number;
+  comment?: string;
+  metadata?: ExternalAgentFeedbackMetadata;
+}
+
+export interface ExternalAgentEnvelope {
+  contractVersion: ExternalAgentEnvelopeContractVersion;
+  /** Optional idempotency key supplied by the source platform. */
+  eventId?: string;
+  source: ExternalAgentEnvelopeSource;
+  agent: ExternalAgentEnvelopeAgent;
+  execution?: ExternalAgentExecution;
+  observations?: ExternalAgentObservation[];
+  feedback?: ExternalAgentFeedback;
+}
+
+export interface ExternalAgentIngestionResult {
+  accepted: boolean;
+  mapped: boolean;
+  agentExternalId: string;
+  /** @nullable */
+  agentId?: string | null;
+  eventsAccepted: number;
+  observationsAccepted: number;
+  nextAction: string;
 }
 
 export type AgentInputAutonomyLevel = typeof AgentInputAutonomyLevel[keyof typeof AgentInputAutonomyLevel];
@@ -558,7 +728,6 @@ export type GitHubStatusSource = typeof GitHubStatusSource[keyof typeof GitHubSt
 
 
 export const GitHubStatusSource = {
-  connector: 'connector',
   token: 'token',
   none: 'none',
 } as const;
@@ -965,6 +1134,34 @@ export interface CatalogVertical {
   metrics: CatalogMetric[];
 }
 
+export type MetricStarterKitMetricLayer = typeof MetricStarterKitMetricLayer[keyof typeof MetricStarterKitMetricLayer];
+
+
+export const MetricStarterKitMetricLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface MetricStarterKitMetric {
+  key: string;
+  label: string;
+  layer: MetricStarterKitMetricLayer;
+  unit: string;
+  target: string;
+}
+
+export interface MetricStarterKit {
+  key: string;
+  label: string;
+  objective: string;
+  guidance: string;
+  vertical: string;
+  metrics: MetricStarterKitMetric[];
+}
+
 export type CatalogMetricInputLayer = typeof CatalogMetricInputLayer[keyof typeof CatalogMetricInputLayer];
 
 
@@ -1054,6 +1251,7 @@ export const AgentEventInputKind = {
   error: 'error',
   escalation: 'escalation',
   feedback: 'feedback',
+  heartbeat: 'heartbeat',
 } as const;
 
 export type AgentEventInputMetadata = { [key: string]: unknown };
@@ -1067,6 +1265,56 @@ export interface AgentEventInput {
   tokensOut?: number;
   success?: boolean;
   metadata?: AgentEventInputMetadata;
+}
+
+export type AgentHeartbeatInputStatus = typeof AgentHeartbeatInputStatus[keyof typeof AgentHeartbeatInputStatus];
+
+
+export const AgentHeartbeatInputStatus = {
+  healthy: 'healthy',
+  degraded: 'degraded',
+  stopped: 'stopped',
+} as const;
+
+export type AgentHeartbeatInputMetadata = { [key: string]: unknown };
+
+export interface AgentHeartbeatInput {
+  runtime?: string;
+  version?: string;
+  intervalSeconds?: number;
+  status?: AgentHeartbeatInputStatus;
+  metadata?: AgentHeartbeatInputMetadata;
+}
+
+export interface AgentHeartbeatAccepted {
+  accepted: boolean;
+  observedAt: string;
+}
+
+export type AgentSupervisionStatus = typeof AgentSupervisionStatus[keyof typeof AgentSupervisionStatus];
+
+
+export const AgentSupervisionStatus = {
+  live: 'live',
+  delayed: 'delayed',
+  stale: 'stale',
+  unknown: 'unknown',
+} as const;
+
+export interface AgentSupervision {
+  agentId: string;
+  status: AgentSupervisionStatus;
+  isStale: boolean;
+  intervalSeconds: number;
+  ageSeconds: number;
+  /** @nullable */
+  lastHeartbeatAt: string | null;
+  /** @nullable */
+  runtime?: string | null;
+  /** @nullable */
+  version?: string | null;
+  /** @nullable */
+  reportedStatus?: string | null;
 }
 
 export interface TelemetrySummary {
@@ -1110,6 +1358,7 @@ export const ReevaluateOutcomeDataSource = {
   telemetry: 'telemetry',
   seeded: 'seeded',
   mixed: 'mixed',
+  none: 'none',
 } as const;
 
 export interface ReevaluateOutcome {

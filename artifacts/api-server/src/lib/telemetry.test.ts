@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   summarizeEvents,
   layersFromTelemetry,
+  proposedMetricsFromTelemetry,
   type AgentEventRow,
   type TelemetrySummary,
 } from "./telemetry";
@@ -50,11 +51,31 @@ describe("summarizeEvents", () => {
 
   it("aggregates mixed kinds: rates relative to executions only", () => {
     const events = [
-      event({ kind: "execution", success: true, durationMs: 1000, costCents: 20 }),
-      event({ kind: "execution", success: true, durationMs: 2000, costCents: 30 }),
-      event({ kind: "execution", success: false, durationMs: 3000, costCents: 40 }),
+      event({
+        kind: "execution",
+        success: true,
+        durationMs: 1000,
+        costCents: 20,
+      }),
+      event({
+        kind: "execution",
+        success: true,
+        durationMs: 2000,
+        costCents: 30,
+      }),
+      event({
+        kind: "execution",
+        success: false,
+        durationMs: 3000,
+        costCents: 40,
+      }),
       // success=null execution: counts for volume, not for successRate.
-      event({ kind: "execution", success: null, durationMs: 2000, costCents: 10 }),
+      event({
+        kind: "execution",
+        success: null,
+        durationMs: 2000,
+        costCents: 10,
+      }),
       event({ kind: "error", costCents: 5 }),
       event({ kind: "escalation" }),
       event({ kind: "escalation" }),
@@ -131,12 +152,37 @@ describe("layersFromTelemetry", () => {
     const m = layers.efficacy?.metrics[0];
     expect(m).toMatchObject({
       label: "Taxa de sucesso",
+      sourceSignal: "task_success",
       value: 95.5,
       unit: "%",
       target: "≥ 90%",
       trend: 0,
       direction: "flat",
     });
+  });
+
+  it("converts telemetry to observed evidence for KPI evaluation", () => {
+    const summary: TelemetrySummary = {
+      ...emptySummary(),
+      totalExecutions: 30,
+      successRate: 0.95,
+      firstEventAt: "2026-08-01T00:00:00.000Z",
+      lastEventAt: "2026-08-11T00:00:00.000Z",
+    };
+    const metrics = proposedMetricsFromTelemetry(summary);
+    const success = metrics.find(
+      (metric) => metric.sourceSignal === "task_success",
+    );
+    expect(success).toMatchObject({
+      sourceSignal: "task_success",
+      evidence: {
+        kind: "observed",
+        confidence: 90,
+        sampleSize: 30,
+        source: { type: "telemetry", name: "agent_events" },
+      },
+    });
+    expect(success?.evidence?.lineage).toHaveLength(2);
   });
 
   it("scores efficiency 100 when both metrics are on target", () => {

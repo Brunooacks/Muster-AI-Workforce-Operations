@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Fingerprint, Layers, Gavel, AlertTriangle, Users, Plug } from "lucide-react";
+import { ArrowRight, Fingerprint, Layers, Gavel, AlertTriangle, Users, Plug, Activity, Gauge, ShieldCheck, Target } from "lucide-react";
 import { MusterMark } from "@/components/logo";
 import { OpsSchematic, type OpsSchematicLabels, OPS_LABELS_PT } from "@/components/ops-schematic";
 import { LangSwitcher } from "@/components/lang-switcher";
@@ -29,6 +29,10 @@ interface LandingDict {
   finalCta: string;
   footerRight: string;
   ticker: Array<[string, string, string, string]>;
+  mvpEyebrow: string;
+  mvpTitle: string;
+  mvpSub: string;
+  mvpCards: Array<{ title: string; desc: string; meta: string; href: string }>;
   ops: OpsSchematicLabels;
 }
 
@@ -81,7 +85,7 @@ const L: Record<Lang, LandingDict> = {
     features: [
       { title: "Admissão & Identidade", desc: "Descubra agentes via conectores e admita-os na frota com identidade e Carteira de Trabalho versionada." },
       { title: "Avaliação em 5 camadas", desc: "Eficácia, eficiência, adoção, governança e valor — leitura sistêmica, não métrica isolada." },
-      { title: "Detector de Vitória Ilusória", desc: "Cruza KPIs para flagrar padrões antagônicos — ROI subindo com acurácia caindo — antes que virem incidente." },
+      { title: "Detector de Vitória Ilusória", desc: "Compara sucesso local, conclusão end-to-end e handoffs para revelar quando uma etapa parece saudável, mas o resultado real não se confirma." },
       { title: "Veredito do Comitê", desc: "Promover, Mentorar ou Aposentar — com confiança, janela de execução e próximas três ações." },
       { title: "Comitê & Governança", desc: "Dono de negócio, técnico e sponsor por agente — trilha auditável de cada veredito." },
       { title: "Plug-and-play", desc: "GitHub, OpenAI, AWS Bedrock, Copilot — conecte a origem e faça o censo da frota em minutos." },
@@ -100,6 +104,16 @@ const L: Record<Lang, LandingDict> = {
       ["text-chart-1", "▲ PROMOVER", "Triage · roteamento", "91"],
       ["text-chart-2", "◆ MENTORAR", "Téo · cobrança", "64"],
       ["text-chart-3", "▼ SINAL ANTECEDENTE", "drift pós-recalibração", "obs."],
+    ],
+    mvpEyebrow: "Capacidades operacionais",
+    mvpTitle: "Do agente isolado à jornada completa.",
+    mvpSub: "Modele o trabalho, acompanhe os sinais e transforme cada recomendação aprovada em ações com responsável, autonomia e prazo.",
+    mvpCards: [
+      { title: "Times mistos", desc: "Defina propósito, owner, supervisor e responsabilidades entre pessoas e agentes.", meta: "Propósito + papéis + decisão", href: "/equipes" },
+      { title: "KPIs por domínio", desc: "Avalie atendimento, vendas, engenharia, risco e pessoas com contratos de fórmula, alvo e guardrail.", meta: "20 contratos · 4 domínios", href: "/equipes" },
+      { title: "Evidência auditável", desc: "Telemetria vira observação com fonte, linhagem, confiança e amostra antes de influenciar o veredito.", meta: "Fonte + confiança + baseline", href: "/metricas" },
+      { title: "Discovery orientado", desc: "Descubra o que cada agente faz, proponha métricas e importe candidatos para a frota.", meta: "GitHub hoje · extensível", href: "/conectores" },
+      { title: "Jornadas A2A", desc: "Conecte agentes e pessoas em um fluxo end-to-end, monitore handoffs e desdobre recomendações em ações com SLA.", meta: "Frota + handoff + ação", href: "/jornadas" },
     ],
     ops: OPS_LABELS_PT,
   },
@@ -125,7 +139,7 @@ const L: Record<Lang, LandingDict> = {
     features: [
       { title: "Admission & Identity", desc: "Discover agents via connectors and admit them to the fleet with identity and a versioned Work Record." },
       { title: "5-layer evaluation", desc: "Efficacy, efficiency, adoption, governance and value — a systemic reading, not an isolated metric." },
-      { title: "Illusory Victory Detector", desc: "Crosses KPIs to catch antagonistic patterns — ROI rising while accuracy falls — before they become incidents." },
+      { title: "Illusory Victory Detector", desc: "Compares local success, end-to-end completion and handoffs to reveal when a step looks healthy but the real outcome is not confirmed." },
       { title: "Committee Verdict", desc: "Promote, Mentor or Retire — with confidence, execution window and the next three actions." },
       { title: "Committee & Governance", desc: "Business, technical and sponsor owners per agent — an auditable trail for every verdict." },
       { title: "Plug-and-play", desc: "GitHub, OpenAI, AWS Bedrock, Copilot — connect a source and census your fleet in minutes." },
@@ -144,6 +158,16 @@ const L: Record<Lang, LandingDict> = {
       ["text-chart-1", "▲ PROMOTE", "Triage · routing", "91"],
       ["text-chart-2", "◆ MENTOR", "Téo · collections", "64"],
       ["text-chart-3", "▼ LEADING SIGNAL", "post-recalibration drift", "watch"],
+    ],
+    mvpEyebrow: "Operational capabilities",
+    mvpTitle: "From isolated agent to complete journey.",
+    mvpSub: "Model the work, follow the signals and turn each approved recommendation into accountable actions with autonomy and deadlines.",
+    mvpCards: [
+      { title: "Mixed teams", desc: "Define purpose, owner, supervisor and responsibilities across people and agents.", meta: "Purpose + roles + decision", href: "/equipes" },
+      { title: "Domain KPIs", desc: "Evaluate support, sales, engineering, risk and people with formula, target and guardrail contracts.", meta: "20 contracts · 4 domains", href: "/equipes" },
+      { title: "Auditable evidence", desc: "Telemetry becomes an observation with source, lineage, confidence and sample before affecting a verdict.", meta: "Source + confidence + baseline", href: "/metricas" },
+      { title: "Guided discovery", desc: "Discover what each agent does, propose metrics and import candidates into the fleet.", meta: "GitHub today · extensible", href: "/conectores" },
+      { title: "A2A journeys", desc: "Connect agents and people in an end-to-end flow, monitor handoffs and unfold recommendations into SLA-bound actions.", meta: "Fleet + handoff + action", href: "/jornadas" },
     ],
     ops: OPS_EN,
   },
@@ -169,7 +193,7 @@ const L: Record<Lang, LandingDict> = {
     features: [
       { title: "Admisión e Identidad", desc: "Descubre agentes vía conectores y admítelos en la flota con identidad y Expediente Laboral versionado." },
       { title: "Evaluación en 5 capas", desc: "Eficacia, eficiencia, adopción, gobernanza y valor — lectura sistémica, no métrica aislada." },
-      { title: "Detector de Victoria Ilusoria", desc: "Cruza KPIs para detectar patrones antagónicos — ROI subiendo con precisión cayendo — antes de que sean incidentes." },
+      { title: "Detector de Victoria Ilusoria", desc: "Compara éxito local, conclusión end-to-end y handoffs para revelar cuando una etapa parece saludable, pero el resultado real no se confirma." },
       { title: "Veredicto del Comité", desc: "Ascender, Mentoría o Retirar — con confianza, ventana de ejecución y las próximas tres acciones." },
       { title: "Comité y Gobernanza", desc: "Dueño de negocio, técnico y sponsor por agente — trazabilidad auditable de cada veredicto." },
       { title: "Plug-and-play", desc: "GitHub, OpenAI, AWS Bedrock, Copilot — conecta el origen y censa tu flota en minutos." },
@@ -188,6 +212,16 @@ const L: Record<Lang, LandingDict> = {
       ["text-chart-1", "▲ ASCENDER", "Triage · enrutamiento", "91"],
       ["text-chart-2", "◆ MENTORÍA", "Téo · cobranza", "64"],
       ["text-chart-3", "▼ SEÑAL TEMPRANA", "drift pos-recalibración", "obs."],
+    ],
+    mvpEyebrow: "Capacidades operativas",
+    mvpTitle: "Del agente aislado a la jornada completa.",
+    mvpSub: "Modela el trabajo, acompaña las señales y convierte cada recomendación aprobada en acciones con responsable, autonomía y plazo.",
+    mvpCards: [
+      { title: "Equipos mixtos", desc: "Define propósito, owner, supervisor y responsabilidades entre personas y agentes.", meta: "Propósito + roles + decisión", href: "/equipes" },
+      { title: "KPIs por dominio", desc: "Evalúa atención, ventas, ingeniería, riesgo y personas con contratos de fórmula, objetivo y guardrail.", meta: "20 contratos · 4 dominios", href: "/equipes" },
+      { title: "Evidencia auditable", desc: "La telemetría se convierte en observación con fuente, linaje, confianza y muestra antes del veredicto.", meta: "Fuente + confianza + baseline", href: "/metricas" },
+      { title: "Discovery orientado", desc: "Descubre qué hace cada agente, propone métricas e importa candidatos a la flota.", meta: "GitHub hoy · extensible", href: "/conectores" },
+      { title: "Jornadas A2A", desc: "Conecta agentes y personas en un flujo end-to-end, monitorea handoffs y despliega recomendaciones en acciones con SLA.", meta: "Flota + handoff + acción", href: "/jornadas" },
     ],
     ops: OPS_ES,
   },
@@ -374,6 +408,30 @@ export default function LandingPage() {
                 <h3 className="mt-4 font-serif text-lg font-medium tracking-tight">{f.title}</h3>
                 <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted-foreground">{f.desc}</p>
               </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 pb-8 pt-20">
+        <p className="font-mono text-[11.5px] uppercase tracking-[0.2em] text-primary">{t.mvpEyebrow}</p>
+        <h2 className="mt-4 max-w-[27ch] font-serif text-3xl font-medium tracking-tight sm:text-4xl">{t.mvpTitle}</h2>
+        <p className="mt-4 max-w-[62ch] text-muted-foreground">{t.mvpSub}</p>
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {t.mvpCards.map((card, i) => {
+            const Icon = [Users, Gauge, ShieldCheck, Target][i] ?? Activity;
+            return (
+              <Link key={card.title} href={card.href} className="group rounded-lg border border-card-border bg-card/70 p-5 transition-colors hover:border-primary/50 hover:bg-card">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                    <Icon className="h-[18px] w-[18px] text-primary" strokeWidth={1.75} />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                </div>
+                <h3 className="mt-5 font-serif text-lg font-medium tracking-tight">{card.title}</h3>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">{card.desc}</p>
+                <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.12em] text-primary/80">{card.meta}</p>
+              </Link>
             );
           })}
         </div>

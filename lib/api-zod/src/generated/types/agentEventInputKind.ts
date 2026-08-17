@@ -14,4 +14,5 @@ export const AgentEventInputKind = {
   error: 'error',
   escalation: 'escalation',
   feedback: 'feedback',
+  heartbeat: 'heartbeat',
 } as const;

@@ -8,7 +8,7 @@ Cohort é o **RH e a governança da força de trabalho de IA**: identidade, cart
 
 ## Estado atual (base já entregue)
 
-- ✅ **Fase 0 — Fundação** (PR #1): migrations versionadas, `.env.example`, Dockerfile, Vitest (20 testes), CI GitHub Actions, build desacoplado do Replit
+- ✅ **Fase 0 — Fundação** (PR #1): migrations versionadas, `.env.example`, Dockerfile, Vitest (20 testes), CI GitHub Actions e build independente da plataforma de hospedagem
 - ✅ **Modo dev local** (PR #2): auth bypass seguro p/ localhost, proxy `/api`, modelo de IA configurável
 - ✅ **Frota de teste real**: [cohort-test-agents](https://github.com/Brunooacks/cohort-test-agents) (LangChain, Claude, Copilot) admitidos na frota local
 - ✅ Pipeline real de fetch de código do GitHub (`POST /discovery/fetch`)
@@ -75,6 +75,8 @@ Cohort é o **RH e a governança da força de trabalho de IA**: identidade, cart
 
 ## R5 — Jornadas A2A (agent-to-agent)
 
+**Status:** ✅ MVP implementado em 2026-08-14; hardening e conectores passivos permanecem evolutivos.
+
 **Objetivo:** mapear a jornada ponta a ponta quando múltiplos agentes colaboram — quem chama quem, onde a jornada quebra, qual agente degrada o resultado do conjunto.
 
 - Novo domínio: `journeys` (jornada de negócio), `journey_steps` (etapa → agente responsável), `handoffs` (transições A2A com taxa de sucesso/perda)
@@ -82,6 +84,8 @@ Cohort é o **RH e a governança da força de trabalho de IA**: identidade, cart
 - Métricas de jornada: taxa de conclusão E2E, tempo total, perdas por handoff, custo da jornada
 - Detector de Vitória Ilusória em nível de jornada (agente A melhora às custas do agente B)
 - Instrumentação: eventos de handoff reportados via API (`POST /journeys/:id/events`) — prepara o terreno para R6
+
+Entregue no MVP: persistência versionada e reversível, configuração de frotas e etapas, modos autônomo/aprovação humana/comitê, contratos de handoff, eventos idempotentes, monitoramento com atualização de 15 segundos, p95/custo/gargalo, detector de vitória ilusória e Gauntlet end-to-end. Próxima evolução: streaming push, API keys por origem, decisões compostas com quorum e conectores que materializam eventos automaticamente.
 
 **Dependências:** R2 (métricas de jornada no catálogo). **Esforço:** ~2–3 semanas.
 

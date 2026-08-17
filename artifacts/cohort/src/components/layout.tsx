@@ -11,7 +11,6 @@ import {
   Gauge,
   BarChart3,
   Compass,
-  Sparkles,
   LogOut,
   Menu,
   ChevronRight,
@@ -20,6 +19,8 @@ import {
   HelpCircle,
   Settings,
   UserCircle,
+  Network,
+  Route as RouteIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,8 @@ const NAV_LABELS: Record<Lang, {
       "/alertas": "Detector de vitória ilusória",
       "/governanca": "Governança",
       "/metricas": "Métricas",
+      "/equipes": "Equipes mistas",
+      "/jornadas": "Jornadas A2A",
       "/benchmarks": "Benchmarks",
       "/admissao": "Admissão",
       "/conectores": "Conectores",
@@ -83,6 +86,8 @@ const NAV_LABELS: Record<Lang, {
       "/alertas": "Illusory victory detector",
       "/governanca": "Governance",
       "/metricas": "Metrics",
+      "/equipes": "Mixed teams",
+      "/jornadas": "A2A journeys",
       "/benchmarks": "Benchmarks",
       "/admissao": "Admission",
       "/conectores": "Connectors",
@@ -104,6 +109,8 @@ const NAV_LABELS: Record<Lang, {
       "/alertas": "Detector de victoria ilusoria",
       "/governanca": "Gobernanza",
       "/metricas": "Métricas",
+      "/equipes": "Equipos mixtos",
+      "/jornadas": "Jornadas A2A",
       "/benchmarks": "Benchmarks",
       "/admissao": "Admisión",
       "/conectores": "Conectores",
@@ -133,7 +140,7 @@ function navGroups(lang: Lang): NavGroup[] {
   return [
     {
       label: l.groups[0],
-      items: [item("/comando", Compass), item("/agentes", Users), item("/frota", LayoutGrid)],
+      items: [item("/comando", Compass), item("/agentes", Users), item("/frota", LayoutGrid), item("/jornadas", RouteIcon)],
     },
     {
       label: l.groups[1],
@@ -141,6 +148,7 @@ function navGroups(lang: Lang): NavGroup[] {
         item("/alertas", ShieldAlert),
         item("/governanca", Scale),
         item("/metricas", Gauge),
+        item("/equipes", Network),
         item("/benchmarks", BarChart3),
       ],
     },
@@ -189,19 +197,19 @@ function ConnectorsSection({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function DetectorV2Card() {
+function DetectorStatusCard({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="rounded-xl border border-card-border bg-card p-3">
       <div className="mb-2 flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-chart-2" strokeWidth={1.75} />
-        <span className="text-sm font-medium text-foreground">Detector v2</span>
-        <Pill tone="ochre">Beta</Pill>
+        <ShieldAlert className="h-4 w-4 text-chart-1" strokeWidth={1.75} />
+        <span className="text-sm font-medium text-foreground">Detector operacional</span>
+        <Pill tone="sage">Ativo</Pill>
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-        12 padrões novos de vitória ilusória, com correlação entre camadas.
+        2 regras ativas nas jornadas: sucesso local × outcome e qualidade dos handoffs.
       </p>
-      <Button variant="outline" size="sm" className="w-full" disabled>
-        Ativar
+      <Button asChild variant="outline" size="sm" className="w-full">
+        <Link href="/jornadas#journey-performance" onClick={onNavigate}>Ver detector em ação</Link>
       </Button>
     </div>
   );
@@ -258,9 +266,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     href={item.href}
                     onClick={onNavigate}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                      "group relative flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm transition-colors",
                       active
-                        ? "bg-secondary font-medium text-foreground"
+                        ? "border-primary/20 bg-primary/10 font-medium text-foreground before:absolute before:-left-0.5 before:top-2 before:h-4 before:w-0.5 before:rounded-full before:bg-primary"
                         : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                     )}
                   >
@@ -274,7 +282,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
       <ConnectorsSection onNavigate={onNavigate} />
-      <DetectorV2Card />
+      <DetectorStatusCard onNavigate={onNavigate} />
     </div>
   );
 }
@@ -389,7 +397,7 @@ function GlobalSearch() {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={NAV_LABELS[useLangValue()].search}
-        className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground/30"
+        className="h-9 w-full rounded-lg border border-border bg-secondary/60 pl-9 pr-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus:border-primary/50 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)]"
         aria-label="Buscar"
       />
     </form>
@@ -403,10 +411,10 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="workspace-shell flex min-h-screen w-full bg-background">
       {/* Sidebar — Desktop */}
-      <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex">
-        <div className="px-6 py-6">
+      <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-sidebar-border bg-sidebar/95 md:flex">
+        <div className="border-b border-sidebar-border/70 px-6 py-6">
           <Wordmark />
         </div>
         <div className="flex-1 overflow-y-auto px-3 py-2">
@@ -420,7 +428,7 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
 
       {/* Main */}
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/85 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-10 flex h-[4.5rem] items-center justify-between gap-3 border-b border-border/80 bg-background/75 px-4 backdrop-blur-xl sm:px-6">
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             {/* Mobile menu */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -479,7 +487,9 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <div className="workspace-content">{children}</div>
+        </div>
       </main>
     </div>
   );

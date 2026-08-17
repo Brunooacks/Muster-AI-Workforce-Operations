@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser } from "@clerk/react";
-import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
@@ -23,17 +22,18 @@ import MetricasPage from "@/pages/metricas";
 import BenchmarksPage from "@/pages/benchmarks";
 import SettingsPage from "@/pages/configuracoes";
 import ProfilePage from "@/pages/perfil";
+import DesignLabPage from "@/pages/design-lab";
 import OnboardingPage from "@/pages/onboarding";
+import MixedTeamsPage from "@/pages/mixed-teams";
+import JourneysPage from "@/pages/journeys";
 import NotFound from "@/pages/not-found";
 import { isOnboardingComplete } from "@/lib/onboarding";
 
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const authDevBypass = import.meta.env.VITE_AUTH_DEV_BYPASS === "true";
+const clerkPubKey =
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  (authDevBypass ? "pk_test_dev-bypass" : "");
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
@@ -114,8 +114,6 @@ function SignUpPage() {
 // would make "/" redirect straight to /comando and leave the landing page
 // unreachable (and "Sair" apparently broken, since it lands back on /comando).
 // In bypass mode "/" always shows the landing; "Entrar" leads to the app.
-const authDevBypass = import.meta.env.VITE_AUTH_DEV_BYPASS === "true";
-
 function HomeRedirect() {
   if (authDevBypass) {
     return <LandingPage />;
@@ -194,7 +192,6 @@ function ClerkProviderWithRoutes() {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
@@ -251,6 +248,12 @@ function ClerkProviderWithRoutes() {
             <Route path="/metricas">
               <ProtectedRoute component={MetricasPage} />
             </Route>
+            <Route path="/equipes">
+              <ProtectedRoute component={MixedTeamsPage} />
+            </Route>
+            <Route path="/jornadas">
+              <ProtectedRoute component={JourneysPage} />
+            </Route>
             <Route path="/benchmarks">
               <ProtectedRoute component={BenchmarksPage} />
             </Route>
@@ -259,6 +262,9 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/perfil">
               <ProtectedRoute component={ProfilePage} />
+            </Route>
+            <Route path="/prototipos">
+              <ProtectedRoute component={DesignLabPage} requireOnboarding={false} />
             </Route>
             <Route path="/onboarding">
               <ProtectedRoute component={OnboardingPage} requireOnboarding={false} />

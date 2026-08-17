@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: muster-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: muster
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - muster-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d muster"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  agent-runner:
+    profiles: ["agent"]
+    build:
+      context: .
+      dockerfile: artifacts/agent-runner/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      MUSTER_BASE_URL: ${MUSTER_BASE_URL:-http://host.docker.internal:8080}
+      MUSTER_AGENT_ID: ${MUSTER_AGENT_ID:-}
+      MUSTER_AGENT_MODEL: ${MUSTER_AGENT_MODEL:-gpt-4o-mini}
+      AGENT_MODE: ${AGENT_MODE:-dry-run}
+      MUSTER_EXECUTION_BACKEND: ${MUSTER_EXECUTION_BACKEND:-local}
+      MUSTER_WORKSPACE: ${MUSTER_WORKSPACE:-/app}
+      MUSTER_TASK_TIMEOUT_MS: ${MUSTER_TASK_TIMEOUT_MS:-120000}
+      MUSTER_DOCKER_CONTAINER: ${MUSTER_DOCKER_CONTAINER:-}
+      MUSTER_EXECUTION_GATEWAY_URL: ${MUSTER_EXECUTION_GATEWAY_URL:-}
+      MUSTER_EXECUTION_TOKEN: ${MUSTER_EXECUTION_TOKEN:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      AGENT_TASK: ${AGENT_TASK:-Analise a saúde operacional de um agente de suporte, proponha uma próxima ação e registre a decisão.}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Explicit opt-in only: mounting the Docker socket gives the runner control
+  # over the host Docker daemon. Keep this profile disabled by default.
+  agent-runner-docker:
+    profiles: ["agent-docker"]
+    extends:
+      service: agent-runner
+    environment:
+      MUSTER_EXECUTION_BACKEND: docker
+    volumes:
+      - "${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock"
+
+volumes:
+  muster-postgres-data:

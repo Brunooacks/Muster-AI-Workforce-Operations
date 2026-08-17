@@ -1,5 +1,7 @@
 import type { LayerKey } from "@workspace/db";
 import { metricTargetStatus } from "@workspace/metrics";
+import type { ProposedMetric } from "./discovery";
+import { loadMetricEvidence } from "./evidence";
 
 /**
  * Pure aggregation of raw agent telemetry events into a windowed summary and
@@ -15,7 +17,7 @@ export interface AgentEventRow {
   id: string;
   agentId: string;
   ts: Date; // event timestamp
-  kind: "execution" | "error" | "escalation" | "feedback";
+  kind: "execution" | "error" | "escalation" | "feedback" | "heartbeat";
   durationMs: number | null;
   costCents: number | null; // integer cents (BRL)
   tokensIn: number | null;
@@ -42,6 +44,7 @@ export interface TelemetrySummary {
 
 export interface TelemetryMetric {
   label: string;
+  sourceSignal: string;
   value: number;
   unit: string;
   trend: number;
@@ -109,10 +112,7 @@ export function summarizeEvents(
       : null;
   const p95DurationMs = p95(durations);
 
-  const totalCostCents = events.reduce(
-    (sum, e) => sum + (e.costCents ?? 0),
-    0,
-  );
+  const totalCostCents = events.reduce((sum, e) => sum + (e.costCents ?? 0), 0);
   const avgCostCentsPerExecution =
     totalExecutions > 0 ? totalCostCents / totalExecutions : null;
 
@@ -171,8 +171,10 @@ export function layersFromTelemetry(
     value: number,
     unit: string,
     target?: string,
+    sourceSignal = label,
   ): TelemetryMetric => ({
     label,
+    sourceSignal,
     value,
     unit,
     trend: 0,
@@ -185,7 +187,7 @@ export function layersFromTelemetry(
     const pct = round(summary.successRate * 100, 1);
     layers.efficacy = {
       score: Math.round(clamp(summary.successRate * 100, 0, 100)),
-      metrics: [metric("Taxa de sucesso", pct, "%", "≥ 90%")],
+      metrics: [metric("Taxa de sucesso", pct, "%", "≥ 90%", "task_success")],
     };
   }
 
@@ -200,6 +202,7 @@ export function layersFromTelemetry(
           round(summary.avgDurationMs / 1000, 2),
           "s",
           "< 3 s",
+          "response_time",
         ),
       );
     }
@@ -210,6 +213,7 @@ export function layersFromTelemetry(
           round(summary.avgCostCentsPerExecution / 100, 2),
           "R$",
           "R$ 0,10–0,40",
+          "cost_per_execution",
         ),
       );
     }
@@ -238,7 +242,9 @@ export function layersFromTelemetry(
       score: Math.round(
         clamp(Math.min(100, volumeComponent + consistencyComponent), 0, 100),
       ),
-      metrics: [metric("Execuções por dia", perDay, "/dia", "≥ 50")],
+      metrics: [
+        metric("Execuções por dia", perDay, "/dia", "≥ 50", "execution_volume"),
+      ],
     };
   }
 
@@ -249,12 +255,14 @@ export function layersFromTelemetry(
     let penalty = 0;
     if (summary.escalationRate !== null) {
       const escPct = round(summary.escalationRate * 100, 1);
-      metrics.push(metric("Escalonamento", escPct, "%", "≤ 20%"));
+      metrics.push(
+        metric("Escalonamento", escPct, "%", "≤ 20%", "escalation_rate"),
+      );
       penalty += Math.max(0, escPct - 20) * 1.5;
     }
     if (summary.errorRate !== null) {
       const errPct = round(summary.errorRate * 100, 1);
-      metrics.push(metric("Taxa de erro", errPct, "%", "≤ 5%"));
+      metrics.push(metric("Taxa de erro", errPct, "%", "≤ 5%", "error_rate"));
       penalty += Math.max(0, errPct - 5) * 3;
     }
     layers.governance = {
@@ -276,10 +284,69 @@ export function layersFromTelemetry(
           useThousands ? round(totalReais / 1000, 1) : round(totalReais, 2),
           useThousands ? "R$ mil" : "R$",
           "—",
+          "cost_total",
         ),
       ],
     };
   }
 
   return layers;
+}
+
+/**
+ * Convert the real telemetry window into the same metric contract input used
+ * by discovery and reevaluation. This leaves the existing telemetry scores
+ * untouched and adds source signal, observed evidence, lineage and sample
+ * size for contract evaluation.
+ */
+export function proposedMetricsFromTelemetry(
+  summary: TelemetrySummary,
+): ProposedMetric[] {
+  const layers = layersFromTelemetry(summary);
+  const confidence =
+    summary.totalExecutions >= 30
+      ? 90
+      : summary.totalExecutions >= 10
+        ? 75
+        : 50;
+  const sourceRef =
+    [summary.firstEventAt, summary.lastEventAt]
+      .filter((value): value is string => value !== null)
+      .join("/") || "empty-window";
+
+  return Object.entries(layers).flatMap(([layer, result]) =>
+    (result?.metrics ?? []).map((metric) => {
+      const evidence = loadMetricEvidence({
+        metricKey: metric.sourceSignal,
+        sourceSignal: metric.sourceSignal,
+        label: metric.label,
+        value: metric.value,
+        unit: metric.unit,
+        capturedAt: summary.lastEventAt,
+        confidence,
+        sampleSize: summary.totalExecutions,
+        source: {
+          type: "telemetry",
+          name: "agent_events",
+          ref: sourceRef,
+          collectedAt: summary.lastEventAt ?? undefined,
+        },
+        lineage: [
+          { stage: "source", name: "agent_events", ref: sourceRef },
+          { stage: "aggregate", name: `telemetry_${summary.windowDays}d` },
+        ],
+      });
+
+      return {
+        layer: layer as LayerKey,
+        label: metric.label,
+        sourceSignal: metric.sourceSignal,
+        value: metric.value,
+        unit: metric.unit,
+        confidence: evidence.confidence,
+        ...(metric.target ? { target: metric.target } : {}),
+        evidence,
+      };
+    }),
+  );
 }

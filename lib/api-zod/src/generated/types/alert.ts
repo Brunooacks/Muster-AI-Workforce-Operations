@@ -19,4 +19,12 @@ export interface Alert {
   recommendation: string;
   detectedAt: string;
   status: AlertStatus;
+  /** @nullable */
+  assignedTo?: string | null;
+  /** @nullable */
+  dueAt?: Date | null;
+  /** @nullable */
+  acknowledgedAt?: Date | null;
+  /** @nullable */
+  resolvedAt?: Date | null;
 }

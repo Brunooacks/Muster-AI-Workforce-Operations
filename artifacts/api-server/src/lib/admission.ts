@@ -15,6 +15,10 @@ import {
   scoreEvaluation,
   type DraftMetricInput,
 } from "./discovery";
+import {
+  noEvidenceEvaluation,
+  seededEvaluationsAllowed,
+} from "./evaluation-policy";
 
 // Default signals used to seed an initial evaluation when no proposed metrics
 // are supplied at admission.
@@ -105,11 +109,15 @@ export async function admitAgentTx(
     if (existingExt) throw new AlreadyAdmittedError(externalId);
   }
 
-  const proposed =
-    input.proposedMetrics && input.proposedMetrics.length > 0
-      ? proposedMetricsFromDraft(externalId, input.proposedMetrics)
-      : buildProposedMetrics(externalId, DEFAULT_SIGNALS);
-  const scored = scoreEvaluation(externalId, proposed);
+  const allowSeeded = seededEvaluationsAllowed();
+  const scored = allowSeeded
+    ? scoreEvaluation(
+        externalId,
+        input.proposedMetrics && input.proposedMetrics.length > 0
+          ? proposedMetricsFromDraft(externalId, input.proposedMetrics)
+          : buildProposedMetrics(externalId, DEFAULT_SIGNALS),
+      )
+    : noEvidenceEvaluation();
 
   let slug = slugify(input.name);
   const [clash] = await tx.select().from(agents).where(eq(agents.slug, slug));
@@ -172,7 +180,9 @@ export async function admitAgentTx(
       verdictConfidence: scored.verdictConfidence,
       rationale:
         input.initialEvaluationRationale ??
-        "Avaliação inicial gerada na admissão; manter em observação até consolidar dados reais.",
+        (allowSeeded
+          ? "Avaliação inicial de demonstração; manter em observação até consolidar dados reais."
+          : "Sem evidência observada; conecte a telemetria para calcular as cinco camadas."),
     });
 
     await tx.insert(verdicts).values({
@@ -195,25 +205,30 @@ export async function admitAgentTx(
       decision: "pending",
     });
 
-    await tx.insert(metricPoints).values(
-      Array.from({ length: 14 }, (_, idx) => {
-        const i = 13 - idx;
-        const score = (k: number) =>
-          Math.max(
-            5,
-            Math.min(99, Math.round(scored.layers[k]!.score - i / 2)),
-          );
-        return {
-          agentId: agent.id,
-          timestamp: new Date(now - i * 24 * 60 * 60 * 1000),
-          efficacy: score(0),
-          efficiency: score(1),
-          adoption: score(2),
-          governance: score(3),
-          value: score(4),
-        };
-      }),
-    );
+    if (allowSeeded) {
+      await tx.insert(metricPoints).values(
+        Array.from({ length: 14 }, (_, idx) => {
+          const daysAgo = 13 - idx;
+          const layerScore = (layerIndex: number) =>
+            Math.max(
+              5,
+              Math.min(
+                99,
+                Math.round(scored.layers[layerIndex]!.score - daysAgo / 2),
+              ),
+            );
+          return {
+            agentId: agent.id,
+            timestamp: new Date(now - daysAgo * 24 * 60 * 60 * 1000),
+            efficacy: layerScore(0),
+            efficiency: layerScore(1),
+            adoption: layerScore(2),
+            governance: layerScore(3),
+            value: layerScore(4),
+          };
+        }),
+      );
+    }
 
     return agent.id;
   } catch (err) {

@@ -30,13 +30,13 @@ export function PageHeading({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="workspace-heading flex flex-col gap-4 pl-1 sm:flex-row sm:items-end sm:justify-between">
       <div className="space-y-2">
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-        <h1 className="font-serif text-3xl sm:text-4xl font-medium tracking-tight leading-[1.05] text-foreground">
+        <h1 className="font-serif text-3xl font-medium leading-[1.05] tracking-tight text-foreground sm:text-4xl">
           {title}
         </h1>
-        {subtitle && <p className="max-w-2xl text-sm text-muted-foreground">{subtitle}</p>}
+        {subtitle && <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>}
       </div>
       {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
     </div>
@@ -63,15 +63,19 @@ export function StatCard({
       : tone === "down"
         ? "text-chart-3"
         : tone === "warn"
-          ? "text-chart-2"
-          : "text-muted-foreground";
+        ? "text-chart-2"
+        : "text-muted-foreground";
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-card-border bg-card p-5">
+    <div className="workspace-panel group flex flex-col gap-3 rounded-xl border border-card-border/90 bg-card/90 p-5 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-foreground/20">
       <div className="flex items-center justify-between">
         <Eyebrow>{label}</Eyebrow>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground/70" strokeWidth={1.75} />}
+        {Icon && (
+          <span className="rounded-lg border border-border bg-secondary/70 p-2 text-muted-foreground transition-colors group-hover:text-primary">
+            <Icon className="h-4 w-4" strokeWidth={1.75} />
+          </span>
+        )}
       </div>
-      <div className="font-serif text-[2.25rem] font-medium leading-none tracking-tight">{value}</div>
+      <div className="font-serif text-[2.25rem] font-medium leading-none tracking-tight text-foreground">{value}</div>
       {delta && <div className={cn("text-xs font-medium", deltaTone)}>{delta}</div>}
     </div>
   );
@@ -101,7 +105,7 @@ export function Pill({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.07em]",
+        "inline-flex items-center rounded-full border border-current/15 px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.07em]",
         TONE_CLASS[tone],
         className,
       )}

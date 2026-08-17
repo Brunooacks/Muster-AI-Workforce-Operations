@@ -26,7 +26,10 @@ import type {
   AgentDraftRecord,
   AgentDraftUpdate,
   AgentEventInput,
+  AgentHeartbeatAccepted,
+  AgentHeartbeatInput,
   AgentInput,
+  AgentSupervision,
   AgentUpdate,
   Alert,
   AnalyzeSourceInput,
@@ -37,6 +40,7 @@ import type {
   CatalogMetricUpdate,
   CatalogVertical,
   Connector,
+  ConnectorCapability,
   ConnectorInput,
   ConnectorTestResult,
   DiscoveryImportInput,
@@ -45,6 +49,8 @@ import type {
   Error,
   Evaluation,
   EvaluationMetricUpdate,
+  ExternalAgentEnvelope,
+  ExternalAgentIngestionResult,
   FetchSourceInput,
   FetchSourceResult,
   FleetBenchmarks,
@@ -60,6 +66,7 @@ import type {
   ListAgentsParams,
   ListFleetAlertsParams,
   MetricPoint,
+  MetricStarterKit,
   PreAssessInput,
   PreAssessResult,
   ReevaluateOutcome,
@@ -68,6 +75,7 @@ import type {
   RejectDraftInput,
   StartDiscoveryRunInput,
   TelemetrySummary,
+  UpdateFleetAlertInput,
   Verdict,
   VerdictDecisionInput
 } from './api.schemas';
@@ -637,6 +645,79 @@ export function useListFleetAlerts<TData = Awaited<ReturnType<typeof listFleetAl
 
 
 
+export const getUpdateFleetAlertUrl = (alertId: string,) => {
+
+
+
+
+  return `/api/fleet/alerts/${alertId}`
+}
+
+/**
+ * Assign an owner, set a due date, acknowledge or resolve an alert.
+ * @summary Update an alert operational state
+ */
+export const updateFleetAlert = async (alertId: string,
+    updateFleetAlertInput: UpdateFleetAlertInput, options?: RequestInit): Promise<Alert> => {
+
+  return customFetch<Alert>(getUpdateFleetAlertUrl(alertId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateFleetAlertInput,)
+  }
+);}
+
+
+
+
+export const getUpdateFleetAlertMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFleetAlert>>, TError,{alertId: string;data: BodyType<UpdateFleetAlertInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFleetAlert>>, TError,{alertId: string;data: BodyType<UpdateFleetAlertInput>}, TContext> => {
+
+const mutationKey = ['updateFleetAlert'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFleetAlert>>, {alertId: string;data: BodyType<UpdateFleetAlertInput>}> = (props) => {
+          const {alertId,data} = props ?? {};
+
+          return  updateFleetAlert(alertId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFleetAlertMutationResult = NonNullable<Awaited<ReturnType<typeof updateFleetAlert>>>
+    export type UpdateFleetAlertMutationBody = BodyType<UpdateFleetAlertInput>
+    export type UpdateFleetAlertMutationError = ErrorType<Error>
+
+    /**
+ * @summary Update an alert operational state
+ */
+export const useUpdateFleetAlert = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFleetAlert>>, TError,{alertId: string;data: BodyType<UpdateFleetAlertInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFleetAlert>>,
+        TError,
+        {alertId: string;data: BodyType<UpdateFleetAlertInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateFleetAlertMutationOptions(options));
+    }
+
 export const getListAgentsUrl = (params?: ListAgentsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -873,7 +954,7 @@ export const getFetchAgentSourceUrl = () => {
 }
 
 /**
- * Fetches and concatenates the relevant source and skill files from a Git repository (e.g. GitHub) or a single web/raw URL, applying size and file-type guardrails. Private GitHub repositories are supported when a GitHub credential is available via the Replit GitHub connector (or a GITHUB_TOKEN secret); otherwise only public repos are accessible. The concatenated text can then be passed to the analyze endpoint. Nothing is persisted.
+ * Fetches and concatenates the relevant source and skill files from a Git repository (e.g. GitHub) or a single web/raw URL, applying size and file-type guardrails. Private GitHub repositories are supported when a GitHub credential is available through GITHUB_TOKEN, GH_TOKEN, or GITHUB_ACCESS_TOKEN; otherwise only public repos are accessible. The concatenated text can then be passed to the analyze endpoint. Nothing is persisted.
  * @summary Fetch agent source from a Git repository or web URL
  */
 export const fetchAgentSource = async (fetchSourceInput: FetchSourceInput, options?: RequestInit): Promise<FetchSourceResult> => {
@@ -945,7 +1026,7 @@ export const getGetGitHubStatusUrl = () => {
 }
 
 /**
- * Read-only check that reports whether a GitHub credential is currently resolvable (via the Replit GitHub connector or a GITHUB_TOKEN secret), without ever exposing the token. Used by the import screen to show the connection status before attempting a private-repo import.
+ * Read-only check that reports whether a GitHub credential is currently resolvable from the GITHUB_TOKEN, GH_TOKEN, or GITHUB_ACCESS_TOKEN environment variables, without ever exposing the token. Used by the import screen to show the connection status before attempting a private-repo import.
  * @summary Report whether a GitHub credential is available for private imports
  */
 export const getGitHubStatus = async ( options?: RequestInit): Promise<GitHubStatus> => {
@@ -2714,6 +2795,83 @@ export const useCreateCatalogMetric = <TError = ErrorType<unknown>,
       return useMutation(getCreateCatalogMetricMutationOptions(options));
     }
 
+export const getListMetricStarterKitsUrl = () => {
+
+
+
+
+  return `/api/catalog/metric-kits`
+}
+
+/**
+ * @summary List recommended metric starter kits
+ */
+export const listMetricStarterKits = async ( options?: RequestInit): Promise<MetricStarterKit[]> => {
+
+  return customFetch<MetricStarterKit[]>(getListMetricStarterKitsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMetricStarterKitsQueryKey = () => {
+    return [
+    `/api/catalog/metric-kits`
+    ] as const;
+    }
+
+
+export const getListMetricStarterKitsQueryOptions = <TData = Awaited<ReturnType<typeof listMetricStarterKits>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetricStarterKits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMetricStarterKitsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMetricStarterKits>>> = ({ signal }) => listMetricStarterKits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMetricStarterKits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMetricStarterKitsQueryResult = NonNullable<Awaited<ReturnType<typeof listMetricStarterKits>>>
+export type ListMetricStarterKitsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List recommended metric starter kits
+ */
+
+export function useListMetricStarterKits<TData = Awaited<ReturnType<typeof listMetricStarterKits>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetricStarterKits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMetricStarterKitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getUpdateCatalogMetricUrl = (metricKey: string,) => {
 
 
@@ -2997,6 +3155,83 @@ export const useTestConnector = <TError = ErrorType<unknown>,
       return useMutation(getTestConnectorMutationOptions(options));
     }
 
+export const getListConnectorCapabilitiesUrl = () => {
+
+
+
+
+  return `/api/connectors/capabilities`
+}
+
+/**
+ * @summary List connector capabilities and transport contracts
+ */
+export const listConnectorCapabilities = async ( options?: RequestInit): Promise<ConnectorCapability[]> => {
+
+  return customFetch<ConnectorCapability[]>(getListConnectorCapabilitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConnectorCapabilitiesQueryKey = () => {
+    return [
+    `/api/connectors/capabilities`
+    ] as const;
+    }
+
+
+export const getListConnectorCapabilitiesQueryOptions = <TData = Awaited<ReturnType<typeof listConnectorCapabilities>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectorCapabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConnectorCapabilitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConnectorCapabilities>>> = ({ signal }) => listConnectorCapabilities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConnectorCapabilities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConnectorCapabilitiesQueryResult = NonNullable<Awaited<ReturnType<typeof listConnectorCapabilities>>>
+export type ListConnectorCapabilitiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List connector capabilities and transport contracts
+ */
+
+export function useListConnectorCapabilities<TData = Awaited<ReturnType<typeof listConnectorCapabilities>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectorCapabilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConnectorCapabilitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getPreAssessAgentSourceUrl = () => {
 
 
@@ -3140,6 +3375,227 @@ export const useIngestAgentEvent = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getIngestAgentEventMutationOptions(options));
     }
+
+export const getIngestExternalAgentEnvelopeUrl = () => {
+
+
+
+
+  return `/api/integrations/agent-events`
+}
+
+/**
+ * Universal ingestion contract for platforms such as Zendesk, Agentforce, OpenTelemetry gateways and proprietary runtimes. The envelope separates identity, execution telemetry, metric evidence and human feedback so the source adapter can evolve without changing the Muster evaluation model.
+ * @summary Ingest a normalized external agent envelope
+ */
+export const ingestExternalAgentEnvelope = async (externalAgentEnvelope: ExternalAgentEnvelope, options?: RequestInit): Promise<ExternalAgentIngestionResult> => {
+
+  return customFetch<ExternalAgentIngestionResult>(getIngestExternalAgentEnvelopeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      externalAgentEnvelope,)
+  }
+);}
+
+
+
+
+export const getIngestExternalAgentEnvelopeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestExternalAgentEnvelope>>, TError,{data: BodyType<ExternalAgentEnvelope>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestExternalAgentEnvelope>>, TError,{data: BodyType<ExternalAgentEnvelope>}, TContext> => {
+
+const mutationKey = ['ingestExternalAgentEnvelope'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestExternalAgentEnvelope>>, {data: BodyType<ExternalAgentEnvelope>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestExternalAgentEnvelope(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestExternalAgentEnvelopeMutationResult = NonNullable<Awaited<ReturnType<typeof ingestExternalAgentEnvelope>>>
+    export type IngestExternalAgentEnvelopeMutationBody = BodyType<ExternalAgentEnvelope>
+    export type IngestExternalAgentEnvelopeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Ingest a normalized external agent envelope
+ */
+export const useIngestExternalAgentEnvelope = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestExternalAgentEnvelope>>, TError,{data: BodyType<ExternalAgentEnvelope>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestExternalAgentEnvelope>>,
+        TError,
+        {data: BodyType<ExternalAgentEnvelope>},
+        TContext
+      > => {
+      return useMutation(getIngestExternalAgentEnvelopeMutationOptions(options));
+    }
+
+export const getReportAgentHeartbeatUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/heartbeat`
+}
+
+/**
+ * @summary Report that an agent runtime is alive and supervised
+ */
+export const reportAgentHeartbeat = async (agentId: string,
+    agentHeartbeatInput?: AgentHeartbeatInput, options?: RequestInit): Promise<AgentHeartbeatAccepted> => {
+
+  return customFetch<AgentHeartbeatAccepted>(getReportAgentHeartbeatUrl(agentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentHeartbeatInput,)
+  }
+);}
+
+
+
+
+export const getReportAgentHeartbeatMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportAgentHeartbeat>>, TError,{agentId: string;data?: BodyType<AgentHeartbeatInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportAgentHeartbeat>>, TError,{agentId: string;data?: BodyType<AgentHeartbeatInput>}, TContext> => {
+
+const mutationKey = ['reportAgentHeartbeat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportAgentHeartbeat>>, {agentId: string;data?: BodyType<AgentHeartbeatInput>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  reportAgentHeartbeat(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportAgentHeartbeatMutationResult = NonNullable<Awaited<ReturnType<typeof reportAgentHeartbeat>>>
+    export type ReportAgentHeartbeatMutationBody = BodyType<AgentHeartbeatInput> | undefined
+    export type ReportAgentHeartbeatMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Report that an agent runtime is alive and supervised
+ */
+export const useReportAgentHeartbeat = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportAgentHeartbeat>>, TError,{agentId: string;data?: BodyType<AgentHeartbeatInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportAgentHeartbeat>>,
+        TError,
+        {agentId: string;data?: BodyType<AgentHeartbeatInput>},
+        TContext
+      > => {
+      return useMutation(getReportAgentHeartbeatMutationOptions(options));
+    }
+
+export const getReadAgentSupervisionUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/supervision`
+}
+
+/**
+ * @summary Read live supervision freshness for an agent
+ */
+export const readAgentSupervision = async (agentId: string, options?: RequestInit): Promise<AgentSupervision> => {
+
+  return customFetch<AgentSupervision>(getReadAgentSupervisionUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadAgentSupervisionQueryKey = (agentId: string,) => {
+    return [
+    `/api/agents/${agentId}/supervision`
+    ] as const;
+    }
+
+
+export const getReadAgentSupervisionQueryOptions = <TData = Awaited<ReturnType<typeof readAgentSupervision>>, TError = ErrorType<unknown>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readAgentSupervision>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadAgentSupervisionQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readAgentSupervision>>> = ({ signal }) => readAgentSupervision(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readAgentSupervision>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReadAgentSupervisionQueryResult = NonNullable<Awaited<ReturnType<typeof readAgentSupervision>>>
+export type ReadAgentSupervisionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read live supervision freshness for an agent
+ */
+
+export function useReadAgentSupervision<TData = Awaited<ReturnType<typeof readAgentSupervision>>, TError = ErrorType<unknown>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readAgentSupervision>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReadAgentSupervisionQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetAgentTelemetryUrl = (agentId: string,
     window: '7d' | '30d' | '90d',) => {

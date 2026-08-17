@@ -13,4 +13,5 @@ export const ReevaluateOutcomeDataSource = {
   telemetry: 'telemetry',
   seeded: 'seeded',
   mixed: 'mixed',
+  none: 'none',
 } as const;

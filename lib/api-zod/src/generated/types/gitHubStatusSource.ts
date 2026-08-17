@@ -10,7 +10,6 @@ export type GitHubStatusSource = typeof GitHubStatusSource[keyof typeof GitHubSt
 
 
 export const GitHubStatusSource = {
-  connector: 'connector',
   token: 'token',
   none: 'none',
 } as const;

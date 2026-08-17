@@ -87,7 +87,7 @@ const PT = {
   ghHintPre: "Repositórios públicos funcionam sem conexão. Para importar um repositório",
   ghHintStrong: "privado",
   ghHintPost:
-    ", conecte sua conta GitHub nas integrações do Replit (painel de integrações) e recarregue esta página.",
+    ", configure GITHUB_TOKEN no ambiente da API e recarregue esta página.",
   importPlaceholder: "https://github.com/org/repo ou URL de um arquivo público",
   importing: "Importando...",
   importBtn: "Importar",
@@ -279,7 +279,7 @@ const L: Record<Lang, Dict> = {
     ghHintPre: "Public repositories work without a connection. To import a",
     ghHintStrong: "private",
     ghHintPost:
-      " repository, connect your GitHub account in Replit's integrations (integrations panel) and reload this page.",
+      " repository, configure GITHUB_TOKEN in the API environment and reload this page.",
     importPlaceholder: "https://github.com/org/repo or a public file URL",
     importing: "Importing...",
     importBtn: "Import",
@@ -466,7 +466,7 @@ const L: Record<Lang, Dict> = {
     ghHintPre: "Los repositorios públicos funcionan sin conexión. Para importar un repositorio",
     ghHintStrong: "privado",
     ghHintPost:
-      ", conecta tu cuenta de GitHub en las integraciones de Replit (panel de integraciones) y recarga esta página.",
+      ", configura GITHUB_TOKEN en el entorno de la API y recarga esta página.",
     importPlaceholder: "https://github.com/org/repo o URL de un archivo público",
     importing: "Importando...",
     importBtn: "Importar",

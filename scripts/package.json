@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "e2e": "tsx ./src/e2e-agent.ts",
+    "e2e:journey": "tsx ./src/e2e-journey.ts",
+    "seed:a2a-demo": "tsx ./src/seed-a2a-demo.ts",
     "simulate-telemetry": "tsx ./src/simulate-telemetry.ts",
+    "validate-mvp": "tsx ./src/validate-mvp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

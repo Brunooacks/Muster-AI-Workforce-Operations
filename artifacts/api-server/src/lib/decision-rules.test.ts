@@ -27,7 +27,9 @@ function input(overrides: Partial<DecisionInput> = {}): DecisionInput {
 describe("DECISION_RULES ordering", () => {
   it("keeps the documented order with retire-floor as catch-all", () => {
     expect(DECISION_RULES.map((r) => r.id)).toEqual([
+      "no-evidence",
       "insufficient-data",
+      "insufficient-kpi-evidence",
       "governance-critical-retire",
       "governance-critical-mentor",
       "value-negative",
@@ -42,6 +44,17 @@ describe("DECISION_RULES ordering", () => {
 });
 
 describe("decideVerdict — each rule fires", () => {
+  it("no-evidence: stays in observation with zero confidence", () => {
+    const result = decideVerdict(
+      input({ dataSource: "none", totalExecutions: 0, healthScore: 0 }),
+    );
+
+    expect(result.verdict).toBe("observation");
+    expect(result.confidence).toBe(0);
+    expect(result.rulesFired[0]).toBe("no-evidence");
+    expect(result.rationale).toContain("Sem evidência observada");
+  });
+
   it("insufficient-data: real data with < 20 executions stays in observation", () => {
     const r = decideVerdict(input({ totalExecutions: 19, healthScore: 90 }));
     expect(r.verdict).toBe("observation");
@@ -54,6 +67,15 @@ describe("decideVerdict — each rule fires", () => {
     );
     expect(r.rulesFired[0]).not.toBe("insufficient-data");
     expect(r.verdict).toBe("mentor");
+  });
+
+  it("insufficient-kpi-evidence keeps real telemetry in observation", () => {
+    const r = decideVerdict(
+      input({ healthScore: 90, insufficientEvidence: 1 }),
+    );
+    expect(r.verdict).toBe("observation");
+    expect(r.rulesFired[0]).toBe("insufficient-kpi-evidence");
+    expect(r.rationale).toContain("1 métrica(s)");
   });
 
   it("governance-critical-retire: governance < 30 retires the agent", () => {

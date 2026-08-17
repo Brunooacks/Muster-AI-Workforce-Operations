@@ -1,10 +1,12 @@
-import type {
-  KpiLayer,
-  LayerKey,
-  Severity,
-  VerdictType,
-} from "@workspace/db";
+import type { KpiLayer, LayerKey, Severity, VerdictType } from "@workspace/db";
 import { metricTargetStatus } from "@workspace/metrics";
+import { KPI_DOMAIN_CATALOG } from "./kpi-domain-catalog";
+import {
+  evaluateKpi,
+  type KpiContract,
+  type KpiEvaluationStatus,
+} from "./kpi-contract";
+import type { MetricEvidence } from "./evidence/types";
 
 export { metricTargetStatus };
 
@@ -17,6 +19,89 @@ export interface ProposedMetric {
   confidence: number;
   target?: string;
   rationale?: string;
+  /** Optional contract selected during discovery or telemetry evaluation. */
+  contractKey?: string;
+  /** Evidence is intentionally optional to preserve seeded/admission inputs. */
+  evidence?: MetricEvidence;
+  /** Explicitly supplied contract takes precedence over catalog lookup. */
+  contract?: KpiContract;
+  /** Whether a required baseline exists for this observation. */
+  baselineAvailable?: boolean;
+}
+
+export interface ProposedMetricEvaluation {
+  status: KpiEvaluationStatus;
+  targetStatus: "on" | "off" | null;
+  eligibleForDecision: boolean;
+  reasons: string[];
+  contract?: KpiContract;
+}
+
+export interface EvaluationEvidenceSummary {
+  insufficientEvidence: number;
+  notComparable: number;
+  comparable: number;
+}
+
+/**
+ * Resolve a catalog contract without making legacy metrics depend on the new
+ * evidence model. A source signal is only a contract match when its layer is
+ * also compatible; this avoids the shared `mttr_hours` signal selecting the
+ * wrong domain definition.
+ */
+export function resolveKpiContract(
+  metric: ProposedMetric,
+): KpiContract | undefined {
+  if (metric.contract) return metric.contract;
+  if (metric.contractKey) {
+    return KPI_DOMAIN_CATALOG.find(
+      (contract) => contract.key === metric.contractKey,
+    );
+  }
+  if (!metric.sourceSignal) return undefined;
+  return KPI_DOMAIN_CATALOG.find(
+    (contract) =>
+      contract.layer === metric.layer &&
+      contract.sourceSignals.includes(metric.sourceSignal),
+  );
+}
+
+/**
+ * Evaluate a metric against its KPI contract when available. Metrics created
+ * before KPI contracts existed use the previous target parser, preserving
+ * admission and seeded evaluations while exposing `not-comparable` for
+ * informational or unparseable targets.
+ */
+export function evaluateProposedMetric(
+  metric: ProposedMetric,
+): ProposedMetricEvaluation {
+  const contract = resolveKpiContract(metric);
+  if (contract) {
+    const evidence = metric.evidence;
+    const evaluation = evaluateKpi(contract, {
+      value: metric.value,
+      sampleSize: evidence?.sampleSize ?? 0,
+      baselineAvailable:
+        metric.baselineAvailable ?? contract.baseline !== "required",
+      evidenceType: evidence?.kind ?? "synthetic",
+      confidence: evidence?.confidence ?? 0,
+    });
+    return { ...evaluation, contract };
+  }
+
+  const targetStatus = metricTargetStatus(metric.value, metric.target);
+  return {
+    status:
+      targetStatus === null
+        ? "not-comparable"
+        : targetStatus === "on"
+          ? "on-target"
+          : "off-target",
+    targetStatus,
+    eligibleForDecision: targetStatus !== null,
+    reasons:
+      targetStatus === null ? ["KPI sem contrato ou target comparável"] : [],
+  };
 }
 
 export interface DiscoveredAgentSeed {
@@ -135,7 +220,7 @@ export const PLATFORM_CATALOG: PlatformConnector[] = [
   },
 ];
 
-const SIGNAL_MAP: Record<
+const BASE_SIGNAL_MAP: Record<
   string,
   { layer: LayerKey; label: string; unit: string; target: string }
 > = {
@@ -453,6 +538,31 @@ const SIGNAL_MAP: Record<
   },
 };
 
+const DOMAIN_SIGNAL_MAP: Record<
+  string,
+  { layer: LayerKey; label: string; unit: string; target: string }
+> = Object.fromEntries(
+  KPI_DOMAIN_CATALOG.flatMap((contract) =>
+    contract.sourceSignals.map((sourceSignal) => [
+      sourceSignal,
+      {
+        layer: contract.layer,
+        label: contract.label,
+        unit: contract.unit,
+        target: contract.target ?? "—",
+      },
+    ]),
+  ),
+);
+
+const SIGNAL_MAP: Record<
+  string,
+  { layer: LayerKey; label: string; unit: string; target: string }
+> = {
+  ...BASE_SIGNAL_MAP,
+  ...DOMAIN_SIGNAL_MAP,
+};
+
 const LAYER_LABELS: Record<LayerKey, string> = {
   efficacy: "Eficácia",
   efficiency: "Eficiência",
@@ -581,7 +691,12 @@ export function proposedMetricsFromDraft(
   for (const layer of LAYER_ORDER) {
     if (!present.has(layer)) {
       const def = DEFAULT_LAYER_METRIC[layer];
-      filled.push({ layer, label: def.label, unit: def.unit, target: def.target });
+      filled.push({
+        layer,
+        label: def.label,
+        unit: def.unit,
+        target: def.target,
+      });
     }
   }
   return filled.map((d) => {
@@ -589,7 +704,9 @@ export function proposedMetricsFromDraft(
     // whether or not the reviewer supplied a starting value.
     const seeded = valueForUnit(rand, d.unit);
     const value =
-      typeof d.value === "number" && Number.isFinite(d.value) ? d.value : seeded;
+      typeof d.value === "number" && Number.isFinite(d.value)
+        ? d.value
+        : seeded;
     return {
       layer: d.layer,
       label: d.label,
@@ -609,6 +726,7 @@ export interface ScoredEvaluation {
   severity: Severity;
   verdict: VerdictType;
   verdictConfidence: number;
+  evidence: EvaluationEvidenceSummary;
 }
 
 // Build a 5-layer KPI evaluation from proposed metrics by scoring each layer.
@@ -617,6 +735,11 @@ export function scoreEvaluation(
   metrics: ProposedMetric[],
 ): ScoredEvaluation {
   const rand = seededRandom(externalId + ":score");
+  const evidence: EvaluationEvidenceSummary = {
+    insufficientEvidence: 0,
+    notComparable: 0,
+    comparable: 0,
+  };
   const layers: KpiLayer[] = LAYER_ORDER.map((key) => {
     const layerMetrics = metrics.filter((m) => m.layer === key);
     // Seeded base keeps per-layer texture; consumed every layer so the rest of
@@ -624,11 +747,24 @@ export function scoreEvaluation(
     const baseScore = Math.round(42 + rand() * 53);
 
     // Goal attainment: share of comparable metrics that meet their target.
-    const statuses = layerMetrics.map((m) =>
-      metricTargetStatus(m.value, m.target),
+    const evaluatedMetrics = layerMetrics.map((metric) => ({
+      metric,
+      evaluation: evaluateProposedMetric(metric),
+    }));
+    for (const { evaluation } of evaluatedMetrics) {
+      if (evaluation.status === "insufficient-evidence")
+        evidence.insufficientEvidence += 1;
+      else if (evaluation.status === "not-comparable")
+        evidence.notComparable += 1;
+      else evidence.comparable += 1;
+    }
+    const comparable = evaluatedMetrics.filter(
+      ({ evaluation }) =>
+        evaluation.eligibleForDecision && evaluation.targetStatus !== null,
     );
-    const comparable = statuses.filter((s) => s !== null);
-    const onCount = comparable.filter((s) => s === "on").length;
+    const onCount = comparable.filter(
+      ({ evaluation }) => evaluation.targetStatus === "on",
+    ).length;
 
     let score = baseScore;
     if (comparable.length > 0) {
@@ -645,14 +781,33 @@ export function scoreEvaluation(
       label: LAYER_LABELS[key],
       score,
       severity: severityFromScore(score),
-      metrics: layerMetrics.map((m) => ({
-        label: m.label,
-        value: m.value,
-        unit: m.unit,
+      metrics: evaluatedMetrics.map(({ metric, evaluation }) => ({
+        label: metric.label,
+        value: metric.value,
+        unit: metric.unit,
         trend: Math.round((rand() * 30 - 12) * 10) / 10,
         direction: rand() > 0.55 ? "up" : rand() > 0.3 ? "down" : "flat",
-        ...(m.target ? { target: m.target } : {}),
-        ...(m.rationale ? { rationale: m.rationale } : {}),
+        ...(metric.target ? { target: metric.target } : {}),
+        ...(metric.rationale ? { rationale: metric.rationale } : {}),
+        sourceSignal: metric.sourceSignal,
+        ...(evaluation.contract
+          ? { contractKey: evaluation.contract.key }
+          : {}),
+        ...(metric.evidence
+          ? {
+              evidence: metric.evidence,
+              evidenceKind: metric.evidence.kind,
+              confidence: metric.evidence.confidence,
+              ...(metric.evidence.sampleSize !== undefined
+                ? { sampleSize: metric.evidence.sampleSize }
+                : {}),
+            }
+          : {}),
+        status: evaluation.status,
+        eligibleForDecision: evaluation.eligibleForDecision,
+        ...(evaluation.reasons.length > 0
+          ? { evidenceReasons: evaluation.reasons }
+          : {}),
       })),
     };
   });
@@ -670,5 +825,12 @@ export function scoreEvaluation(
 
   const verdictConfidence = Math.round((68 + rand() * 30) * 10) / 10;
 
-  return { layers, healthScore, severity, verdict, verdictConfidence };
+  return {
+    layers,
+    healthScore,
+    severity,
+    verdict,
+    verdictConfidence,
+    evidence,
+  };
 }

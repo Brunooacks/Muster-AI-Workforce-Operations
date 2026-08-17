@@ -7,7 +7,7 @@ import {
   UpdateCatalogMetricBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { METRIC_CATALOG } from "../lib/metric-catalog";
+import { METRIC_CATALOG, METRIC_STARTER_KITS } from "../lib/metric-catalog";
 
 const router: IRouter = Router();
 
@@ -71,6 +71,22 @@ router.get("/catalog/metrics", requireAuth, async (_req, res) => {
     });
 
   res.json(ListCatalogMetricsResponse.parse(data));
+});
+
+router.get("/catalog/metric-kits", requireAuth, async (_req, res) => {
+  const rows = await db.select().from(catalogMetrics);
+  const byKey = new Map(rows.map((row) => [row.key, row]));
+  res.json(METRIC_STARTER_KITS.map((kit) => ({
+    key: kit.key,
+    label: kit.label,
+    objective: kit.objective,
+    guidance: kit.guidance,
+    vertical: kit.vertical,
+    metrics: kit.metricKeys.flatMap((key) => {
+      const metric = byKey.get(key);
+      return metric ? [{ key: metric.key, label: metric.label, layer: metric.layer, unit: metric.unit, target: metric.target }] : [];
+    }),
+  })));
 });
 
 router.post("/catalog/metrics", requireAuth, async (req, res) => {

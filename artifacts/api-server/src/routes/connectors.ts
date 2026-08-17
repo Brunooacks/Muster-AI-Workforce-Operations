@@ -30,8 +30,16 @@ import {
   scoreEvaluation,
 } from "../lib/discovery";
 import { getConnectorImpl } from "../lib/connectors/registry";
+import { connectorCapabilities } from "../lib/connectors/registry";
+import { resolveImportSource } from "../lib/connectors/import-source";
+import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
+import { preAssess } from "../lib/pre-assessment";
 
 const router: IRouter = Router();
+
+router.get("/connectors/capabilities", requireAuth, async (_req, res) => {
+  res.json(connectorCapabilities());
+});
 
 function slugify(name: string): string {
   return name
@@ -351,7 +359,16 @@ router.post(
       ? connector.platform
       : connectorId.replace(/^catalog_/, "");
     const catalog = PLATFORM_CATALOG.find((p) => p.platform === platformKey);
-    if (!catalog) {
+    const impl = connector ? getConnectorImpl(platformKey) : undefined;
+    const realCandidates =
+      connector && impl
+        ? await impl.discoverAgents(await loadCredential(connector.id))
+        : [];
+    const realCandidatesById = new Map(
+      realCandidates.map((candidate) => [candidate.externalId, candidate]),
+    );
+
+    if (!catalog && !impl) {
       res.status(404).json({ error: "Connector not found" });
       return;
     }
@@ -368,13 +385,36 @@ router.post(
 
     for (const externalId of body.externalIds) {
       if (alreadyImported.has(externalId)) continue;
-      const seed = catalog.discovered.find((d) => d.externalId === externalId);
-      if (!seed) continue;
+      const realCandidate = realCandidatesById.get(externalId);
+      const catalogCandidate = catalog?.discovered.find(
+        (d) => d.externalId === externalId,
+      );
+      const source = resolveImportSource(realCandidate, catalogCandidate);
+      if (!source) continue;
 
-      const proposed = buildProposedMetrics(seed.externalId, seed.signals);
-      const scored = scoreEvaluation(seed.externalId, proposed);
+      const platformName = catalog?.name ?? impl?.displayName ?? platformKey;
+      let discoveredDraft: ReturnType<typeof preAssess>["draft"] | null = null;
+      if (source.isReal && source.url) {
+        try {
+          const fetched = await fetchAgentSourceFromUrl(source.url);
+          discoveredDraft = preAssess(fetched.content, source.name).draft;
+        } catch (err) {
+          // A connector import should remain usable when a repository becomes
+          // private or rate-limited between discovery and import. The fallback
+          // still creates an observable agent and the user can pre-assess it later.
+          if (!(err instanceof FetchSourceError)) {
+            req.log.warn({ err, externalId }, "Source enrichment failed during import");
+          }
+        }
+      }
+      const proposed = discoveredDraft
+        ? proposedMetricsFromDraft(source.externalId, discoveredDraft.proposedMetrics)
+        : source.isReal
+          ? proposedMetricsFromDraft(source.externalId, [])
+          : buildProposedMetrics(source.externalId, source.signals);
+      const scored = scoreEvaluation(source.externalId, proposed);
 
-      let slug = slugify(seed.name);
+      let slug = slugify(source.name);
       const [clash] = await db
         .select()
         .from(agents)
@@ -386,14 +426,14 @@ router.post(
         const [inserted] = await tx
           .insert(agents)
           .values({
-            externalId: seed.externalId,
-            name: seed.name,
+            externalId: source.externalId,
+            name: source.name,
             slug,
-            role: seed.role,
-            platform: catalog.platform,
+            role: discoveredDraft?.role || source.role,
+            platform: platformKey,
             version: "1.0.0",
             status: "observation",
-            bio: `Importado via conector ${catalog.name}.`,
+            bio: discoveredDraft?.bio || `Importado via conector ${platformName}.`,
             currentVerdict: "observation",
             verdictConfidence: scored.verdictConfidence,
             severity: scored.severity,
@@ -407,17 +447,20 @@ router.post(
 
         await tx.insert(agentIdentities).values({
           agentId: inserted.id,
-          bio: `Importado via conector ${catalog.name}.`,
-          shouldDo: [],
-          shouldNotDo: [],
-          autonomyLevel: "escalates",
-          limits: [],
-          businessCase: {
-            baseline: "",
-            targetPayback: "",
-            actualPayback: "—",
-            description: "Definir caso de negócio após admissão.",
-          },
+          bio: discoveredDraft?.bio || `Importado via conector ${platformName}.`,
+          shouldDo: discoveredDraft?.shouldDo ?? [],
+          shouldNotDo: discoveredDraft?.shouldNotDo ?? [],
+          autonomyLevel: discoveredDraft?.autonomyLevel ?? "escalates",
+          autonomyNotes: discoveredDraft?.autonomyNotes,
+          limits: discoveredDraft?.limits ?? [],
+          businessCase: discoveredDraft
+            ? { ...discoveredDraft.businessCase, actualPayback: "—" }
+            : {
+                baseline: "",
+                targetPayback: "",
+                actualPayback: "—",
+                description: "Definir caso de negócio após admissão.",
+              },
           version: 1,
         });
 

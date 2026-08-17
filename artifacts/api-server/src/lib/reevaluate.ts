@@ -9,30 +9,11 @@ import {
   type VerdictType,
 } from "@workspace/db";
 import { logger } from "./logger";
-import { scoreEvaluation, type ProposedMetric } from "./discovery";
+import { scoreEvaluation } from "./discovery";
+import { metricsFromLayers } from "./evaluation-metrics";
 
-// Rebuild the ProposedMetric inputs that `scoreEvaluation` expects from a
-// stored evaluation's layers. The measured value/unit/target are the source of
-// truth for goal attainment, so reconstructing from them lets us re-run the
-// current scoring logic without inventing new numbers.
-export function metricsFromLayers(layers: KpiLayer[]): ProposedMetric[] {
-  const metrics: ProposedMetric[] = [];
-  for (const layer of layers) {
-    for (const m of layer.metrics) {
-      metrics.push({
-        layer: layer.key,
-        label: m.label,
-        sourceSignal: m.label,
-        value: m.value,
-        unit: m.unit,
-        confidence: 0,
-        ...(m.target ? { target: m.target } : {}),
-        ...(m.rationale ? { rationale: m.rationale } : {}),
-      });
-    }
-  }
-  return metrics;
-}
+// Keep the existing import path stable for reevaluate callers.
+export { metricsFromLayers } from "./evaluation-metrics";
 
 export interface ReevaluateResult {
   agentId: string;

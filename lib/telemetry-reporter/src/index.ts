@@ -12,7 +12,12 @@
  *   batch/replay integrations pass the real occurrence time.
  */
 
-export type AgentEventKind = "execution" | "error" | "escalation" | "feedback";
+export type AgentEventKind =
+  | "execution"
+  | "error"
+  | "escalation"
+  | "feedback"
+  | "heartbeat";
 
 export interface AgentEvent {
   kind?: AgentEventKind;
@@ -56,12 +61,24 @@ export interface MusterReporter {
   report(event?: AgentEvent): Promise<boolean>;
   /** Send a batch (e.g. replayed history). Resolves the delivered count. */
   reportMany(events: AgentEvent[]): Promise<number>;
+  /** Report runtime liveness without affecting the agent's work path. */
+  heartbeat(options?: HeartbeatOptions): Promise<boolean>;
+  /** Start periodic liveness reporting; returns a function that stops it. */
+  startHeartbeat(options?: HeartbeatOptions): () => void;
   /**
    * Wrap one unit of agent work: measures duration, reports
    * kind=execution/success on resolve and kind=error on throw, then
    * re-throws so the agent's own error handling still runs.
    */
   trackExecution<T>(work: () => Promise<T> | T, options?: TrackOptions): Promise<T>;
+}
+
+export interface HeartbeatOptions {
+  runtime?: string;
+  version?: string;
+  intervalSeconds?: number;
+  status?: "healthy" | "degraded" | "stopped";
+  metadata?: Record<string, unknown>;
 }
 
 function toIso(ts: string | Date): string {
@@ -77,6 +94,7 @@ export function createMusterReporter(
 
   const doFetch = fetchImpl ?? fetch;
   const endpoint = `${baseUrl.replace(/\/+$/, "")}/api/agents/${encodeURIComponent(agentId)}/events`;
+  const heartbeatEndpoint = `${baseUrl.replace(/\/+$/, "")}/api/agents/${encodeURIComponent(agentId)}/heartbeat`;
 
   async function report(event: AgentEvent = {}): Promise<boolean> {
     try {
@@ -118,6 +136,42 @@ export function createMusterReporter(
     return delivered;
   }
 
+  async function heartbeat(heartbeatOptions: HeartbeatOptions = {}): Promise<boolean> {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await doFetch(heartbeatEndpoint, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(token ? { authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(heartbeatOptions),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          onError?.(new Error(`Muster heartbeat respondeu ${res.status}`), { kind: "heartbeat", metadata: heartbeatOptions as Record<string, unknown> });
+          return false;
+        }
+        return true;
+      } finally {
+        clearTimeout(timer);
+      }
+    } catch (error) {
+      onError?.(error, { kind: "heartbeat", metadata: heartbeatOptions as Record<string, unknown> });
+      return false;
+    }
+  }
+
+  function startHeartbeat(heartbeatOptions: HeartbeatOptions = {}): () => void {
+    const intervalSeconds = Math.max(5, Math.min(900, heartbeatOptions.intervalSeconds ?? 30));
+    void heartbeat(heartbeatOptions);
+    const timer = setInterval(() => void heartbeat(heartbeatOptions), intervalSeconds * 1000);
+    (timer as unknown as { unref?: () => void }).unref?.();
+    return () => clearInterval(timer);
+  }
+
   async function trackExecution<T>(
     work: () => Promise<T> | T,
     trackOptions: TrackOptions = {},
@@ -147,5 +201,5 @@ export function createMusterReporter(
     }
   }
 
-  return { report, reportMany, trackExecution };
+  return { report, reportMany, heartbeat, startHeartbeat, trackExecution };
 }

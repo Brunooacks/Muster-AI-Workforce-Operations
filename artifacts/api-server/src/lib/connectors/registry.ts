@@ -1,5 +1,6 @@
 import type { ConnectorImpl } from "./types";
 import { githubConnector } from "./github";
+import { CONNECTOR_CAPABILITIES } from "./capabilities";
 
 // Platforms with a real implementation. Everything else stays on the demo
 // catalog (PLATFORM_CATALOG) and is labeled as such by the API/UI.
@@ -11,4 +12,8 @@ export function getConnectorImpl(platform: string): ConnectorImpl | undefined {
 
 export function realPlatforms(): string[] {
   return [...REGISTRY.keys()];
+}
+
+export function connectorCapabilities() {
+  return CONNECTOR_CAPABILITIES;
 }

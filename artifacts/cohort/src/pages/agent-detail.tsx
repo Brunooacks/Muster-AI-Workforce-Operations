@@ -7,6 +7,7 @@ import {
   useUpdateEvaluationMetric,
   useListFleetAlerts,
   useGetAgentTelemetry,
+  useReadAgentSupervision,
   useReevaluateAgent,
   getGetAgentQueryKey,
   getGetAgentMetricsQueryKey,
@@ -292,8 +293,9 @@ type TelemetryWindow = (typeof TELEMETRY_WINDOWS)[number];
 
 const DATA_SOURCE_LABEL: Record<string, string> = {
   telemetry: "Dados reais",
-  mixed: "Misto (real + demo)",
+  mixed: "Dados reais parciais",
   seeded: "Demo (seed)",
+  none: "Sem evidência",
 };
 
 function formatBRL(cents: number): string {
@@ -322,6 +324,9 @@ function TelemetrySection({
 
   const { data: summary, isLoading, isError, refetch } = useGetAgentTelemetry(agentId, window, {
     query: { enabled: !!agentId, queryKey: getGetAgentTelemetryQueryKey(agentId, window) },
+  });
+  const { data: supervision } = useReadAgentSupervision(agentId, {
+    query: { enabled: !!agentId, queryKey: ["agent-supervision", agentId], refetchInterval: 10_000 },
   });
   const reevaluate = useReevaluateAgent();
 
@@ -407,10 +412,17 @@ function TelemetrySection({
               </Button>
             ))}
           </div>
-          <Button size="sm" onClick={handleReevaluate} disabled={reevaluate.isPending}>
-            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${reevaluate.isPending ? "animate-spin" : ""}`} />
-            Reavaliar com telemetria
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {supervision && (
+              <Pill tone={supervision.status === "live" ? "sage" : supervision.isStale ? "red" : "ochre"}>
+                Supervisão: {supervision.status === "live" ? "ao vivo" : supervision.status === "unknown" ? "sem heartbeat" : supervision.status}
+              </Pill>
+            )}
+            <Button size="sm" onClick={handleReevaluate} disabled={reevaluate.isPending}>
+              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${reevaluate.isPending ? "animate-spin" : ""}`} />
+              Reavaliar com telemetria
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -462,6 +474,15 @@ function TelemetrySection({
                     </span>
                   </span>
                 )}
+              </div>
+            )}
+            {supervision && (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-card-border px-5 py-3 text-[11px] text-muted-foreground">
+                <span>
+                  Último heartbeat: <span className="font-mono">{supervision.lastHeartbeatAt ? new Date(supervision.lastHeartbeatAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—"}</span>
+                </span>
+                <span>idade <span className="font-mono">{supervision.ageSeconds >= 0 ? `${supervision.ageSeconds}s` : "—"}</span></span>
+                {supervision.runtime && <span>runtime <span className="font-mono">{supervision.runtime}</span></span>}
               </div>
             )}
           </>
@@ -731,7 +752,7 @@ export default function AgentDetailPage() {
   const agentAlerts = (allAlerts ?? []).filter((a) => a.agentId === agent.id && a.status === "active");
   const verdict = currentVerdict ?? undefined;
 
-  const cardBase = "rounded-xl border border-card-border bg-card";
+  const cardBase = "workspace-panel rounded-xl border border-card-border bg-card/90";
 
   return (
     <AppLayout breadcrumbs={[{ label: p.breadcrumbPortfolio, href: "/agentes" }, { label: agent.name }]}>

@@ -60,6 +60,7 @@ Equipes estão colocando dezenas — em breve, milhares — de agentes de IA em 
 - **Comitê / Governança da Frota** — dono de negócio, dono técnico e sponsor de governança por agente.
 - **Conectores plug-ready** — catálogo de plataformas modelado para que conectores reais possam ser plugados sem mudar a UI.
 - **Telemetria real (R6)** — agentes em execução reportam eventos (execução, erro, escalação, custo, tokens) via o SDK `@workspace/telemetry-reporter`; o Muster armazena em `agent_events`, agrega por janela (7/30/90d) e recalcula a avaliação de 5 camadas com **regras de decisão auditáveis** — o veredito passa a vir de dados reais, não de seed.
+- **Jornadas A2A** — modele frotas de decisão com etapas, agentes participantes, modos autônomo/humano/comitê, handoffs, guardrails e telemetria end-to-end de conclusão, latência, custo e gargalos. Contrato em [`docs/JORNADAS-A2A.md`](docs/JORNADAS-A2A.md).
 
 ### Telas
 
@@ -159,23 +160,51 @@ pnpm test                                         # testes (Vitest)
 pnpm run build                                    # typecheck + build
 pnpm --filter @workspace/db run generate          # gerar nova migration após mudar o schema
 pnpm --filter @workspace/api-spec run codegen     # regenerar hooks e schemas a partir do OpenAPI
+pnpm run validate:mvp                             # typecheck + testes do MVP
+MUSTER_BASE_URL=http://localhost:8087 pnpm --filter @workspace/scripts run e2e:journey  # Gauntlet A2A
+MUSTER_BASE_URL=http://localhost:8087 pnpm --filter @workspace/scripts run seed:a2a-demo # demo persistente
 ```
+
+### Ambiente local de validação do MVP
+
+Suba um PostgreSQL local reproduzível com Docker:
+
+```bash
+docker compose up -d postgres
+cp .env.example .env
+```
+
+Use `DATABASE_URL=postgresql://postgres:postgres@localhost:5433/muster` no `.env`, ative `AUTH_DEV_BYPASS=true` e `VITE_AUTH_DEV_BYPASS=true`, e então aplique o schema:
+
+```bash
+pnpm --filter @workspace/db run migrate
+pnpm run validate:mvp
+```
+
+Para executar a API e o painel em terminais separados:
+
+```bash
+pnpm --filter @workspace/api-server run dev
+pnpm --filter @workspace/muster run dev
+```
+
+O Postgres usa o volume `muster-postgres-data`; parar o container não remove os dados. Use `docker compose down -v` somente quando quiser recriar o banco demo do zero.
 
 > **Deploy:** a API compila num bundle self-contained e há um `Dockerfile` multi-stage pronto (`docker build -t cohort-api .`). Rode as migrations como passo de release (`pnpm --filter @workspace/db run migrate`). O frontend é um build estático do Vite, com deploy separado (Vercel/Netlify).
 
 ### Variáveis de ambiente
 
-Veja **[`.env.example`](.env.example)** para o catálogo completo (self-hosted vs Replit). Principais:
+Veja **[`.env.example`](.env.example)** para o catálogo completo. Principais:
 
 | Variável | Obrigatória | Descrição |
 | --- | :---: | --- |
 | `DATABASE_URL` | ✅ | String de conexão do PostgreSQL. |
 | `PORT` | ✅ | Porta em que a API escuta. |
-| `AI_INTEGRATIONS_OPENAI_API_KEY` · `AI_INTEGRATIONS_OPENAI_BASE_URL` | ✅ | Credenciais do OpenAI (análise de agentes). No Replit são injetadas. |
+| `AI_INTEGRATIONS_OPENAI_API_KEY` · `AI_INTEGRATIONS_OPENAI_BASE_URL` | ✅ | Credenciais e endpoint OpenAI-compatible para análise de agentes. |
 | `CLERK_SECRET_KEY` · `VITE_CLERK_PUBLISHABLE_KEY` | ✅¹ | Autenticação Clerk. |
 | `GITHUB_TOKEN` | — | Import de repositórios GitHub privados (opcional). |
 
-> ¹ No Replit a autenticação (Clerk) e o OpenAI são **gerenciados** — não precisa configurar chaves. Self-hosted, preencha as chaves acima com um projeto Clerk e uma chave OpenAI próprios.
+> ¹ Para executar sem bypass, crie um projeto Clerk e configure as chaves no `.env`. Para desenvolvimento local, use explicitamente `AUTH_DEV_BYPASS=true` e `VITE_AUTH_DEV_BYPASS=true`.
 
 ### Vocabulário do produto
 
@@ -328,17 +357,17 @@ pnpm --filter @workspace/api-spec run codegen     # regenerate hooks and schemas
 
 ### Environment variables
 
-See **[`.env.example`](.env.example)** for the full catalog (self-hosted vs Replit). Key ones:
+See **[`.env.example`](.env.example)** for the full catalog. Key ones:
 
 | Variable | Required | Description |
 | --- | :---: | --- |
 | `DATABASE_URL` | ✅ | PostgreSQL connection string. |
 | `PORT` | ✅ | Port the API listens on. |
-| `AI_INTEGRATIONS_OPENAI_API_KEY` · `AI_INTEGRATIONS_OPENAI_BASE_URL` | ✅ | OpenAI credentials (agent analysis). Injected on Replit. |
+| `AI_INTEGRATIONS_OPENAI_API_KEY` · `AI_INTEGRATIONS_OPENAI_BASE_URL` | ✅ | OpenAI-compatible credentials and endpoint for agent analysis. |
 | `CLERK_SECRET_KEY` · `VITE_CLERK_PUBLISHABLE_KEY` | ✅¹ | Clerk authentication. |
 | `GITHUB_TOKEN` | — | Importing private GitHub repos (optional). |
 
-> ¹ On Replit, authentication (Clerk) and OpenAI are **managed** — no key configuration needed. Self-hosted, fill in the keys above with your own Clerk project and OpenAI key.
+> ¹ For production authentication, create a Clerk project and configure the keys in `.env`. For local-only development, explicitly enable `AUTH_DEV_BYPASS=true` and `VITE_AUTH_DEV_BYPASS=true`.
 
 ### Product vocabulary
 

@@ -218,9 +218,45 @@ export const ListFleetAlertsResponseItem = zod.object({
   "hypothesis": zod.string(),
   "recommendation": zod.string(),
   "detectedAt": zod.string(),
-  "status": zod.enum(['active', 'acknowledged', 'resolved'])
+  "status": zod.enum(['active', 'acknowledged', 'resolved']),
+  "assignedTo": zod.string().nullish(),
+  "dueAt": zod.coerce.date().nullish(),
+  "acknowledgedAt": zod.coerce.date().nullish(),
+  "resolvedAt": zod.coerce.date().nullish()
 })
 export const ListFleetAlertsResponse = zod.array(ListFleetAlertsResponseItem)
+
+
+/**
+ * Assign an owner, set a due date, acknowledge or resolve an alert.
+ * @summary Update an alert operational state
+ */
+export const UpdateFleetAlertParams = zod.object({
+  "alertId": zod.coerce.string()
+})
+
+export const UpdateFleetAlertBody = zod.object({
+  "status": zod.enum(['active', 'acknowledged', 'resolved']).optional(),
+  "assignedTo": zod.string().nullish(),
+  "dueAt": zod.coerce.date().nullish()
+})
+
+export const UpdateFleetAlertResponse = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "agentName": zod.string(),
+  "pattern": zod.string(),
+  "patternType": zod.string(),
+  "severity": zod.enum(['critical', 'high', 'medium', 'antecedent']),
+  "hypothesis": zod.string(),
+  "recommendation": zod.string(),
+  "detectedAt": zod.string(),
+  "status": zod.enum(['active', 'acknowledged', 'resolved']),
+  "assignedTo": zod.string().nullish(),
+  "dueAt": zod.coerce.date().nullish(),
+  "acknowledgedAt": zod.coerce.date().nullish(),
+  "resolvedAt": zod.coerce.date().nullish()
+})
 
 
 /**
@@ -355,7 +391,7 @@ export const AnalyzeAgentSourceResponse = zod.object({
 
 
 /**
- * Fetches and concatenates the relevant source and skill files from a Git repository (e.g. GitHub) or a single web/raw URL, applying size and file-type guardrails. Private GitHub repositories are supported when a GitHub credential is available via the Replit GitHub connector (or a GITHUB_TOKEN secret); otherwise only public repos are accessible. The concatenated text can then be passed to the analyze endpoint. Nothing is persisted.
+ * Fetches and concatenates the relevant source and skill files from a Git repository (e.g. GitHub) or a single web/raw URL, applying size and file-type guardrails. Private GitHub repositories are supported when a GitHub credential is available through GITHUB_TOKEN, GH_TOKEN, or GITHUB_ACCESS_TOKEN; otherwise only public repos are accessible. The concatenated text can then be passed to the analyze endpoint. Nothing is persisted.
  * @summary Fetch agent source from a Git repository or web URL
  */
 
@@ -377,12 +413,12 @@ export const FetchAgentSourceResponse = zod.object({
 
 
 /**
- * Read-only check that reports whether a GitHub credential is currently resolvable (via the Replit GitHub connector or a GITHUB_TOKEN secret), without ever exposing the token. Used by the import screen to show the connection status before attempting a private-repo import.
+ * Read-only check that reports whether a GitHub credential is currently resolvable from the GITHUB_TOKEN, GH_TOKEN, or GITHUB_ACCESS_TOKEN environment variables, without ever exposing the token. Used by the import screen to show the connection status before attempting a private-repo import.
  * @summary Report whether a GitHub credential is available for private imports
  */
 export const GetGitHubStatusResponse = zod.object({
   "connected": zod.boolean(),
-  "source": zod.enum(['connector', 'token', 'none'])
+  "source": zod.enum(['token', 'none'])
 })
 
 
@@ -1361,6 +1397,26 @@ export const CreateCatalogMetricBody = zod.object({
 
 
 /**
+ * @summary List recommended metric starter kits
+ */
+export const ListMetricStarterKitsResponseItem = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "objective": zod.string(),
+  "guidance": zod.string(),
+  "vertical": zod.string(),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "unit": zod.string(),
+  "target": zod.string()
+}))
+})
+export const ListMetricStarterKitsResponse = zod.array(ListMetricStarterKitsResponseItem)
+
+
+/**
  * @summary Update a catalog metric
  */
 export const UpdateCatalogMetricParams = zod.object({
@@ -1427,6 +1483,27 @@ export const TestConnectorResponse = zod.object({
 
 
 /**
+ * @summary List connector capabilities and transport contracts
+ */
+export const ListConnectorCapabilitiesResponseItem = zod.object({
+  "platform": zod.string(),
+  "label": zod.string(),
+  "mode": zod.enum(['live', 'contract-ready', 'planned']),
+  "capabilities": zod.object({
+  "testConnection": zod.boolean(),
+  "discoverAgents": zod.boolean(),
+  "collectTelemetry": zod.boolean(),
+  "collectMetrics": zod.boolean(),
+  "sendFeedback": zod.boolean(),
+  "exportDecisions": zod.boolean()
+}),
+  "transport": zod.array(zod.string()),
+  "note": zod.string()
+})
+export const ListConnectorCapabilitiesResponse = zod.array(ListConnectorCapabilitiesResponseItem)
+
+
+/**
  * Fetches the repository, understands the agent via static heuristics (stack detection, README dossier parsing, KPI-table extraction) and returns a pre-filled Carteira de Trabalho draft with per-field confidence, framing missing metrics from the metric catalog. Works without any AI credential; when one is configured the AI analyzer can refine this draft afterwards.
  * @summary Heuristic pre-assessment of an agent repository (no AI key needed)
  */
@@ -1480,7 +1557,7 @@ export const IngestAgentEventParams = zod.object({
 })
 
 export const IngestAgentEventBody = zod.object({
-  "kind": zod.enum(['execution', 'error', 'escalation', 'feedback']).optional(),
+  "kind": zod.enum(['execution', 'error', 'escalation', 'feedback', 'heartbeat']).optional(),
   "ts": zod.coerce.date().optional(),
   "durationMs": zod.number().optional(),
   "costCents": zod.number().optional(),
@@ -1488,6 +1565,99 @@ export const IngestAgentEventBody = zod.object({
   "tokensOut": zod.number().optional(),
   "success": zod.boolean().optional(),
   "metadata": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
+ * Universal ingestion contract for platforms such as Zendesk, Agentforce, OpenTelemetry gateways and proprietary runtimes. The envelope separates identity, execution telemetry, metric evidence and human feedback so the source adapter can evolve without changing the Muster evaluation model.
+ * @summary Ingest a normalized external agent envelope
+ */
+export const IngestExternalAgentEnvelopeBody = zod.object({
+  "contractVersion": zod.enum(['muster.agent-ingestion.v1']),
+  "eventId": zod.string().optional().describe('Optional idempotency key supplied by the source platform.'),
+  "source": zod.object({
+  "platform": zod.string(),
+  "tenant": zod.string().optional(),
+  "connectorId": zod.string().optional(),
+  "environment": zod.string().optional(),
+  "reference": zod.string().optional()
+}),
+  "agent": zod.object({
+  "externalId": zod.string(),
+  "name": zod.string(),
+  "version": zod.string().optional(),
+  "runtime": zod.string().optional(),
+  "url": zod.string().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+}),
+  "execution": zod.object({
+  "id": zod.string().optional(),
+  "startedAt": zod.coerce.date().optional(),
+  "completedAt": zod.coerce.date().optional(),
+  "status": zod.enum(['success', 'error', 'escalated', 'running']).optional(),
+  "durationMs": zod.number().optional(),
+  "costCents": zod.number().optional(),
+  "tokensIn": zod.number().optional(),
+  "tokensOut": zod.number().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+}).optional(),
+  "observations": zod.array(zod.object({
+  "metricKey": zod.string(),
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "kind": zod.enum(['observed', 'inferred', 'synthetic']).optional(),
+  "confidence": zod.number().optional(),
+  "sampleSize": zod.number().optional(),
+  "capturedAt": zod.coerce.date().optional(),
+  "lineage": zod.array(zod.object({
+  "stage": zod.string(),
+  "name": zod.string(),
+  "ref": zod.string().optional()
+})).optional()
+})).optional(),
+  "feedback": zod.object({
+  "kind": zod.enum(['positive', 'negative', 'correction', 'escalation']),
+  "score": zod.number().optional(),
+  "comment": zod.string().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+}).optional()
+})
+
+
+/**
+ * @summary Report that an agent runtime is alive and supervised
+ */
+export const ReportAgentHeartbeatParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ReportAgentHeartbeatBody = zod.object({
+  "runtime": zod.string().optional(),
+  "version": zod.string().optional(),
+  "intervalSeconds": zod.number().optional(),
+  "status": zod.enum(['healthy', 'degraded', 'stopped']).optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
+ * @summary Read live supervision freshness for an agent
+ */
+export const ReadAgentSupervisionParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ReadAgentSupervisionResponse = zod.object({
+  "agentId": zod.string(),
+  "status": zod.enum(['live', 'delayed', 'stale', 'unknown']),
+  "isStale": zod.boolean(),
+  "intervalSeconds": zod.number(),
+  "ageSeconds": zod.number(),
+  "lastHeartbeatAt": zod.string().nullable(),
+  "runtime": zod.string().nullish(),
+  "version": zod.string().nullish(),
+  "reportedStatus": zod.string().nullish()
 })
 
 
@@ -1528,7 +1698,7 @@ export const ReevaluateAgentResponse = zod.object({
   "changed": zod.boolean(),
   "healthScore": zod.number(),
   "verdict": zod.enum(['promote', 'mentor', 'retire', 'observation']),
-  "dataSource": zod.enum(['telemetry', 'seeded', 'mixed']),
+  "dataSource": zod.enum(['telemetry', 'seeded', 'mixed', 'none']),
   "rationale": zod.string(),
   "rulesFired": zod.array(zod.string()).optional()
 })

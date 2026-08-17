@@ -103,10 +103,14 @@ describe("buildProposedMetrics", () => {
   });
 
   it("honors reference values when a seeded agent provides overrides", () => {
-    const metrics = buildProposedMetrics("julia", ["acuracia_decisoes", "retorno_investimento"], {
-      acuracia_decisoes: 72,
-      retorno_investimento: 12,
-    });
+    const metrics = buildProposedMetrics(
+      "julia",
+      ["acuracia_decisoes", "retorno_investimento"],
+      {
+        acuracia_decisoes: 72,
+        retorno_investimento: 12,
+      },
+    );
     expect(metrics.map((metric) => metric.value)).toEqual([72, 12]);
   });
 });
@@ -182,5 +186,111 @@ describe("scoreEvaluation", () => {
       expect(layer.score).toBeGreaterThanOrEqual(0);
       expect(layer.score).toBeLessThanOrEqual(100);
     }
+  });
+
+  it("preserves source signal and evaluates a matched KPI contract", () => {
+    const result = scoreEvaluation("contract-agent", [
+      {
+        layer: "efficacy",
+        label: "Sucesso na primeira passada",
+        sourceSignal: "task_success",
+        value: 95,
+        unit: "%",
+        confidence: 90,
+        target: "≥ 90%",
+        evidence: {
+          metricKey: "task_success",
+          label: "Sucesso na primeira passada",
+          value: 95,
+          unit: "%",
+          capturedAt: "2026-08-11T00:00:00.000Z",
+          kind: "observed",
+          source: { type: "telemetry", name: "agent_events" },
+          lineage: [{ stage: "aggregate", name: "telemetry_30d" }],
+          confidence: 90,
+          sampleSize: 30,
+          qualityFlags: [],
+        },
+        baselineAvailable: true,
+      },
+    ]);
+    const metric = result.layers.find((layer) => layer.key === "efficacy")
+      ?.metrics[0] as
+      | ((typeof result.layers)[number]["metrics"][number] & {
+          sourceSignal?: string;
+          contractKey?: string;
+          status?: string;
+          eligibleForDecision?: boolean;
+        })
+      | undefined;
+
+    expect(metric).toMatchObject({
+      sourceSignal: "task_success",
+      contractKey: "engenharia-sucesso-primeira-passada",
+      status: "on-target",
+      eligibleForDecision: true,
+    });
+    expect(result.evidence).toEqual({
+      insufficientEvidence: 0,
+      notComparable: 0,
+      comparable: 1,
+    });
+  });
+
+  it("marks contract metrics as insufficient-evidence instead of scoring them as on-target", () => {
+    const result = scoreEvaluation("weak-evidence", [
+      {
+        layer: "efficacy",
+        label: "Sucesso na primeira passada",
+        sourceSignal: "task_success",
+        value: 99,
+        unit: "%",
+        confidence: 99,
+        target: "≥ 90%",
+      },
+    ]);
+    const metric = result.layers.find((layer) => layer.key === "efficacy")
+      ?.metrics[0] as
+      | {
+          status?: string;
+          eligibleForDecision?: boolean;
+          evidenceReasons?: string[];
+        }
+      | undefined;
+
+    expect(metric).toMatchObject({
+      status: "insufficient-evidence",
+      eligibleForDecision: false,
+    });
+    expect(metric?.evidenceReasons).toEqual(
+      expect.arrayContaining([
+        "amostra abaixo do mínimo do contrato",
+        "baseline obrigatório ausente",
+      ]),
+    );
+    expect(result.evidence.insufficientEvidence).toBe(1);
+  });
+
+  it("keeps legacy metrics compatible when no contract is available", () => {
+    const result = scoreEvaluation("legacy-agent", [
+      {
+        layer: "efficacy",
+        label: "Métrica legada",
+        sourceSignal: "Métrica legada",
+        value: 90,
+        unit: "%",
+        confidence: 0,
+        target: "≥ 85%",
+      },
+    ]);
+    const metric = result.layers.find((layer) => layer.key === "efficacy")
+      ?.metrics[0] as
+      | { status?: string; eligibleForDecision?: boolean }
+      | undefined;
+    expect(metric).toMatchObject({
+      status: "on-target",
+      eligibleForDecision: true,
+    });
+    expect(result.evidence.insufficientEvidence).toBe(0);
   });
 });

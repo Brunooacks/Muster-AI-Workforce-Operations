@@ -11,10 +11,14 @@ import type { LayerKey, VerdictType } from "@workspace/db";
 export interface DecisionInput {
   healthScore: number;
   layerScores: Partial<Record<LayerKey, number>>;
-  dataSource: "telemetry" | "seeded" | "mixed";
+  dataSource: "telemetry" | "seeded" | "mixed" | "none";
   totalExecutions: number;
   windowDays: number;
   trendDelta?: number | null;
+  /** Number of contract-bound metrics blocked by missing/weak evidence. */
+  insufficientEvidence?: number;
+  /** Metrics with no target/contract; visible for audit, not a hard stop. */
+  notComparable?: number;
 }
 
 export interface DecisionResult {
@@ -36,10 +40,24 @@ export interface DecisionRule {
 // POSITIVE governance evidence, not just absence of red flags.
 export const DECISION_RULES: DecisionRule[] = [
   {
+    id: "no-evidence",
+    description:
+      "Nenhuma evidência observada — mantém o agente em observação sem inventar score.",
+    when: (input) => input.dataSource === "none",
+    verdict: "observation",
+  },
+  {
     id: "insufficient-data",
     description:
       "Dados reais insuficientes (menos de 20 execuções na janela) — mantém em observação até haver base estatística.",
     when: (i) => i.dataSource !== "seeded" && i.totalExecutions < 20,
+    verdict: "observation",
+  },
+  {
+    id: "insufficient-kpi-evidence",
+    description:
+      "Há métricas vinculadas a contrato sem evidência suficiente — impede promoção até completar amostra, baseline ou confiança.",
+    when: (i) => i.dataSource !== "seeded" && (i.insufficientEvidence ?? 0) > 0,
     verdict: "observation",
   },
   {
@@ -106,6 +124,7 @@ function round1(value: number): number {
 }
 
 function confidenceFor(input: DecisionInput): number {
+  if (input.dataSource === "none") return 0;
   if (input.dataSource === "seeded") {
     // Seeded data deserves lower, deterministic confidence: 65–75 derived
     // from the health score itself (no randomness).
@@ -123,6 +142,7 @@ const SOURCE_LABEL: Record<DecisionInput["dataSource"], string> = {
   telemetry: "telemetria real",
   seeded: "dados semeados",
   mixed: "dados mistos (telemetria + semeados)",
+  none: "nenhuma evidência observada",
 };
 
 function rationaleFor(rule: DecisionRule, i: DecisionInput): string {
@@ -130,8 +150,12 @@ function rationaleFor(rule: DecisionRule, i: DecisionInput): string {
   const val = i.layerScores.value;
   const base = `Base: ${SOURCE_LABEL[i.dataSource]}, ${i.totalExecutions} execuções em ${i.windowDays} dias.`;
   switch (rule.id) {
+    case "no-evidence":
+      return "Sem evidência observada: conecte a telemetria e acumule amostra suficiente antes de emitir um veredito de desempenho.";
     case "insufficient-data":
       return `Apenas ${i.totalExecutions} execuções na janela de ${i.windowDays} dias — abaixo do mínimo de 20 para um veredito defensável. O agente permanece em observação até acumular base estatística.`;
+    case "insufficient-kpi-evidence":
+      return `${i.insufficientEvidence} métrica(s) vinculada(s) a contrato ainda não têm evidência suficiente (amostra, baseline, tipo permitido ou confiança). O agente permanece em observação até a evidência ser completada. ${base}`;
     case "governance-critical-retire":
       return `Governança em colapso (score ${gov}) — risco operacional inaceitável sobrepõe o score de saúde ${i.healthScore}. Recomendação de aposentadoria. ${base}`;
     case "governance-critical-mentor":

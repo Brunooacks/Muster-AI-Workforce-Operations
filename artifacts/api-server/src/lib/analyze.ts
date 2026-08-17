@@ -163,8 +163,7 @@ export async function analyzeAgentSource(input: {
 
   // Model is env-configurable so self-hosted setups can point the OpenAI
   // client at any OpenAI-compatible endpoint (e.g. Anthropic's compat API
-  // with a claude-* model, or an internal gateway). Defaults to the value
-  // used on the managed (Replit) integration.
+  // with a claude-* model, or an internal gateway).
   const model = process.env.AI_INTEGRATIONS_OPENAI_MODEL ?? "gpt-5.4";
 
   let completion;

@@ -5,6 +5,7 @@ import {
   useDiscoverAgents,
   useImportDiscoveredAgents,
   useRegisterConnector,
+  useListConnectorCapabilities,
 } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link2, Search, Check, Download, Plug, Plus } from "lucide-react";
+import { Link2, Search, Check, Download, Plug, Plus, Radio } from "lucide-react";
 import { ErrorState } from "@/components/query-state";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -91,6 +92,11 @@ const PT = {
   cancel: "Cancelar",
   testing: "Testando conexão…",
   registerTest: "Cadastrar e testar",
+  capabilityTitle: "Mapa de cobertura",
+  capabilityLive: "Live",
+  capabilityReady: "Contrato pronto",
+  capabilityPlanned: "Planejado",
+  capabilityHint: "A integração pode começar pelo webhook universal enquanto o adapter nativo é construído.",
 };
 
 type Dict = typeof PT;
@@ -148,6 +154,11 @@ const L: Record<Lang, Dict> = {
     cancel: "Cancel",
     testing: "Testing connection…",
     registerTest: "Register and test",
+    capabilityTitle: "Coverage map",
+    capabilityLive: "Live",
+    capabilityReady: "Contract ready",
+    capabilityPlanned: "Planned",
+    capabilityHint: "Integration can start with the universal webhook while the native adapter is built.",
   },
   es: {
     bcAccount: "Cuenta",
@@ -200,11 +211,17 @@ const L: Record<Lang, Dict> = {
     cancel: "Cancelar",
     testing: "Probando conexión…",
     registerTest: "Registrar y probar",
+    capabilityTitle: "Mapa de cobertura",
+    capabilityLive: "Live",
+    capabilityReady: "Contrato listo",
+    capabilityPlanned: "Planificado",
+    capabilityHint: "La integración puede comenzar por el webhook universal mientras se construye el adapter nativo.",
   },
 };
 
 export default function ConnectorsPage() {
   const { data: connectors, isLoading, isError, refetch } = useListConnectors();
+  const { data: capabilities } = useListConnectorCapabilities();
   const { toast } = useToast();
   const { lang } = useLang();
   const t = L[lang];
@@ -293,7 +310,7 @@ export default function ConnectorsPage() {
 
   return (
     <AppLayout breadcrumbs={[{ label: t.bcAccount }, { label: t.bcConnectors }]}>
-      <div className="max-w-4xl space-y-7 animate-in fade-in duration-500">
+      <div className="max-w-5xl space-y-7 animate-in fade-in duration-500">
         <PageHeading
           eyebrow={t.eyebrow}
           title={t.title}
@@ -305,6 +322,29 @@ export default function ConnectorsPage() {
             </Button>
           }
         />
+
+        {capabilities && capabilities.length > 0 && (
+          <Card className="border-card-border bg-secondary/20 px-5 py-4">
+            <div className="flex items-start gap-3">
+              <Radio className="mt-0.5 h-4 w-4 text-primary" />
+              <div className="min-w-0 flex-1">
+                <Eyebrow>{t.capabilityTitle}</Eyebrow>
+                <p className="mt-1 text-xs text-muted-foreground">{t.capabilityHint}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {capabilities.map((capability) => {
+                    const tone = capability.mode === "live" ? "sage" : capability.mode === "contract-ready" ? "ochre" : "muted";
+                    const label = capability.mode === "live" ? t.capabilityLive : capability.mode === "contract-ready" ? t.capabilityReady : t.capabilityPlanned;
+                    return (
+                      <Pill key={capability.platform} tone={tone}>
+                        {capability.label} · {label}
+                      </Pill>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {discoveryResult && (
           <Card className="overflow-hidden border-primary/30">

@@ -6,6 +6,8 @@ import {
   doublePrecision,
   timestamp,
   jsonb,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 const id = () =>
@@ -23,6 +25,53 @@ export type VerdictType = "promote" | "mentor" | "retire" | "observation";
 export type Severity = "critical" | "high" | "medium" | "stable";
 export type AutonomyLevel = "autonomous" | "escalates" | "restricted";
 export type DecisionStatus = "pending" | "approved" | "disagreed" | "exported";
+export type PurposeRiskTier = "low" | "medium" | "high" | "critical";
+export type TeamStatus = "active" | "archived";
+export type TeamMemberRole = "owner" | "supervisor" | "operator" | "observer";
+export type AgentAssignmentRole = "primary" | "supporting" | "reviewer";
+export type AgentAssignmentStatus = "active" | "paused" | "ended";
+export type JourneyStatus = "draft" | "active" | "paused" | "archived";
+export type JourneyStepType = "agent" | "human" | "system";
+export type JourneyDecisionMode =
+  | "autonomous"
+  | "human-approval"
+  | "committee";
+export type JourneyHandoffStatus = "active" | "paused";
+export type JourneyEventKind =
+  | "journey_started"
+  | "step_started"
+  | "step_completed"
+  | "step_failed"
+  | "handoff"
+  | "decision"
+  | "journey_completed"
+  | "journey_failed";
+export type JourneyRecommendationStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "executing"
+  | "blocked"
+  | "completed";
+export type JourneyRecommendationRisk = "low" | "medium" | "high" | "critical";
+export type JourneyRecommendationSource = "system" | "agent" | "human";
+export type JourneyRejectionDisposition = "revise" | "close" | "escalate";
+export type JourneyActionActorType = "muster" | "agent" | "human";
+export type JourneyActionExecutionMode =
+  | "autonomous"
+  | "supervised"
+  | "human-only";
+export type JourneyActionControlScope =
+  | "muster-internal"
+  | "external-agent"
+  | "human-decision";
+export type JourneyActionStatus =
+  | "proposed"
+  | "ready"
+  | "in-progress"
+  | "blocked"
+  | "completed"
+  | "cancelled";
 export type LayerKey =
   | "efficacy"
   | "efficiency"
@@ -61,6 +110,42 @@ export interface BusinessCase {
   description: string;
 }
 
+export const purposes = pgTable("purposes", {
+  id: id(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  domain: text("domain").notNull(),
+  outcome: text("outcome").notNull(),
+  riskTier: text("risk_tier").$type<PurposeRiskTier>().notNull().default("medium"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const teams = pgTable("teams", {
+  id: id(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description").notNull().default(""),
+  purposeId: text("purpose_id").notNull().references(() => purposes.id, { onDelete: "restrict" }),
+  status: text("status").$type<TeamStatus>().notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const teamMemberships = pgTable("team_memberships", {
+  id: id(),
+  teamId: text("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  memberId: text("member_id").notNull(),
+  memberName: text("member_name").notNull(),
+  role: text("role").$type<TeamMemberRole>().notNull().default("operator"),
+  decisionRights: jsonb("decision_rights").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  teamMemberUnique: uniqueIndex("team_memberships_team_member_idx").on(table.teamId, table.memberId),
+}));
+
 export const agents = pgTable("agents", {
   id: id(),
   externalId: text("external_id").unique(),
@@ -98,6 +183,213 @@ export const agents = pgTable("agents", {
     .notNull()
     .defaultNow(),
 });
+
+export const teamAgentAssignments = pgTable("team_agent_assignments", {
+  id: id(),
+  teamId: text("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  agentId: text("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  assignmentRole: text("assignment_role").$type<AgentAssignmentRole>().notNull().default("supporting"),
+  responsibility: text("responsibility").notNull().default(""),
+  status: text("status").$type<AgentAssignmentStatus>().notNull().default("active"),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  teamAgentUnique: uniqueIndex("team_agent_assignments_team_agent_idx").on(table.teamId, table.agentId),
+}));
+
+export const journeys = pgTable("journeys", {
+  id: id(),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description").notNull().default(""),
+  entryCriterion: text("entry_criterion").notNull().default(""),
+  successCriterion: text("success_criterion").notNull().default(""),
+  status: text("status").$type<JourneyStatus>().notNull().default("draft"),
+  slaMinutes: integer("sla_minutes").notNull().default(60),
+  owner: text("owner").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  journeysTeamIdx: index("journeys_team_idx").on(table.teamId),
+}));
+
+export const journeySteps = pgTable("journey_steps", {
+  id: id(),
+  journeyId: text("journey_id")
+    .notNull()
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  stepKey: text("step_key").notNull(),
+  name: text("name").notNull(),
+  sequence: integer("sequence").notNull(),
+  stepType: text("step_type").$type<JourneyStepType>().notNull().default("agent"),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  responsibility: text("responsibility").notNull().default(""),
+  decisionMode: text("decision_mode")
+    .$type<JourneyDecisionMode>()
+    .notNull()
+    .default("autonomous"),
+  expectedDurationMs: integer("expected_duration_ms"),
+  required: integer("required").notNull().default(1),
+  guardrails: jsonb("guardrails").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  journeyStepKeyUnique: uniqueIndex("journey_steps_journey_key_idx").on(
+    table.journeyId,
+    table.stepKey,
+  ),
+  journeyStepSequenceIdx: index("journey_steps_journey_sequence_idx").on(
+    table.journeyId,
+    table.sequence,
+  ),
+}));
+
+export const journeyHandoffs = pgTable("journey_handoffs", {
+  id: id(),
+  journeyId: text("journey_id")
+    .notNull()
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  fromStepId: text("from_step_id")
+    .notNull()
+    .references(() => journeySteps.id, { onDelete: "cascade" }),
+  toStepId: text("to_step_id")
+    .notNull()
+    .references(() => journeySteps.id, { onDelete: "cascade" }),
+  condition: text("condition").notNull().default("success"),
+  protocol: text("protocol").notNull().default("a2a"),
+  requiredContext: jsonb("required_context").$type<string[]>().notNull().default([]),
+  status: text("status").$type<JourneyHandoffStatus>().notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  journeyHandoffUnique: uniqueIndex("journey_handoffs_path_idx").on(
+    table.journeyId,
+    table.fromStepId,
+    table.toStepId,
+  ),
+}));
+
+export const journeyEvents = pgTable("journey_events", {
+  id: id(),
+  journeyId: text("journey_id")
+    .notNull()
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  externalEventId: text("external_event_id"),
+  runId: text("run_id").notNull(),
+  stepId: text("step_id").references(() => journeySteps.id, { onDelete: "set null" }),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  kind: text("kind").$type<JourneyEventKind>().notNull(),
+  fromStepId: text("from_step_id").references(() => journeySteps.id, { onDelete: "set null" }),
+  toStepId: text("to_step_id").references(() => journeySteps.id, { onDelete: "set null" }),
+  ts: timestamp("ts", { withTimezone: true }).notNull().defaultNow(),
+  durationMs: integer("duration_ms"),
+  costCents: integer("cost_cents"),
+  success: integer("success"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+}, (table) => ({
+  journeyEventExternalUnique: uniqueIndex("journey_events_external_idx").on(
+    table.journeyId,
+    table.externalEventId,
+  ),
+  journeyEventTimelineIdx: index("journey_events_timeline_idx").on(
+    table.journeyId,
+    table.ts,
+  ),
+  journeyEventRunIdx: index("journey_events_run_idx").on(
+    table.journeyId,
+    table.runId,
+  ),
+  journeyEventStepIdx: index("journey_events_step_idx").on(
+    table.stepId,
+    table.ts,
+  ),
+}));
+
+export const journeyRecommendations = pgTable("journey_recommendations", {
+  id: id(),
+  journeyId: text("journey_id")
+    .notNull()
+    .references(() => journeys.id, { onDelete: "cascade" }),
+  runId: text("run_id"),
+  stepId: text("step_id").references(() => journeySteps.id, { onDelete: "set null" }),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  rationale: text("rationale").notNull(),
+  expectedImpact: text("expected_impact").notNull().default(""),
+  riskLevel: text("risk_level")
+    .$type<JourneyRecommendationRisk>()
+    .notNull()
+    .default("medium"),
+  status: text("status")
+    .$type<JourneyRecommendationStatus>()
+    .notNull()
+    .default("pending"),
+  source: text("source")
+    .$type<JourneyRecommendationSource>()
+    .notNull()
+    .default("system"),
+  reviewSlaMinutes: integer("review_sla_minutes").notNull().default(240),
+  reviewDueAt: timestamp("review_due_at", { withTimezone: true }).notNull(),
+  decisionReason: text("decision_reason"),
+  rejectionDisposition: text("rejection_disposition").$type<JourneyRejectionDisposition>(),
+  decidedBy: text("decided_by"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  journeyRecommendationJourneyIdx: index("journey_recommendations_journey_idx").on(
+    table.journeyId,
+    table.createdAt,
+  ),
+  journeyRecommendationStatusIdx: index("journey_recommendations_status_idx").on(
+    table.status,
+    table.reviewDueAt,
+  ),
+}));
+
+export const journeyRecommendationActions = pgTable("journey_recommendation_actions", {
+  id: id(),
+  recommendationId: text("recommendation_id")
+    .notNull()
+    .references(() => journeyRecommendations.id, { onDelete: "cascade" }),
+  sequence: integer("sequence").notNull(),
+  actorType: text("actor_type").$type<JourneyActionActorType>().notNull(),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  instructions: text("instructions").notNull().default(""),
+  capability: text("capability").notNull(),
+  executionMode: text("execution_mode")
+    .$type<JourneyActionExecutionMode>()
+    .notNull(),
+  controlScope: text("control_scope")
+    .$type<JourneyActionControlScope>()
+    .notNull(),
+  status: text("status")
+    .$type<JourneyActionStatus>()
+    .notNull()
+    .default("proposed"),
+  owner: text("owner").notNull().default(""),
+  slaMinutes: integer("sla_minutes").notNull().default(60),
+  dueAt: timestamp("due_at", { withTimezone: true }),
+  result: text("result"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  journeyRecommendationActionOrderUnique: uniqueIndex(
+    "journey_recommendation_actions_order_idx",
+  ).on(table.recommendationId, table.sequence),
+  journeyRecommendationActionDueIdx: index(
+    "journey_recommendation_actions_due_idx",
+  ).on(table.status, table.dueAt),
+}));
 
 export const agentIdentities = pgTable("agent_identities", {
   agentId: text("agent_id")
@@ -190,6 +482,10 @@ export const alerts = pgTable("alerts", {
     .notNull()
     .defaultNow(),
   status: text("status").$type<AlertStatus>().notNull().default("active"),
+  assignedTo: text("assigned_to"),
+  dueAt: timestamp("due_at", { withTimezone: true }),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 });
 
 export type ConnectorStatus = "connected" | "available" | "syncing";
@@ -378,7 +674,12 @@ export const connectorCredentials = pgTable("connector_credentials", {
 // Raw execution events reported by agents (SDK/reporter). Aggregations derive
 // the real 5-layer evaluation; when an agent has no events the evaluation
 // falls back to the seeded demo scoring (flagged as dataSource="seeded").
-export type AgentEventKind = "execution" | "error" | "escalation" | "feedback";
+export type AgentEventKind =
+  | "execution"
+  | "error"
+  | "escalation"
+  | "feedback"
+  | "heartbeat";
 
 export const agentEvents = pgTable("agent_events", {
   id: id(),
@@ -394,3 +695,28 @@ export const agentEvents = pgTable("agent_events", {
   success: integer("success"), // 1/0/null — drizzle boolean-as-int keeps parity with is_custom
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
 });
+
+// --- Metric evidence (R7) ----------------------------------------------------
+// Persisted observations are the auditable bridge between telemetry/discovery
+// and KPI decisions. References are optional because evidence can be scoped to
+// an agent, a mixed team, a purpose, or remain unscoped during ingestion.
+export const metricEvidence = pgTable("metric_evidence", {
+  id: id(),
+  metricKey: text("metric_key").notNull(),
+  label: text("label").notNull(),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "cascade" }),
+  teamId: text("team_id").references(() => teams.id, { onDelete: "cascade" }),
+  purposeId: text("purpose_id").references(() => purposes.id, { onDelete: "cascade" }),
+  value: doublePrecision("value").notNull(),
+  unit: text("unit").notNull(),
+  kind: text("kind").notNull(),
+  source: jsonb("source").$type<Record<string, unknown>>().notNull(),
+  lineage: jsonb("lineage").$type<Record<string, unknown>[]>().notNull().default([]),
+  confidence: doublePrecision("confidence").notNull(),
+  sampleSize: integer("sample_size"),
+  qualityFlags: jsonb("quality_flags").$type<string[]>().notNull().default([]),
+  capturedAt: timestamp("captured_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  metricEvidenceMetricKeyIdx: index("metric_evidence_metric_key_idx").on(table.metricKey),
+}));

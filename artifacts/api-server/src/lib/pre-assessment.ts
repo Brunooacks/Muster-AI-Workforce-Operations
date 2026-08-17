@@ -80,6 +80,71 @@ function sectionText(readme: string, heading: RegExp): string {
   return out.join(" ").slice(0, 400);
 }
 
+function unique(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
+}
+
+/** Detect executable capabilities from common tool/skill declarations. */
+function declaredCapabilities(content: string): string[] {
+  const capabilities: string[] = [];
+  const namedTools = /(?:name|toolName)\s*:\s*["'`]([a-zA-Z][\w.-]{2,80})["'`]/g;
+  for (const match of content.matchAll(namedTools)) {
+    const name = match[1]?.trim();
+    if (!name || /^(package|project|app|service|version)$/i.test(name)) continue;
+    capabilities.push(name.replace(/[_-]+/g, " "));
+  }
+
+  const pythonTools = /@tool\s*\n?\s*(?:async\s+)?def\s+([a-zA-Z_]\w*)/g;
+  for (const match of content.matchAll(pythonTools)) {
+    const name = match[1]?.trim();
+    if (name) capabilities.push(name.replace(/[_-]+/g, " "));
+  }
+
+  return unique(capabilities).slice(0, 8);
+}
+
+function runtimeSignals(content: string, platform: string | null): string[] {
+  const signals: string[] = [];
+  if (/^\s*FROM\s+\S+/im.test(content) || /docker-compose(?:\.ya?ml)?/i.test(content)) {
+    signals.push("runtime:docker");
+  }
+  if (/process\.env|os\.environ|System\.getenv|dotenv/i.test(content)) {
+    signals.push("runtime:config-env");
+  }
+  if (/createAgent\s*\(|createReactAgent\s*\(|AgentExecutor|Runnable/i.test(content)) {
+    signals.push("execution:agent-loop");
+  }
+  if (/\btool\s*\(|@tool\b|StructuredTool|function_call|function_calls/i.test(content)) {
+    signals.push("execution:tools");
+  }
+  if (/telemetry|opentelemetry|traceparent|\/events|report(?:Many|er)?/i.test(content)) {
+    signals.push("observability:telemetry");
+  }
+  if (/fetch\s*\(|axios|requests\.(get|post)|http:\/\/|https:\/\//i.test(content)) {
+    signals.push("execution:external-io");
+  }
+  if (/process\.argv|commander|yargs|bin\s*:/i.test(content)) {
+    signals.push("runtime:cli");
+  }
+  if (/MUSTER_EXECUTION_BACKEND|MUSTER_TASK_TIMEOUT_MS|execute_task|taskKey/i.test(content)) {
+    signals.push("execution:task-catalog");
+  }
+  if (/node:child_process|child_process|spawn\s*\(|execFile\s*\(/i.test(content)) {
+    signals.push("execution:process");
+  }
+  if (/docker\s+(exec|run)|docker\s+compose|MUSTER_DOCKER_CONTAINER/i.test(content)) {
+    signals.push("runtime:docker-exec");
+  }
+  if (/MUSTER_EXECUTION_GATEWAY_URL|execution-gateway|remoteGatewayUrl/i.test(content)) {
+    signals.push("runtime:remote-exec");
+  }
+  if (/cloud run|run\.googleapis\.com|ECS_CONTAINER_METADATA_URI|AWS_BATCH|KUBERNETES_SERVICE_HOST|kubernetes/i.test(content)) {
+    signals.push("runtime:managed-worker");
+  }
+  if (platform) signals.push(`framework:${platform}`);
+  return unique(signals);
+}
+
 /** Parse "| Camada | Métrica | Meta |" KPI tables from READMEs. */
 const LAYER_PT: Record<string, LayerKey> = {
   eficácia: "efficacy",
@@ -166,6 +231,11 @@ export function preAssess(content: string, nameHint?: string): PreAssessment {
     readmes[0] ?? { path: "", body: "" };
   if (dossier.path) signals.push(`readme:${dossier.path}`);
 
+  const executionSignals = runtimeSignals(content, platform);
+  signals.push(...executionSignals);
+  const capabilities = declaredCapabilities(content);
+  if (capabilities.length > 0) signals.push("discovery:capabilities");
+
   // Name/role from the README H1 or package.json description.
   // Split title on em/en dash only — ASCII hyphens are part of slug names
   // like "brand-guardian-copilot".
@@ -174,10 +244,26 @@ export function preAssess(content: string, nameHint?: string): PreAssessment {
   const h1Role = h1.split(/[—–]/).slice(1).join(" — ").trim();
   const pkgDesc = content.match(/"description":\s*"([^"]{10,200})"/)?.[1] ?? "";
 
-  const shouldDo = bulletsUnder(dossier.body, /papel|role|o que (este agente )?faz/i).slice(0, 6);
-  const shouldNotDo = bulletsUnder(dossier.body, /não deve|nao deve|should not|limites/i).slice(0, 6);
+  const purpose = sectionText(
+    dossier.body,
+    /objetivo|propósito|proposito|o que (este agente )?faz|what it does|purpose/i,
+  );
+  const documentedShouldDo = bulletsUnder(dossier.body, /papel|role|o que (este agente )?faz/i).slice(0, 6);
+  const capabilityActions = capabilities.map((capability) => `Executar a capacidade “${capability}” quando solicitada.`);
+  const shouldDo = unique([...documentedShouldDo, ...capabilityActions]).slice(0, 6);
+  const documentedShouldNotDo = bulletsUnder(dossier.body, /não deve|nao deve|should not|limites/i).slice(0, 6);
+  const inferredBoundaries = documentedShouldNotDo.length === 0
+    ? [
+        "Não executar ações irreversíveis sem confirmação ou política explícita.",
+        ...(executionSignals.includes("observability:telemetry")
+          ? ["Não ocultar falhas; registrar a execução e seus resultados na telemetria."]
+          : []),
+      ]
+    : [];
+  const shouldNotDo = unique([...documentedShouldNotDo, ...inferredBoundaries]).slice(0, 6);
   if (shouldDo.length > 0) signals.push("readme:papel");
-  if (shouldNotDo.length > 0) signals.push("readme:nao-deve");
+  if (documentedShouldNotDo.length > 0) signals.push("readme:nao-deve");
+  if (inferredBoundaries.length > 0) signals.push("inferred:guardrails");
 
   // Autonomy.
   let autonomyLevel: AutonomyLevel = "escalates";
@@ -190,7 +276,7 @@ export function preAssess(content: string, nameHint?: string): PreAssessment {
   }
 
   // Business case.
-  const baseline = sectionText(dossier.body, /business case|caso de neg/i);
+  const baseline = sectionText(dossier.body, /business case|caso de neg|baseline|linha de base/i);
   const paybackMatch = dossier.body.match(/payback[^:\n]*:?\s*\*{0,2}([^\n*]+)/i)?.[1]?.trim() ?? "";
 
   // Metrics: README KPI table first, catalog fills the gaps (R2 integration).
@@ -199,26 +285,46 @@ export function preAssess(content: string, nameHint?: string): PreAssessment {
   const proposedMetrics = fillFromCatalog(tableMetrics).slice(0, 10);
 
   const name = (nameHint || h1Name || "Agente sem nome").slice(0, 60);
-  const role = (h1Role || pkgDesc.split(/[.—]/)[0] || "Agente de IA").slice(0, 80);
+  const inferredRole = capabilities.length > 0
+    ? `Agente operacional com ${capabilities.length} capacidade${capabilities.length === 1 ? "" : "s"}`
+    : "Agente de IA";
+  const role = (h1Role || pkgDesc.split(/[.—]/)[0] || inferredRole).slice(0, 80);
+  const bioSource = pkgDesc || purpose || `${name} — ${role}.`;
+  const limits = unique([
+    ...(executionSignals.includes("runtime:config-env")
+      ? ["Credenciais e configurações devem ser fornecidas por variáveis de ambiente; não embutir segredos no código."]
+      : []),
+    ...(executionSignals.includes("execution:external-io")
+      ? ["Chamadas a sistemas externos devem respeitar timeout, autenticação e tratamento de erro."]
+      : []),
+    ...(executionSignals.includes("observability:telemetry")
+      ? ["Cada execução deve manter contexto suficiente para auditoria e medição."]
+      : []),
+    "Ações destrutivas ou fora do escopo documentado exigem revisão humana.",
+  ]).slice(0, 5);
 
   const draft: AgentDraft = {
     name,
     role,
     tagline: pkgDesc.slice(0, 120) || `${role} descoberto via pré-assessment`,
-    bio: (pkgDesc || sectionText(dossier.body, /^#\s/) || `${name} — ${role}.`).slice(0, 400),
-    shouldDo: shouldDo.length > 0 ? shouldDo : [role],
+    bio: bioSource.slice(0, 400),
+    shouldDo: shouldDo.length > 0 ? shouldDo : [purpose || role],
     shouldNotDo,
     autonomyLevel,
-    autonomyNotes: "",
-    limits: [],
+    autonomyNotes: executionSignals.includes("execution:external-io")
+      ? "Possui integração com sistemas externos; validar permissões e escalonamento antes da promoção."
+      : "Nível inferido por heurística; validar durante a revisão de admissão.",
+    limits,
     businessCase: {
       baseline: baseline.slice(0, 200),
       targetPayback: paybackMatch.slice(0, 60),
-      description: baseline.slice(0, 300),
+      description: (baseline || purpose).slice(0, 300),
     },
     proposedMetrics,
     summary:
       `Pré-assessment heurístico (sem IA): stack ${platform ?? "não identificada"}, ` +
+      `execução ${executionSignals.filter((signal) => signal.startsWith("runtime:") || signal.startsWith("execution:")).join(", ") || "não identificada"}, ` +
+      `${capabilities.length} capacidades detectadas, ` +
       `${tableMetrics.length} métricas extraídas do repositório e ` +
       `${proposedMetrics.length - tableMetrics.length} sugeridas do catálogo. ` +
       `Revise os campos de baixa confiança antes de admitir.`,
@@ -235,8 +341,9 @@ export function preAssess(content: string, nameHint?: string): PreAssessment {
   const fieldConfidence: Record<string, number> = {
     name: h1Name ? 85 : nameHint ? 70 : 30,
     role: h1Role ? 80 : pkgDesc ? 55 : 30,
-    shouldDo: shouldDo.length > 0 ? 80 : 25,
-    shouldNotDo: shouldNotDo.length > 0 ? 80 : 20,
+    shouldDo: documentedShouldDo.length > 0 ? 80 : capabilities.length > 0 ? 65 : 25,
+    shouldNotDo: documentedShouldNotDo.length > 0 ? 80 : 45,
+    limits: limits.length > 0 ? 55 : 20,
     autonomyLevel: signals.some((s) => s.startsWith("sig:")) ? 75 : 40,
     businessCase: baseline ? 65 : 20,
     proposedMetrics: tableMetrics.length > 0 ? 85 : 45,

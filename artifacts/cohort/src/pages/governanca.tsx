@@ -153,7 +153,7 @@ export default function GovernancePage() {
   const summary = data?.summary;
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.bcGov }, { label: t.bcGov }]}>
+    <AppLayout breadcrumbs={[{ label: t.bcGov }, { label: t.title }]}>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <PageHeading
           eyebrow={t.eyebrow}

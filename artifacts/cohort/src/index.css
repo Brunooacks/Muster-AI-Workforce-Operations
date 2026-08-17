@@ -131,7 +131,7 @@
   --app-font-sans: 'Inter', system-ui, sans-serif;
   --app-font-serif: 'Spectral', Georgia, serif;
   --app-font-mono: 'IBM Plex Mono', 'Menlo', 'Monaco', monospace;
-  --radius: 0.5rem; 
+  --radius: 0.625rem;
 
   --shadow-2xs: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
@@ -207,9 +207,43 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* Scanlines da sala de operações — ambiance sutil em todo o app */
-    background-image: linear-gradient(hsl(var(--primary) / 0.035) 1px, transparent 1px);
-    background-size: 100% 34px;
+    background-image:
+      radial-gradient(circle at 76% -10%, hsl(var(--primary) / 0.12), transparent 30rem),
+      linear-gradient(hsl(var(--primary) / 0.035) 1px, transparent 1px);
+    background-size: auto, 100% 34px;
+    min-width: 320px;
+  }
+}
+
+@layer components {
+  .workspace-shell {
+    background-image: radial-gradient(circle at 84% 0%, hsl(var(--primary) / 0.06), transparent 34rem);
+  }
+
+  .workspace-content {
+    width: 100%;
+    max-width: 1680px;
+    margin-inline: auto;
+  }
+
+  .workspace-heading {
+    position: relative;
+  }
+
+  .workspace-heading::before {
+    content: "";
+    position: absolute;
+    left: -1rem;
+    top: 0.15rem;
+    bottom: 0.2rem;
+    width: 2px;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--primary) / 0.05));
+  }
+
+  .workspace-panel {
+    background: linear-gradient(145deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.8));
+    box-shadow: 0 18px 48px hsl(160 30% 2% / 0.14);
   }
 }
 
@@ -235,4 +269,3 @@
   .ops-reel-anim { animation: none !important; }
   .ops-flow-dot, .ops-scan { display: none; }
 }
-

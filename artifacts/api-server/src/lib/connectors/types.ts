@@ -31,6 +31,57 @@ export interface ConnectorTestResult {
   message: string;
 }
 
+export const MUSTER_CONNECTOR_CONTRACT_VERSION = "muster.connector.v1";
+export const MUSTER_AGENT_INGESTION_CONTRACT_VERSION = "muster.agent-ingestion.v1";
+
+export interface ConnectorCapabilities {
+  testConnection: boolean;
+  discoverAgents: boolean;
+  collectTelemetry: boolean;
+  collectMetrics: boolean;
+  sendFeedback: boolean;
+  exportDecisions: boolean;
+}
+
+export interface ExternalAgentRecord {
+  externalId: string;
+  name: string;
+  platform: string;
+  version?: string;
+  runtime?: string;
+  status?: string;
+  url?: string;
+  metadata?: Record<string, unknown>;
+  observedAt: string;
+}
+
+export interface ExternalAgentObservation {
+  metricKey: string;
+  label: string;
+  value: number;
+  unit: string;
+  kind: "observed" | "inferred" | "synthetic";
+  confidence: number;
+  sampleSize?: number;
+  capturedAt: string;
+  source: {
+    platform: string;
+    connectorId?: string;
+    tenant?: string;
+    reference?: string;
+  };
+  lineage: Array<{ stage: string; name: string; ref?: string }>;
+}
+
+export interface ConnectorSyncResult {
+  contractVersion: typeof MUSTER_CONNECTOR_CONTRACT_VERSION;
+  collectedAt: string;
+  cursor?: string;
+  agents: ExternalAgentRecord[];
+  observations: ExternalAgentObservation[];
+  warnings: string[];
+}
+
 export interface ConnectorImpl {
   platform: string;
   displayName: string;
@@ -38,4 +89,5 @@ export interface ConnectorImpl {
   testConnection(cred: ConnectorCredential): Promise<ConnectorTestResult>;
   /** Lists agent candidates found on the platform. */
   discoverAgents(cred: ConnectorCredential): Promise<DiscoveredAgentCandidate[]>;
+  capabilities?: ConnectorCapabilities;
 }

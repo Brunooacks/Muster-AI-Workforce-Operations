@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout";
 import {
   useListCatalogMetrics,
+  useListMetricStarterKits,
   useCreateCatalogMetric,
   useUpdateCatalogMetric,
   useDeleteCatalogMetric,
@@ -46,6 +47,7 @@ import {
   Pencil,
   Trash2,
   Activity,
+  Compass,
   type LucideIcon,
 } from "lucide-react";
 
@@ -115,6 +117,10 @@ const PT = {
   toastDeleted: "Métrica excluída",
   toastDeleteErrTitle: "Não foi possível excluir",
   toastDeleteErrDesc: "Métricas do catálogo padrão não podem ser excluídas.",
+  starterEyebrow: "Comece com um kit",
+  starterTitle: "Diretrizes prontas para adotar métricas sem começar do zero.",
+  starterDesc: "Escolha o objetivo mais próximo da sua operação. O kit sugere uma combinação equilibrada de eficácia, eficiência, adoção e guardrails.",
+  starterOpen: "Ver vertical",
 };
 
 type Dict = typeof PT;
@@ -172,6 +178,10 @@ const L: Record<Lang, Dict> = {
     toastDeleted: "Metric deleted",
     toastDeleteErrTitle: "Could not delete",
     toastDeleteErrDesc: "Standard catalog metrics cannot be deleted.",
+    starterEyebrow: "Start with a kit",
+    starterTitle: "Ready-made guidance to adopt metrics without starting from scratch.",
+    starterDesc: "Choose the objective closest to your operation. Each kit balances efficacy, efficiency, adoption and guardrails.",
+    starterOpen: "View vertical",
   },
   es: {
     bcGov: "Gobernanza",
@@ -224,6 +234,10 @@ const L: Record<Lang, Dict> = {
     toastDeleted: "Métrica eliminada",
     toastDeleteErrTitle: "No fue posible eliminar",
     toastDeleteErrDesc: "Las métricas del catálogo estándar no pueden eliminarse.",
+    starterEyebrow: "Empieza con un kit",
+    starterTitle: "Guías listas para adoptar métricas sin empezar de cero.",
+    starterDesc: "Elige el objetivo más cercano a tu operación. Cada kit combina eficacia, eficiencia, adopción y guardrails.",
+    starterOpen: "Ver vertical",
   },
 };
 
@@ -255,6 +269,7 @@ export default function MetricasPage() {
   const { lang } = useLang();
   const t = L[lang];
   const { data: verticals, isLoading, isError, refetch } = useListCatalogMetrics();
+  const { data: starterKits } = useListMetricStarterKits();
   const createMetric = useCreateCatalogMetric();
   const updateMetric = useUpdateCatalogMetric();
   const deleteMetric = useDeleteCatalogMetric();
@@ -354,6 +369,47 @@ export default function MetricasPage() {
           </div>
         ) : (
           <>
+            {starterKits && starterKits.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Compass className="h-5 w-5 text-primary" strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">{t.starterEyebrow}</p>
+                    <h2 className="mt-1 font-serif text-2xl font-medium tracking-tight">{t.starterTitle}</h2>
+                    <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">{t.starterDesc}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                  {starterKits.map((kit) => (
+                    <button
+                      key={kit.key}
+                      type="button"
+                      onClick={() => setActiveVertical(kit.vertical)}
+                      className="group rounded-xl border border-card-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-card/80"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <Pill tone="sage">{kit.metrics.length} KPIs</Pill>
+                        <Activity className="h-4 w-4 text-primary/70 transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                      <h3 className="mt-4 font-serif text-lg font-medium tracking-tight">{kit.label}</h3>
+                      <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-muted-foreground">{kit.objective}</p>
+                      <div className="mt-4 space-y-1.5 border-t border-card-border/70 pt-3">
+                        {kit.metrics.slice(0, 3).map((metric) => (
+                          <div key={metric.key} className="flex items-center justify-between gap-2 text-[10px]">
+                            <span className="truncate text-foreground/80">{metric.label}</span>
+                            <span className="shrink-0 font-mono text-primary/80">{metric.target}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground group-hover:text-primary">{t.starterOpen} →</p>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Vertical selector */}
             <div className="flex flex-wrap items-center gap-2">
               <Eyebrow>{t.verticalEyebrow}</Eyebrow>
