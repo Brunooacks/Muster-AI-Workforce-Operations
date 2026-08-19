@@ -219,3 +219,52 @@ o da janela em que a ação foi aprovada.
 **Verificador:** aprovar um veredito com três ações, marcar uma como concluída,
 reavaliar após nova telemetria e ver na tela a comparação entre o antes e o
 depois da ação — com o E2E afirmando essa cadeia.
+
+## Plano — tenancy utilizável (rodadas 6 a 8)
+
+Levantado em 2026-08-19, após auditoria das rotas.
+
+### Achado que define a ordem
+
+O middleware `requireOrg` resolve o tenant e falha fechada, e as escritas já
+gravam `org_id`. Mas **as leituras não filtram**: `fleet.ts` tem cinco consultas
+a tabelas-raiz e nenhuma menção a `orgId`; o padrão se repete em journeys,
+mixed-teams, catalog e connectors. Na prática, a organização A enxergaria os
+dados da B. A fundação existe; a tranca, não.
+
+Por isso a ordem é: **aplicar o escopo antes de construir tela**. Uma interface
+de convite sobre isolamento que não vigora só aumenta a superfície do problema.
+
+### Rodada 6 — o isolamento passa a vigorar
+
+- Teste de vazamento cruzado primeiro: duas organizações, dados em cada uma, e a
+  afirmação de que A não lê nem escreve nada de B. Deve **falhar** ao ser escrito
+  — é o que prova que o problema é real.
+- Filtrar por `orgId` toda leitura de entidade-raiz; entidades filhas herdam pelo
+  join com o pai.
+- Rotas por agente (`/agents/:id/...`) validam posse antes de responder, para o
+  404 não virar oráculo de existência.
+
+**Verificador:** o teste de vazamento passa; E2E segue verde; suíte não regride.
+
+### Rodada 7 — organização como objeto de primeira classe
+
+- Criar organização, renomear, listar membros.
+- Convite por e-mail com papel (owner, admin, member) e aceite.
+- Troca de organização ativa quando o usuário pertence a mais de uma — hoje a
+  API devolve 409 nesse caso, de propósito, porque adivinhar seria pior.
+
+**Verificador:** dois usuários em organizações distintas operam a mesma
+instância sem se ver, pela interface.
+
+### Rodada 8 — alçada por perfil na interface
+
+- Papéis de equipe já existem no banco (owner, supervisor, operator, observer)
+  com direitos de decisão por membro, mas a interface não os aplica: quem é
+  observador vê os mesmos botões de quem é dono.
+- Esconder ou desabilitar ação conforme o papel, com a razão visível — botão
+  cinza sem explicação gera chamado de suporte.
+- A API valida o papel também, porque interface não é controle de acesso.
+
+**Verificador:** um observador não consegue aprovar veredito nem pela tela nem
+por chamada direta à API.
