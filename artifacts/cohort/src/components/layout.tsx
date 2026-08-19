@@ -32,6 +32,7 @@ import { MusterMark } from "@/components/logo";
 import { useGetFleetSummary } from "@workspace/api-client-react";
 import { useLang, type Lang } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/lang-switcher";
+import { ProfileSwitcher } from "@/components/profile-switcher";
 import { platformLabel } from "@/lib/platforms";
 import { getTrialInfo } from "@/lib/plan";
 
@@ -476,6 +477,7 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             <GlobalSearch />
             <PerspectiveToggle />
+            <ProfileSwitcher />
             <LangSwitcher />
             <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={NAV_LABELS[useLangValue()].notifications}>
               <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />

@@ -269,3 +269,237 @@
   .ops-reel-anim { animation: none !important; }
   .ops-flow-dot, .ops-scan { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Perfis de cor — na linha dos perfis do Terminal do macOS.
+   
+   Cada perfil troca apenas os tokens de base; toda a interface é construída
+   sobre eles, então nenhum componente precisa saber que o tema mudou. A regra
+   de harmonia que mantém os perfis coerentes entre si:
+     · um fundo escuro de matiz definida, não cinza puro;
+     · a superfície um passo acima do fundo, na mesma matiz;
+     · um acento só, que também é o anel de foco;
+     · a paleta semântica (estável / atenção / crítico / observação) preservada
+       em função, com a matiz ajustada para não brigar com o acento.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Âmbar — fósforo de terminal antigo, quente e de alto contraste. */
+[data-profile="ambar"] {
+  --background: 30 14% 6%;
+  --foreground: 38 44% 88%;
+  --border: 32 12% 18%;
+  --input: 32 12% 18%;
+  --ring: 38 78% 58%;
+  --card: 28 13% 8%;
+  --card-foreground: 38 44% 88%;
+  --card-border: 32 13% 16%;
+  --popover: 28 13% 9%;
+  --popover-foreground: 38 44% 88%;
+  --popover-border: 32 12% 18%;
+  --primary: 38 78% 58%;
+  --primary-foreground: 30 20% 8%;
+  --secondary: 32 11% 14%;
+  --secondary-foreground: 38 36% 84%;
+  --muted: 32 11% 13%;
+  --muted-foreground: 36 10% 58%;
+  --accent: 32 11% 14%;
+  --accent-foreground: 38 44% 88%;
+  --destructive: 6 58% 52%;
+  --destructive-foreground: 38 44% 94%;
+  --chart-1: 38 70% 58%;
+  --chart-2: 24 62% 56%;
+  --chart-3: 8 55% 58%;
+  --chart-4: 2 62% 56%;
+  --chart-5: 190 28% 58%;
+  --sidebar: 30 16% 5%;
+  --sidebar-foreground: 38 44% 86%;
+  --sidebar-border: 32 12% 14%;
+  --sidebar-primary: 38 78% 58%;
+  --sidebar-primary-foreground: 30 20% 8%;
+  --sidebar-accent: 32 11% 13%;
+  --sidebar-accent-foreground: 38 44% 88%;
+  --sidebar-ring: 38 78% 58%;
+}
+
+/* Ardósia — azul-cinza sóbrio, o mais neutro dos perfis escuros. */
+[data-profile="ardosia"] {
+  --background: 215 22% 9%;
+  --foreground: 210 24% 90%;
+  --border: 214 16% 21%;
+  --input: 214 16% 21%;
+  --ring: 205 62% 62%;
+  --card: 215 20% 11%;
+  --card-foreground: 210 24% 90%;
+  --card-border: 214 16% 19%;
+  --popover: 215 20% 12%;
+  --popover-foreground: 210 24% 90%;
+  --popover-border: 214 16% 21%;
+  --primary: 205 62% 62%;
+  --primary-foreground: 215 26% 10%;
+  --secondary: 214 15% 17%;
+  --secondary-foreground: 210 20% 86%;
+  --muted: 214 15% 16%;
+  --muted-foreground: 212 12% 62%;
+  --accent: 214 15% 17%;
+  --accent-foreground: 210 24% 90%;
+  --destructive: 358 58% 56%;
+  --destructive-foreground: 210 24% 95%;
+  --chart-1: 158 44% 56%;
+  --chart-2: 40 60% 60%;
+  --chart-3: 14 58% 60%;
+  --chart-4: 358 62% 60%;
+  --chart-5: 205 62% 66%;
+  --sidebar: 215 24% 8%;
+  --sidebar-foreground: 210 24% 88%;
+  --sidebar-border: 214 16% 17%;
+  --sidebar-primary: 205 62% 62%;
+  --sidebar-primary-foreground: 215 26% 10%;
+  --sidebar-accent: 214 15% 16%;
+  --sidebar-accent-foreground: 210 24% 90%;
+  --sidebar-ring: 205 62% 62%;
+}
+
+/* Solarizado — a paleta de Ethan Schoonover, de baixo contraste e olhos calmos. */
+[data-profile="solarizado"] {
+  --background: 192 100% 8%;
+  --foreground: 186 22% 74%;
+  --border: 192 44% 17%;
+  --input: 192 44% 17%;
+  --ring: 175 59% 40%;
+  --card: 192 81% 10%;
+  --card-foreground: 186 22% 74%;
+  --card-border: 192 44% 16%;
+  --popover: 192 81% 11%;
+  --popover-foreground: 186 22% 74%;
+  --popover-border: 192 44% 17%;
+  --primary: 175 59% 40%;
+  --primary-foreground: 192 100% 8%;
+  --secondary: 192 55% 14%;
+  --secondary-foreground: 186 22% 80%;
+  --muted: 192 55% 13%;
+  --muted-foreground: 186 14% 56%;
+  --accent: 192 55% 14%;
+  --accent-foreground: 186 22% 78%;
+  --destructive: 1 71% 52%;
+  --destructive-foreground: 44 87% 94%;
+  --chart-1: 175 59% 44%;
+  --chart-2: 45 100% 35%;
+  --chart-3: 18 80% 44%;
+  --chart-4: 1 71% 52%;
+  --chart-5: 205 69% 49%;
+  --sidebar: 192 100% 7%;
+  --sidebar-foreground: 186 22% 72%;
+  --sidebar-border: 192 44% 14%;
+  --sidebar-primary: 175 59% 40%;
+  --sidebar-primary-foreground: 192 100% 8%;
+  --sidebar-accent: 192 55% 13%;
+  --sidebar-accent-foreground: 186 22% 76%;
+  --sidebar-ring: 175 59% 40%;
+}
+
+/* Grafite — neutro quase puro, para quem quer a cor toda no dado. */
+[data-profile="grafite"] {
+  --background: 240 6% 8%;
+  --foreground: 240 8% 90%;
+  --border: 240 5% 20%;
+  --input: 240 5% 20%;
+  --ring: 240 10% 70%;
+  --card: 240 6% 10%;
+  --card-foreground: 240 8% 90%;
+  --card-border: 240 5% 18%;
+  --popover: 240 6% 11%;
+  --popover-foreground: 240 8% 90%;
+  --popover-border: 240 5% 20%;
+  --primary: 240 10% 76%;
+  --primary-foreground: 240 8% 10%;
+  --secondary: 240 5% 16%;
+  --secondary-foreground: 240 8% 86%;
+  --muted: 240 5% 15%;
+  --muted-foreground: 240 5% 60%;
+  --accent: 240 5% 16%;
+  --accent-foreground: 240 8% 90%;
+  --destructive: 0 55% 55%;
+  --destructive-foreground: 240 8% 95%;
+  --chart-1: 152 34% 58%;
+  --chart-2: 42 54% 60%;
+  --chart-3: 16 52% 58%;
+  --chart-4: 0 55% 58%;
+  --chart-5: 220 26% 66%;
+  --sidebar: 240 6% 6%;
+  --sidebar-foreground: 240 8% 88%;
+  --sidebar-border: 240 5% 16%;
+  --sidebar-primary: 240 10% 76%;
+  --sidebar-primary-foreground: 240 8% 10%;
+  --sidebar-accent: 240 5% 15%;
+  --sidebar-accent-foreground: 240 8% 90%;
+  --sidebar-ring: 240 10% 70%;
+}
+
+/* Papel — o único perfil claro, para sala com projetor ou luz forte. */
+[data-profile="papel"] {
+  --background: 60 20% 97%;
+  --foreground: 160 14% 14%;
+  --border: 150 10% 86%;
+  --input: 150 10% 86%;
+  --ring: 152 34% 38%;
+  --card: 0 0% 100%;
+  --card-foreground: 160 14% 14%;
+  --card-border: 150 10% 88%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 160 14% 14%;
+  --popover-border: 150 10% 86%;
+  --primary: 152 34% 34%;
+  --primary-foreground: 60 20% 97%;
+  --secondary: 150 14% 93%;
+  --secondary-foreground: 160 14% 20%;
+  --muted: 150 14% 94%;
+  --muted-foreground: 155 8% 42%;
+  --accent: 150 14% 93%;
+  --accent-foreground: 160 14% 16%;
+  --destructive: 6 58% 46%;
+  --destructive-foreground: 60 20% 98%;
+  --chart-1: 152 38% 36%;
+  --chart-2: 36 58% 42%;
+  --chart-3: 12 54% 46%;
+  --chart-4: 2 60% 48%;
+  --chart-5: 205 40% 44%;
+  --sidebar: 150 16% 95%;
+  --sidebar-foreground: 160 14% 18%;
+  --sidebar-border: 150 10% 87%;
+  --sidebar-primary: 152 34% 34%;
+  --sidebar-primary-foreground: 60 20% 97%;
+  --sidebar-accent: 150 14% 91%;
+  --sidebar-accent-foreground: 160 14% 16%;
+  --sidebar-ring: 152 34% 38%;
+
+  /* No claro, o realce por sobreposição precisa escurecer, não clarear. */
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .07);
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .07);
+}
+
+/* ── Barra de rolagem ──────────────────────────────────────────────────────
+   A barra padrão do sistema aparecia larga e clara demais sobre o fundo escuro,
+   cortando a lateral da sidebar. Fica fina, na cor da borda, e só ganha
+   contraste sob o cursor — presente quando se precisa dela, silenciosa quando
+   não. Vale para todos os perfis, porque deriva dos tokens. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 999px;
+  /* A borda transparente encolhe o polegar visualmente sem reduzir a área de
+     clique — mais discreto, mesma facilidade de pegar. */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.6);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-corner { background: transparent; }
