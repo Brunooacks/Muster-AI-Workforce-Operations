@@ -11,6 +11,24 @@
  *   pnpm --filter @workspace/scripts run demo:integrar -- --nome="Revisor de PR" --papel="Revisa pull requests" --execucoes=20
  */
 
+/**
+ * Perfis plausíveis para quando nenhum nome é informado. Demonstrar duas vezes
+ * o mesmo "Agente de Integração" enfraquece a demo; variar dá a sensação de
+ * frota real e permite ensaiar quantas vezes for preciso.
+ */
+const PERFIS: Array<{ nome: string; papel: string; plataforma: string }> = [
+  { nome: "Triagem de Chamados", papel: "Classifica e roteia chamados de primeiro nível", plataforma: "openai-agents" },
+  { nome: "Analista de Contratos", papel: "Lê contratos e sinaliza cláusulas de risco", plataforma: "langgraph" },
+  { nome: "Conciliador Financeiro", papel: "Concilia lançamentos e aponta divergências", plataforma: "crewai" },
+  { nome: "Qualificador de Leads", papel: "Qualifica leads de entrada e agenda contato", plataforma: "agentforce" },
+  { nome: "Revisor de Pull Request", papel: "Revisa PRs e aponta risco de regressão", plataforma: "langgraph" },
+  { nome: "Assistente de Onboarding", papel: "Conduz o onboarding de novos colaboradores", plataforma: "azure-ai-foundry" },
+  { nome: "Detector de Fraude", papel: "Avalia transações e sinaliza suspeita de fraude", plataforma: "aws-bedrock-agentcore" },
+  { nome: "Redator de Resposta", papel: "Redige respostas a partir da base de conhecimento", plataforma: "openai-agents" },
+  { nome: "Auditor de Conformidade", papel: "Verifica aderência a política e registra desvio", plataforma: "google-vertex-agent-engine" },
+  { nome: "Priorizador de Backlog", papel: "Ordena o backlog por impacto e esforço", plataforma: "langgraph" },
+];
+
 function arg(nome: string): string | undefined {
   const hit = process.argv.find((a) => a.startsWith(`--${nome}=`));
   if (hit) return hit.slice(nome.length + 3);
@@ -18,9 +36,12 @@ function arg(nome: string): string | undefined {
 }
 
 const baseUrl = (arg("base-url") ?? process.env.MUSTER_BASE_URL ?? "http://localhost:8087").replace(/\/+$/, "");
-const nome = arg("nome") ?? "Agente de Integração";
-const papel = arg("papel") ?? "Executa tarefas e reporta a própria telemetria";
-const plataforma = arg("plataforma") ?? "openai-agents";
+// Sorteia um perfil ainda não usado — a checagem contra a frota acontece no
+// main(), onde a lista já foi carregada.
+const perfilSorteado = PERFIS[Math.floor(Math.random() * PERFIS.length)]!;
+const nomeInformado = arg("nome");
+const papel = arg("papel") ?? perfilSorteado.papel;
+const plataforma = arg("plataforma") ?? perfilSorteado.plataforma;
 const execucoes = Number(arg("execucoes") ?? 24);
 const intervalo = Number(arg("intervalo") ?? 700);
 
@@ -47,11 +68,23 @@ async function main(): Promise<void> {
 
   // ── 1. Cadastro ─────────────────────────────────────────────────────────
   titulo(1, "Cadastro — a carteira de trabalho");
-  console.log(`   Nome:       ${nome}`);
   console.log(`   Papel:      ${papel}`);
   console.log(`   Plataforma: ${plataforma}`);
 
   const frota = await api<Array<{ id: string; name: string }>>("/agents");
+
+  // Sem --nome: procura um perfil que ainda não está na frota. Se todos já
+  // existirem, numera para continuar criando agentes distintos.
+  let nome = nomeInformado ?? "";
+  if (!nome) {
+    const usados = new Set(frota.map((a) => a.name));
+    const livre = PERFIS.find((p) => !usados.has(p.nome));
+    nome = livre
+      ? livre.nome
+      : `${perfilSorteado.nome} ${frota.filter((a) => a.name.startsWith(perfilSorteado.nome)).length + 1}`;
+  }
+  console.log(`   Nome:       ${nome}`);
+
   const existente = frota.find((a) => a.name === nome);
   const agentId = existente
     ? existente.id
@@ -79,7 +112,11 @@ async function main(): Promise<void> {
         }),
       })).agent.id;
 
-  console.log(existente ? `   → já existia, reaproveitando: ${agentId}` : `   → admitido: ${agentId}`);
+  console.log(
+    existente
+      ? `   → \x1b[33mjá existia — reaproveitando e somando execuções\x1b[0m (${agentId})`
+      : `   → \x1b[32madmitido\x1b[0m (${agentId})`,
+  );
   console.log(`   \x1b[2mRepare na tela: ele nasce SEM nota. Sem evidência, a plataforma não avalia.\x1b[0m`);
   await pausa(1500);
 
