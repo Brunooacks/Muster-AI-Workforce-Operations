@@ -10,7 +10,9 @@
     "seed:a2a-demo": "tsx ./src/seed-a2a-demo.ts",
     "simulate-telemetry": "tsx ./src/simulate-telemetry.ts",
     "validate-mvp": "tsx ./src/validate-mvp.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "demo": "tsx ./src/demo-scenario.ts",
+    "demo:fluxo": "tsx ./src/demo-fluxo.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

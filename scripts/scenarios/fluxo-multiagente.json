@@ -1,0 +1,87 @@
+{
+  "fluxo": "Resolução de chamado — pipeline com sub-agentes",
+  "descricao": "Cinco sub-agentes encadeados, cada um com propósito e modelo de LLM diferentes. O objetivo é enxergar o fluxo como uma unidade: onde está o gargalo de tempo, onde está o consumo e qual elo derruba o resultado do conjunto.",
+  "propositoChave": "resolucao-chamado-hibrida",
+  "propositoNome": "Resolução de chamado ponta a ponta",
+  "dominio": "atendimento",
+  "resultadoEsperado": "Chamado resolvido com resposta correta, custo previsível e trilha de decisão auditável.",
+  "time": "Squad Resolução Híbrida",
+  "slaMinutos": 15,
+  "responsavel": "Supervisão de Operações",
+  "criterioEntrada": "Chamado elegível recebido com identificação do cliente e texto da solicitação.",
+  "criterioSucesso": "Resposta entregue, risco validado e evidência registrada.",
+  "execucoes": 60,
+
+  "subAgentes": [
+    {
+      "nome": "Classificador de Intenção",
+      "papel": "Classifica intenção, urgência e fila de destino",
+      "plataforma": "openai-agents",
+      "modelo": "gpt-4o-mini",
+      "custoPorMilTokensCentavos": 0.6,
+      "tokensMedios": 900,
+      "duracaoEsperadaMs": 1200,
+      "modoDecisao": "autonomous",
+      "comportamento": "saudavel",
+      "responsabilidade": "Classificar a solicitação e definir a rota.",
+      "guardrails": ["Não classificar sem texto do cliente", "Encaminhar dúvida ambígua para extração"],
+      "contextoHandoff": ["ticket_id", "intent", "priority"]
+    },
+    {
+      "nome": "Extrator de Contexto",
+      "papel": "Busca histórico do cliente e enriquece o chamado",
+      "plataforma": "langgraph",
+      "modelo": "claude-haiku",
+      "custoPorMilTokensCentavos": 0.5,
+      "tokensMedios": 2400,
+      "duracaoEsperadaMs": 2600,
+      "modoDecisao": "autonomous",
+      "comportamento": "saudavel",
+      "responsabilidade": "Reunir histórico, contrato e chamados anteriores.",
+      "guardrails": ["Não expor dado sensível fora do envelope", "Registrar as fontes consultadas"],
+      "contextoHandoff": ["customer_context", "history_summary", "contract_tier"]
+    },
+    {
+      "nome": "Decisor de Próxima Ação",
+      "papel": "Escolhe a ação: responder, acionar campo ou escalar",
+      "plataforma": "openai-agents",
+      "modelo": "gpt-4o",
+      "custoPorMilTokensCentavos": 5.0,
+      "tokensMedios": 5200,
+      "duracaoEsperadaMs": 7800,
+      "modoDecisao": "autonomous",
+      "comportamento": "saudavel",
+      "responsabilidade": "Definir a próxima ação com confiança declarada.",
+      "guardrails": ["Exigir confiança mínima de 80%", "Registrar evidência da decisão"],
+      "contextoHandoff": ["decision", "confidence", "evidence"]
+    },
+    {
+      "nome": "Redator de Resposta",
+      "papel": "Redige a resposta final ao cliente",
+      "plataforma": "crewai",
+      "modelo": "llama-3.1-70b",
+      "custoPorMilTokensCentavos": 0.9,
+      "tokensMedios": 3100,
+      "duracaoEsperadaMs": 4200,
+      "modoDecisao": "autonomous",
+      "comportamento": "degradando",
+      "responsabilidade": "Escrever a resposta fundamentada na decisão tomada.",
+      "guardrails": ["Não prometer prazo não confirmado", "Citar a fonte usada"],
+      "contextoHandoff": ["draft_answer", "sources"]
+    },
+    {
+      "nome": "Revisor de Risco",
+      "papel": "Valida conformidade e libera o envio",
+      "plataforma": "azure-ai-foundry",
+      "modelo": "gpt-4o-mini",
+      "custoPorMilTokensCentavos": 0.6,
+      "tokensMedios": 1800,
+      "duracaoEsperadaMs": 26000,
+      "modoDecisao": "human-approval",
+      "comportamento": "saudavel",
+      "responsabilidade": "Validar risco regulatório e aprovar o envio.",
+      "guardrails": ["Bloquear envio sem revisão em risco alto", "Registrar quem aprovou"],
+      "contextoHandoff": ["approval_status", "risk_level"]
+    }
+  ]
+}

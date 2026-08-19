@@ -1,0 +1,71 @@
+{
+  "cenario": "Suporte técnico — frota de atendimento N1",
+  "descricao": "Três agentes cobrindo triagem, resposta e escalonamento. Edite este arquivo com os agentes da sua operação: nome, papel, plataforma e o comportamento que você quer simular.",
+  "agentes": [
+    {
+      "nome": "Triagem N1",
+      "papel": "Classifica e responde chamados de primeiro nível",
+      "plataforma": "openai-agents",
+      "vertical": "suporte-ti",
+      "comportamento": "saudavel",
+      "execucoesPorDia": 120,
+      "custoPorExecucaoCentavos": 4,
+      "deveFazer": [
+        "Classificar o chamado por categoria e urgência",
+        "Responder dúvidas cobertas pela base de conhecimento",
+        "Escalar para humano quando fora da alçada"
+      ],
+      "naoDeveFazer": [
+        "Prometer prazo não confirmado",
+        "Encerrar chamado sem confirmação do usuário"
+      ],
+      "metricas": [
+        { "camada": "efficacy", "label": "Resolução no primeiro contato", "unidade": "%", "meta": "≥ 75%" },
+        { "camada": "efficiency", "label": "Tempo de resposta", "unidade": "s", "meta": "< 3 s" },
+        { "camada": "governance", "label": "Escalonamento correto", "unidade": "%", "meta": "≥ 80%" }
+      ]
+    },
+    {
+      "nome": "Redator de Respostas",
+      "papel": "Redige respostas técnicas a partir da base de conhecimento",
+      "plataforma": "langgraph",
+      "vertical": "suporte-ti",
+      "comportamento": "degradando",
+      "execucoesPorDia": 90,
+      "custoPorExecucaoCentavos": 7,
+      "deveFazer": [
+        "Redigir resposta fundamentada na base de conhecimento",
+        "Citar o artigo de origem em cada resposta"
+      ],
+      "naoDeveFazer": [
+        "Inventar procedimento não documentado"
+      ],
+      "metricas": [
+        { "camada": "efficacy", "label": "Respostas inventadas", "unidade": "%", "meta": "≤ 2%" },
+        { "camada": "efficiency", "label": "Custo por atendimento", "unidade": "R$", "meta": "R$ 0,10–0,40" },
+        { "camada": "adoption", "label": "Atendimentos por dia", "unidade": "/dia", "meta": "≥ 200" }
+      ]
+    },
+    {
+      "nome": "Fechamento de Chamado",
+      "papel": "Confirma resolução e encerra o chamado",
+      "plataforma": "crewai",
+      "vertical": "suporte-ti",
+      "comportamento": "erratico",
+      "execucoesPorDia": 60,
+      "custoPorExecucaoCentavos": 15,
+      "deveFazer": [
+        "Confirmar com o usuário antes de encerrar",
+        "Registrar a causa raiz do chamado"
+      ],
+      "naoDeveFazer": [
+        "Encerrar chamado reaberto sem análise humana"
+      ],
+      "metricas": [
+        { "camada": "efficacy", "label": "Cliente volta em 72h", "unidade": "%", "meta": "≤ 15%" },
+        { "camada": "governance", "label": "Taxa de erro", "unidade": "%", "meta": "≤ 5%" },
+        { "camada": "value", "label": "Custo total mensal", "unidade": "R$", "meta": "—" }
+      ]
+    }
+  ]
+}
