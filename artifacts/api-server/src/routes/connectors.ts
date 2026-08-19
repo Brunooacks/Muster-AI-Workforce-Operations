@@ -22,6 +22,7 @@ import {
   TestConnectorResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import { toAgentSummary } from "../lib/serializers";
 import {
   PLATFORM_CATALOG,
@@ -37,7 +38,7 @@ import { preAssess } from "../lib/pre-assessment";
 
 const router: IRouter = Router();
 
-router.get("/connectors/capabilities", requireAuth, async (_req, res) => {
+router.get("/connectors/capabilities", requireAuth, requireOrg, async (_req, res) => {
   res.json(connectorCapabilities());
 });
 
@@ -50,7 +51,7 @@ function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-router.get("/connectors", requireAuth, async (_req, res) => {
+router.get("/connectors", requireAuth, requireOrg, async (_req, res) => {
   const rows = await db.select().from(connectors);
 
   const existingPlatforms = new Set(rows.map((r) => r.platform));
@@ -82,7 +83,7 @@ router.get("/connectors", requireAuth, async (_req, res) => {
   res.json(data);
 });
 
-router.post("/connectors", requireAuth, async (req, res) => {
+router.post("/connectors", requireAuth, requireOrg, async (req, res) => {
   const body = ConnectPlatformBody.parse(req.body);
 
   const catalog = PLATFORM_CATALOG.find((p) => p.platform === body.platform);
@@ -113,6 +114,7 @@ router.post("/connectors", requireAuth, async (req, res) => {
   const [created] = await db
     .insert(connectors)
     .values({
+      orgId: req.orgId!,
       platform: body.platform,
       name: body.name ?? catalog?.name ?? body.platform,
       category: catalog?.category ?? "Plataforma de Agentes",
@@ -144,7 +146,7 @@ async function loadCredential(connectorId: string): Promise<{ token: string | nu
   return { token: row?.credential ?? null };
 }
 
-router.post("/connectors/register", requireAuth, async (req, res) => {
+router.post("/connectors/register", requireAuth, requireOrg, async (req, res) => {
   const body = RegisterConnectorBody.parse(req.body);
 
   const impl = getConnectorImpl(body.platform);
@@ -160,6 +162,7 @@ router.post("/connectors/register", requireAuth, async (req, res) => {
   const [connector] = await db
     .insert(connectors)
     .values({
+      orgId: req.orgId!,
       platform: body.platform,
       name: body.name,
       status: test.ok ? "connected" : "available",
@@ -197,7 +200,7 @@ router.post("/connectors/register", requireAuth, async (req, res) => {
   });
 });
 
-router.post("/connectors/:connectorId/test", requireAuth, async (req, res) => {
+router.post("/connectors/:connectorId/test", requireAuth, requireOrg, async (req, res) => {
   const connectorId = req.params.connectorId as string;
   const [connector] = await db
     .select()
@@ -223,7 +226,7 @@ router.post("/connectors/:connectorId/test", requireAuth, async (req, res) => {
 
 router.post(
   "/connectors/:connectorId/discover",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { connectorId } = DiscoverAgentsParams.parse(req.params);
 
@@ -346,7 +349,7 @@ router.post(
 
 router.post(
   "/connectors/:connectorId/import",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { connectorId } = ImportDiscoveredAgentsParams.parse(req.params);
     const body = ImportDiscoveredAgentsBody.parse(req.body);
@@ -426,6 +429,7 @@ router.post(
         const [inserted] = await tx
           .insert(agents)
           .values({
+            orgId: req.orgId!,
             externalId: source.externalId,
             name: source.name,
             slug,

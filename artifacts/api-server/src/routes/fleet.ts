@@ -25,6 +25,7 @@ import {
   GetFleetBenchmarksResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import { applyAlertUpdate } from "../lib/alert-workflow";
 
 const router: IRouter = Router();
@@ -54,7 +55,7 @@ function severityFromScore(score: number): Severity {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-router.get("/fleet/summary", requireAuth, async (_req, res) => {
+router.get("/fleet/summary", requireAuth, requireOrg, async (_req, res) => {
   const allAgents = await db.select().from(agents);
   const allAlerts = await db.select().from(alerts);
 
@@ -112,7 +113,7 @@ router.get("/fleet/summary", requireAuth, async (_req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/kpis", requireAuth, async (_req, res) => {
+router.get("/fleet/kpis", requireAuth, requireOrg, async (_req, res) => {
   const allAgents = await db.select().from(agents);
   const allEvaluations = await db
     .select()
@@ -237,7 +238,7 @@ router.get("/fleet/kpis", requireAuth, async (_req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/alerts", requireAuth, async (req, res) => {
+router.get("/fleet/alerts", requireAuth, requireOrg, async (req, res) => {
   const query = ListFleetAlertsQueryParams.parse(req.query);
 
   const rows = await db
@@ -277,7 +278,7 @@ router.get("/fleet/alerts", requireAuth, async (req, res) => {
   res.json(data);
 });
 
-router.patch("/fleet/alerts/:alertId", requireAuth, async (req, res) => {
+router.patch("/fleet/alerts/:alertId", requireAuth, requireOrg, async (req, res) => {
   const { alertId } = UpdateFleetAlertParams.parse(req.params);
   const body = UpdateFleetAlertBody.parse(req.body);
 
@@ -325,7 +326,7 @@ router.patch("/fleet/alerts/:alertId", requireAuth, async (req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/decisions", requireAuth, async (_req, res) => {
+router.get("/fleet/decisions", requireAuth, requireOrg, async (_req, res) => {
   const rows = await db
     .select({
       id: verdicts.id,
@@ -357,7 +358,7 @@ router.get("/fleet/decisions", requireAuth, async (_req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/governance", requireAuth, async (_req, res) => {
+router.get("/fleet/governance", requireAuth, requireOrg, async (_req, res) => {
   const allAgents = await db.select().from(agents);
   const allOwners = await db.select().from(agentOwners);
   const allEvaluations = await db
@@ -477,7 +478,7 @@ router.get("/fleet/governance", requireAuth, async (_req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/benchmarks", requireAuth, async (_req, res) => {
+router.get("/fleet/benchmarks", requireAuth, requireOrg, async (_req, res) => {
   const allAgents = await db.select().from(agents);
   const allEvaluations = await db
     .select()

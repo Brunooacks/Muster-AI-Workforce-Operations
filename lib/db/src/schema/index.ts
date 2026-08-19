@@ -15,6 +15,34 @@ const id = () =>
     .primaryKey()
     .$defaultFn(() => randomUUID());
 
+export type OrgMemberRole = "owner" | "admin" | "member";
+
+// --- Tenancy (R7 · gauntlet rodada 4) -----------------------------------------
+// Toda entidade-raiz pertence a uma organização. As entidades filhas derivam a
+// organização pela chave estrangeira do pai, então existe um único lugar por
+// domínio onde o escopo precisa ser aplicado — e um único lugar para auditar.
+export const organizations = pgTable("organizations", {
+  id: id(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  // Identificador da organização no provedor de identidade (Clerk org_id),
+  // quando a org nasce de um convite/SSO em vez de cadastro direto.
+  externalId: text("external_id").unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const organizationMembers = pgTable("organization_members", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  role: text("role").$type<OrgMemberRole>().notNull().default("member"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  orgMemberUnique: uniqueIndex("organization_members_org_user_idx").on(table.orgId, table.userId),
+  orgMemberUserIdx: index("organization_members_user_idx").on(table.userId),
+}));
+
 export type AgentStatus =
   | "observation"
   | "active"
@@ -112,7 +140,8 @@ export interface BusinessCase {
 
 export const purposes = pgTable("purposes", {
   id: id(),
-  key: text("key").notNull().unique(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  key: text("key").notNull(),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
   domain: text("domain").notNull(),
@@ -120,18 +149,25 @@ export const purposes = pgTable("purposes", {
   riskTier: text("risk_tier").$type<PurposeRiskTier>().notNull().default("medium"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => ({
+  purposesOrgKeyIdx: uniqueIndex("purposes_org_key_idx").on(table.orgId, table.key),
+  purposesOrgIdx: index("purposes_org_idx").on(table.orgId),
+}));
 
 export const teams = pgTable("teams", {
   id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
+  slug: text("slug").notNull(),
   description: text("description").notNull().default(""),
   purposeId: text("purpose_id").notNull().references(() => purposes.id, { onDelete: "restrict" }),
   status: text("status").$type<TeamStatus>().notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => ({
+  teamsOrgSlugIdx: uniqueIndex("teams_org_slug_idx").on(table.orgId, table.slug),
+  teamsOrgIdx: index("teams_org_idx").on(table.orgId),
+}));
 
 export const teamMemberships = pgTable("team_memberships", {
   id: id(),
@@ -148,9 +184,10 @@ export const teamMemberships = pgTable("team_memberships", {
 
 export const agents = pgTable("agents", {
   id: id(),
-  externalId: text("external_id").unique(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  externalId: text("external_id"),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
+  slug: text("slug").notNull(),
   role: text("role").notNull(),
   platform: text("platform").notNull(),
   version: text("version").notNull().default("1.0.0"),
@@ -182,7 +219,11 @@ export const agents = pgTable("agents", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  agentsOrgSlugIdx: uniqueIndex("agents_org_slug_idx").on(table.orgId, table.slug),
+  agentsOrgExternalIdx: uniqueIndex("agents_org_external_idx").on(table.orgId, table.externalId),
+  agentsOrgIdx: index("agents_org_idx").on(table.orgId),
+}));
 
 export const teamAgentAssignments = pgTable("team_agent_assignments", {
   id: id(),
@@ -201,6 +242,7 @@ export const teamAgentAssignments = pgTable("team_agent_assignments", {
 
 export const journeys = pgTable("journeys", {
   id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   teamId: text("team_id")
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
@@ -215,6 +257,7 @@ export const journeys = pgTable("journeys", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
+  journeysOrgIdx: index("journeys_org_idx").on(table.orgId),
   journeysTeamIdx: index("journeys_team_idx").on(table.teamId),
 }));
 
@@ -492,6 +535,7 @@ export type ConnectorStatus = "connected" | "available" | "syncing";
 
 export const connectors = pgTable("connectors", {
   id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   platform: text("platform").notNull(),
   name: text("name").notNull(),
   status: text("status")
@@ -501,7 +545,9 @@ export const connectors = pgTable("connectors", {
   agentsDiscovered: integer("agents_discovered").notNull().default(0),
   category: text("category").notNull().default(""),
   lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
-});
+}, (table) => ({
+  connectorsOrgIdx: index("connectors_org_idx").on(table.orgId),
+}));
 
 export const metricPoints = pgTable("metric_points", {
   id: id(),
@@ -557,6 +603,7 @@ export interface DraftBusinessCase {
 
 export const discoveryRuns = pgTable("discovery_runs", {
   id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   source: text("source").notNull(),
   sourceRef: text("source_ref"),
   status: text("status")
@@ -573,10 +620,13 @@ export const discoveryRuns = pgTable("discovery_runs", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  discoveryRunsOrgIdx: index("discovery_runs_org_idx").on(table.orgId),
+}));
 
 export const agentDrafts = pgTable("agent_drafts", {
   id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   runId: text("run_id")
     .notNull()
     .references(() => discoveryRuns.id, { onDelete: "cascade" }),
@@ -623,7 +673,9 @@ export const agentDrafts = pgTable("agent_drafts", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  agentDraftsOrgIdx: index("agent_drafts_org_idx").on(table.orgId),
+}));
 
 // --- Metric catalog (R2) ------------------------------------------------------
 // Pre-populated library of deep metrics organized by business vertical, plus
@@ -632,6 +684,7 @@ export const agentDrafts = pgTable("agent_drafts", {
 
 export const catalogMetrics = pgTable("catalog_metrics", {
   id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   // Unique kebab-case key, e.g. "acuracia-das-decisoes".
   key: text("key").notNull().unique(),
   // One of the vertical keys defined in the metric catalog seed
@@ -650,7 +703,9 @@ export const catalogMetrics = pgTable("catalog_metrics", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => ({
+  catalogMetricsOrgIdx: index("catalog_metrics_org_idx").on(table.orgId),
+}));
 
 // --- Real connectors (R3) -----------------------------------------------------
 // Credentials for registered connectors. The credential column is NEVER
@@ -719,4 +774,29 @@ export const metricEvidence = pgTable("metric_evidence", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   metricEvidenceMetricKeyIdx: index("metric_evidence_metric_key_idx").on(table.metricKey),
+}));
+
+// --- Agent credentials (R7 · gauntlet rodada 3) -------------------------------
+// The credential a RUNNING agent uses to report telemetry, deliberately
+// separate from the human Clerk session: an agent deployed in the customer's
+// infrastructure must never carry a user session. Only the SHA-256 of the token
+// is stored, so a database dump cannot be replayed against the ingest endpoint.
+// `prefix` is the public, indexed lookup handle — never secret.
+export const agentApiKeys = pgTable("agent_api_keys", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  agentId: text("agent_id")
+    .notNull()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  label: text("label"),
+  prefix: text("prefix").notNull(),
+  keyHash: text("key_hash").notNull(),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+}, (table) => ({
+  agentApiKeysOrgIdx: index("agent_api_keys_org_idx").on(table.orgId),
+  agentApiKeysPrefixIdx: uniqueIndex("agent_api_keys_prefix_idx").on(table.prefix),
+  agentApiKeysAgentIdx: index("agent_api_keys_agent_idx").on(table.agentId),
 }));

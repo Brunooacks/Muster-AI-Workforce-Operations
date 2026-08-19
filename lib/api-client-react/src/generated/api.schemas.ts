@@ -1243,6 +1243,31 @@ export interface PreAssessResult {
   signals: string[];
 }
 
+export interface AgentApiKeyInput {
+  /** Nome operacional da credencial (ex.- "produção", "staging"). */
+  label?: string;
+}
+
+export interface AgentApiKey {
+  id: string;
+  agentId: string;
+  label?: string | null;
+  /** Handle público da credencial — não é segredo. */
+  prefix: string;
+  /** Forma exibível, com o segredo oculto. */
+  masked: string;
+  createdAt: string;
+  lastUsedAt?: string | null;
+  revokedAt?: string | null;
+  revoked: boolean;
+}
+
+export interface AgentApiKeyCreated {
+  key: AgentApiKey;
+  /** Token completo. Exibido uma única vez — o servidor guarda apenas o hash SHA-256 e não consegue recuperá-lo depois. */
+  plaintext: string;
+}
+
 export type AgentEventInputKind = typeof AgentEventInputKind[keyof typeof AgentEventInputKind];
 
 

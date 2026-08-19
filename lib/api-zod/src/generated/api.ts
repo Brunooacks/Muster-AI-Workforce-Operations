@@ -1550,6 +1550,60 @@ export const PreAssessAgentSourceResponse = zod.object({
 
 
 /**
+ * @summary Lista as credenciais do agente (nunca devolve o segredo)
+ */
+export const ListAgentApiKeysParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ListAgentApiKeysResponseItem = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "label": zod.string().nullish(),
+  "prefix": zod.string().describe('Handle público da credencial — não é segredo.'),
+  "masked": zod.string().describe('Forma exibível, com o segredo oculto.'),
+  "createdAt": zod.coerce.date(),
+  "lastUsedAt": zod.coerce.date().nullish(),
+  "revokedAt": zod.coerce.date().nullish(),
+  "revoked": zod.boolean()
+})
+export const ListAgentApiKeysResponse = zod.array(ListAgentApiKeysResponseItem)
+
+
+/**
+ * @summary Cria uma credencial para o agente — o segredo é exibido uma única vez
+ */
+export const CreateAgentApiKeyParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const CreateAgentApiKeyBody = zod.object({
+  "label": zod.string().optional().describe('Nome operacional da credencial (ex.- \"produção\", \"staging\").')
+})
+
+
+/**
+ * @summary Revoga uma credencial do agente
+ */
+export const RevokeAgentApiKeyParams = zod.object({
+  "agentId": zod.coerce.string(),
+  "keyId": zod.coerce.string()
+})
+
+export const RevokeAgentApiKeyResponse = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "label": zod.string().nullish(),
+  "prefix": zod.string().describe('Handle público da credencial — não é segredo.'),
+  "masked": zod.string().describe('Forma exibível, com o segredo oculto.'),
+  "createdAt": zod.coerce.date(),
+  "lastUsedAt": zod.coerce.date().nullish(),
+  "revokedAt": zod.coerce.date().nullish(),
+  "revoked": zod.boolean()
+})
+
+
+/**
  * @summary Ingest a telemetry event (execution, error, escalation) for an agent
  */
 export const IngestAgentEventParams = zod.object({

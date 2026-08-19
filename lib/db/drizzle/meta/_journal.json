@@ -57,6 +57,20 @@
       "when": 1786716410740,
       "tag": "0007_broken_red_shift",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787025063212,
+      "tag": "0008_flimsy_mac_gargan",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787025123212,
+      "tag": "0009_tenancy_organizations",
+      "breakpoints": true
     }
   ]
 }

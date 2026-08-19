@@ -21,6 +21,9 @@ import type {
 
 import type {
   Agent,
+  AgentApiKey,
+  AgentApiKeyCreated,
+  AgentApiKeyInput,
   AgentDetail,
   AgentDraft,
   AgentDraftRecord,
@@ -3302,6 +3305,227 @@ export const usePreAssessAgentSource = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getPreAssessAgentSourceMutationOptions(options));
+    }
+
+export const getListAgentApiKeysUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/api-keys`
+}
+
+/**
+ * @summary Lista as credenciais do agente (nunca devolve o segredo)
+ */
+export const listAgentApiKeys = async (agentId: string, options?: RequestInit): Promise<AgentApiKey[]> => {
+
+  return customFetch<AgentApiKey[]>(getListAgentApiKeysUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentApiKeysQueryKey = (agentId: string,) => {
+    return [
+    `/api/agents/${agentId}/api-keys`
+    ] as const;
+    }
+
+
+export const getListAgentApiKeysQueryOptions = <TData = Awaited<ReturnType<typeof listAgentApiKeys>>, TError = ErrorType<unknown>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentApiKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentApiKeysQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentApiKeys>>> = ({ signal }) => listAgentApiKeys(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentApiKeys>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentApiKeysQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentApiKeys>>>
+export type ListAgentApiKeysQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lista as credenciais do agente (nunca devolve o segredo)
+ */
+
+export function useListAgentApiKeys<TData = Awaited<ReturnType<typeof listAgentApiKeys>>, TError = ErrorType<unknown>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentApiKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentApiKeysQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAgentApiKeyUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/api-keys`
+}
+
+/**
+ * @summary Cria uma credencial para o agente — o segredo é exibido uma única vez
+ */
+export const createAgentApiKey = async (agentId: string,
+    agentApiKeyInput?: AgentApiKeyInput, options?: RequestInit): Promise<AgentApiKeyCreated> => {
+
+  return customFetch<AgentApiKeyCreated>(getCreateAgentApiKeyUrl(agentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentApiKeyInput,)
+  }
+);}
+
+
+
+
+export const getCreateAgentApiKeyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentApiKey>>, TError,{agentId: string;data?: BodyType<AgentApiKeyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgentApiKey>>, TError,{agentId: string;data?: BodyType<AgentApiKeyInput>}, TContext> => {
+
+const mutationKey = ['createAgentApiKey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgentApiKey>>, {agentId: string;data?: BodyType<AgentApiKeyInput>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  createAgentApiKey(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgentApiKeyMutationResult = NonNullable<Awaited<ReturnType<typeof createAgentApiKey>>>
+    export type CreateAgentApiKeyMutationBody = BodyType<AgentApiKeyInput> | undefined
+    export type CreateAgentApiKeyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Cria uma credencial para o agente — o segredo é exibido uma única vez
+ */
+export const useCreateAgentApiKey = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentApiKey>>, TError,{agentId: string;data?: BodyType<AgentApiKeyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgentApiKey>>,
+        TError,
+        {agentId: string;data?: BodyType<AgentApiKeyInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAgentApiKeyMutationOptions(options));
+    }
+
+export const getRevokeAgentApiKeyUrl = (agentId: string,
+    keyId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/api-keys/${keyId}/revoke`
+}
+
+/**
+ * @summary Revoga uma credencial do agente
+ */
+export const revokeAgentApiKey = async (agentId: string,
+    keyId: string, options?: RequestInit): Promise<AgentApiKey> => {
+
+  return customFetch<AgentApiKey>(getRevokeAgentApiKeyUrl(agentId,keyId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeAgentApiKeyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeAgentApiKey>>, TError,{agentId: string;keyId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeAgentApiKey>>, TError,{agentId: string;keyId: string}, TContext> => {
+
+const mutationKey = ['revokeAgentApiKey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeAgentApiKey>>, {agentId: string;keyId: string}> = (props) => {
+          const {agentId,keyId} = props ?? {};
+
+          return  revokeAgentApiKey(agentId,keyId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeAgentApiKeyMutationResult = NonNullable<Awaited<ReturnType<typeof revokeAgentApiKey>>>
+
+    export type RevokeAgentApiKeyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Revoga uma credencial do agente
+ */
+export const useRevokeAgentApiKey = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeAgentApiKey>>, TError,{agentId: string;keyId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeAgentApiKey>>,
+        TError,
+        {agentId: string;keyId: string},
+        TContext
+      > => {
+      return useMutation(getRevokeAgentApiKeyMutationOptions(options));
     }
 
 export const getIngestAgentEventUrl = (agentId: string,) => {

@@ -26,6 +26,7 @@ import {
   TeamMemberParams,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import { requireMixedTeamManager } from "../middlewares/mixedTeamRole";
 import { normalizeDecisionRights, slugifyTeamName } from "../lib/mixed-team";
 
@@ -129,7 +130,7 @@ async function getTeam(teamId: string) {
   });
 }
 
-router.get("/purposes", requireAuth, async (_req, res) => {
+router.get("/purposes", requireAuth, requireOrg, async (_req, res) => {
   const rows = await db
     .select()
     .from(purposes)
@@ -139,12 +140,15 @@ router.get("/purposes", requireAuth, async (_req, res) => {
 
 router.post(
   "/purposes",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const body = PurposeInput.parse(req.body);
     try {
-      const [created] = await db.insert(purposes).values(body).returning();
+      const [created] = await db
+        .insert(purposes)
+        .values({ ...body, orgId: req.orgId! })
+        .returning();
       res.status(201).json(Purpose.parse(toPurpose(created!)));
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -156,7 +160,7 @@ router.post(
   },
 );
 
-router.get("/purposes/:purposeId", requireAuth, async (req, res) => {
+router.get("/purposes/:purposeId", requireAuth, requireOrg, async (req, res) => {
   const { purposeId } = PurposeIdParams.parse(req.params);
   const [purpose] = await db
     .select()
@@ -171,7 +175,7 @@ router.get("/purposes/:purposeId", requireAuth, async (req, res) => {
 
 router.delete(
   "/purposes/:purposeId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { purposeId } = PurposeIdParams.parse(req.params);
@@ -187,7 +191,7 @@ router.delete(
   },
 );
 
-router.get("/teams", requireAuth, async (_req, res) => {
+router.get("/teams", requireAuth, requireOrg, async (_req, res) => {
   const rows = await db.select().from(teams).orderBy(desc(teams.createdAt));
   const members = await db.select().from(teamMemberships);
   const assignments = await db.select().from(teamAgentAssignments);
@@ -217,7 +221,7 @@ router.get("/teams", requireAuth, async (_req, res) => {
 
 router.post(
   "/teams",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const body = CreateTeamInput.parse(req.body);
@@ -236,6 +240,7 @@ router.post(
       const [created] = await db
         .insert(teams)
         .values({
+          orgId: req.orgId!,
           name: body.name,
           slug,
           description: body.description,
@@ -253,7 +258,7 @@ router.post(
   },
 );
 
-router.get("/teams/:teamId", requireAuth, async (req, res) => {
+router.get("/teams/:teamId", requireAuth, requireOrg, async (req, res) => {
   const { teamId } = TeamIdParams.parse(req.params);
   const team = await getTeam(teamId);
   if (!team) {
@@ -265,7 +270,7 @@ router.get("/teams/:teamId", requireAuth, async (req, res) => {
 
 router.delete(
   "/teams/:teamId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { teamId } = TeamIdParams.parse(req.params);
@@ -283,7 +288,7 @@ router.delete(
 
 router.post(
   "/teams/:teamId/members",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { teamId } = TeamIdParams.parse(req.params);
@@ -317,7 +322,7 @@ router.post(
 
 router.delete(
   "/teams/:teamId/members/:membershipId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { teamId, membershipId } = TeamMemberParams.parse(req.params);
@@ -340,7 +345,7 @@ router.delete(
 
 router.post(
   "/teams/:teamId/agents",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { teamId } = TeamIdParams.parse(req.params);
@@ -381,7 +386,7 @@ router.post(
 
 router.delete(
   "/teams/:teamId/agents/:assignmentId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { teamId, assignmentId } = TeamAssignmentParams.parse(req.params);

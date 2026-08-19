@@ -29,6 +29,7 @@ import {
   UpdateJourneyInput,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import { requireMixedTeamManager } from "../middlewares/mixedTeamRole";
 import { slugifyTeamName } from "../lib/mixed-team";
 import { summarizeJourneyMonitoring } from "../lib/journey-monitoring";
@@ -184,7 +185,7 @@ async function journeyExists(journeyId: string) {
   return journey ?? null;
 }
 
-router.get("/journeys", requireAuth, async (_req, res) => {
+router.get("/journeys", requireAuth, requireOrg, async (_req, res) => {
   const rows = await db.select().from(journeys).orderBy(desc(journeys.updatedAt));
   const steps = await db.select().from(journeySteps);
   const handoffs = await db.select().from(journeyHandoffs);
@@ -203,7 +204,7 @@ router.get("/journeys", requireAuth, async (_req, res) => {
 
 router.post(
   "/journeys",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const body = CreateJourneyInput.parse(req.body);
@@ -218,7 +219,7 @@ router.post(
     try {
       const [created] = await db
         .insert(journeys)
-        .values({ ...body, slug })
+        .values({ ...body, slug, orgId: req.orgId! })
         .returning();
       res.status(201).json(toJourney(created!, 0, 0, 0));
     } catch (error) {
@@ -231,7 +232,7 @@ router.post(
   },
 );
 
-router.get("/journeys/:journeyId", requireAuth, async (req, res) => {
+router.get("/journeys/:journeyId", requireAuth, requireOrg, async (req, res) => {
   const { journeyId } = JourneyIdParams.parse(req.params);
   const journey = await loadJourneyDetail(journeyId);
   if (!journey) {
@@ -243,7 +244,7 @@ router.get("/journeys/:journeyId", requireAuth, async (req, res) => {
 
 router.patch(
   "/journeys/:journeyId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
@@ -264,7 +265,7 @@ router.patch(
 
 router.delete(
   "/journeys/:journeyId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
@@ -282,7 +283,7 @@ router.delete(
 
 router.post(
   "/journeys/:journeyId/steps",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
@@ -339,7 +340,7 @@ router.post(
 
 router.delete(
   "/journeys/:journeyId/steps/:stepId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId, stepId } = JourneyStepParams.parse(req.params);
@@ -357,7 +358,7 @@ router.delete(
 
 router.post(
   "/journeys/:journeyId/handoffs",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
@@ -395,7 +396,7 @@ router.post(
 
 router.delete(
   "/journeys/:journeyId/handoffs/:handoffId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId, handoffId } = JourneyHandoffParams.parse(req.params);
@@ -416,7 +417,7 @@ router.delete(
   },
 );
 
-router.post("/journeys/:journeyId/events", requireAuth, async (req, res) => {
+router.post("/journeys/:journeyId/events", requireAuth, requireOrg, async (req, res) => {
   const { journeyId } = JourneyIdParams.parse(req.params);
   const body = JourneyEventInput.parse(req.body);
   if (!(await journeyExists(journeyId))) {
@@ -506,7 +507,7 @@ router.post("/journeys/:journeyId/events", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/journeys/:journeyId/monitoring", requireAuth, async (req, res) => {
+router.get("/journeys/:journeyId/monitoring", requireAuth, requireOrg, async (req, res) => {
   const { journeyId } = JourneyIdParams.parse(req.params);
   const detail = await loadJourneyDetail(journeyId);
   if (!detail) {

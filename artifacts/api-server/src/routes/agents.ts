@@ -39,6 +39,7 @@ import {
   UpdateEvaluationMetricBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import {
   buildAgentDetail,
   toAgentSummary,
@@ -71,7 +72,7 @@ function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-router.get("/agents", requireAuth, async (req, res) => {
+router.get("/agents", requireAuth, requireOrg, async (req, res) => {
   const query = ListAgentsQueryParams.parse(req.query);
   const rows = await db.select().from(agents).orderBy(desc(agents.healthScore));
 
@@ -110,12 +111,13 @@ router.get("/agents", requireAuth, async (req, res) => {
   res.json(data);
 });
 
-router.post("/agents", requireAuth, async (req, res) => {
+router.post("/agents", requireAuth, requireOrg, async (req, res) => {
   const body = CreateAgentBody.parse(req.body);
 
   let agentId: string;
   try {
     agentId = await admitAgent({
+      orgId: req.orgId!,
       name: body.name,
       role: body.role,
       platform: body.platform,
@@ -147,7 +149,7 @@ router.post("/agents", requireAuth, async (req, res) => {
   res.status(201).json(detail);
 });
 
-router.post("/discovery/analyze", requireAuth, async (req, res) => {
+router.post("/discovery/analyze", requireAuth, requireOrg, async (req, res) => {
   const body = AnalyzeAgentSourceBody.parse(req.body);
 
   if (body.content.length > MAX_CONTENT_LENGTH) {
@@ -182,7 +184,7 @@ router.post("/discovery/analyze", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/discovery/fetch", requireAuth, async (req, res) => {
+router.post("/discovery/fetch", requireAuth, requireOrg, async (req, res) => {
   const body = FetchAgentSourceBody.parse(req.body);
 
   try {
@@ -202,13 +204,13 @@ router.post("/discovery/fetch", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/discovery/github-status", requireAuth, async (_req, res) => {
+router.get("/discovery/github-status", requireAuth, requireOrg, async (_req, res) => {
   const status = await getGitHubStatus();
   const data = GetGitHubStatusResponse.parse(status);
   res.json(data);
 });
 
-router.get("/agents/:agentId", requireAuth, async (req, res) => {
+router.get("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = GetAgentParams.parse(req.params);
   const detail = await buildAgentDetail(agentId);
   if (!detail) {
@@ -218,7 +220,7 @@ router.get("/agents/:agentId", requireAuth, async (req, res) => {
   res.json(detail);
 });
 
-router.patch("/agents/:agentId", requireAuth, async (req, res) => {
+router.patch("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = UpdateAgentParams.parse(req.params);
   const body = UpdateAgentBody.parse(req.body);
 
@@ -243,13 +245,13 @@ router.patch("/agents/:agentId", requireAuth, async (req, res) => {
   res.json(detail);
 });
 
-router.delete("/agents/:agentId", requireAuth, async (req, res) => {
+router.delete("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = DeleteAgentParams.parse(req.params);
   await db.delete(agents).where(eq(agents.id, agentId));
   res.status(204).end();
 });
 
-router.patch("/agents/:agentId/identity", requireAuth, async (req, res) => {
+router.patch("/agents/:agentId/identity", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = UpdateAgentIdentityParams.parse(req.params);
   const body = UpdateAgentIdentityBody.parse(req.body);
 
@@ -303,7 +305,7 @@ router.patch("/agents/:agentId/identity", requireAuth, async (req, res) => {
   res.json(detail);
 });
 
-router.get("/agents/:agentId/evaluations", requireAuth, async (req, res) => {
+router.get("/agents/:agentId/evaluations", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = ListAgentEvaluationsParams.parse(req.params);
   const rows = await db
     .select()
@@ -316,7 +318,7 @@ router.get("/agents/:agentId/evaluations", requireAuth, async (req, res) => {
 
 router.get(
   "/agents/:agentId/metrics/:window",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { agentId, window } = GetAgentMetricsParams.parse(req.params);
 
@@ -345,7 +347,7 @@ router.get(
   },
 );
 
-router.get("/agents/:agentId/verdicts", requireAuth, async (req, res) => {
+router.get("/agents/:agentId/verdicts", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = ListAgentVerdictsParams.parse(req.params);
   const rows = await db
     .select()
@@ -358,7 +360,7 @@ router.get("/agents/:agentId/verdicts", requireAuth, async (req, res) => {
 
 router.post(
   "/agents/:agentId/verdict/decision",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { agentId } = DecideVerdictParams.parse(req.params);
     const body = DecideVerdictBody.parse(req.body);
@@ -412,7 +414,7 @@ router.post(
 
 router.patch(
   "/agents/:agentId/evaluation/metric",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { agentId } = UpdateEvaluationMetricParams.parse(req.params);
     const body = UpdateEvaluationMetricBody.parse(req.body);

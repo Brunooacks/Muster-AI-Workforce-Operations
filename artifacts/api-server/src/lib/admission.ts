@@ -61,6 +61,8 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 export interface AdmitAgentInput {
+  /** Organização dona do agente. Obrigatório: sem tenant não há admissão. */
+  orgId: string;
   name: string;
   role: string;
   platform: string;
@@ -128,6 +130,7 @@ export async function admitAgentTx(
     const [agent] = await tx
       .insert(agents)
       .values({
+        orgId: input.orgId,
         externalId,
         name: input.name,
         slug,

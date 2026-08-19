@@ -1,6 +1,7 @@
 import { db, catalogMetrics } from "@workspace/db";
 import { METRIC_CATALOG } from "./metric-catalog";
 import { logger } from "./logger";
+import { DEFAULT_ORG_ID } from "../middlewares/requireOrg";
 
 // Populates the metric catalog from the built-in seed on first boot. Runs only
 // when the table is empty so tailor-made edits/deletions are never overwritten.
@@ -22,6 +23,6 @@ export async function ensureCatalogSeed(): Promise<void> {
   ).filter((row) => !existingKeys.has(row.key));
   if (rows.length === 0) return;
 
-  await db.insert(catalogMetrics).values(rows);
+  await db.insert(catalogMetrics).values(rows.map((r) => ({ ...r, orgId: DEFAULT_ORG_ID })));
   logger.info({ metrics: rows.length }, "Metric catalog entries seeded.");
 }

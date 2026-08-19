@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { metricEvidence } from "@workspace/db/schema";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import { loadMetricEvidence } from "../lib/evidence";
 import type { MetricEvidenceCandidate, MetricEvidence } from "../lib/evidence";
 
@@ -84,7 +85,7 @@ function toMetricEvidence(row: typeof metricEvidence.$inferSelect): MetricEviden
   };
 }
 
-router.get("/evidence", requireAuth, async (req, res) => {
+router.get("/evidence", requireAuth, requireOrg, async (req, res) => {
   const filters = [
     typeof req.query.metricKey === "string"
       ? eq(metricEvidence.metricKey, req.query.metricKey)
@@ -118,7 +119,7 @@ router.get("/evidence", requireAuth, async (req, res) => {
   res.json(rows.map(toMetricEvidence));
 });
 
-router.post("/evidence", requireAuth, async (req, res) => {
+router.post("/evidence", requireAuth, requireOrg, async (req, res) => {
   let parsed: ReturnType<typeof parseEvidenceBody>;
   try {
     parsed = parseEvidenceBody(req.body);

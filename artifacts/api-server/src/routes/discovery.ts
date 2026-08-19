@@ -20,6 +20,7 @@ import {
   BulkRejectAgentDraftsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import { buildAgentDetail, toAgentDraftRecord } from "../lib/serializers";
 import { admitAgentTx, AlreadyAdmittedError } from "../lib/admission";
 import { PLATFORM_CATALOG } from "../lib/discovery";
@@ -104,6 +105,8 @@ async function approveDraft(draftId: string): Promise<ApproveOutcome> {
       if (draft.reviewStatus !== "pending") throw new DraftNotPendingError();
 
       const id = await admitAgentTx(tx, {
+        // O agente herda a organização do rascunho que o originou.
+        orgId: draft.orgId,
         name: draft.name,
         role: draft.role,
         platform: draft.platform,
@@ -152,12 +155,13 @@ async function approveDraft(draftId: string): Promise<ApproveOutcome> {
 class DraftNotFoundError extends Error {}
 class DraftNotPendingError extends Error {}
 
-router.post("/discovery/runs", requireAuth, async (req, res) => {
+router.post("/discovery/runs", requireAuth, requireOrg, async (req, res) => {
   const body = StartDiscoveryRunBody.parse(req.body);
 
   const [run] = await db
     .insert(discoveryRuns)
     .values({
+      orgId: req.orgId!,
       source: body.source,
       sourceRef: body.sourceRef,
       note: body.note ?? "",
@@ -176,6 +180,7 @@ router.post("/discovery/runs", requireAuth, async (req, res) => {
   if (catalog && catalog.discovered.length > 0) {
     await db.insert(agentDrafts).values(
       catalog.discovered.map((d) => ({
+        orgId: req.orgId!,
         runId: run.id,
         source: body.source,
         externalId: d.externalId,
@@ -205,7 +210,7 @@ router.post("/discovery/runs", requireAuth, async (req, res) => {
   res.status(201).json(toDiscoveryRun(updated!, counts));
 });
 
-router.get("/discovery/runs/:runId", requireAuth, async (req, res) => {
+router.get("/discovery/runs/:runId", requireAuth, requireOrg, async (req, res) => {
   const { runId } = GetDiscoveryRunParams.parse(req.params);
   const [run] = await db
     .select()
@@ -220,7 +225,7 @@ router.get("/discovery/runs/:runId", requireAuth, async (req, res) => {
   res.json(data);
 });
 
-router.get("/discovery/drafts", requireAuth, async (req, res) => {
+router.get("/discovery/drafts", requireAuth, requireOrg, async (req, res) => {
   const q = ListAgentDraftsQueryParams.parse(req.query);
 
   const conditions = [];
@@ -253,7 +258,7 @@ router.get("/discovery/drafts", requireAuth, async (req, res) => {
   res.json(data);
 });
 
-router.patch("/discovery/drafts/:draftId", requireAuth, async (req, res) => {
+router.patch("/discovery/drafts/:draftId", requireAuth, requireOrg, async (req, res) => {
   const { draftId } = UpdateAgentDraftParams.parse(req.params);
   const body = UpdateAgentDraftBody.parse(req.body);
 
@@ -308,7 +313,7 @@ router.patch("/discovery/drafts/:draftId", requireAuth, async (req, res) => {
 
 router.post(
   "/discovery/drafts/bulk-approve",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const body = BulkApproveAgentDraftsBody.parse(req.body);
 
@@ -346,7 +351,7 @@ router.post(
   },
 );
 
-router.post("/discovery/drafts/bulk-reject", requireAuth, async (req, res) => {
+router.post("/discovery/drafts/bulk-reject", requireAuth, requireOrg, async (req, res) => {
   const body = BulkRejectAgentDraftsBody.parse(req.body);
 
   const draftIds: string[] = [];
@@ -383,7 +388,7 @@ router.post("/discovery/drafts/bulk-reject", requireAuth, async (req, res) => {
 
 router.post(
   "/discovery/drafts/:draftId/approve",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { draftId } = ApproveAgentDraftParams.parse(req.params);
     const outcome = await approveDraft(draftId);
@@ -407,7 +412,7 @@ router.post(
 
 router.post(
   "/discovery/drafts/:draftId/reject",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { draftId } = RejectAgentDraftParams.parse(req.params);
     const body = RejectAgentDraftBody.parse(req.body);

@@ -22,6 +22,8 @@ import {
 } from "@workspace/api-zod";
 import type { ExternalAgentEnvelope } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
+import { requireAgentCredential } from "../middlewares/requireAgentCredential";
 import {
   summarizeEvents,
   layersFromTelemetry,
@@ -70,7 +72,7 @@ async function loadEvents(
 }
 
 // ── Ingest: agents report execution events here (fire-and-forget SDK) ──────
-router.post("/agents/:agentId/events", requireAuth, async (req, res) => {
+router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) => {
   const agentId = req.params.agentId as string;
   const body = IngestAgentEventBody.parse(req.body);
 
@@ -110,7 +112,7 @@ router.post("/agents/:agentId/events", requireAuth, async (req, res) => {
   res.status(202).json({ accepted: true });
 });
 
-router.post("/agents/:agentId/heartbeat", requireAuth, async (req, res) => {
+router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, res) => {
   const agentId = req.params.agentId as string;
   const body = ReportAgentHeartbeatBody.parse(req.body ?? {});
   const [agent] = await db
@@ -143,7 +145,7 @@ router.post("/agents/:agentId/heartbeat", requireAuth, async (req, res) => {
   res.status(202).json({ accepted: true, observedAt });
 });
 
-router.post("/integrations/agent-events", requireAuth, async (req, res) => {
+router.post("/integrations/agent-events", requireAuth, requireOrg, async (req, res) => {
   const body = IngestExternalAgentEnvelopeBody.parse(req.body) as ExternalAgentEnvelope;
   if (body.contractVersion !== MUSTER_AGENT_INGESTION_CONTRACT_VERSION) {
     res.status(400).json({ error: "Versão de contrato não suportada." });
@@ -268,7 +270,7 @@ router.post("/integrations/agent-events", requireAuth, async (req, res) => {
   res.status(202).json(accepted);
 });
 
-router.get("/agents/:agentId/supervision", requireAuth, async (req, res) => {
+router.get("/agents/:agentId/supervision", requireAuth, requireOrg, async (req, res) => {
   const agentId = req.params.agentId as string;
   const [agent] = await db
     .select({ id: agents.id })
@@ -300,7 +302,7 @@ router.get("/agents/:agentId/supervision", requireAuth, async (req, res) => {
 // ── Telemetry summary ───────────────────────────────────────────────────────
 router.get(
   "/agents/:agentId/telemetry/:window",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const agentId = req.params.agentId as string;
     const windowDays = WINDOW_DAYS[req.params.window as string] ?? 30;
@@ -314,7 +316,7 @@ router.get(
 // The real core of R6: when the agent has telemetry, the 5-layer evaluation is
 // computed from actual executions and the verdict comes from the explicit,
 // auditable decision rules. Seeded scoring remains only as demo fallback.
-router.post("/agents/:agentId/reevaluate", requireAuth, async (req, res) => {
+router.post("/agents/:agentId/reevaluate", requireAuth, requireOrg, async (req, res) => {
   const agentId = req.params.agentId as string;
   const [agent] = await db
     .select()
@@ -528,7 +530,7 @@ router.post("/agents/:agentId/reevaluate", requireAuth, async (req, res) => {
 });
 
 // ── Pre-assessment (R4): repo → carteira draft, no AI key needed ────────────
-router.post("/discovery/pre-assess", requireAuth, async (req, res) => {
+router.post("/discovery/pre-assess", requireAuth, requireOrg, async (req, res) => {
   const body = PreAssessAgentSourceBody.parse(req.body);
   try {
     const fetched = await fetchAgentSourceFromUrl(body.url);

@@ -21,6 +21,7 @@ import {
   UpdateJourneyRecommendationActionInput,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireOrg } from "../middlewares/requireOrg";
 import { requireMixedTeamManager } from "../middlewares/mixedTeamRole";
 import { summarizeJourneyMonitoring } from "../lib/journey-monitoring";
 import { generateJourneyRecommendation } from "../lib/journey-recommendation-generator";
@@ -318,7 +319,7 @@ function sendRequestError(res: Response, error: unknown) {
 
 router.get(
   "/journeys/:journeyId/recommendations",
-  requireAuth,
+  requireAuth, requireOrg,
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
     const [journey] = await db
@@ -335,7 +336,7 @@ router.get(
 
 router.post(
   "/journeys/:journeyId/recommendations",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
@@ -350,7 +351,7 @@ router.post(
 
 router.post(
   "/journeys/:journeyId/recommendations/generate",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
@@ -443,7 +444,7 @@ router.post(
 
 router.post(
   "/journeys/:journeyId/recommendations/:recommendationId/decision",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId, recommendationId } = JourneyRecommendationParams.parse(req.params);
@@ -543,7 +544,7 @@ router.post(
 
 router.patch(
   "/journeys/:journeyId/recommendations/:recommendationId/actions/:actionId",
-  requireAuth,
+  requireAuth, requireOrg,
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId, recommendationId, actionId } =

@@ -977,6 +977,74 @@ paths:
               schema:
                 $ref: "#/components/schemas/PreAssessResult"
 
+  /agents/{agentId}/api-keys:
+    get:
+      operationId: listAgentApiKeys
+      tags: [agents]
+      summary: Lista as credenciais do agente (nunca devolve o segredo)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Credenciais do agente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentApiKey"
+    post:
+      operationId: createAgentApiKey
+      tags: [agents]
+      summary: Cria uma credencial para o agente — o segredo é exibido uma única vez
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentApiKeyInput"
+      responses:
+        "201":
+          description: Credencial criada; `plaintext` não é recuperável depois
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentApiKeyCreated"
+
+  /agents/{agentId}/api-keys/{keyId}/revoke:
+    post:
+      operationId: revokeAgentApiKey
+      tags: [agents]
+      summary: Revoga uma credencial do agente
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: keyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Credencial revogada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentApiKey"
+
   /agents/{agentId}/events:
     post:
       operationId: ingestAgentEvent
@@ -2975,6 +3043,56 @@ components:
           type: array
           items:
             type: string
+
+    AgentApiKeyInput:
+      type: object
+      properties:
+        label:
+          type: string
+          description: Nome operacional da credencial (ex.- "produção", "staging").
+
+    AgentApiKey:
+      type: object
+      required: [id, agentId, prefix, masked, createdAt, revoked]
+      properties:
+        id:
+          type: string
+        agentId:
+          type: string
+        label:
+          type: string
+          nullable: true
+        prefix:
+          type: string
+          description: Handle público da credencial — não é segredo.
+        masked:
+          type: string
+          description: Forma exibível, com o segredo oculto.
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+        revoked:
+          type: boolean
+
+    AgentApiKeyCreated:
+      type: object
+      required: [key, plaintext]
+      properties:
+        key:
+          $ref: "#/components/schemas/AgentApiKey"
+        plaintext:
+          type: string
+          description: >-
+            Token completo. Exibido uma única vez — o servidor guarda apenas o
+            hash SHA-256 e não consegue recuperá-lo depois.
 
     AgentEventInput:
       type: object

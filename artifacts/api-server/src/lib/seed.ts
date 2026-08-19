@@ -17,6 +17,7 @@ import {
   type NextAction,
 } from "@workspace/db";
 import { logger } from "./logger";
+import { DEFAULT_ORG_ID } from "../middlewares/requireOrg";
 import {
   PLATFORM_CATALOG,
   buildProposedMetrics,
@@ -721,6 +722,7 @@ export async function ensureSeed(): Promise<void> {
       const [agent] = await tx
         .insert(agents)
         .values({
+          orgId: DEFAULT_ORG_ID,
           externalId: spec.externalId,
           name: spec.name,
           slug: slugify(spec.name),
@@ -836,6 +838,7 @@ export async function ensureSeed(): Promise<void> {
 
     for (const platform of PLATFORM_CATALOG) {
       await tx.insert(connectors).values({
+        orgId: DEFAULT_ORG_ID,
         platform: platform.platform,
         name: platform.name,
         category: platform.category,
