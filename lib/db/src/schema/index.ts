@@ -800,3 +800,44 @@ export const agentApiKeys = pgTable("agent_api_keys", {
   agentApiKeysPrefixIdx: uniqueIndex("agent_api_keys_prefix_idx").on(table.prefix),
   agentApiKeysAgentIdx: index("agent_api_keys_agent_idx").on(table.agentId),
 }));
+
+// --- Ciclo de revisão do agente (R7 · gauntlet rodada 5) ----------------------
+// Paridade com journey_recommendation_actions: no nível da jornada as ações já
+// tinham responsável, status, SLA e evidência; no nível do agente eram apenas
+// texto em `verdicts.next_actions`, sem acompanhamento. Sem status, ninguém
+// sabia se a mentoria recomendada chegou a acontecer — e a pergunta "funcionou?"
+// ficava sem resposta verificável.
+export type VerdictActionStatus =
+  | "proposed"
+  | "in-progress"
+  | "blocked"
+  | "completed"
+  | "cancelled";
+
+export const verdictActions = pgTable("verdict_actions", {
+  id: id(),
+  verdictId: text("verdict_id")
+    .notNull()
+    .references(() => verdicts.id, { onDelete: "cascade" }),
+  agentId: text("agent_id")
+    .notNull()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  sequence: integer("sequence").notNull().default(1),
+  action: text("action").notNull(),
+  owner: text("owner").notNull().default(""),
+  due: text("due").notNull().default(""),
+  status: text("status").$type<VerdictActionStatus>().notNull().default("proposed"),
+  // Evidência do que foi feito — o que transforma "marquei como pronto" em algo
+  // auditável seis meses depois.
+  evidence: text("evidence").notNull().default(""),
+  // Fotografia da saúde no momento em que a ação foi aprovada: é contra ela que
+  // a próxima avaliação responde se a intervenção funcionou.
+  healthScoreAtApproval: integer("health_score_at_approval"),
+  updatedBy: text("updated_by"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  verdictActionsVerdictIdx: index("verdict_actions_verdict_idx").on(table.verdictId),
+  verdictActionsAgentIdx: index("verdict_actions_agent_idx").on(table.agentId),
+}));

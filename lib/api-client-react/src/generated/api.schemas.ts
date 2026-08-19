@@ -1243,6 +1243,49 @@ export interface PreAssessResult {
   signals: string[];
 }
 
+export type VerdictActionStatus = typeof VerdictActionStatus[keyof typeof VerdictActionStatus];
+
+
+export const VerdictActionStatus = {
+  proposed: 'proposed',
+  'in-progress': 'in-progress',
+  blocked: 'blocked',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface VerdictAction {
+  id: string;
+  agentId: string;
+  verdictId?: string;
+  sequence: number;
+  action: string;
+  owner: string;
+  due: string;
+  status: VerdictActionStatus;
+  evidence: string;
+  healthScoreAtApproval?: number | null;
+  completedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+export type VerdictActionUpdateStatus = typeof VerdictActionUpdateStatus[keyof typeof VerdictActionUpdateStatus];
+
+
+export const VerdictActionUpdateStatus = {
+  proposed: 'proposed',
+  'in-progress': 'in-progress',
+  blocked: 'blocked',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface VerdictActionUpdate {
+  status?: VerdictActionUpdateStatus;
+  evidence?: string;
+  owner?: string;
+}
+
 export interface AgentApiKeyInput {
   /** Nome operacional da credencial (ex.- "produção", "staging"). */
   label?: string;

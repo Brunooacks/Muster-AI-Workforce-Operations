@@ -977,6 +977,57 @@ paths:
               schema:
                 $ref: "#/components/schemas/PreAssessResult"
 
+  /agents/{agentId}/actions:
+    get:
+      operationId: listVerdictActions
+      tags: [agents]
+      summary: Plano de ação do veredito, com status de execução
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ações do veredito vigente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VerdictAction"
+
+  /agents/{agentId}/actions/{actionId}:
+    patch:
+      operationId: updateVerdictAction
+      tags: [agents]
+      summary: Atualiza o andamento de uma ação recomendada
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerdictActionUpdate"
+      responses:
+        "200":
+          description: Ação atualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerdictAction"
+
   /agents/{agentId}/api-keys:
     get:
       operationId: listAgentApiKeys
@@ -3043,6 +3094,43 @@ components:
           type: array
           items:
             type: string
+
+    VerdictAction:
+      type: object
+      required: [id, agentId, sequence, action, owner, due, status, evidence]
+      properties:
+        id: { type: string }
+        agentId: { type: string }
+        verdictId: { type: string }
+        sequence: { type: integer }
+        action: { type: string }
+        owner: { type: string }
+        due: { type: string }
+        status:
+          type: string
+          enum: [proposed, in-progress, blocked, completed, cancelled]
+        evidence: { type: string }
+        healthScoreAtApproval:
+          type: integer
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedBy:
+          type: string
+          nullable: true
+
+    VerdictActionUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [proposed, in-progress, blocked, completed, cancelled]
+        evidence:
+          type: string
+        owner:
+          type: string
 
     AgentApiKeyInput:
       type: object

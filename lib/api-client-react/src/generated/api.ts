@@ -80,6 +80,8 @@ import type {
   TelemetrySummary,
   UpdateFleetAlertInput,
   Verdict,
+  VerdictAction,
+  VerdictActionUpdate,
   VerdictDecisionInput
 } from './api.schemas';
 
@@ -3305,6 +3307,157 @@ export const usePreAssessAgentSource = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getPreAssessAgentSourceMutationOptions(options));
+    }
+
+export const getListVerdictActionsUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/actions`
+}
+
+/**
+ * @summary Plano de ação do veredito, com status de execução
+ */
+export const listVerdictActions = async (agentId: string, options?: RequestInit): Promise<VerdictAction[]> => {
+
+  return customFetch<VerdictAction[]>(getListVerdictActionsUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVerdictActionsQueryKey = (agentId: string,) => {
+    return [
+    `/api/agents/${agentId}/actions`
+    ] as const;
+    }
+
+
+export const getListVerdictActionsQueryOptions = <TData = Awaited<ReturnType<typeof listVerdictActions>>, TError = ErrorType<unknown>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVerdictActions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVerdictActionsQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVerdictActions>>> = ({ signal }) => listVerdictActions(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVerdictActions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVerdictActionsQueryResult = NonNullable<Awaited<ReturnType<typeof listVerdictActions>>>
+export type ListVerdictActionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Plano de ação do veredito, com status de execução
+ */
+
+export function useListVerdictActions<TData = Awaited<ReturnType<typeof listVerdictActions>>, TError = ErrorType<unknown>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVerdictActions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVerdictActionsQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateVerdictActionUrl = (agentId: string,
+    actionId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/actions/${actionId}`
+}
+
+/**
+ * @summary Atualiza o andamento de uma ação recomendada
+ */
+export const updateVerdictAction = async (agentId: string,
+    actionId: string,
+    verdictActionUpdate: VerdictActionUpdate, options?: RequestInit): Promise<VerdictAction> => {
+
+  return customFetch<VerdictAction>(getUpdateVerdictActionUrl(agentId,actionId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verdictActionUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateVerdictActionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVerdictAction>>, TError,{agentId: string;actionId: string;data: BodyType<VerdictActionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVerdictAction>>, TError,{agentId: string;actionId: string;data: BodyType<VerdictActionUpdate>}, TContext> => {
+
+const mutationKey = ['updateVerdictAction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVerdictAction>>, {agentId: string;actionId: string;data: BodyType<VerdictActionUpdate>}> = (props) => {
+          const {agentId,actionId,data} = props ?? {};
+
+          return  updateVerdictAction(agentId,actionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVerdictActionMutationResult = NonNullable<Awaited<ReturnType<typeof updateVerdictAction>>>
+    export type UpdateVerdictActionMutationBody = BodyType<VerdictActionUpdate>
+    export type UpdateVerdictActionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Atualiza o andamento de uma ação recomendada
+ */
+export const useUpdateVerdictAction = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVerdictAction>>, TError,{agentId: string;actionId: string;data: BodyType<VerdictActionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVerdictAction>>,
+        TError,
+        {agentId: string;actionId: string;data: BodyType<VerdictActionUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateVerdictActionMutationOptions(options));
     }
 
 export const getListAgentApiKeysUrl = (agentId: string,) => {

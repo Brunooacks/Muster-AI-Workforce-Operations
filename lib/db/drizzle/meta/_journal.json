@@ -71,6 +71,13 @@
       "when": 1787025123212,
       "tag": "0009_tenancy_organizations",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787025183212,
+      "tag": "0010_verdict_actions",
+      "breakpoints": true
     }
   ]
 }

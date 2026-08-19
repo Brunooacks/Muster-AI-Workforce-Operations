@@ -1550,6 +1550,60 @@ export const PreAssessAgentSourceResponse = zod.object({
 
 
 /**
+ * @summary Plano de ação do veredito, com status de execução
+ */
+export const ListVerdictActionsParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ListVerdictActionsResponseItem = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "verdictId": zod.string().optional(),
+  "sequence": zod.number(),
+  "action": zod.string(),
+  "owner": zod.string(),
+  "due": zod.string(),
+  "status": zod.enum(['proposed', 'in-progress', 'blocked', 'completed', 'cancelled']),
+  "evidence": zod.string(),
+  "healthScoreAtApproval": zod.number().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "updatedBy": zod.string().nullish()
+})
+export const ListVerdictActionsResponse = zod.array(ListVerdictActionsResponseItem)
+
+
+/**
+ * @summary Atualiza o andamento de uma ação recomendada
+ */
+export const UpdateVerdictActionParams = zod.object({
+  "agentId": zod.coerce.string(),
+  "actionId": zod.coerce.string()
+})
+
+export const UpdateVerdictActionBody = zod.object({
+  "status": zod.enum(['proposed', 'in-progress', 'blocked', 'completed', 'cancelled']).optional(),
+  "evidence": zod.string().optional(),
+  "owner": zod.string().optional()
+})
+
+export const UpdateVerdictActionResponse = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "verdictId": zod.string().optional(),
+  "sequence": zod.number(),
+  "action": zod.string(),
+  "owner": zod.string(),
+  "due": zod.string(),
+  "status": zod.enum(['proposed', 'in-progress', 'blocked', 'completed', 'cancelled']),
+  "evidence": zod.string(),
+  "healthScoreAtApproval": zod.number().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "updatedBy": zod.string().nullish()
+})
+
+
+/**
  * @summary Lista as credenciais do agente (nunca devolve o segredo)
  */
 export const ListAgentApiKeysParams = zod.object({

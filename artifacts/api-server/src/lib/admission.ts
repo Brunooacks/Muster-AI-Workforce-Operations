@@ -6,6 +6,8 @@ import {
   agentOwners,
   evaluations,
   verdicts,
+  verdictActions,
+  type NextAction,
   metricPoints,
   type AutonomyLevel,
 } from "@workspace/db";
@@ -96,6 +98,15 @@ export interface AdmitAgentInput {
 // Transaction-scoped admission, so callers (e.g. draft approval) can run the
 // admission and their own bookkeeping atomically in a single transaction. A
 // unique-constraint conflict (externalId/slug) is surfaced as AlreadyAdmitted.
+/** Plano de ação com que todo agente recém-admitido nasce. */
+const NEXT_ACTIONS_INICIAIS: NextAction[] = [
+  {
+    action: "Coletar 30 dias de métricas reais via conector",
+    owner: "Dono técnico",
+    due: "30 dias",
+  },
+];
+
 export async function admitAgentTx(
   tx: Tx,
   input: AdmitAgentInput,
@@ -195,17 +206,21 @@ export async function admitAgentTx(
       executionWindow: "60 dias",
       suggestedSponsor:
         input.suggestedSponsor ?? input.governanceSponsor ?? "Comitê",
-      nextActions: [
-        {
-          action: "Coletar 30 dias de métricas reais via conector",
-          owner: "Dono técnico",
-          due: "30 dias",
-        },
-      ],
+      nextActions: NEXT_ACTIONS_INICIAIS,
       rationale:
         input.initialVerdictRationale ??
         "Agente recém-admitido; aguardando dados suficientes para um veredito conclusivo.",
       decision: "pending",
+    }).returning({ id: verdicts.id }).then(async ([created]) => {
+      // O plano de ação nasce rastreável: sem isto, a tela mostraria as ações
+      // do agente recém-admitido sem status, quebrando o ciclo de revisão.
+      if (!created) return;
+      await tx.insert(verdictActions).values(
+        NEXT_ACTIONS_INICIAIS.map((a, i) => ({
+          verdictId: created.id, agentId: agent.id, sequence: i + 1,
+          action: a.action, owner: a.owner, due: a.due,
+        })),
+      );
     });
 
     if (allowSeeded) {
