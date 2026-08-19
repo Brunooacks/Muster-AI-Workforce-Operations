@@ -79,6 +79,11 @@ function mulberry32(seed: number): () => number {
   };
 }
 const rng = mulberry32(20260819);
+
+/** Carimbo do lote: torna runId e externalEventId únicos por execução. Sem ele,
+ *  a segunda rodada colidia com a primeira e a API descartava os eventos como
+ *  duplicados — a tela ficava parada enquanto o terminal reportava sucesso. */
+const lote = Date.now().toString(36).slice(-5);
 const faixa = (lo: number, hi: number) => lo + rng() * (hi - lo);
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -236,7 +241,7 @@ async function main(): Promise<void> {
   const agora = Date.now();
 
   for (let r = 0; r < execucoes; r += 1) {
-    const runId = `run-${r + 1}`;
+    const runId = `${lote}-run-${r + 1}`;
     const progresso = execucoes <= 1 ? 1 : r / (execucoes - 1);
     let instante = agora - (execucoes - r) * 60_000;
     let vivo = true;
