@@ -1589,8 +1589,12 @@ export default function JourneysPage() {
                               ? "Pausar jornada"
                               : "Ativar jornada"}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={refreshAll} disabled={detail.isFetching || monitoring.isFetching}>
-                          <RefreshCw className={cn("mr-2 h-4 w-4", (detail.isFetching || monitoring.isFetching) && "animate-spin")} />Atualizar
+                        <Button variant="outline" size="sm" onClick={refreshAll}>
+                          {/* Não desabilitar por isFetching: com a atualização
+                              automática de 5s ele fica quase sempre verdadeiro,
+                              e o botão parecia travado. O giro fica só no
+                              refetch manual. */}
+                          <RefreshCw className={cn("mr-2 h-4 w-4", (detail.isRefetching || monitoring.isRefetching) && "animate-spin")} />Atualizar
                         </Button>
                       </div>
                     </div>
