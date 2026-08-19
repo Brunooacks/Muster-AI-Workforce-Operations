@@ -1,0 +1,10 @@
+{
+  "_comentario": "Resposta de exemplo do CloudWatch Logs Insights para invocações do Bedrock/AgentCore. Permite validar a tradução AWS → Muster sem credencial. Os nomes de campo variam conforme o formato de log configurado na conta do cliente — é o ponto a confirmar na POC.",
+  "results": [
+    [{"field":"@timestamp","value":"2026-08-18T09:05:12.400Z"},{"field":"agentName","value":"kyc-document-check"},{"field":"modelId","value":"anthropic.claude-3-5-sonnet-20241022"},{"field":"inputTokens","value":"3200"},{"field":"outputTokens","value":"640"},{"field":"latencyMs","value":"4120"},{"field":"success","value":"true"},{"field":"traceId","value":"bedrock-9f2a41"}],
+    [{"field":"@timestamp","value":"2026-08-18T09:19:48.900Z"},{"field":"agentName","value":"kyc-document-check"},{"field":"modelId","value":"anthropic.claude-3-5-sonnet-20241022"},{"field":"inputTokens","value":"2980"},{"field":"outputTokens","value":"710"},{"field":"latencyMs","value":"3880"},{"field":"success","value":"true"},{"field":"traceId","value":"bedrock-a03b52"}],
+    [{"field":"@timestamp","value":"2026-08-18T10:02:31.115Z"},{"field":"agentName","value":"kyc-document-check"},{"field":"modelId","value":"anthropic.claude-3-5-sonnet-20241022"},{"field":"inputTokens","value":"3410"},{"field":"outputTokens","value":"580"},{"field":"latencyMs","value":"14200"},{"field":"success","value":"false"},{"field":"traceId","value":"bedrock-b14c63"}],
+    [{"field":"@timestamp","value":"2026-08-18T10:41:07.630Z"},{"field":"agentName","value":"fraud-triage"},{"field":"modelId","value":"amazon.nova-lite-v1"},{"field":"inputTokens","value":"1150"},{"field":"outputTokens","value":"240"},{"field":"latencyMs","value":"890"},{"field":"success","value":"true"},{"field":"traceId","value":"bedrock-c25d74"}],
+    [{"field":"@timestamp","value":"2026-08-18T11:12:55.208Z"},{"field":"agentName","value":"fraud-triage"},{"field":"modelId","value":"amazon.nova-lite-v1"},{"field":"inputTokens","value":"1290"},{"field":"outputTokens","value":"265"},{"field":"latencyMs","value":"940"},{"field":"success","value":"true"},{"field":"traceId","value":"bedrock-d36e85"}]
+  ]
+}

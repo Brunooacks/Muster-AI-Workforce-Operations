@@ -1,0 +1,17 @@
+{
+  "_comentario": "Resposta de exemplo da API entries.list do Cloud Logging para o Vertex AI Agent Engine. Valida a tradução GCP → Muster sem credencial. Os campos do jsonPayload dependem de como o agente registra a execução.",
+  "entries": [
+    { "timestamp": "2026-08-18T08:30:11.220Z", "severity": "INFO",
+      "resource": { "labels": { "reasoning_engine_id": "onboarding-assistant" } },
+      "jsonPayload": { "agentName": "onboarding-assistant", "model": "gemini-1.5-flash", "promptTokenCount": 1420, "candidatesTokenCount": 310, "latencyMs": 1180, "success": true, "traceId": "vertex-77aa10", "operation": "generate" } },
+    { "timestamp": "2026-08-18T08:52:40.900Z", "severity": "INFO",
+      "resource": { "labels": { "reasoning_engine_id": "onboarding-assistant" } },
+      "jsonPayload": { "agentName": "onboarding-assistant", "model": "gemini-1.5-flash", "promptTokenCount": 1610, "candidatesTokenCount": 288, "latencyMs": 1240, "success": true, "traceId": "vertex-88bb21", "operation": "generate" } },
+    { "timestamp": "2026-08-18T09:41:03.470Z", "severity": "ERROR",
+      "resource": { "labels": { "reasoning_engine_id": "contract-analyst" } },
+      "jsonPayload": { "agentName": "contract-analyst", "model": "gemini-1.5-pro", "promptTokenCount": 8200, "candidatesTokenCount": 1450, "latencyMs": 11800, "traceId": "vertex-99cc32", "operation": "analyze" } },
+    { "timestamp": "2026-08-18T10:15:29.010Z", "severity": "INFO",
+      "resource": { "labels": { "reasoning_engine_id": "contract-analyst" } },
+      "jsonPayload": { "agentName": "contract-analyst", "model": "gemini-1.5-pro", "promptTokenCount": 7640, "candidatesTokenCount": 1290, "latencyMs": 9400, "success": true, "traceId": "vertex-aadd43", "operation": "analyze" } }
+  ]
+}

@@ -12,7 +12,10 @@
     "validate-mvp": "tsx ./src/validate-mvp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "demo": "tsx ./src/demo-scenario.ts",
-    "demo:fluxo": "tsx ./src/demo-fluxo.ts"
+    "demo:fluxo": "tsx ./src/demo-fluxo.ts",
+    "bridge:azure": "tsx ./src/bridge-azure.ts",
+    "bridge:aws": "tsx ./src/bridge-aws.ts",
+    "bridge:gcp": "tsx ./src/bridge-gcp.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

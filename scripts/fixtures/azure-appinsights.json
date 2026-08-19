@@ -1,0 +1,31 @@
+{
+  "_comentario": "Resposta de exemplo da API de consulta do Application Insights, no formato que a KQL da ponte devolve. Permite validar a tradução Azure → Muster sem credencial da Azure. Os atributos seguem as convenções semânticas de GenAI do OpenTelemetry, que é o formato que o Foundry Agent Service exporta automaticamente.",
+  "tables": [
+    {
+      "name": "PrimaryResult",
+      "columns": [
+        { "name": "timestamp", "type": "datetime" },
+        { "name": "agente", "type": "string" },
+        { "name": "modelo", "type": "string" },
+        { "name": "entrada", "type": "int" },
+        { "name": "saida", "type": "int" },
+        { "name": "operacao", "type": "string" },
+        { "name": "duration", "type": "real" },
+        { "name": "success", "type": "bool" },
+        { "name": "operation_Id", "type": "string" }
+      ],
+      "rows": [
+        ["2026-08-18T09:12:04.221Z", "triagem-chamados", "gpt-4o-mini", 880, 190, "chat", 1140.0, true, "a1f0c2e4b7d84f10"],
+        ["2026-08-18T09:14:37.880Z", "triagem-chamados", "gpt-4o-mini", 1020, 210, "chat", 1310.0, true, "b2e1d3f5c8a95021"],
+        ["2026-08-18T09:19:51.402Z", "triagem-chamados", "gpt-4o-mini", 760, 160, "chat", 980.0, true, "c3f2e4a6d9ba6132"],
+        ["2026-08-18T09:22:10.115Z", "triagem-chamados", "gpt-4o-mini", 910, 205, "chat", 1220.0, false, "d4a3f5b7eacb7243"],
+        ["2026-08-18T10:02:44.667Z", "decisor-proxima-acao", "gpt-4o", 5240, 1180, "chat", 8120.0, true, "e5b4a6c8fbdc8354"],
+        ["2026-08-18T10:11:29.930Z", "decisor-proxima-acao", "gpt-4o", 4980, 1310, "chat", 7640.0, true, "f6c5b7d9aced9465"],
+        ["2026-08-18T10:26:03.518Z", "decisor-proxima-acao", "gpt-4o", 6110, 1420, "chat", 9380.0, true, "07d6c8eabdfea576"],
+        ["2026-08-18T11:04:18.203Z", "revisor-risco", "phi-4", 1640, 320, "chat", 2260.0, true, "18e7d9fbceafb687"],
+        ["2026-08-18T11:17:55.741Z", "revisor-risco", "phi-4", 1720, 295, "chat", 2410.0, true, "29f8eafcdfbac798"],
+        ["2026-08-18T11:33:22.089Z", "revisor-risco", "phi-4", 1580, 340, "chat", 26800.0, false, "3a09fbadeacbd8a9"]
+      ]
+    }
+  ]
+}
