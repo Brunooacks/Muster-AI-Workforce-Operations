@@ -159,7 +159,7 @@ async function main(): Promise<void> {
 
   // 3. Sub-agentes — cada um com o seu modelo declarado na carteira.
   console.log("Admitindo sub-agentes:");
-  const agentes: Array<Ident & { sub: SubAgente }> = [];
+  const agentes: Array<Ident & { sub: SubAgente; chave: string }> = [];
   const frota = await api<Array<Ident & { name: string }>>("/agents");
   for (const [i, sub] of c.subAgentes.entries()) {
     const nomeCompleto = `[fluxo] ${sub.nome}`;
@@ -184,7 +184,14 @@ async function main(): Promise<void> {
           value: (sub.custoPorMilTokensCentavos * sub.tokensMedios) / 1000 / 100 },
       ],
     }).then((d) => d.agent));
-    agentes.push({ id: agente.id, sub });
+    // Credencial própria: o sub-agente reporta a própria execução, e não só o
+    // evento da jornada. Sem isto, a página do agente ficava zerada — a
+    // jornada tinha todos os números e o indivíduo, nenhum.
+    const credencial = await post<{ plaintext: string }>(
+      `/agents/${encodeURIComponent(agente.id)}/api-keys`,
+      { label: `fluxo-${lote}` },
+    );
+    agentes.push({ id: agente.id, sub, chave: credencial.plaintext });
     console.log(`  ${i + 1}. ${sub.nome.padEnd(26)} ${sub.modelo.padEnd(16)} ${sub.modoDecisao}`);
 
     await post(`/teams/${time.id}/agents`, {
@@ -274,6 +281,26 @@ async function main(): Promise<void> {
         metadata: { modelo: sub.modelo, tokens, etapa: i + 1, comportamento: sub.comportamento },
       }).catch(() => undefined);
 
+      // Mesma execução, duas leituras: a etapa alimenta a jornada; o evento do
+      // agente alimenta as cinco camadas e a telemetria individual dele.
+      await fetch(`${baseUrl}/api/agents/${encodeURIComponent(agentes[i]!.id)}/events`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${agentes[i]!.chave}`,
+        },
+        body: JSON.stringify({
+          kind: sucesso ? "execution" : "error",
+          ts: new Date(instante).toISOString(),
+          success: sucesso,
+          durationMs: duracao,
+          costCents: custo,
+          tokensIn: Math.round(tokens * 0.75),
+          tokensOut: Math.round(tokens * 0.25),
+          metadata: { modelo: sub.modelo, jornada: c.fluxo, etapa: i + 1, runId },
+        }),
+      }).catch(() => undefined);
+
       const acc = consumo.get(sub.nome) ?? { custo: 0, duracao: 0, ok: 0, total: 0 };
       acc.custo += custo; acc.duracao += duracao; acc.ok += sucesso ? 1 : 0; acc.total += 1;
       consumo.set(sub.nome, acc);
@@ -302,7 +329,20 @@ async function main(): Promise<void> {
     if ((r + 1) % 20 === 0) process.stdout.write(`  ${r + 1}/${execucoes}\n`);
   }
 
-  // 6. Leitura do fluxo: controle, consumo e resultado.
+  // 6. Reavaliar cada sub-agente: sem isto as cinco camadas dele continuariam
+  //    em zero mesmo com telemetria entregue, porque a avaliação é sob demanda.
+  process.stdout.write("\nReavaliando sub-agentes… ");
+  const vereditos = new Map<string, { verdict: string; healthScore: number }>();
+  for (const { id, sub } of agentes) {
+    const v = await api<{ verdict: string; healthScore: number }>(
+      `/agents/${encodeURIComponent(id)}/reevaluate`,
+      { method: "POST", body: "{}" },
+    ).catch(() => ({ verdict: "—", healthScore: 0 }));
+    vereditos.set(sub.nome, v);
+  }
+  console.log("pronto.\n");
+
+  // 7. Leitura do fluxo: controle, consumo e resultado.
   const custoTotal = [...consumo.values()].reduce((s, v) => s + v.custo, 0);
   const linhas = agentes.map(({ sub }, i) => {
     const a = consumo.get(sub.nome)!;
@@ -316,6 +356,8 @@ async function main(): Promise<void> {
       "Tempo médio": ms(a.duracao / Math.max(1, a.total)),
       Custo: brl(a.custo),
       "% custo": `${Math.round((a.custo / Math.max(1, custoTotal)) * 100)}%`,
+      Veredito: vereditos.get(sub.nome)?.verdict ?? "—",
+      Saúde: String(vereditos.get(sub.nome)?.healthScore ?? "—"),
     };
   });
 
