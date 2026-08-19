@@ -194,3 +194,28 @@ A branch foi criada, mas nenhum commit foi feito porque o worktree já continha
 um conjunto grande de mudanças MVP não commitadas, inclusive nos mesmos
 arquivos. Commitar automaticamente misturaria rodadas e trabalho anterior sem
 uma separação confiável.
+
+## Lacuna registrada — ciclo de revisão do agente individual
+
+Levantada em 2026-08-19, durante a preparação da demo.
+
+**Assimetria:** no nível da jornada, `journey_recommendation_actions` tem
+responsável, tipo de ator (Muster, agente externo ou humano), modo de execução,
+escopo de controle, `status`, SLA, prazo e evidência — o ciclo de execução e
+acompanhamento existe. No nível do agente individual, `verdicts.nextActions` é
+um JSON com ação, dono e prazo: **sem status, sem acompanhamento, sem evidência
+de conclusão**. Depois de um veredito "Mentorar", ninguém marca o que foi feito
+e o sistema não sabe se a ação aconteceu.
+
+**Consequência:** o ciclo hoje só se fecha implicitamente — nova telemetria,
+nova reavaliação, e o Histórico de Avaliações mostra se melhorou. Funciona como
+medição de resultado, mas não como acompanhamento de execução.
+
+**Próxima rodada proposta:** dar ao agente individual a mesma paridade da
+jornada — ações com status, responsável, prazo e evidência; e a pergunta que
+fecha o ciclo na tela: "a mentoria funcionou?", comparando o veredito atual com
+o da janela em que a ação foi aprovada.
+
+**Verificador:** aprovar um veredito com três ações, marcar uma como concluída,
+reavaliar após nova telemetria e ver na tela a comparação entre o antes e o
+depois da ação — com o E2E afirmando essa cadeia.
