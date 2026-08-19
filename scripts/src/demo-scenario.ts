@@ -225,16 +225,22 @@ async function main(): Promise<void> {
   console.log(`  API: ${baseUrl} · janela: ${dias} dias · agentes: ${cenario.agentes.length}\n`);
 
   const resultados: Array<Record<string, string>> = [];
+  const frotaAtual = await api<AgentSummary[]>("/agents");
 
   for (const [indice, agente] of cenario.agentes.entries()) {
     process.stdout.write(`• ${agente.nome} (${CURVAS[agente.comportamento].rotulo})… `);
 
-    // 1. Admitir — a carteira de trabalho nasce aqui.
-    const detalhe = await api<{ agent: { id: string } }>("/agents", {
-      method: "POST",
-      body: JSON.stringify(payloadAdmissao(agente)),
-    });
-    const agentId = detalhe.agent.id;
+    // 1. Admitir — a carteira de trabalho nasce aqui. Reaproveita o agente com
+    //    o mesmo nome, para que ensaiar a demo duas vezes não encha a frota de
+    //    duplicatas.
+    const nomeCompleto = `${PREFIXO} ${agente.nome}`;
+    const existente = frotaAtual.find((a) => a.name === nomeCompleto);
+    const agentId = existente
+      ? existente.id
+      : (await api<{ agent: { id: string } }>("/agents", {
+          method: "POST",
+          body: JSON.stringify(payloadAdmissao(agente)),
+        })).agent.id;
 
     // 2. Emitir credencial própria: o agente reporta com a chave dele, não com
     //    a sessão do humano. Este é o caminho real de produção.
