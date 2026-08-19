@@ -977,6 +977,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/PreAssessResult"
 
+  /catalog/metrics/{metricKey}/instrumentation:
+    get:
+      operationId: getMetricInstrumentation
+      tags: [catalog]
+      summary: Como capturar esta métrica — forma, campo e trecho pronto
+      parameters:
+        - name: metricKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Instrução de captura
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricInstrumentation"
+
   /agents/{agentId}/actions:
     get:
       operationId: listVerdictActions
@@ -3094,6 +3113,32 @@ components:
           type: array
           items:
             type: string
+
+    MetricInstrumentation:
+      type: object
+      required: [metricKey, forma, resumo, campo, snippets, requisitos]
+      properties:
+        metricKey: { type: string }
+        label: { type: string }
+        forma:
+          type: string
+          enum: [automatica, metadata, evidencia]
+        resumo: { type: string }
+        campo: { type: string }
+        snippets:
+          type: array
+          items:
+            type: object
+            required: [titulo, linguagem, codigo]
+            properties:
+              titulo: { type: string }
+              linguagem:
+                type: string
+                enum: [bash, typescript, json]
+              codigo: { type: string }
+        requisitos:
+          type: array
+          items: { type: string }
 
     VerdictAction:
       type: object

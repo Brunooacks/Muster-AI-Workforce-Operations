@@ -417,6 +417,140 @@ router.delete(
   },
 );
 
+
+// Editar em vez de apagar e recriar: a etapa carrega o histórico de eventos já
+// reportados. Recriar quebraria a linhagem de tudo que passou por ela — e era
+// a única saída antes deste endpoint existir.
+router.patch(
+  "/journeys/:journeyId/steps/:stepId",
+  requireAuth, requireOrg,
+  requireMixedTeamManager,
+  async (req, res) => {
+    const { journeyId } = JourneyIdParams.parse(req.params);
+    const stepId = req.params.stepId as string;
+    const journey = await journeyExists(journeyId);
+    if (!journey) {
+      res.status(404).json({ error: "Journey not found" });
+      return;
+    }
+
+    const [atual] = await db
+      .select()
+      .from(journeySteps)
+      .where(and(eq(journeySteps.id, stepId), eq(journeySteps.journeyId, journeyId)));
+    if (!atual) {
+      res.status(404).json({ error: "Step not found in this journey" });
+      return;
+    }
+
+    const body = req.body as Record<string, unknown>;
+    let assignedAgent: typeof agents.$inferSelect | null = null;
+    const novoAgente = typeof body.agentId === "string" ? body.agentId : undefined;
+
+    // Trocar o agente da etapa exige que ele já participe do time da jornada —
+    // mesma regra da criação, para não abrir porta lateral pela edição.
+    if (novoAgente) {
+      const [assignment] = await db
+        .select()
+        .from(teamAgentAssignments)
+        .where(
+          and(
+            eq(teamAgentAssignments.teamId, journey.teamId),
+            eq(teamAgentAssignments.agentId, novoAgente),
+            eq(teamAgentAssignments.status, "active"),
+          ),
+        );
+      if (!assignment) {
+        res.status(409).json({
+          error: "Agent must have an active assignment in the journey team",
+        });
+        return;
+      }
+      const [agent] = await db.select().from(agents).where(eq(agents.id, novoAgente));
+      assignedAgent = agent ?? null;
+    } else if (atual.agentId) {
+      const [agent] = await db.select().from(agents).where(eq(agents.id, atual.agentId));
+      assignedAgent = agent ?? null;
+    }
+
+    const campos: Record<string, unknown> = {};
+    for (const campo of ["name", "responsibility", "decisionMode", "stepType", "stepKey"]) {
+      if (typeof body[campo] === "string") campos[campo] = body[campo];
+    }
+    for (const campo of ["sequence", "expectedDurationMs"]) {
+      if (typeof body[campo] === "number") campos[campo] = body[campo];
+    }
+    if (Array.isArray(body.guardrails)) campos.guardrails = body.guardrails;
+    if (typeof body.required === "boolean") campos.required = body.required ? 1 : 0;
+    if (novoAgente) campos.agentId = novoAgente;
+    if (body.agentId === null) { campos.agentId = null; assignedAgent = null; }
+
+    if (Object.keys(campos).length === 0) {
+      res.status(400).json({ error: "Nenhum campo editável informado." });
+      return;
+    }
+
+    try {
+      const [atualizado] = await db
+        .update(journeySteps)
+        .set({ ...campos, updatedAt: new Date() })
+        .where(eq(journeySteps.id, stepId))
+        .returning();
+      await db.update(journeys).set({ updatedAt: new Date() }).where(eq(journeys.id, journeyId));
+      res.json(toStep(atualizado!, assignedAgent));
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        res.status(409).json({ error: "Step key already exists in this journey" });
+        return;
+      }
+      throw error;
+    }
+  },
+);
+
+// Handoff editável: refinar a condição ou o contexto exigido é ajuste fino de
+// operação, não motivo para recriar a ligação entre duas etapas.
+router.patch(
+  "/journeys/:journeyId/handoffs/:handoffId",
+  requireAuth, requireOrg,
+  requireMixedTeamManager,
+  async (req, res) => {
+    const { journeyId } = JourneyIdParams.parse(req.params);
+    const handoffId = req.params.handoffId as string;
+    if (!(await journeyExists(journeyId))) {
+      res.status(404).json({ error: "Journey not found" });
+      return;
+    }
+    const [atual] = await db
+      .select()
+      .from(journeyHandoffs)
+      .where(and(eq(journeyHandoffs.id, handoffId), eq(journeyHandoffs.journeyId, journeyId)));
+    if (!atual) {
+      res.status(404).json({ error: "Handoff not found in this journey" });
+      return;
+    }
+
+    const body = req.body as Record<string, unknown>;
+    const campos: Record<string, unknown> = {};
+    for (const campo of ["protocol", "condition"]) {
+      if (typeof body[campo] === "string") campos[campo] = body[campo];
+    }
+    if (Array.isArray(body.requiredContext)) campos.requiredContext = body.requiredContext;
+    if (Object.keys(campos).length === 0) {
+      res.status(400).json({ error: "Nenhum campo editável informado." });
+      return;
+    }
+
+    const [atualizado] = await db
+      .update(journeyHandoffs)
+      .set({ ...campos, updatedAt: new Date() })
+      .where(eq(journeyHandoffs.id, handoffId))
+      .returning();
+    await db.update(journeys).set({ updatedAt: new Date() }).where(eq(journeys.id, journeyId));
+    res.json(toHandoff(atualizado!));
+  },
+);
+
 router.post("/journeys/:journeyId/events", requireAuth, requireOrg, async (req, res) => {
   const { journeyId } = JourneyIdParams.parse(req.params);
   const body = JourneyEventInput.parse(req.body);

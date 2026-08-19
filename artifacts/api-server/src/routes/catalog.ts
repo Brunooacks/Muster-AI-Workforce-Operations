@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, catalogMetrics } from "@workspace/db";
 import {
   ListCatalogMetricsResponse,
@@ -8,9 +8,31 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { instrumentacaoPara } from "../lib/metric-instrumentation";
 import { METRIC_CATALOG, METRIC_STARTER_KITS } from "../lib/metric-catalog";
 
 const router: IRouter = Router();
+
+// Do catálogo à captura: dada uma métrica, diz como o número chega ao Muster.
+// Declarar sem dizer como capturar é o que deixa catálogo de métrica virar
+// enfeite — esta rota é o elo que faltava.
+router.get("/catalog/metrics/:metricKey/instrumentation", requireAuth, requireOrg, async (req, res) => {
+  const metricKey = req.params.metricKey as string;
+  const [row] = await db
+    .select()
+    .from(catalogMetrics)
+    .where(and(eq(catalogMetrics.key, metricKey), eq(catalogMetrics.orgId, req.orgId!)))
+    .limit(1);
+  if (!row) {
+    res.status(404).json({ error: "Métrica não encontrada no catálogo." });
+    return;
+  }
+  const instrucao = instrumentacaoPara({
+    key: row.key, label: row.label, unit: row.unit,
+    target: row.target ?? "", layer: row.layer,
+  });
+  res.json({ metricKey: row.key, label: row.label, ...instrucao });
+});
 
 // Vertical presentation metadata comes from the built-in catalog; DB rows are
 // grouped under it so custom metrics land in their vertical alongside seeded ones.

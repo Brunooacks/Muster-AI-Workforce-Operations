@@ -1550,6 +1550,28 @@ export const PreAssessAgentSourceResponse = zod.object({
 
 
 /**
+ * @summary Como capturar esta métrica — forma, campo e trecho pronto
+ */
+export const GetMetricInstrumentationParams = zod.object({
+  "metricKey": zod.coerce.string()
+})
+
+export const GetMetricInstrumentationResponse = zod.object({
+  "metricKey": zod.string(),
+  "label": zod.string().optional(),
+  "forma": zod.enum(['automatica', 'metadata', 'evidencia']),
+  "resumo": zod.string(),
+  "campo": zod.string(),
+  "snippets": zod.array(zod.object({
+  "titulo": zod.string(),
+  "linguagem": zod.enum(['bash', 'typescript', 'json']),
+  "codigo": zod.string()
+})),
+  "requisitos": zod.array(zod.string())
+})
+
+
+/**
  * @summary Plano de ação do veredito, com status de execução
  */
 export const ListVerdictActionsParams = zod.object({

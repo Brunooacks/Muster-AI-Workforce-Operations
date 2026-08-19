@@ -1243,6 +1243,40 @@ export interface PreAssessResult {
   signals: string[];
 }
 
+export type MetricInstrumentationForma = typeof MetricInstrumentationForma[keyof typeof MetricInstrumentationForma];
+
+
+export const MetricInstrumentationForma = {
+  automatica: 'automatica',
+  metadata: 'metadata',
+  evidencia: 'evidencia',
+} as const;
+
+export type MetricInstrumentationSnippetsItemLinguagem = typeof MetricInstrumentationSnippetsItemLinguagem[keyof typeof MetricInstrumentationSnippetsItemLinguagem];
+
+
+export const MetricInstrumentationSnippetsItemLinguagem = {
+  bash: 'bash',
+  typescript: 'typescript',
+  json: 'json',
+} as const;
+
+export type MetricInstrumentationSnippetsItem = {
+  titulo: string;
+  linguagem: MetricInstrumentationSnippetsItemLinguagem;
+  codigo: string;
+};
+
+export interface MetricInstrumentation {
+  metricKey: string;
+  label?: string;
+  forma: MetricInstrumentationForma;
+  resumo: string;
+  campo: string;
+  snippets: MetricInstrumentationSnippetsItem[];
+  requisitos: string[];
+}
+
 export type VerdictActionStatus = typeof VerdictActionStatus[keyof typeof VerdictActionStatus];
 
 

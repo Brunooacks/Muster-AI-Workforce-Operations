@@ -68,6 +68,7 @@ import type {
   ListAgentDraftsParams,
   ListAgentsParams,
   ListFleetAlertsParams,
+  MetricInstrumentation,
   MetricPoint,
   MetricStarterKit,
   PreAssessInput,
@@ -3308,6 +3309,83 @@ export const usePreAssessAgentSource = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getPreAssessAgentSourceMutationOptions(options));
     }
+
+export const getGetMetricInstrumentationUrl = (metricKey: string,) => {
+
+
+
+
+  return `/api/catalog/metrics/${metricKey}/instrumentation`
+}
+
+/**
+ * @summary Como capturar esta métrica — forma, campo e trecho pronto
+ */
+export const getMetricInstrumentation = async (metricKey: string, options?: RequestInit): Promise<MetricInstrumentation> => {
+
+  return customFetch<MetricInstrumentation>(getGetMetricInstrumentationUrl(metricKey),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMetricInstrumentationQueryKey = (metricKey: string,) => {
+    return [
+    `/api/catalog/metrics/${metricKey}/instrumentation`
+    ] as const;
+    }
+
+
+export const getGetMetricInstrumentationQueryOptions = <TData = Awaited<ReturnType<typeof getMetricInstrumentation>>, TError = ErrorType<unknown>>(metricKey: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetricInstrumentation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMetricInstrumentationQueryKey(metricKey);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMetricInstrumentation>>> = ({ signal }) => getMetricInstrumentation(metricKey, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(metricKey), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMetricInstrumentation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMetricInstrumentationQueryResult = NonNullable<Awaited<ReturnType<typeof getMetricInstrumentation>>>
+export type GetMetricInstrumentationQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Como capturar esta métrica — forma, campo e trecho pronto
+ */
+
+export function useGetMetricInstrumentation<TData = Awaited<ReturnType<typeof getMetricInstrumentation>>, TError = ErrorType<unknown>>(
+ metricKey: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetricInstrumentation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMetricInstrumentationQueryOptions(metricKey,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListVerdictActionsUrl = (agentId: string,) => {
 
