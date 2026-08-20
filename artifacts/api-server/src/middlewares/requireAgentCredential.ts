@@ -7,6 +7,7 @@ import {
   parseAgentApiKey,
 } from "../lib/agent-api-key";
 import { authDevBypass, requireAuth } from "./requireAuth";
+import { requireOrg } from "./requireOrg";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -46,7 +47,12 @@ export async function requireAgentCredential(
     // A bearer token that is not a Muster agent key may still be a Clerk
     // session JWT — let the human auth path decide.
     if (authDevBypass || token) {
-      requireAuth(req, res, next);
+      // Encadeia a resolução de organização: sem ela, as consultas do ingest
+      // filtrariam por um orgId indefinido e devolveriam 404 para agente que
+      // existe. Quem entra por credencial já teve a organização definida acima.
+      requireAuth(req, res, () => {
+        void requireOrg(req, res, next);
+      });
       return;
     }
     res.status(401).json({ error: "Credencial do agente ausente." });
@@ -73,6 +79,9 @@ export async function requireAgentCredential(
 
   req.agentCredentialId = record.id;
   req.userId = `agent:${record.agentId}`;
+  // A credencial já carrega o tenant: assim as consultas do ingest filtram por
+  // organização como qualquer outra, sem depender de sessão humana.
+  req.orgId = record.orgId;
 
   // Best-effort usage stamp: it powers "última vez que este agente reportou"
   // in the UI and must never delay or fail the ingest itself.

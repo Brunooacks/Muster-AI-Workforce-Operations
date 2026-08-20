@@ -23,6 +23,7 @@ import {
 import type { ExternalAgentEnvelope } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { requireAgentCredential } from "../middlewares/requireAgentCredential";
 import {
   summarizeEvents,
@@ -79,7 +80,7 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
   const [agent] = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(eq(agents.id, agentId))
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
     .limit(1);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });
@@ -118,7 +119,7 @@ router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, re
   const [agent] = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(eq(agents.id, agentId))
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
     .limit(1);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });
@@ -155,7 +156,7 @@ router.post("/integrations/agent-events", requireAuth, requireOrg, async (req, r
   const [agent] = await db
     .select({ id: agents.id, externalId: agents.externalId })
     .from(agents)
-    .where(eq(agents.externalId, body.agent.externalId))
+    .where(and(eq(agents.externalId, body.agent.externalId), ofOrg(agents, req.orgId!)))
     .limit(1);
 
   if (!agent) {
@@ -275,7 +276,7 @@ router.get("/agents/:agentId/supervision", requireAuth, requireOrg, async (req, 
   const [agent] = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(eq(agents.id, agentId))
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
     .limit(1);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });
@@ -321,7 +322,7 @@ router.post("/agents/:agentId/reevaluate", requireAuth, requireOrg, async (req, 
   const [agent] = await db
     .select()
     .from(agents)
-    .where(eq(agents.id, agentId))
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
     .limit(1);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });

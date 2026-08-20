@@ -30,6 +30,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { requireMixedTeamManager } from "../middlewares/mixedTeamRole";
 import { slugifyTeamName } from "../lib/mixed-team";
 import { summarizeJourneyMonitoring } from "../lib/journey-monitoring";
@@ -137,14 +138,17 @@ function toEvent(row: typeof journeyEvents.$inferSelect) {
   });
 }
 
-async function loadJourneyDetail(journeyId: string) {
+async function loadJourneyDetail(journeyId: string, orgId: string) {
   const [journey] = await db
     .select()
     .from(journeys)
-    .where(eq(journeys.id, journeyId));
+    .where(and(eq(journeys.id, journeyId), ofOrg(journeys, orgId)));
   if (!journey) return null;
 
-  const [team] = await db.select().from(teams).where(eq(teams.id, journey.teamId));
+  const [team] = await db
+    .select()
+    .from(teams)
+    .where(and(eq(teams.id, journey.teamId), ofOrg(teams, orgId)));
   if (!team) return null;
   const [purpose] = await db
     .select()
@@ -162,7 +166,7 @@ async function loadJourneyDetail(journeyId: string) {
     .from(journeyHandoffs)
     .where(eq(journeyHandoffs.journeyId, journeyId))
     .orderBy(asc(journeyHandoffs.createdAt));
-  const allAgents = await db.select().from(agents);
+  const allAgents = await db.select().from(agents).where(ofOrg(agents, orgId));
   const agentsById = new Map(allAgents.map((agent) => [agent.id, agent]));
   const agentCount = new Set(steps.flatMap((step) => (step.agentId ? [step.agentId] : []))).size;
 
@@ -177,16 +181,16 @@ async function loadJourneyDetail(journeyId: string) {
   });
 }
 
-async function journeyExists(journeyId: string) {
+async function journeyExists(journeyId: string, orgId: string) {
   const [journey] = await db
     .select({ id: journeys.id, teamId: journeys.teamId })
     .from(journeys)
-    .where(eq(journeys.id, journeyId));
+    .where(and(eq(journeys.id, journeyId), ofOrg(journeys, orgId)));
   return journey ?? null;
 }
 
-router.get("/journeys", requireAuth, requireOrg, async (_req, res) => {
-  const rows = await db.select().from(journeys).orderBy(desc(journeys.updatedAt));
+router.get("/journeys", requireAuth, requireOrg, async (req, res) => {
+  const rows = await db.select().from(journeys).where(ofOrg(journeys, req.orgId!)).orderBy(desc(journeys.updatedAt));
   const steps = await db.select().from(journeySteps);
   const handoffs = await db.select().from(journeyHandoffs);
 
@@ -208,7 +212,10 @@ router.post(
   requireMixedTeamManager,
   async (req, res) => {
     const body = CreateJourneyInput.parse(req.body);
-    const [team] = await db.select().from(teams).where(eq(teams.id, body.teamId));
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(and(eq(teams.id, body.teamId), ofOrg(teams, req.orgId!)));
     if (!team) {
       res.status(404).json({ error: "Team not found" });
       return;
@@ -234,7 +241,7 @@ router.post(
 
 router.get("/journeys/:journeyId", requireAuth, requireOrg, async (req, res) => {
   const { journeyId } = JourneyIdParams.parse(req.params);
-  const journey = await loadJourneyDetail(journeyId);
+  const journey = await loadJourneyDetail(journeyId, req.orgId!);
   if (!journey) {
     res.status(404).json({ error: "Journey not found" });
     return;
@@ -258,7 +265,7 @@ router.patch(
       res.status(404).json({ error: "Journey not found" });
       return;
     }
-    const detail = await loadJourneyDetail(journeyId);
+    const detail = await loadJourneyDetail(journeyId, req.orgId!);
     res.json(detail);
   },
 );
@@ -288,7 +295,7 @@ router.post(
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
     const body = JourneyStepInput.parse(req.body);
-    const journey = await journeyExists(journeyId);
+    const journey = await journeyExists(journeyId, req.orgId!);
     if (!journey) {
       res.status(404).json({ error: "Journey not found" });
       return;
@@ -312,7 +319,10 @@ router.post(
         });
         return;
       }
-      const [agent] = await db.select().from(agents).where(eq(agents.id, body.agentId));
+      const [agent] = await db
+        .select()
+        .from(agents)
+        .where(and(eq(agents.id, body.agentId), ofOrg(agents, req.orgId!)));
       assignedAgent = agent ?? null;
     }
 
@@ -428,7 +438,7 @@ router.patch(
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
     const stepId = req.params.stepId as string;
-    const journey = await journeyExists(journeyId);
+    const journey = await journeyExists(journeyId, req.orgId!);
     if (!journey) {
       res.status(404).json({ error: "Journey not found" });
       return;
@@ -466,7 +476,10 @@ router.patch(
         });
         return;
       }
-      const [agent] = await db.select().from(agents).where(eq(agents.id, novoAgente));
+      const [agent] = await db
+        .select()
+        .from(agents)
+        .where(and(eq(agents.id, novoAgente), ofOrg(agents, req.orgId!)));
       assignedAgent = agent ?? null;
     } else if (atual.agentId) {
       const [agent] = await db.select().from(agents).where(eq(agents.id, atual.agentId));
@@ -517,7 +530,7 @@ router.patch(
   async (req, res) => {
     const { journeyId } = JourneyIdParams.parse(req.params);
     const handoffId = req.params.handoffId as string;
-    if (!(await journeyExists(journeyId))) {
+    if (!(await journeyExists(journeyId, req.orgId!))) {
       res.status(404).json({ error: "Journey not found" });
       return;
     }
@@ -554,7 +567,7 @@ router.patch(
 router.post("/journeys/:journeyId/events", requireAuth, requireOrg, async (req, res) => {
   const { journeyId } = JourneyIdParams.parse(req.params);
   const body = JourneyEventInput.parse(req.body);
-  if (!(await journeyExists(journeyId))) {
+  if (!(await journeyExists(journeyId, req.orgId!))) {
     res.status(404).json({ error: "Journey not found" });
     return;
   }
@@ -643,7 +656,7 @@ router.post("/journeys/:journeyId/events", requireAuth, requireOrg, async (req, 
 
 router.get("/journeys/:journeyId/monitoring", requireAuth, requireOrg, async (req, res) => {
   const { journeyId } = JourneyIdParams.parse(req.params);
-  const detail = await loadJourneyDetail(journeyId);
+  const detail = await loadJourneyDetail(journeyId, req.orgId!);
   if (!detail) {
     res.status(404).json({ error: "Journey not found" });
     return;

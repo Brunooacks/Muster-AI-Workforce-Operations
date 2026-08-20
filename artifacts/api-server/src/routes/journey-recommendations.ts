@@ -22,6 +22,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { requireMixedTeamManager } from "../middlewares/mixedTeamRole";
 import { summarizeJourneyMonitoring } from "../lib/journey-monitoring";
 import { generateJourneyRecommendation } from "../lib/journey-recommendation-generator";
@@ -164,6 +165,7 @@ function toRecommendation(
 
 async function loadRecommendations(
   journeyId: string,
+  orgId: string,
   recommendationId?: string,
 ) {
   const rows = await db
@@ -198,7 +200,7 @@ async function loadRecommendations(
     ? await db
         .select({ id: agents.id, name: agents.name })
         .from(agents)
-        .where(inArray(agents.id, agentIds))
+        .where(and(inArray(agents.id, agentIds), ofOrg(agents, orgId)))
     : [];
   const agentNames = new Map(agentRows.map((agent) => [agent.id, agent.name]));
   const now = new Date();
@@ -216,11 +218,12 @@ async function loadRecommendations(
 async function validateRecommendationReferences(
   journeyId: string,
   input: RecommendationInput,
+  orgId: string,
 ) {
   const [journey] = await db
     .select({ id: journeys.id })
     .from(journeys)
-    .where(eq(journeys.id, journeyId));
+    .where(and(eq(journeys.id, journeyId), ofOrg(journeys, orgId)));
   if (!journey) {
     throw new RecommendationRequestError("Journey not found", 404);
   }
@@ -260,8 +263,9 @@ async function validateRecommendationReferences(
 async function createRecommendation(
   journeyId: string,
   input: RecommendationInput,
+  orgId: string,
 ) {
-  await validateRecommendationReferences(journeyId, input);
+  await validateRecommendationReferences(journeyId, input, orgId);
   const now = new Date();
   const reviewDueAt = new Date(now.getTime() + input.reviewSlaMinutes * 60_000);
 
@@ -306,7 +310,7 @@ async function createRecommendation(
     return created!.id;
   });
 
-  return (await loadRecommendations(journeyId, recommendationId))[0]!;
+  return (await loadRecommendations(journeyId, orgId, recommendationId))[0]!;
 }
 
 function sendRequestError(res: Response, error: unknown) {
@@ -325,12 +329,12 @@ router.get(
     const [journey] = await db
       .select({ id: journeys.id })
       .from(journeys)
-      .where(eq(journeys.id, journeyId));
+      .where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
     if (!journey) {
       res.status(404).json({ error: "Journey not found" });
       return;
     }
-    res.json(ListJourneyRecommendationsResponse.parse(await loadRecommendations(journeyId)));
+    res.json(ListJourneyRecommendationsResponse.parse(await loadRecommendations(journeyId, req.orgId!)));
   },
 );
 
@@ -342,7 +346,7 @@ router.post(
     const { journeyId } = JourneyIdParams.parse(req.params);
     const body = CreateJourneyRecommendationInput.parse(req.body);
     try {
-      res.status(201).json(await createRecommendation(journeyId, body));
+      res.status(201).json(await createRecommendation(journeyId, body, req.orgId!));
     } catch (error) {
       if (!sendRequestError(res, error)) throw error;
     }
@@ -368,14 +372,14 @@ router.post(
       .orderBy(desc(journeyRecommendations.createdAt))
       .limit(1);
     if (existing) {
-      res.status(200).json((await loadRecommendations(journeyId, existing.id))[0]);
+      res.status(200).json((await loadRecommendations(journeyId, req.orgId!, existing.id))[0]);
       return;
     }
 
     const [journey] = await db
       .select({ id: journeys.id })
       .from(journeys)
-      .where(eq(journeys.id, journeyId));
+      .where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
     if (!journey) {
       res.status(404).json({ error: "Journey not found" });
       return;
@@ -397,7 +401,7 @@ router.post(
       ? await db
           .select({ id: agents.id, name: agents.name })
           .from(agents)
-          .where(inArray(agents.id, agentIds))
+          .where(and(inArray(agents.id, agentIds), ofOrg(agents, req.orgId!)))
       : [];
     const agentNames = new Map(agentRows.map((agent) => [agent.id, agent.name]));
     const monitoring = summarizeJourneyMonitoring({
@@ -434,6 +438,7 @@ router.post(
         await createRecommendation(
           journeyId,
           CreateJourneyRecommendationInput.parse(generated),
+          req.orgId!,
         ),
       );
     } catch (error) {
@@ -538,7 +543,7 @@ router.post(
       });
     });
 
-    res.json((await loadRecommendations(journeyId, recommendationId))[0]);
+    res.json((await loadRecommendations(journeyId, req.orgId!, recommendationId))[0]);
   },
 );
 
@@ -640,7 +645,7 @@ router.patch(
       });
     });
 
-    res.json((await loadRecommendations(journeyId, recommendationId))[0]);
+    res.json((await loadRecommendations(journeyId, req.orgId!, recommendationId))[0]);
   },
 );
 

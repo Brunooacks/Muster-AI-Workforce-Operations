@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   agents,
@@ -23,6 +23,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { toAgentSummary } from "../lib/serializers";
 import {
   PLATFORM_CATALOG,
@@ -51,8 +52,8 @@ function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-router.get("/connectors", requireAuth, requireOrg, async (_req, res) => {
-  const rows = await db.select().from(connectors);
+router.get("/connectors", requireAuth, requireOrg, async (req, res) => {
+  const rows = await db.select().from(connectors).where(ofOrg(connectors, req.orgId!));
 
   const existingPlatforms = new Set(rows.map((r) => r.platform));
   const catalogExtras = PLATFORM_CATALOG.filter(
@@ -91,7 +92,7 @@ router.post("/connectors", requireAuth, requireOrg, async (req, res) => {
   const [existing] = await db
     .select()
     .from(connectors)
-    .where(eq(connectors.platform, body.platform));
+    .where(and(eq(connectors.platform, body.platform), ofOrg(connectors, req.orgId!)));
 
   if (existing) {
     const [updated] = await db
@@ -205,7 +206,7 @@ router.post("/connectors/:connectorId/test", requireAuth, requireOrg, async (req
   const [connector] = await db
     .select()
     .from(connectors)
-    .where(eq(connectors.id, connectorId))
+    .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)))
     .limit(1);
   if (!connector) {
     res.status(404).json({ error: "Conector não encontrado." });
@@ -233,7 +234,7 @@ router.post(
     const [connector] = await db
       .select()
       .from(connectors)
-      .where(eq(connectors.id, connectorId));
+      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)));
 
     const platformKey = connector
       ? connector.platform
@@ -246,7 +247,7 @@ router.post(
       const candidates = await impl.discoverAgents(cred);
 
       const importedExternalIds = new Set(
-        (await db.select({ externalId: agents.externalId }).from(agents))
+        (await db.select({ externalId: agents.externalId }).from(agents).where(ofOrg(agents, req.orgId!)))
           .map((r) => r.externalId)
           .filter((x): x is string => Boolean(x)),
       );
@@ -302,6 +303,7 @@ router.post(
         await db
           .select({ externalId: agents.externalId })
           .from(agents)
+          .where(ofOrg(agents, req.orgId!))
       )
         .map((r) => r.externalId)
         .filter((x): x is string => Boolean(x)),
@@ -357,7 +359,7 @@ router.post(
     const [connector] = await db
       .select()
       .from(connectors)
-      .where(eq(connectors.id, connectorId));
+      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)));
     const platformKey = connector
       ? connector.platform
       : connectorId.replace(/^catalog_/, "");
@@ -379,7 +381,7 @@ router.post(
     const existing = await db
       .select({ externalId: agents.externalId })
       .from(agents)
-      .where(inArray(agents.externalId, body.externalIds));
+      .where(and(inArray(agents.externalId, body.externalIds), ofOrg(agents, req.orgId!)));
     const alreadyImported = new Set(
       existing.map((r) => r.externalId).filter((x): x is string => Boolean(x)),
     );
@@ -421,7 +423,9 @@ router.post(
       const [clash] = await db
         .select()
         .from(agents)
-        .where(eq(agents.slug, slug));
+        // Slug é único por organização: a checagem de colisão precisa do mesmo
+        // escopo, senão inventaria sufixo por causa de agente de outro cliente.
+        .where(and(eq(agents.slug, slug), ofOrg(agents, req.orgId!)));
       if (clash) slug = `${slug}-${Date.now().toString(36)}`;
 
       const now = Date.now();

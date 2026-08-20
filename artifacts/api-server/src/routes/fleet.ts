@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   agents,
@@ -26,6 +26,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { applyAlertUpdate } from "../lib/alert-workflow";
 
 const router: IRouter = Router();
@@ -55,8 +56,8 @@ function severityFromScore(score: number): Severity {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-router.get("/fleet/summary", requireAuth, requireOrg, async (_req, res) => {
-  const allAgents = await db.select().from(agents);
+router.get("/fleet/summary", requireAuth, requireOrg, async (req, res) => {
+  const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
   const allAlerts = await db.select().from(alerts);
 
   const byVerdict = { promote: 0, mentor: 0, retire: 0, observation: 0 };
@@ -113,8 +114,8 @@ router.get("/fleet/summary", requireAuth, requireOrg, async (_req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/kpis", requireAuth, requireOrg, async (_req, res) => {
-  const allAgents = await db.select().from(agents);
+router.get("/fleet/kpis", requireAuth, requireOrg, async (req, res) => {
+  const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
   const allEvaluations = await db
     .select()
     .from(evaluations)
@@ -316,7 +317,7 @@ router.patch("/fleet/alerts/:alertId", requireAuth, requireOrg, async (req, res)
   const [agent] = await db
     .select({ name: agents.name })
     .from(agents)
-    .where(eq(agents.id, updated!.agentId))
+    .where(and(eq(agents.id, updated!.agentId), ofOrg(agents, req.orgId!)))
     .limit(1);
   const data = UpdateFleetAlertResponse.parse({
     ...updated,
@@ -326,7 +327,7 @@ router.patch("/fleet/alerts/:alertId", requireAuth, requireOrg, async (req, res)
   res.json(data);
 });
 
-router.get("/fleet/decisions", requireAuth, requireOrg, async (_req, res) => {
+router.get("/fleet/decisions", requireAuth, requireOrg, async (req, res) => {
   const rows = await db
     .select({
       id: verdicts.id,
@@ -358,8 +359,8 @@ router.get("/fleet/decisions", requireAuth, requireOrg, async (_req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/governance", requireAuth, requireOrg, async (_req, res) => {
-  const allAgents = await db.select().from(agents);
+router.get("/fleet/governance", requireAuth, requireOrg, async (req, res) => {
+  const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
   const allOwners = await db.select().from(agentOwners);
   const allEvaluations = await db
     .select()
@@ -478,8 +479,8 @@ router.get("/fleet/governance", requireAuth, requireOrg, async (_req, res) => {
   res.json(data);
 });
 
-router.get("/fleet/benchmarks", requireAuth, requireOrg, async (_req, res) => {
-  const allAgents = await db.select().from(agents);
+router.get("/fleet/benchmarks", requireAuth, requireOrg, async (req, res) => {
+  const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
   const allEvaluations = await db
     .select()
     .from(evaluations)

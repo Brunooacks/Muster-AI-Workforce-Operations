@@ -27,6 +27,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { requireMixedTeamManager } from "../middlewares/mixedTeamRole";
 import { normalizeDecisionRights, slugifyTeamName } from "../lib/mixed-team";
 
@@ -102,14 +103,17 @@ function toAssignment(row: typeof teamAgentAssignments.$inferSelect) {
   });
 }
 
-async function getTeam(teamId: string) {
-  const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
+async function getTeam(teamId: string, orgId: string) {
+  const [team] = await db
+    .select()
+    .from(teams)
+    .where(and(eq(teams.id, teamId), ofOrg(teams, orgId)));
   if (!team) return null;
 
   const [purpose] = await db
     .select()
     .from(purposes)
-    .where(eq(purposes.id, team.purposeId));
+    .where(and(eq(purposes.id, team.purposeId), ofOrg(purposes, orgId)));
   const members = await db
     .select()
     .from(teamMemberships)
@@ -130,10 +134,11 @@ async function getTeam(teamId: string) {
   });
 }
 
-router.get("/purposes", requireAuth, requireOrg, async (_req, res) => {
+router.get("/purposes", requireAuth, requireOrg, async (req, res) => {
   const rows = await db
     .select()
     .from(purposes)
+    .where(ofOrg(purposes, req.orgId!))
     .orderBy(desc(purposes.createdAt));
   res.json(ListPurposesResponse.parse(rows.map(toPurpose)));
 });
@@ -165,7 +170,7 @@ router.get("/purposes/:purposeId", requireAuth, requireOrg, async (req, res) => 
   const [purpose] = await db
     .select()
     .from(purposes)
-    .where(eq(purposes.id, purposeId));
+    .where(and(eq(purposes.id, purposeId), ofOrg(purposes, req.orgId!)));
   if (!purpose) {
     res.status(404).json({ error: "Purpose not found" });
     return;
@@ -191,8 +196,12 @@ router.delete(
   },
 );
 
-router.get("/teams", requireAuth, requireOrg, async (_req, res) => {
-  const rows = await db.select().from(teams).orderBy(desc(teams.createdAt));
+router.get("/teams", requireAuth, requireOrg, async (req, res) => {
+  const rows = await db
+    .select()
+    .from(teams)
+    .where(ofOrg(teams, req.orgId!))
+    .orderBy(desc(teams.createdAt));
   const members = await db.select().from(teamMemberships);
   const assignments = await db.select().from(teamAgentAssignments);
   const memberCounts = new Map<string, number>();
@@ -228,7 +237,7 @@ router.post(
     const [purpose] = await db
       .select()
       .from(purposes)
-      .where(eq(purposes.id, body.purposeId));
+      .where(and(eq(purposes.id, body.purposeId), ofOrg(purposes, req.orgId!)));
     if (!purpose) {
       res.status(404).json({ error: "Purpose not found" });
       return;
@@ -260,7 +269,7 @@ router.post(
 
 router.get("/teams/:teamId", requireAuth, requireOrg, async (req, res) => {
   const { teamId } = TeamIdParams.parse(req.params);
-  const team = await getTeam(teamId);
+  const team = await getTeam(teamId, req.orgId!);
   if (!team) {
     res.status(404).json({ error: "Team not found" });
     return;
@@ -293,7 +302,10 @@ router.post(
   async (req, res) => {
     const { teamId } = TeamIdParams.parse(req.params);
     const body = TeamMemberInput.parse(req.body);
-    const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(and(eq(teams.id, teamId), ofOrg(teams, req.orgId!)));
     if (!team) {
       res.status(404).json({ error: "Team not found" });
       return;
@@ -350,7 +362,10 @@ router.post(
   async (req, res) => {
     const { teamId } = TeamIdParams.parse(req.params);
     const body = AgentAssignmentInput.parse(req.body);
-    const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(and(eq(teams.id, teamId), ofOrg(teams, req.orgId!)));
     if (!team) {
       res.status(404).json({ error: "Team not found" });
       return;
@@ -358,7 +373,7 @@ router.post(
     const [agent] = await db
       .select()
       .from(agents)
-      .where(eq(agents.id, body.agentId));
+      .where(and(eq(agents.id, body.agentId), ofOrg(agents, req.orgId!)));
     if (!agent) {
       res.status(404).json({ error: "Agent not found" });
       return;

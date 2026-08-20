@@ -40,6 +40,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import {
   buildAgentDetail,
   toAgentSummary,
@@ -74,7 +75,11 @@ function slugify(name: string): string {
 
 router.get("/agents", requireAuth, requireOrg, async (req, res) => {
   const query = ListAgentsQueryParams.parse(req.query);
-  const rows = await db.select().from(agents).orderBy(desc(agents.healthScore));
+  const rows = await db
+    .select()
+    .from(agents)
+    .where(ofOrg(agents, req.orgId!))
+    .orderBy(desc(agents.healthScore));
 
   const search = query.search?.toLowerCase();
   const filtered = rows.filter(
@@ -224,7 +229,10 @@ router.patch("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = UpdateAgentParams.parse(req.params);
   const body = UpdateAgentBody.parse(req.body);
 
-  const [existing] = await db.select().from(agents).where(eq(agents.id, agentId));
+  const [existing] = await db
+    .select()
+    .from(agents)
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
   if (!existing) {
     res.status(404).json({ error: "Agent not found" });
     return;

@@ -21,6 +21,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { buildAgentDetail, toAgentDraftRecord } from "../lib/serializers";
 import { admitAgentTx, AlreadyAdmittedError } from "../lib/admission";
 import { PLATFORM_CATALOG } from "../lib/discovery";
@@ -29,14 +30,14 @@ const router: IRouter = Router();
 
 type DiscoveryRunRow = typeof discoveryRuns.$inferSelect;
 
-async function runCounts(runId: string) {
+async function runCounts(runId: string, orgId: string) {
   const reviewRows = await db
     .select({
       status: agentDrafts.reviewStatus,
       n: sql<number>`count(*)::int`,
     })
     .from(agentDrafts)
-    .where(eq(agentDrafts.runId, runId))
+    .where(and(eq(agentDrafts.runId, runId), ofOrg(agentDrafts, orgId)))
     .groupBy(agentDrafts.reviewStatus);
   const enrichRows = await db
     .select({
@@ -44,7 +45,7 @@ async function runCounts(runId: string) {
       n: sql<number>`count(*)::int`,
     })
     .from(agentDrafts)
-    .where(eq(agentDrafts.runId, runId))
+    .where(and(eq(agentDrafts.runId, runId), ofOrg(agentDrafts, orgId)))
     .groupBy(agentDrafts.enrichmentStatus);
 
   const review = new Map(reviewRows.map((r) => [r.status, r.n]));
@@ -93,13 +94,13 @@ type ApproveOutcome =
 // draft to the created agent — all in one transaction so a failure leaves both
 // the fleet and the draft untouched. Each draft is its own transaction so one
 // failure never poisons a bulk run.
-async function approveDraft(draftId: string): Promise<ApproveOutcome> {
+async function approveDraft(draftId: string, orgId: string): Promise<ApproveOutcome> {
   try {
     const agentId = await db.transaction(async (tx) => {
       const [draft] = await tx
         .select()
         .from(agentDrafts)
-        .where(eq(agentDrafts.id, draftId))
+        .where(and(eq(agentDrafts.id, draftId), ofOrg(agentDrafts, orgId)))
         .for("update");
       if (!draft) throw new DraftNotFoundError();
       if (draft.reviewStatus !== "pending") throw new DraftNotPendingError();
@@ -206,7 +207,7 @@ router.post("/discovery/runs", requireAuth, requireOrg, async (req, res) => {
     .where(eq(discoveryRuns.id, run.id))
     .returning();
 
-  const counts = await runCounts(run.id);
+  const counts = await runCounts(run.id, req.orgId!);
   res.status(201).json(toDiscoveryRun(updated!, counts));
 });
 
@@ -215,12 +216,12 @@ router.get("/discovery/runs/:runId", requireAuth, requireOrg, async (req, res) =
   const [run] = await db
     .select()
     .from(discoveryRuns)
-    .where(eq(discoveryRuns.id, runId));
+    .where(and(eq(discoveryRuns.id, runId), ofOrg(discoveryRuns, req.orgId!)));
   if (!run) {
     res.status(404).json({ error: "Discovery run not found" });
     return;
   }
-  const counts = await runCounts(runId);
+  const counts = await runCounts(runId, req.orgId!);
   const data = GetDiscoveryRunResponse.parse(toDiscoveryRun(run, counts));
   res.json(data);
 });
@@ -241,7 +242,7 @@ router.get("/discovery/drafts", requireAuth, requireOrg, async (req, res) => {
   const rows = await db
     .select()
     .from(agentDrafts)
-    .where(conditions.length ? and(...conditions) : undefined)
+    .where(and(ofOrg(agentDrafts, req.orgId!), ...conditions))
     .orderBy(desc(agentDrafts.confidence), desc(agentDrafts.createdAt));
 
   const search = q.search?.toLowerCase();
@@ -265,7 +266,7 @@ router.patch("/discovery/drafts/:draftId", requireAuth, requireOrg, async (req, 
   const [existing] = await db
     .select()
     .from(agentDrafts)
-    .where(eq(agentDrafts.id, draftId));
+    .where(and(eq(agentDrafts.id, draftId), ofOrg(agentDrafts, req.orgId!)));
   if (!existing) {
     res.status(404).json({ error: "Draft not found" });
     return;
@@ -325,7 +326,7 @@ router.post(
     for (const id of body.draftIds) {
       let outcome: ApproveOutcome;
       try {
-        outcome = await approveDraft(id);
+        outcome = await approveDraft(id, req.orgId!);
       } catch (err) {
         req.log.warn({ err, draftId: id }, "Bulk approve failed for draft");
         failed++;
@@ -391,7 +392,7 @@ router.post(
   requireAuth, requireOrg,
   async (req, res) => {
     const { draftId } = ApproveAgentDraftParams.parse(req.params);
-    const outcome = await approveDraft(draftId);
+    const outcome = await approveDraft(draftId, req.orgId!);
     if (outcome.status === "notFound") {
       res.status(404).json({ error: "Draft not found" });
       return;
@@ -420,7 +421,7 @@ router.post(
     const [existing] = await db
       .select()
       .from(agentDrafts)
-      .where(eq(agentDrafts.id, draftId));
+      .where(and(eq(agentDrafts.id, draftId), ofOrg(agentDrafts, req.orgId!)));
     if (!existing) {
       res.status(404).json({ error: "Draft not found" });
       return;

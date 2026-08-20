@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { ofOrg } from "../lib/tenant-scope";
 import { instrumentacaoPara } from "../lib/metric-instrumentation";
 import { METRIC_CATALOG, METRIC_STARTER_KITS } from "../lib/metric-catalog";
 
@@ -52,8 +53,8 @@ function slugifyKey(label: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-router.get("/catalog/metrics", requireAuth, requireOrg, async (_req, res) => {
-  const rows = await db.select().from(catalogMetrics);
+router.get("/catalog/metrics", requireAuth, requireOrg, async (req, res) => {
+  const rows = await db.select().from(catalogMetrics).where(ofOrg(catalogMetrics, req.orgId!));
 
   // Keep the built-in vertical order; unknown verticals (future-proofing) go last.
   const order = new Map(METRIC_CATALOG.map((v, i) => [v.key, i]));
@@ -96,8 +97,8 @@ router.get("/catalog/metrics", requireAuth, requireOrg, async (_req, res) => {
   res.json(ListCatalogMetricsResponse.parse(data));
 });
 
-router.get("/catalog/metric-kits", requireAuth, requireOrg, async (_req, res) => {
-  const rows = await db.select().from(catalogMetrics);
+router.get("/catalog/metric-kits", requireAuth, requireOrg, async (req, res) => {
+  const rows = await db.select().from(catalogMetrics).where(ofOrg(catalogMetrics, req.orgId!));
   const byKey = new Map(rows.map((row) => [row.key, row]));
   res.json(METRIC_STARTER_KITS.map((kit) => ({
     key: kit.key,
@@ -122,7 +123,7 @@ router.post("/catalog/metrics", requireAuth, requireOrg, async (req, res) => {
     const clash = await db
       .select({ id: catalogMetrics.id })
       .from(catalogMetrics)
-      .where(eq(catalogMetrics.key, key))
+      .where(and(eq(catalogMetrics.key, key), ofOrg(catalogMetrics, req.orgId!)))
       .limit(1);
     if (clash.length === 0) break;
     key = `${base}-${i}`;
@@ -164,7 +165,7 @@ router.patch("/catalog/metrics/:metricKey", requireAuth, requireOrg, async (req,
   const [existing] = await db
     .select()
     .from(catalogMetrics)
-    .where(eq(catalogMetrics.key, metricKey))
+    .where(and(eq(catalogMetrics.key, metricKey), ofOrg(catalogMetrics, req.orgId!)))
     .limit(1);
   if (!existing) {
     res.status(404).json({ error: "Métrica não encontrada." });
@@ -187,7 +188,7 @@ router.patch("/catalog/metrics/:metricKey", requireAuth, requireOrg, async (req,
   const [row] = await db
     .update(catalogMetrics)
     .set(patch)
-    .where(eq(catalogMetrics.key, metricKey))
+    .where(and(eq(catalogMetrics.key, metricKey), ofOrg(catalogMetrics, req.orgId!)))
     .returning();
 
   res.json({
@@ -208,7 +209,7 @@ router.delete("/catalog/metrics/:metricKey", requireAuth, requireOrg, async (req
   const [existing] = await db
     .select()
     .from(catalogMetrics)
-    .where(eq(catalogMetrics.key, metricKey))
+    .where(and(eq(catalogMetrics.key, metricKey), ofOrg(catalogMetrics, req.orgId!)))
     .limit(1);
   if (!existing) {
     res.status(404).json({ error: "Métrica não encontrada." });
@@ -218,7 +219,7 @@ router.delete("/catalog/metrics/:metricKey", requireAuth, requireOrg, async (req
     res.status(409).json({ error: "Métricas do catálogo padrão não podem ser excluídas." });
     return;
   }
-  await db.delete(catalogMetrics).where(eq(catalogMetrics.key, metricKey));
+  await db.delete(catalogMetrics).where(and(eq(catalogMetrics.key, metricKey), ofOrg(catalogMetrics, req.orgId!)));
   res.status(204).end();
 });
 
