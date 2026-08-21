@@ -9,64 +9,108 @@ import { ROOT_TABLES, inOrg, ofOrg, byAgentsOf } from "./tenant-scope";
  * O risco desta base não é escrever o filtro errado — é esquecê-lo. Uma leitura
  * sem `orgId` não quebra teste nenhum: devolve, em silêncio, o dado de outro
  * cliente. Por isso o teste principal aqui não exercita comportamento, e sim
- * varre o código-fonte: qualquer consulta a tabela-raiz precisa mencionar
- * `orgId` por perto.
+ * varre o código-fonte: qualquer acesso a tabela-raiz precisa mencionar `orgId`
+ * por perto.
  *
- * Quando uma leitura for legitimamente global (bootstrap, seed, migração),
- * declare-a em ISENTAS com a justificativa. O custo de justificar é o ponto:
+ * Duas lições da rodada 7, ambas de buracos que a primeira versão desta guarda
+ * deixou passar:
+ *
+ * 1. Varrer só `routes/` não basta. `buildAgentDetail` lê `agents` dentro de
+ *    `lib/serializers.ts`, então `GET /agents/:id` parecia limpo na rota e lia
+ *    agente de outra organização. Agora `lib/` também é varrido.
+ * 2. Varrer só `.from()` não basta. `DELETE /agents/:id` apagava por id sem
+ *    filtro de organização — pior que vazar leitura. Agora `delete()` e
+ *    `update()` contam como acesso.
+ *
+ * Quando um acesso for legitimamente global (bootstrap, seed, manutenção),
+ * declare-o em ISENTAS com a justificativa. O custo de justificar é o ponto:
  * obriga a decisão a ser consciente.
  */
 
 const DIR_ROTAS = join(import.meta.dirname, "..", "routes");
+const DIR_LIB = import.meta.dirname;
 
 /**
- * Leituras que podem, e devem, ignorar a organização — cada uma com o motivo.
- * Formato: "arquivo.ts:trecho identificador".
+ * Acessos que podem, e devem, ignorar a organização — cada um com o motivo.
  */
 const ISENTAS: Array<{ arquivo: string; motivo: string }> = [
   { arquivo: "health.ts", motivo: "healthcheck não consulta dado de cliente" },
+  { arquivo: "seed.ts", motivo: "bootstrap de ambiente: popula o banco antes de existir sessão" },
+  {
+    arquivo: "reevaluate.ts",
+    motivo:
+      "backfill de manutenção roda no boot sobre a base inteira, fora de requisição; " +
+      "o caminho por agente recebe orgId e é coberto pelo teste de assinatura abaixo",
+  },
+  { arquivo: "tenant-scope.ts", motivo: "é a própria definição do escopo" },
 ];
 
-function arquivosDeRota(): string[] {
-  return readdirSync(DIR_ROTAS).filter((f) => f.endsWith(".ts") && !f.includes(".test."));
+function arquivosDe(dir: string): string[] {
+  return readdirSync(dir).filter((f) => f.endsWith(".ts") && !f.includes(".test."));
 }
 
-/** Um bloco de consulta: da linha do `.from(tabela)` até o `;` que a encerra. */
-function blocosDeLeitura(fonte: string, tabela: string): string[] {
+/** Formas de tocar uma tabela que precisam de escopo. */
+function acessos(tabela: string): string[] {
+  return [`.from(${tabela})`, `.delete(${tabela})`, `.update(${tabela})`];
+}
+
+/**
+ * A instrução inteira em volta do acesso.
+ *
+ * Uma janela de N linhas fixas erra dos dois lados: um `.set({...})` longo
+ * empurra o `.where()` para fora dela (falso positivo), e uma janela generosa
+ * pega o `orgId` da consulta vizinha (falso negativo — o pior dos dois). Como a
+ * consulta drizzle é uma cadeia que termina em `;`, seguir até o ponto-e-vírgula
+ * delimita exatamente a instrução. O limite de 60 linhas é só para não varrer o
+ * arquivo inteiro se algo não fechar.
+ */
+function blocosDeAcesso(fonte: string, tabela: string): Array<{ bloco: string; linha: string }> {
   const linhas = fonte.split("\n");
-  const blocos: string[] = [];
+  const encontrados: Array<{ bloco: string; linha: string }> = [];
+  const formas = acessos(tabela);
+
   for (let i = 0; i < linhas.length; i += 1) {
-    if (!linhas[i]!.includes(`.from(${tabela})`)) continue;
-    // Uma consulta drizzle é encadeada: o filtro pode estar antes (select) ou
-    // depois (where). Uma janela de 8 linhas para cada lado cobre o encadeamento
-    // sem invadir a consulta seguinte.
+    const linha = linhas[i]!;
+    if (!formas.some((f) => linha.includes(f))) continue;
+
+    // Algumas linhas atrás: cobre `const x = await db.select({...})` quebrado
+    // em várias linhas antes do `.from()`.
     const inicio = Math.max(0, i - 8);
-    const fim = Math.min(linhas.length, i + 9);
-    blocos.push(linhas.slice(inicio, fim).join("\n"));
+    let fim = i;
+    while (fim < linhas.length && fim < i + 60 && !linhas[fim]!.trimEnd().endsWith(";")) {
+      fim += 1;
+    }
+    encontrados.push({
+      bloco: linhas.slice(inicio, fim + 1).join("\n"),
+      linha: linha.trim(),
+    });
   }
-  return blocos;
+  return encontrados;
+}
+
+function temEscopo(bloco: string): boolean {
+  return (
+    bloco.includes("orgId") ||
+    bloco.includes("inOrg(") ||
+    bloco.includes("ofOrg(") ||
+    bloco.includes("agentIdsOfOrg")
+  );
 }
 
 describe("isolamento por organização — varredura do código", () => {
   const nomesDeTabela = Object.keys(ROOT_TABLES);
 
-  it("nenhuma leitura de tabela-raiz nas rotas ignora a organização", () => {
+  it("nenhum acesso a tabela-raiz ignora a organização", () => {
     const faltando: string[] = [];
 
-    for (const arquivo of arquivosDeRota()) {
-      if (ISENTAS.some((e) => e.arquivo === arquivo)) continue;
-      const fonte = readFileSync(join(DIR_ROTAS, arquivo), "utf8");
+    for (const dir of [DIR_ROTAS, DIR_LIB]) {
+      for (const arquivo of arquivosDe(dir)) {
+        if (ISENTAS.some((e) => e.arquivo === arquivo)) continue;
+        const fonte = readFileSync(join(dir, arquivo), "utf8");
 
-      for (const tabela of nomesDeTabela) {
-        for (const bloco of blocosDeLeitura(fonte, tabela)) {
-          const temEscopo =
-            bloco.includes("orgId") ||
-            bloco.includes("inOrg(") ||
-            bloco.includes("ofOrg(") ||
-            bloco.includes("agentIdsOfOrg");
-          if (!temEscopo) {
-            const linha = bloco.split("\n").find((l) => l.includes(`.from(${tabela})`))?.trim();
-            faltando.push(`${arquivo} · ${tabela} · ${linha}`);
+        for (const tabela of nomesDeTabela) {
+          for (const { bloco, linha } of blocosDeAcesso(fonte, tabela)) {
+            if (!temEscopo(bloco)) faltando.push(`${arquivo} · ${tabela} · ${linha}`);
           }
         }
       }
@@ -76,13 +120,33 @@ describe("isolamento por organização — varredura do código", () => {
     // apenas que há algo errado.
     expect(
       faltando,
-      `Leituras sem escopo de organização (${faltando.length}):\n  ${faltando.join("\n  ")}`,
+      `Acessos sem escopo de organização (${faltando.length}):\n  ${faltando.join("\n  ")}`,
     ).toEqual([]);
   });
 
   it("toda tabela-raiz declarada tem coluna orgId", () => {
     for (const [nome, tabela] of Object.entries(ROOT_TABLES)) {
       expect((tabela as { orgId?: unknown }).orgId, `${nome} sem orgId`).toBeDefined();
+    }
+  });
+
+  /**
+   * Um helper que busca entidade-raiz por id e NÃO recebe organização é um
+   * vazamento esperando a próxima rota que o chamar — foi exatamente assim que
+   * `buildAgentDetail` entrou. Aqui a exigência é da assinatura, não do uso.
+   */
+  it("helpers que carregam entidade-raiz exigem orgId na assinatura", () => {
+    const exigidos = [
+      { arquivo: "serializers.ts", fn: "buildAgentDetail" },
+      { arquivo: "reevaluate.ts", fn: "recomputeAgentScores" },
+    ];
+
+    for (const { arquivo, fn } of exigidos) {
+      const fonte = readFileSync(join(DIR_LIB, arquivo), "utf8");
+      const assinatura = fonte
+        .slice(fonte.indexOf(`export async function ${fn}(`))
+        .slice(0, 400);
+      expect(assinatura, `${fn} não recebe orgId`).toContain("orgId");
     }
   });
 });

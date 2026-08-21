@@ -9,6 +9,8 @@ import type { AgentInputAutonomyLevel } from './agentInputAutonomyLevel';
 import type { DraftMetric } from './draftMetric';
 
 export interface AgentInput {
+  /** Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como "sem área" e a atribuição fica pendente. */
+  areaId?: string | null;
   /** @minLength 1 */
   name: string;
   /** @minLength 1 */

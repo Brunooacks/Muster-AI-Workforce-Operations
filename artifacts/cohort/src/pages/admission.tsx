@@ -8,6 +8,7 @@ import {
   useFetchAgentSource,
   usePreAssessAgentSource,
   useListConnectors,
+  useListAreas,
   useGetGitHubStatus,
   type AgentDraft,
   type AgentInput,
@@ -117,6 +118,10 @@ const PT = {
   taglineHint: "Uma frase que resume a missão da agente.",
   taglinePh: "Ex.: Qualifica leads antes do time comercial",
   platformLabel: "Plataforma",
+  areaLabel: "Área responsável",
+  areaHint: "Quem responde por este agente na organização. Pode ficar para depois.",
+  areaPh: "Selecione a área",
+  areaNone: "Sem área — definir depois",
   jobTitle: "Job Description",
   jobSub: "O que a agente faz — e o que não faz.",
   descLabel: "Descrição",
@@ -309,6 +314,10 @@ const L: Record<Lang, Dict> = {
     taglineHint: "One sentence that sums up the agent's mission.",
     taglinePh: "E.g.: Qualifies leads before the sales team",
     platformLabel: "Platform",
+    areaLabel: "Owning area",
+    areaHint: "Who answers for this agent in the organization. Can be set later.",
+    areaPh: "Select the area",
+    areaNone: "No area — decide later",
     jobTitle: "Job Description",
     jobSub: "What the agent does — and what it doesn't.",
     descLabel: "Description",
@@ -496,6 +505,10 @@ const L: Record<Lang, Dict> = {
     taglineHint: "Una frase que resume la misión de la agente.",
     taglinePh: "Ej.: Califica leads antes del equipo comercial",
     platformLabel: "Plataforma",
+    areaLabel: "Área responsable",
+    areaHint: "Quién responde por este agente en la organización. Puede definirse después.",
+    areaPh: "Selecciona el área",
+    areaNone: "Sin área — definir después",
     jobTitle: "Job Description",
     jobSub: "Qué hace la agente — y qué no hace.",
     descLabel: "Descripción",
@@ -620,11 +633,16 @@ const L: Record<Lang, Dict> = {
 // (e.g. "4,2") can be typed without the input fighting the parser.
 type MetricRow = Omit<DraftMetric, "value"> & { valueText?: string };
 
+/** Radix não aceita string vazia como value de item; este é o marcador. */
+const NENHUMA_AREA = "__sem_area__";
+
 interface WizardData {
   name: string;
   tagline: string;
   role: string;
   platform: string;
+  /** Área responsável. Vazio = sem área, e a atribuição fica pendente. */
+  areaId: string;
   bio: string;
   shouldDo: string;
   shouldNotDo: string;
@@ -647,6 +665,7 @@ const INITIAL: WizardData = {
   tagline: "",
   role: "",
   platform: "openai-assistants",
+  areaId: "",
   bio: "",
   shouldDo: "",
   shouldNotDo: "",
@@ -765,6 +784,7 @@ export default function AdmissionPage() {
   const fetchSource = useFetchAgentSource();
   const preAssess = usePreAssessAgentSource();
   const { data: connectors } = useListConnectors();
+  const { data: areasData } = useListAreas();
   const { data: githubStatus, isLoading: githubStatusLoading } =
     useGetGitHubStatus();
 
@@ -1052,6 +1072,7 @@ export default function AdmissionPage() {
       name: data.name.trim(),
       role: data.role.trim(),
       platform: data.platform,
+      areaId: data.areaId || null,
       bio: data.bio.trim() || data.tagline.trim() || t.bioFallback(data.role.trim()),
       tagline: data.tagline.trim() || undefined,
       shouldDo: toLines(data.shouldDo),
@@ -1378,6 +1399,32 @@ export default function AdmissionPage() {
                     {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
                         {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </StepField>
+              {/*
+                Área é opcional de propósito. Exigi-la aqui só faria o agente
+                deixar de ser cadastrado quando o dono ainda não está definido —
+                e agente não cadastrado é agente invisível, que é o problema que
+                a plataforma existe para resolver. Sem área, ele entra na fila de
+                atribuição, visível na lista da frota.
+              */}
+              <StepField label={t.areaLabel} hint={t.areaHint}>
+                <Select
+                  value={data.areaId || NENHUMA_AREA}
+                  onValueChange={(v) => set("areaId", v === NENHUMA_AREA ? "" : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.areaPh} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NENHUMA_AREA}>{t.areaNone}</SelectItem>
+                    {(areasData?.areas ?? []).map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name}
+                        {a.costCenter ? ` · ${a.costCenter}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>

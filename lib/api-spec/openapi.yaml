@@ -170,6 +170,12 @@ paths:
       tags: [agents]
       summary: List agents
       parameters:
+        - name: area
+          in: query
+          required: false
+          description: Id da área, ou "none" para os agentes ainda sem área atribuída.
+          schema:
+            type: string
         - name: platform
           in: query
           required: false
@@ -224,6 +230,119 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentDetail"
+
+  /areas:
+    get:
+      operationId: listAreas
+      tags: [areas]
+      summary: Lista as áreas da organização com o resumo da frota de cada uma
+      responses:
+        "200":
+          description: Áreas da organização
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AreaList"
+    post:
+      operationId: createArea
+      tags: [areas]
+      summary: Cria uma área dentro da organização
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AreaInput"
+      responses:
+        "201":
+          description: Área criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Area"
+        "409":
+          description: Já existe área com esse nome na organização
+
+  /areas/{areaId}:
+    patch:
+      operationId: updateArea
+      tags: [areas]
+      summary: Atualiza nome, responsável ou centro de custo da área
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AreaInput"
+      responses:
+        "200":
+          description: Área atualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Area"
+        "404":
+          description: Área não encontrada
+    delete:
+      operationId: deleteArea
+      tags: [areas]
+      summary: Remove a área; os agentes dela voltam a ficar sem área
+      description: >-
+        Os agentes NÃO são apagados junto — voltam para "sem área". Perder o
+        recorte organizacional não pode significar perder o agente.
+      parameters:
+        - name: areaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Área removida
+        "404":
+          description: Área não encontrada
+
+  /agents/{agentId}/area:
+    patch:
+      operationId: assignAgentArea
+      tags: [areas]
+      summary: Atribui (ou remove) a área responsável pelo agente
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentAreaInput"
+      responses:
+        "200":
+          description: Atribuição registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id]
+                properties:
+                  id:
+                    type: string
+                  areaId:
+                    type: string
+                    nullable: true
+        "400":
+          description: Área inexistente nesta organização
+        "404":
+          description: Agente não encontrado
 
   /discovery/analyze:
     post:
@@ -1518,6 +1637,14 @@ components:
           type: string
         slug:
           type: string
+        areaId:
+          type: string
+          nullable: true
+          description: Área responsável dentro da organização; nulo quando ainda não atribuída.
+        areaName:
+          type: string
+          nullable: true
+          description: Nome da área, desnormalizado para a lista não precisar de segunda chamada.
         role:
           type: string
         platform:
@@ -2094,6 +2221,94 @@ components:
         nextAction:
           type: string
 
+    Area:
+      type: object
+      required: [id, name, slug, description, leader, costCenter, createdAt, updatedAt, agentes, emRisco, semEvidencia]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        leader:
+          type: string
+          description: Quem responde pela área — o nome que aparece ao lado do veredito.
+        costCenter:
+          type: string
+          description: Centro de custo, para ligar o custo do agente ao orçamento existente.
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        agentes:
+          type: integer
+        saudeMedia:
+          type: integer
+          nullable: true
+          description: >-
+            Nula, e não zero, quando a área não tem agente algum — zero seria
+            lido como "frota péssima" quando não há o que avaliar.
+        emRisco:
+          type: integer
+        semEvidencia:
+          type: integer
+          description: Agentes sem telemetria suficiente para receber nota.
+
+    AreaSummary:
+      type: object
+      required: [agentes, emRisco, semEvidencia]
+      properties:
+        agentes:
+          type: integer
+        saudeMedia:
+          type: integer
+          nullable: true
+        emRisco:
+          type: integer
+        semEvidencia:
+          type: integer
+
+    AreaList:
+      type: object
+      required: [areas]
+      properties:
+        areas:
+          type: array
+          items:
+            $ref: "#/components/schemas/Area"
+        unassigned:
+          allOf:
+            - $ref: "#/components/schemas/AreaSummary"
+          nullable: true
+          description: >-
+            Resumo dos agentes ainda sem área. Não é uma linha do banco: é a
+            pendência de atribuição, mostrada onde o gestor olha. Nulo quando
+            todos os agentes já têm área.
+
+    AgentAreaInput:
+      type: object
+      properties:
+        areaId:
+          type: string
+          nullable: true
+          description: Nulo remove a atribuição, devolvendo o agente a "sem área".
+
+    AreaInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        leader:
+          type: string
+        costCenter:
+          type: string
+
     AgentInput:
       type: object
       required:
@@ -2102,6 +2317,13 @@ components:
         - platform
         - bio
       properties:
+        areaId:
+          type: string
+          nullable: true
+          description: >-
+            Área responsável. Opcional: um agente descoberto por varredura chega
+            sem dono declarado, e recusar o cadastro por isso só o manteria
+            invisível. Ele entra como "sem área" e a atribuição fica pendente.
         name:
           type: string
           minLength: 1

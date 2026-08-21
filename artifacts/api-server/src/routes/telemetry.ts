@@ -467,7 +467,7 @@ router.post("/agents/:agentId/reevaluate", requireAuth, requireOrg, async (req, 
         verdictConfidence: decision.confidence,
         lastEvaluatedAt: new Date(),
       })
-      .where(eq(agents.id, agentId));
+      .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
     // Keep the open committee verdict aligned.
     await tx
       .update(verdicts)

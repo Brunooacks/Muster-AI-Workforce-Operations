@@ -1,6 +1,6 @@
 import { and, eq, inArray, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
-import { agents, teams, purposes, connectors, journeys, catalogMetrics, discoveryRuns, agentDrafts } from "@workspace/db/schema";
+import { agents, areas, teams, purposes, connectors, journeys, catalogMetrics, discoveryRuns, agentDrafts } from "@workspace/db/schema";
 
 /**
  * Escopo por organização (gauntlet rodada 6).
@@ -18,6 +18,7 @@ import { agents, teams, purposes, connectors, journeys, catalogMetrics, discover
 /** Tabelas-raiz: pertencem diretamente a uma organização. */
 export const ROOT_TABLES = {
   agents,
+  areas,
   teams,
   purposes,
   connectors,

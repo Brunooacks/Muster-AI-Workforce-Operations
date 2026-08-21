@@ -259,7 +259,7 @@ router.patch(
     const [updated] = await db
       .update(journeys)
       .set({ ...body, updatedAt: new Date() })
-      .where(eq(journeys.id, journeyId))
+      .where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)))
       .returning();
     if (!updated) {
       res.status(404).json({ error: "Journey not found" });
@@ -278,7 +278,7 @@ router.delete(
     const { journeyId } = JourneyIdParams.parse(req.params);
     const deleted = await db
       .delete(journeys)
-      .where(eq(journeys.id, journeyId))
+      .where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)))
       .returning({ id: journeys.id });
     if (deleted.length === 0) {
       res.status(404).json({ error: "Journey not found" });
@@ -336,7 +336,7 @@ router.post(
           required: body.required ? 1 : 0,
         })
         .returning();
-      await db.update(journeys).set({ updatedAt: new Date() }).where(eq(journeys.id, journeyId));
+      await db.update(journeys).set({ updatedAt: new Date() }).where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
       res.status(201).json(toStep(created!, assignedAgent));
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -392,7 +392,7 @@ router.post(
         .insert(journeyHandoffs)
         .values({ ...body, journeyId })
         .returning();
-      await db.update(journeys).set({ updatedAt: new Date() }).where(eq(journeys.id, journeyId));
+      await db.update(journeys).set({ updatedAt: new Date() }).where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
       res.status(201).json(toHandoff(created!));
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -509,7 +509,7 @@ router.patch(
         .set({ ...campos, updatedAt: new Date() })
         .where(eq(journeySteps.id, stepId))
         .returning();
-      await db.update(journeys).set({ updatedAt: new Date() }).where(eq(journeys.id, journeyId));
+      await db.update(journeys).set({ updatedAt: new Date() }).where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
       res.json(toStep(atualizado!, assignedAgent));
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -559,7 +559,7 @@ router.patch(
       .set({ ...campos, updatedAt: new Date() })
       .where(eq(journeyHandoffs.id, handoffId))
       .returning();
-    await db.update(journeys).set({ updatedAt: new Date() }).where(eq(journeys.id, journeyId));
+    await db.update(journeys).set({ updatedAt: new Date() }).where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
     res.json(toHandoff(atualizado!));
   },
 );

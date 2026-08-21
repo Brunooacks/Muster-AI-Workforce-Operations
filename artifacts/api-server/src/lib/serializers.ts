@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   agents,
+  areas,
   agentIdentities,
   agentOwners,
   agentDrafts,
@@ -50,11 +51,19 @@ export function toAgentDraftRecord(d: AgentDraftRow) {
   };
 }
 
-export function toAgentSummary(a: AgentRow, targetMetrics: KpiMetric[] = []) {
+export function toAgentSummary(
+  a: AgentRow,
+  targetMetrics: KpiMetric[] = [],
+  // Desnormalizado de propósito: a lista da frota mostra a área de cada agente,
+  // e resolver o nome aqui evita uma segunda chamada por linha na tela.
+  areaName: string | null = null,
+) {
   return {
     id: a.id,
     name: a.name,
     slug: a.slug,
+    areaId: a.areaId ?? null,
+    areaName,
     role: a.role,
     platform: a.platform,
     version: a.version,
@@ -128,8 +137,19 @@ function toOwners(o: OwnersRow) {
   };
 }
 
-export async function buildAgentDetail(agentId: string) {
-  const [agent] = await db.select().from(agents).where(eq(agents.id, agentId));
+/**
+ * Detalhe completo de um agente.
+ *
+ * `orgId` é obrigatório de propósito. Enquanto esta função buscava só por id,
+ * `GET /agents/:agentId` parecia isolado — a rota tinha `requireOrg` — mas
+ * devolvia o agente de qualquer organização a quem soubesse o id. O filtro
+ * mora aqui, e não em cada chamador, porque são seis.
+ */
+export async function buildAgentDetail(agentId: string, orgId: string) {
+  const [agent] = await db
+    .select()
+    .from(agents)
+    .where(and(eq(agents.id, agentId), eq(agents.orgId, orgId)));
   if (!agent) return null;
 
   const [identity] = await db
@@ -188,8 +208,17 @@ export async function buildAgentDetail(agentId: string) {
 
   const resolvedVerdict = currentVerdict ?? anyVerdict;
 
+  // A área já foi validada como pertencente à organização quando foi atribuída;
+  // aqui é só o nome para exibição.
+  const [area] = agent.areaId
+    ? await db
+        .select({ name: areas.name })
+        .from(areas)
+        .where(and(eq(areas.id, agent.areaId), eq(areas.orgId, orgId)))
+    : [];
+
   return {
-    agent: toAgentSummary(agent),
+    agent: toAgentSummary(agent, [], area?.name ?? null),
     identity: identity ? toIdentity(identity) : emptyIdentity,
     owners: owners
       ? toOwners(owners)

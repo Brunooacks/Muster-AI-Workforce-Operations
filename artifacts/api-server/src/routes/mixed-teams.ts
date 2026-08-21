@@ -186,7 +186,7 @@ router.delete(
     const { purposeId } = PurposeIdParams.parse(req.params);
     const deleted = await db
       .delete(purposes)
-      .where(eq(purposes.id, purposeId))
+      .where(and(eq(purposes.id, purposeId), ofOrg(purposes, req.orgId!)))
       .returning({ id: purposes.id });
     if (deleted.length === 0) {
       res.status(404).json({ error: "Purpose not found" });
@@ -285,7 +285,7 @@ router.delete(
     const { teamId } = TeamIdParams.parse(req.params);
     const deleted = await db
       .delete(teams)
-      .where(eq(teams.id, teamId))
+      .where(and(eq(teams.id, teamId), ofOrg(teams, req.orgId!)))
       .returning({ id: teams.id });
     if (deleted.length === 0) {
       res.status(404).json({ error: "Team not found" });

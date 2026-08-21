@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   agents,
+  areas,
   agentIdentities,
   agentOwners,
   evaluations,
@@ -84,6 +85,9 @@ router.get("/agents", requireAuth, requireOrg, async (req, res) => {
   const search = query.search?.toLowerCase();
   const filtered = rows.filter(
     (a) =>
+      // "none" filtra os que ainda não têm área: é a fila de atribuição, e
+      // precisa ser alcançável por filtro como qualquer outro recorte.
+      (!query.area || (query.area === "none" ? a.areaId === null : a.areaId === query.area)) &&
       (!query.platform || a.platform === query.platform) &&
       (!query.status || a.status === query.status) &&
       (!query.verdict || a.currentVerdict === query.verdict) &&
@@ -110,8 +114,21 @@ router.get("/agents", requireAuth, requireOrg, async (req, res) => {
     );
   }
 
+  // Nomes das áreas em uma consulta só, e não uma por agente.
+  const areaRows = await db
+    .select({ id: areas.id, name: areas.name })
+    .from(areas)
+    .where(ofOrg(areas, req.orgId!));
+  const areaNames = new Map(areaRows.map((a) => [a.id, a.name]));
+
   const data = ListAgentsResponse.parse(
-    filtered.map((a) => toAgentSummary(a, latestMetricsByAgent.get(a.id) ?? [])),
+    filtered.map((a) =>
+      toAgentSummary(
+        a,
+        latestMetricsByAgent.get(a.id) ?? [],
+        a.areaId ? (areaNames.get(a.areaId) ?? null) : null,
+      ),
+    ),
   );
   res.json(data);
 });
@@ -123,6 +140,7 @@ router.post("/agents", requireAuth, requireOrg, async (req, res) => {
   try {
     agentId = await admitAgent({
       orgId: req.orgId!,
+      areaId: body.areaId ?? null,
       name: body.name,
       role: body.role,
       platform: body.platform,
@@ -150,7 +168,7 @@ router.post("/agents", requireAuth, requireOrg, async (req, res) => {
     throw err;
   }
 
-  const detail = await buildAgentDetail(agentId);
+  const detail = await buildAgentDetail(agentId, req.orgId!);
   res.status(201).json(detail);
 });
 
@@ -217,7 +235,7 @@ router.get("/discovery/github-status", requireAuth, requireOrg, async (_req, res
 
 router.get("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = GetAgentParams.parse(req.params);
-  const detail = await buildAgentDetail(agentId);
+  const detail = await buildAgentDetail(agentId, req.orgId!);
   if (!detail) {
     res.status(404).json({ error: "Agent not found" });
     return;
@@ -247,21 +265,43 @@ router.patch("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
       status: body.status ?? existing.status,
       bio: body.bio ?? existing.bio,
     })
-    .where(eq(agents.id, agentId));
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
 
-  const detail = await buildAgentDetail(agentId);
+  const detail = await buildAgentDetail(agentId, req.orgId!);
   res.json(detail);
 });
 
 router.delete("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = DeleteAgentParams.parse(req.params);
-  await db.delete(agents).where(eq(agents.id, agentId));
+  // O escopo no DELETE não é redundante: sem ele, conhecer o id de um agente de
+  // outra organização bastava para apagá-lo. `returning` distingue "não existe"
+  // de "não é seu" sem contar ao chamador qual dos dois é.
+  const apagados = await db
+    .delete(agents)
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
+    .returning({ id: agents.id });
+  if (apagados.length === 0) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
   res.status(204).end();
 });
 
 router.patch("/agents/:agentId/identity", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = UpdateAgentIdentityParams.parse(req.params);
   const body = UpdateAgentIdentityBody.parse(req.body);
+
+  // A identidade é tabela-filha: quem a protege é o dono. Sem esta checagem,
+  // conhecer o id bastava para reescrever a carteira de trabalho de um agente
+  // de outra organização — e a alteração ficaria registrada como legítima.
+  const [dono] = await db
+    .select({ id: agents.id })
+    .from(agents)
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
+  if (!dono) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
 
   const [existing] = await db
     .select()
@@ -286,7 +326,10 @@ router.patch("/agents/:agentId/identity", requireAuth, requireOrg, async (req, r
     .where(eq(agentIdentities.agentId, agentId));
 
   if (body.bio) {
-    await db.update(agents).set({ bio: body.bio }).where(eq(agents.id, agentId));
+    await db
+      .update(agents)
+      .set({ bio: body.bio })
+      .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
   }
 
   if (
@@ -309,7 +352,7 @@ router.patch("/agents/:agentId/identity", requireAuth, requireOrg, async (req, r
       .where(eq(agentOwners.agentId, agentId));
   }
 
-  const detail = await buildAgentDetail(agentId);
+  const detail = await buildAgentDetail(agentId, req.orgId!);
   res.json(detail);
 });
 
@@ -373,6 +416,19 @@ router.post(
     const { agentId } = DecideVerdictParams.parse(req.params);
     const body = DecideVerdictBody.parse(req.body);
 
+    // Decidir um veredito é a ação de maior consequência da plataforma: aprova
+    // ou aposenta um agente e muda o status dele. Sem esta checagem, `verdicts`
+    // era consultada só por agentId — bastava conhecer o id para decidir sobre
+    // o agente de outra organização, e a decisão ficaria registrada como legítima.
+    const [dono] = await db
+      .select({ id: agents.id })
+      .from(agents)
+      .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
+    if (!dono) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+
     const updated = await db.transaction(async (tx) => {
       const [current] = await tx
         .select()
@@ -404,7 +460,7 @@ router.post(
         await tx
           .update(agents)
           .set({ status: statusByVerdict[updatedVerdict.verdict] })
-          .where(eq(agents.id, agentId));
+          .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
       }
 
       return updatedVerdict;
@@ -463,7 +519,7 @@ router.patch(
       .set({ layers })
       .where(eq(evaluations.id, latest.id));
 
-    const detail = await buildAgentDetail(agentId);
+    const detail = await buildAgentDetail(agentId, req.orgId!);
     res.json(detail);
   },
 );

@@ -24,6 +24,7 @@ import type {
   AgentApiKey,
   AgentApiKeyCreated,
   AgentApiKeyInput,
+  AgentAreaInput,
   AgentDetail,
   AgentDraft,
   AgentDraftRecord,
@@ -36,6 +37,10 @@ import type {
   AgentUpdate,
   Alert,
   AnalyzeSourceInput,
+  Area,
+  AreaInput,
+  AreaList,
+  AssignAgentArea200,
   BulkDraftIdsInput,
   BulkReviewResult,
   CatalogMetric,
@@ -877,6 +882,369 @@ export const useCreateAgent = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateAgentMutationOptions(options));
+    }
+
+export const getListAreasUrl = () => {
+
+
+
+
+  return `/api/areas`
+}
+
+/**
+ * @summary Lista as áreas da organização com o resumo da frota de cada uma
+ */
+export const listAreas = async ( options?: RequestInit): Promise<AreaList> => {
+
+  return customFetch<AreaList>(getListAreasUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAreasQueryKey = () => {
+    return [
+    `/api/areas`
+    ] as const;
+    }
+
+
+export const getListAreasQueryOptions = <TData = Awaited<ReturnType<typeof listAreas>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAreas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAreasQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAreas>>> = ({ signal }) => listAreas({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAreas>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAreasQueryResult = NonNullable<Awaited<ReturnType<typeof listAreas>>>
+export type ListAreasQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lista as áreas da organização com o resumo da frota de cada uma
+ */
+
+export function useListAreas<TData = Awaited<ReturnType<typeof listAreas>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAreas>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAreasQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAreaUrl = () => {
+
+
+
+
+  return `/api/areas`
+}
+
+/**
+ * @summary Cria uma área dentro da organização
+ */
+export const createArea = async (areaInput: AreaInput, options?: RequestInit): Promise<Area> => {
+
+  return customFetch<Area>(getCreateAreaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      areaInput,)
+  }
+);}
+
+
+
+
+export const getCreateAreaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createArea>>, TError,{data: BodyType<AreaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createArea>>, TError,{data: BodyType<AreaInput>}, TContext> => {
+
+const mutationKey = ['createArea'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createArea>>, {data: BodyType<AreaInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createArea(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAreaMutationResult = NonNullable<Awaited<ReturnType<typeof createArea>>>
+    export type CreateAreaMutationBody = BodyType<AreaInput>
+    export type CreateAreaMutationError = ErrorType<void>
+
+    /**
+ * @summary Cria uma área dentro da organização
+ */
+export const useCreateArea = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createArea>>, TError,{data: BodyType<AreaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createArea>>,
+        TError,
+        {data: BodyType<AreaInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAreaMutationOptions(options));
+    }
+
+export const getUpdateAreaUrl = (areaId: string,) => {
+
+
+
+
+  return `/api/areas/${areaId}`
+}
+
+/**
+ * @summary Atualiza nome, responsável ou centro de custo da área
+ */
+export const updateArea = async (areaId: string,
+    areaInput: AreaInput, options?: RequestInit): Promise<Area> => {
+
+  return customFetch<Area>(getUpdateAreaUrl(areaId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      areaInput,)
+  }
+);}
+
+
+
+
+export const getUpdateAreaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateArea>>, TError,{areaId: string;data: BodyType<AreaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateArea>>, TError,{areaId: string;data: BodyType<AreaInput>}, TContext> => {
+
+const mutationKey = ['updateArea'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateArea>>, {areaId: string;data: BodyType<AreaInput>}> = (props) => {
+          const {areaId,data} = props ?? {};
+
+          return  updateArea(areaId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAreaMutationResult = NonNullable<Awaited<ReturnType<typeof updateArea>>>
+    export type UpdateAreaMutationBody = BodyType<AreaInput>
+    export type UpdateAreaMutationError = ErrorType<void>
+
+    /**
+ * @summary Atualiza nome, responsável ou centro de custo da área
+ */
+export const useUpdateArea = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateArea>>, TError,{areaId: string;data: BodyType<AreaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateArea>>,
+        TError,
+        {areaId: string;data: BodyType<AreaInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAreaMutationOptions(options));
+    }
+
+export const getDeleteAreaUrl = (areaId: string,) => {
+
+
+
+
+  return `/api/areas/${areaId}`
+}
+
+/**
+ * Os agentes NÃO são apagados junto — voltam para "sem área". Perder o recorte organizacional não pode significar perder o agente.
+ * @summary Remove a área; os agentes dela voltam a ficar sem área
+ */
+export const deleteArea = async (areaId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAreaUrl(areaId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAreaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArea>>, TError,{areaId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteArea>>, TError,{areaId: string}, TContext> => {
+
+const mutationKey = ['deleteArea'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteArea>>, {areaId: string}> = (props) => {
+          const {areaId} = props ?? {};
+
+          return  deleteArea(areaId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAreaMutationResult = NonNullable<Awaited<ReturnType<typeof deleteArea>>>
+
+    export type DeleteAreaMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a área; os agentes dela voltam a ficar sem área
+ */
+export const useDeleteArea = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteArea>>, TError,{areaId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteArea>>,
+        TError,
+        {areaId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteAreaMutationOptions(options));
+    }
+
+export const getAssignAgentAreaUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/area`
+}
+
+/**
+ * @summary Atribui (ou remove) a área responsável pelo agente
+ */
+export const assignAgentArea = async (agentId: string,
+    agentAreaInput: AgentAreaInput, options?: RequestInit): Promise<AssignAgentArea200> => {
+
+  return customFetch<AssignAgentArea200>(getAssignAgentAreaUrl(agentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentAreaInput,)
+  }
+);}
+
+
+
+
+export const getAssignAgentAreaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignAgentArea>>, TError,{agentId: string;data: BodyType<AgentAreaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assignAgentArea>>, TError,{agentId: string;data: BodyType<AgentAreaInput>}, TContext> => {
+
+const mutationKey = ['assignAgentArea'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignAgentArea>>, {agentId: string;data: BodyType<AgentAreaInput>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  assignAgentArea(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignAgentAreaMutationResult = NonNullable<Awaited<ReturnType<typeof assignAgentArea>>>
+    export type AssignAgentAreaMutationBody = BodyType<AgentAreaInput>
+    export type AssignAgentAreaMutationError = ErrorType<void>
+
+    /**
+ * @summary Atribui (ou remove) a área responsável pelo agente
+ */
+export const useAssignAgentArea = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignAgentArea>>, TError,{agentId: string;data: BodyType<AgentAreaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assignAgentArea>>,
+        TError,
+        {agentId: string;data: BodyType<AgentAreaInput>},
+        TContext
+      > => {
+      return useMutation(getAssignAgentAreaMutationOptions(options));
     }
 
 export const getAnalyzeAgentSourceUrl = () => {

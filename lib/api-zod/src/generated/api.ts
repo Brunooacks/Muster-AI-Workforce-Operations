@@ -263,6 +263,7 @@ export const UpdateFleetAlertResponse = zod.object({
  * @summary List agents
  */
 export const ListAgentsQueryParams = zod.object({
+  "area": zod.coerce.string().optional().describe('Id da área, ou \"none\" para os agentes ainda sem área atribuída.'),
   "platform": zod.coerce.string().optional(),
   "status": zod.enum(['observation', 'active', 'flagged', 'retiring', 'retired']).optional(),
   "verdict": zod.enum(['promote', 'mentor', 'retire', 'observation']).optional(),
@@ -274,6 +275,8 @@ export const ListAgentsResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
+  "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
+  "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -321,6 +324,7 @@ export const ListAgentsResponse = zod.array(ListAgentsResponseItem)
 
 
 export const CreateAgentBody = zod.object({
+  "areaId": zod.string().nullish().describe('Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como \"sem área\" e a atribuição fica pendente.'),
   "name": zod.string().min(1),
   "role": zod.string().min(1),
   "platform": zod.string(),
@@ -346,6 +350,106 @@ export const CreateAgentBody = zod.object({
   "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
   "rationale": zod.string().optional()
 })).optional()
+})
+
+
+/**
+ * @summary Lista as áreas da organização com o resumo da frota de cada uma
+ */
+export const ListAreasResponse = zod.object({
+  "areas": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "leader": zod.string().describe('Quem responde pela área — o nome que aparece ao lado do veredito.'),
+  "costCenter": zod.string().describe('Centro de custo, para ligar o custo do agente ao orçamento existente.'),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "agentes": zod.number(),
+  "saudeMedia": zod.number().nullish().describe('Nula, e não zero, quando a área não tem agente algum — zero seria lido como \"frota péssima\" quando não há o que avaliar.'),
+  "emRisco": zod.number(),
+  "semEvidencia": zod.number().describe('Agentes sem telemetria suficiente para receber nota.')
+})),
+  "unassigned": zod.object({
+  "agentes": zod.number(),
+  "saudeMedia": zod.number().nullish(),
+  "emRisco": zod.number(),
+  "semEvidencia": zod.number()
+}).nullish().describe('Resumo dos agentes ainda sem área. Não é uma linha do banco: é a pendência de atribuição, mostrada onde o gestor olha. Nulo quando todos os agentes já têm área.')
+})
+
+
+/**
+ * @summary Cria uma área dentro da organização
+ */
+
+
+
+export const CreateAreaBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "description": zod.string().optional(),
+  "leader": zod.string().optional(),
+  "costCenter": zod.string().optional()
+})
+
+
+/**
+ * @summary Atualiza nome, responsável ou centro de custo da área
+ */
+export const UpdateAreaParams = zod.object({
+  "areaId": zod.coerce.string()
+})
+
+
+
+
+export const UpdateAreaBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "description": zod.string().optional(),
+  "leader": zod.string().optional(),
+  "costCenter": zod.string().optional()
+})
+
+export const UpdateAreaResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string(),
+  "leader": zod.string().describe('Quem responde pela área — o nome que aparece ao lado do veredito.'),
+  "costCenter": zod.string().describe('Centro de custo, para ligar o custo do agente ao orçamento existente.'),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "agentes": zod.number(),
+  "saudeMedia": zod.number().nullish().describe('Nula, e não zero, quando a área não tem agente algum — zero seria lido como \"frota péssima\" quando não há o que avaliar.'),
+  "emRisco": zod.number(),
+  "semEvidencia": zod.number().describe('Agentes sem telemetria suficiente para receber nota.')
+})
+
+
+/**
+ * Os agentes NÃO são apagados junto — voltam para "sem área". Perder o recorte organizacional não pode significar perder o agente.
+ * @summary Remove a área; os agentes dela voltam a ficar sem área
+ */
+export const DeleteAreaParams = zod.object({
+  "areaId": zod.coerce.string()
+})
+
+
+/**
+ * @summary Atribui (ou remove) a área responsável pelo agente
+ */
+export const AssignAgentAreaParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const AssignAgentAreaBody = zod.object({
+  "areaId": zod.string().nullish().describe('Nulo remove a atribuição, devolvendo o agente a \"sem área\".')
+})
+
+export const AssignAgentAreaResponse = zod.object({
+  "id": zod.string(),
+  "areaId": zod.string().nullish()
 })
 
 
@@ -696,6 +800,8 @@ export const GetAgentResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
+  "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
+  "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -817,6 +923,8 @@ export const UpdateAgentResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
+  "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
+  "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -950,6 +1058,8 @@ export const UpdateAgentIdentityResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
+  "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
+  "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -1184,6 +1294,8 @@ export const UpdateEvaluationMetricResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
+  "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
+  "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),

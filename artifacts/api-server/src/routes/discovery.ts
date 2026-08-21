@@ -138,7 +138,7 @@ async function approveDraft(draftId: string, orgId: string): Promise<ApproveOutc
           promotedAgentId: id,
           updatedAt: new Date(),
         })
-        .where(eq(agentDrafts.id, draftId));
+        .where(and(eq(agentDrafts.id, draftId), ofOrg(agentDrafts, orgId)));
 
       return id;
     });
@@ -204,7 +204,7 @@ router.post("/discovery/runs", requireAuth, requireOrg, async (req, res) => {
       draftsCreated: staged,
       completedAt: new Date(),
     })
-    .where(eq(discoveryRuns.id, run.id))
+    .where(and(eq(discoveryRuns.id, run.id), ofOrg(discoveryRuns, req.orgId!)))
     .returning();
 
   const counts = await runCounts(run.id, req.orgId!);
@@ -298,7 +298,7 @@ router.patch("/discovery/drafts/:draftId", requireAuth, requireOrg, async (req, 
       updatedAt: new Date(),
     })
     .where(
-      and(eq(agentDrafts.id, draftId), eq(agentDrafts.reviewStatus, "pending")),
+      and(eq(agentDrafts.id, draftId), eq(agentDrafts.reviewStatus, "pending"), ofOrg(agentDrafts, req.orgId!)),
     )
     .returning();
   if (!updated) {
@@ -370,6 +370,10 @@ router.post("/discovery/drafts/bulk-reject", requireAuth, requireOrg, async (req
         and(
           inArray(agentDrafts.id, body.draftIds),
           eq(agentDrafts.reviewStatus, "pending"),
+          // Sem o escopo, uma lista de ids bastava para rejeitar em massa os
+          // rascunhos de outra organização. O `returning` já é contado abaixo,
+          // então ids fora da organização simplesmente não entram na conta.
+          ofOrg(agentDrafts, req.orgId!),
         ),
       )
       .returning({ id: agentDrafts.id });
@@ -406,7 +410,7 @@ router.post(
       });
       return;
     }
-    const detail = await buildAgentDetail(outcome.agentId);
+    const detail = await buildAgentDetail(outcome.agentId, req.orgId!);
     res.status(201).json(detail);
   },
 );
@@ -444,6 +448,7 @@ router.post(
         and(
           eq(agentDrafts.id, draftId),
           eq(agentDrafts.reviewStatus, "pending"),
+          ofOrg(agentDrafts, req.orgId!),
         ),
       )
       .returning();

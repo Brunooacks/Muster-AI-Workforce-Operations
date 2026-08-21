@@ -14,6 +14,10 @@ export interface Agent {
   id: string;
   name: string;
   slug: string;
+  /** Área responsável dentro da organização; nulo quando ainda não atribuída. */
+  areaId?: string | null;
+  /** Nome da área, desnormalizado para a lista não precisar de segunda chamada. */
+  areaName?: string | null;
   role: string;
   platform: string;
   version: string;

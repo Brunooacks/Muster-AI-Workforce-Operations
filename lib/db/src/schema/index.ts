@@ -43,6 +43,36 @@ export const organizationMembers = pgTable("organization_members", {
   orgMemberUserIdx: index("organization_members_user_idx").on(table.userId),
 }));
 
+/**
+ * Área (ou grupo) — a estrutura interna da organização.
+ *
+ * A organização é a fronteira de isolamento: dado de uma nunca vaza para outra.
+ * A área é outra coisa, e a distinção importa. Um piloto acontece dentro de UMA
+ * empresa, mas essa empresa tem Atendimento, Financeiro, Engenharia — cada uma
+ * com dono, orçamento e critério de sucesso próprios. Sem esse nível, a frota
+ * vira uma lista plana de agentes que ninguém reconhece como sua.
+ *
+ * Área NÃO é fronteira de segurança: quem enxerga a organização enxerga todas as
+ * suas áreas. É recorte de responsabilidade — quem responde por este agente, e
+ * contra qual orçamento ele conta.
+ */
+export const areas = pgTable("areas", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description").notNull().default(""),
+  /** Quem responde pela área — o nome que aparece ao lado do veredito. */
+  leader: text("leader").notNull().default(""),
+  /** Centro de custo: liga o custo do agente ao orçamento que já existe. */
+  costCenter: text("cost_center").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  areasOrgSlugIdx: uniqueIndex("areas_org_slug_idx").on(table.orgId, table.slug),
+  areasOrgIdx: index("areas_org_idx").on(table.orgId),
+}));
+
 export type AgentStatus =
   | "observation"
   | "active"
@@ -185,6 +215,13 @@ export const teamMemberships = pgTable("team_memberships", {
 export const agents = pgTable("agents", {
   id: id(),
   orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  /**
+   * Área responsável. Nulo é permitido de propósito: um agente descoberto por
+   * varredura ou integrado às pressas entra sem dono, e a plataforma precisa
+   * conseguir mostrá-lo como "sem área" em vez de recusar o cadastro. `set null`
+   * na exclusão da área: perder o recorte não pode apagar o agente.
+   */
+  areaId: text("area_id").references(() => areas.id, { onDelete: "set null" }),
   externalId: text("external_id"),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
@@ -223,6 +260,7 @@ export const agents = pgTable("agents", {
   agentsOrgSlugIdx: uniqueIndex("agents_org_slug_idx").on(table.orgId, table.slug),
   agentsOrgExternalIdx: uniqueIndex("agents_org_external_idx").on(table.orgId, table.externalId),
   agentsOrgIdx: index("agents_org_idx").on(table.orgId),
+  agentsAreaIdx: index("agents_area_idx").on(table.areaId),
 }));
 
 export const teamAgentAssignments = pgTable("team_agent_assignments", {

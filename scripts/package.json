@@ -16,11 +16,14 @@
     "bridge:azure": "tsx ./src/bridge-azure.ts",
     "bridge:aws": "tsx ./src/bridge-aws.ts",
     "bridge:gcp": "tsx ./src/bridge-gcp.ts",
-    "demo:integrar": "tsx ./src/demo-integrar.ts"
+    "demo:integrar": "tsx ./src/demo-integrar.ts",
+    "bridge:vllm": "tsx ./src/bridge-vllm.ts",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "@workspace/telemetry-reporter": "workspace:*",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "vitest": "^2.1.9"
   }
 }

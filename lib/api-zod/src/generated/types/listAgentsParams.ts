@@ -10,6 +10,10 @@ import type { ListAgentsStatus } from './listAgentsStatus';
 import type { ListAgentsVerdict } from './listAgentsVerdict';
 
 export type ListAgentsParams = {
+/**
+ * Id da área, ou "none" para os agentes ainda sem área atribuída.
+ */
+area?: string;
 platform?: string;
 status?: ListAgentsStatus;
 verdict?: ListAgentsVerdict;

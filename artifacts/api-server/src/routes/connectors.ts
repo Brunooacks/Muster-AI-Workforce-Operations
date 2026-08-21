@@ -98,7 +98,7 @@ router.post("/connectors", requireAuth, requireOrg, async (req, res) => {
     const [updated] = await db
       .update(connectors)
       .set({ status: "connected", lastSyncAt: new Date() })
-      .where(eq(connectors.id, existing.id))
+      .where(and(eq(connectors.id, existing.id), ofOrg(connectors, req.orgId!)))
       .returning();
     res.status(201).json({
       id: updated!.id,
@@ -277,7 +277,7 @@ router.post(
           agentsDiscovered: discoveredAgents.length,
           lastSyncAt: new Date(),
         })
-        .where(eq(connectors.id, connector.id));
+        .where(and(eq(connectors.id, connector.id), ofOrg(connectors, req.orgId!)));
 
       res.json(
         DiscoverAgentsResponse.parse({
@@ -333,7 +333,7 @@ router.post(
           agentsDiscovered: discoveredAgents.length,
           lastSyncAt: new Date(),
         })
-        .where(eq(connectors.id, connector.id));
+        .where(and(eq(connectors.id, connector.id), ofOrg(connectors, req.orgId!)));
     }
 
     const data = DiscoverAgentsResponse.parse({

@@ -195,6 +195,10 @@ export interface Agent {
   id: string;
   name: string;
   slug: string;
+  /** Área responsável dentro da organização; nulo quando ainda não atribuída. */
+  areaId?: string | null;
+  /** Nome da área, desnormalizado para a lista não precisar de segunda chamada. */
+  areaName?: string | null;
   role: string;
   platform: string;
   version: string;
@@ -603,6 +607,51 @@ export interface ExternalAgentIngestionResult {
   nextAction: string;
 }
 
+export interface Area {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  /** Quem responde pela área — o nome que aparece ao lado do veredito. */
+  leader: string;
+  /** Centro de custo, para ligar o custo do agente ao orçamento existente. */
+  costCenter: string;
+  createdAt: string;
+  updatedAt: string;
+  agentes: number;
+  /** Nula, e não zero, quando a área não tem agente algum — zero seria lido como "frota péssima" quando não há o que avaliar. */
+  saudeMedia?: number | null;
+  emRisco: number;
+  /** Agentes sem telemetria suficiente para receber nota. */
+  semEvidencia: number;
+}
+
+export interface AreaSummary {
+  agentes: number;
+  saudeMedia?: number | null;
+  emRisco: number;
+  semEvidencia: number;
+}
+
+export interface AreaList {
+  areas: Area[];
+  /** Resumo dos agentes ainda sem área. Não é uma linha do banco: é a pendência de atribuição, mostrada onde o gestor olha. Nulo quando todos os agentes já têm área. */
+  unassigned?: AreaSummary | null;
+}
+
+export interface AgentAreaInput {
+  /** Nulo remove a atribuição, devolvendo o agente a "sem área". */
+  areaId?: string | null;
+}
+
+export interface AreaInput {
+  /** @minLength 1 */
+  name?: string;
+  description?: string;
+  leader?: string;
+  costCenter?: string;
+}
+
 export type AgentInputAutonomyLevel = typeof AgentInputAutonomyLevel[keyof typeof AgentInputAutonomyLevel];
 
 
@@ -634,6 +683,8 @@ export interface DraftMetric {
 }
 
 export interface AgentInput {
+  /** Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como "sem área" e a atribuição fica pendente. */
+  areaId?: string | null;
   /** @minLength 1 */
   name: string;
   /** @minLength 1 */
@@ -1498,6 +1549,10 @@ export const ListFleetAlertsStatus = {
 } as const;
 
 export type ListAgentsParams = {
+/**
+ * Id da área, ou "none" para os agentes ainda sem área atribuída.
+ */
+area?: string;
 platform?: string;
 status?: ListAgentsStatus;
 verdict?: ListAgentsVerdict;
@@ -1535,6 +1590,11 @@ export const ListAgentsSeverity = {
   medium: 'medium',
   stable: 'stable',
 } as const;
+
+export type AssignAgentArea200 = {
+  id: string;
+  areaId?: string | null;
+};
 
 export type ListAgentDraftsParams = {
 runId?: string;

@@ -31,11 +31,24 @@ export interface ReevaluateResult {
 // The recompute is deterministic (seeded by `externalId`) and reads only stored
 // metric values/targets, so it is idempotent: agents already scored with the
 // current logic produce identical results and are skipped unless `force` is set.
+/**
+ * `orgId` é opcional aqui por um motivo específico: o backfill de manutenção
+ * roda no boot sobre a base inteira, fora de qualquer requisição, e não tem
+ * organização a apresentar. Todo caminho vindo de requisição passa o `orgId` —
+ * e aí a função se recusa a tocar em agente de outra organização.
+ */
 export async function recomputeAgentScores(
   agentId: string,
-  opts: { force?: boolean; touchEvaluatedAt?: boolean } = {},
+  opts: { force?: boolean; touchEvaluatedAt?: boolean; orgId?: string } = {},
 ): Promise<ReevaluateResult | null> {
-  const [agent] = await db.select().from(agents).where(eq(agents.id, agentId));
+  const [agent] = await db
+    .select()
+    .from(agents)
+    .where(
+      opts.orgId
+        ? and(eq(agents.id, agentId), eq(agents.orgId, opts.orgId))
+        : eq(agents.id, agentId),
+    );
   if (!agent) return null;
 
   const [latest] = await db

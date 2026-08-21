@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   db,
   agents,
@@ -65,6 +65,13 @@ function isUniqueViolation(err: unknown): boolean {
 export interface AdmitAgentInput {
   /** Organização dona do agente. Obrigatório: sem tenant não há admissão. */
   orgId: string;
+  /**
+   * Área responsável dentro da organização. Opcional: um agente descoberto por
+   * varredura chega sem dono declarado, e recusar a admissão por isso apenas
+   * deixaria o agente invisível — que é o problema que a plataforma existe para
+   * resolver. Ele entra como "sem área" e a atribuição vira pendência visível.
+   */
+  areaId?: string | null;
   name: string;
   role: string;
   platform: string;
@@ -114,11 +121,15 @@ export async function admitAgentTx(
   const externalId =
     input.externalId ?? `manual_${slugify(input.name)}_${Date.now()}`;
 
+  // As duas conferências abaixo são POR ORGANIZAÇÃO porque a unicidade também é
+  // (índices compostos, migração 0009). Sem o filtro, admitir "Triagem" numa
+  // empresa falharia porque outra empresa já tem um agente com esse nome — um
+  // 409 que revela a existência de dado alheio e ainda impede o cadastro.
   if (input.externalId) {
     const [existingExt] = await tx
       .select()
       .from(agents)
-      .where(eq(agents.externalId, externalId));
+      .where(and(eq(agents.externalId, externalId), eq(agents.orgId, input.orgId)));
     if (existingExt) throw new AlreadyAdmittedError(externalId);
   }
 
@@ -133,7 +144,10 @@ export async function admitAgentTx(
     : noEvidenceEvaluation();
 
   let slug = slugify(input.name);
-  const [clash] = await tx.select().from(agents).where(eq(agents.slug, slug));
+  const [clash] = await tx
+    .select()
+    .from(agents)
+    .where(and(eq(agents.slug, slug), eq(agents.orgId, input.orgId)));
   if (clash) slug = `${slug}-${Date.now().toString(36)}`;
 
   const now = Date.now();
@@ -142,6 +156,7 @@ export async function admitAgentTx(
       .insert(agents)
       .values({
         orgId: input.orgId,
+        areaId: input.areaId ?? null,
         externalId,
         name: input.name,
         slug,

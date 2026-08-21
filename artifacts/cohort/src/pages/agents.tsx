@@ -35,6 +35,7 @@ interface AgentsDict {
   healthTabs: Record<HealthKey, string>;
   healthEyebrow: string;
   areaEyebrow: string;
+  areaNone: string;
   allAreas: string;
   errorTitle: string;
   netValueLabel: string;
@@ -63,6 +64,7 @@ const L: Record<Lang, AgentsDict> = {
     },
     healthEyebrow: "Saúde",
     areaEyebrow: "Área",
+    areaNone: "Sem área",
     allAreas: "Todas",
     errorTitle: "Não foi possível carregar os agentes",
     netValueLabel: "Valor líq.",
@@ -89,6 +91,7 @@ const L: Record<Lang, AgentsDict> = {
     },
     healthEyebrow: "Health",
     areaEyebrow: "Area",
+    areaNone: "No area",
     allAreas: "All",
     errorTitle: "Could not load agents",
     netValueLabel: "Net value",
@@ -115,6 +118,7 @@ const L: Record<Lang, AgentsDict> = {
     },
     healthEyebrow: "Salud",
     areaEyebrow: "Área",
+    areaNone: "Sin área",
     allAreas: "Todas",
     errorTitle: "No fue posible cargar los agentes",
     netValueLabel: "Valor neto",
@@ -155,24 +159,37 @@ export default function AgentsPage() {
     search: search || undefined,
   });
 
+  /**
+   * A área agora vem da organização, não da plataforma.
+   *
+   * Antes, "Área" era derivada do fornecedor — Azure, AWS, LangGraph. Isso
+   * responde "onde roda", que é pergunta de infraestrutura. O gestor pergunta
+   * outra coisa: "quais destes agentes são meus". Área é Atendimento,
+   * Financeiro, Engenharia. A plataforma continua visível na linha de baixo.
+   */
+  const areaDe = (a: { areaName?: string | null }) => a.areaName ?? t.areaNone;
+
   const areas = useMemo(() => {
     const set = new Set<string>();
-    agents?.forEach((a) => set.add(platformArea(a.platform)));
-    return Array.from(set).sort();
-  }, [agents]);
+    agents?.forEach((a) => set.add(areaDe(a)));
+    // "Sem área" por último: é pendência de atribuição, não uma área de verdade.
+    return Array.from(set).sort((x, y) =>
+      x === t.areaNone ? 1 : y === t.areaNone ? -1 : x.localeCompare(y, "pt-BR"),
+    );
+  }, [agents, t.areaNone]);
 
   const activeHealth = HEALTH_TABS.find((tab) => tab.key === healthTab) ?? HEALTH_TABS[0];
 
   const filteredAgents = agents?.filter(
     (a) =>
       activeHealth.test(a.healthScore) &&
-      (areaFilter === "all" || platformArea(a.platform) === areaFilter),
+      (areaFilter === "all" || areaDe(a) === areaFilter),
   );
 
   const healthCount = (tab: Health) =>
     agents?.filter(
       (a) =>
-        tab.test(a.healthScore) && (areaFilter === "all" || platformArea(a.platform) === areaFilter),
+        tab.test(a.healthScore) && (areaFilter === "all" || areaDe(a) === areaFilter),
     ).length ?? 0;
 
   const needAttention =
@@ -271,7 +288,15 @@ export default function AgentsPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="rounded-md bg-muted px-2 py-0.5">{platformArea(agent.platform)}</span>
+                  <span
+                    className={
+                      agent.areaName
+                        ? "rounded-md bg-muted px-2 py-0.5"
+                        : "rounded-md border border-dashed border-card-border px-2 py-0.5 text-muted-foreground/70"
+                    }
+                  >
+                    {agent.areaName ?? t.areaNone}
+                  </span>
                   {perspective === "platform" ? (
                     <span className="font-mono">
                       {platformLabel(agent.platform)} · v{agent.version}
