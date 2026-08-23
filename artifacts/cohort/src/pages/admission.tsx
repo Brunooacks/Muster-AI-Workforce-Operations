@@ -1112,7 +1112,11 @@ export default function AdmissionPage() {
             title: t.toastAdmissionDoneTitle,
             description: t.toastAdmissionDoneDesc,
           });
-          setLocation(`/agentes/${agent.agent.id}`);
+          // Segue direto para a integração, e não para a ficha do agente.
+          // Cadastro sem telemetria produz um agente mudo: a plataforma mostra
+          // a carteira de trabalho e se recusa a dar nota, corretamente, mas
+          // até aqui o fluxo terminava sem dizer qual era o passo seguinte.
+          setLocation(`/agentes/${agent.agent.id}/conectar`);
         },
         onError: () => {
           toast({

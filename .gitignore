@@ -58,3 +58,6 @@ Thumbs.db
 
 # Artefatos de verificação do gauntlet (screenshots, logs)
 output/
+
+# Projeto do editor de vídeo (local, não é fonte)
+*.wfp

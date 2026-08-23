@@ -15,7 +15,7 @@ import {
   getGetAgentTelemetryQueryKey,
 } from "@workspace/api-client-react";
 import type { EvaluationMetricUpdateLayerKey } from "@workspace/api-client-react";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,7 @@ import {
   Sparkles,
   AlertTriangle,
   Eye,
+  Plug,
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -434,16 +435,27 @@ function TelemetrySection({
             <ErrorState compact title="Não foi possível carregar a telemetria" onRetry={() => refetch()} />
           </div>
         ) : !summary || summary.totalExecutions === 0 ? (
-          <div className="flex flex-col items-center gap-2 p-10 text-center">
+          /*
+           * Estado vazio com saída. Antes, este bloco explicava o que fazer e
+           * mandava o usuário para o terminal — o que só funciona para quem tem
+           * o repositório na mão. Um agente sem telemetria é um agente sem nota,
+           * e é a plataforma que deve conduzir o passo que falta.
+           */
+          <div className="flex flex-col items-center gap-3 p-10 text-center">
             <Activity className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             <p className="text-sm text-muted-foreground">
               Nenhum evento reportado nos últimos {window.replace("d", " dias")}.
             </p>
             <p className="max-w-md text-xs text-muted-foreground/80">
-              Conecte o agente com o reporter (<span className="font-mono">@workspace/telemetry-reporter</span>) ou
-              rode <span className="font-mono">pnpm --filter @workspace/scripts run simulate-telemetry</span> para
-              simular execuções.
+              Sem evidência a plataforma não calcula nota — de propósito. Ligue a telemetria para que
+              as cinco camadas passem a ser medidas.
             </p>
+            <Button asChild size="sm" className="mt-1">
+              <Link href={`/agentes/${agentId}/conectar`}>
+                <Plug className="mr-1.5 h-3.5 w-3.5" />
+                Ligar telemetria
+              </Link>
+            </Button>
           </div>
         ) : (
           <>

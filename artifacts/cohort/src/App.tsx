@@ -15,6 +15,7 @@ import DashboardPage from "@/pages/dashboard";
 import AgentsPage from "@/pages/agents";
 import AgentDetailPage from "@/pages/agent-detail";
 import AdmissionPage from "@/pages/admission";
+import ConectarPage from "@/pages/conectar";
 import ConnectorsPage from "@/pages/connectors";
 import AlertsPage from "@/pages/alerts";
 import GovernancePage from "@/pages/governanca";
@@ -229,6 +230,9 @@ function ClerkProviderWithRoutes() {
             </Route>
             <Route path="/agentes">
               <ProtectedRoute component={AgentsPage} />
+            </Route>
+            <Route path="/agentes/:id/conectar">
+              <ProtectedRoute component={ConectarPage} />
             </Route>
             <Route path="/agentes/:id">
               <ProtectedRoute component={AgentDetailPage} />

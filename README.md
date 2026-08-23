@@ -3,13 +3,12 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="artifacts/cohort/public/brand/muster-lockup-on-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="artifacts/cohort/public/brand/muster-lockup-on-light.svg">
-  <img alt="Muster" src="artifacts/cohort/public/brand/muster-lockup-on-light.svg" width="320">
+  <img alt="Muster" src="artifacts/cohort/public/brand/muster-lockup-on-light.svg" width="340">
 </picture>
 
-### AI Workforce Operations
+### Seus agentes de IA já trabalham. Alguém avalia o desempenho deles?
 
-**Identidade, carteira de trabalho, avaliação em 5 camadas e governança para frotas de agentes de IA.**
-*Identity, work record, 5-layer evaluation, and governance for fleets of AI agents.*
+**O Muster dá identidade, carteira de trabalho e avaliação de desempenho a frotas de agentes de IA — e um veredito: promover, mentorar ou aposentar.**
 
 <br/>
 
@@ -17,11 +16,13 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=black)
 ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Drizzle_ORM-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Drizzle-4169E1?logo=postgresql&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-workspaces-F69220?logo=pnpm&logoColor=white)
-![status](https://img.shields.io/badge/status-active-2e7d52)
-
 <br/>
+![testes](https://img.shields.io/badge/testes-210_verdes-2e7d52)
+![e2e](https://img.shields.io/badge/portão_e2e-401ms-2e7d52)
+![multi-tenant](https://img.shields.io/badge/multi--tenant-org_+_área-2e7d52)
+![status](https://img.shields.io/badge/status-MVP_operável-D8B26B)
 
 **🌐 [Português](#-português) · [English](#-english)**
 
@@ -29,365 +30,296 @@
 
 ---
 
-<a name="-português"></a>
-
 ## 🇧🇷 Português
 
-> O Muster é uma plataforma **plug-and-play** que dá às frotas de agentes de IA (multi-plataforma) **identidade, carteira de trabalho, análise de desempenho em 5 camadas e governança** — para decidir, com confiança, entre **Promover, Mentorar ou Aposentar** cada agente.
+### 🎯 A ideia em uma frase
 
-### Índice
+Uma empresa contrata um agente de IA como contrata uma pessoa — define o papel, dá acesso a sistema, coloca em produção. E aí para. Não há histórico, não há revisão de desempenho, não há dono. Quando o agente falha, ninguém sabe desde quando. Quando acerta, ninguém consegue provar.
 
-- [O problema](#o-problema)
-- [Funcionalidades](#funcionalidades)
-- [Telas](#telas)
-- [Arquitetura](#arquitetura)
-- [Stack](#stack)
-- [Estrutura do monorepo](#estrutura-do-monorepo)
-- [Como rodar localmente](#como-rodar-localmente)
-- [Variáveis de ambiente](#variáveis-de-ambiente)
-- [Vocabulário do produto](#vocabulário-do-produto)
+O Muster trata cada agente como **profissional**: carteira de trabalho, telemetria de execução, avaliação em cinco camadas e um veredito que alguém assina.
 
-### O problema
+### 🚫 A decisão que define o produto
 
-Equipes estão colocando dezenas — em breve, milhares — de agentes de IA em produção, mas sem nenhuma camada de **RH e governança** para eles. Ninguém sabe ao certo quais agentes geram valor, quais estão "trapaceando" métricas, quem é o dono de cada um, ou quando aposentar um agente. O Muster trata cada agente como um **colaborador**: com carteira de trabalho, avaliação periódica, cadeia de responsabilidade e um veredito acionável.
+**Sem evidência, o Muster não dá nota.**
 
-### Funcionalidades
+Todo painel de IA que você já viu calcula uma média sobre qualquer coisa que receber. O Muster confere a procedência antes de pontuar:
 
-- **Admissão** — descubra agentes via conectores e admita-os na frota com **identidade** e **carteira de trabalho** (papel, fronteiras de autonomia, business case e donos).
-- **Avaliação em 5 camadas** — análise de **eficácia, eficiência, adoção, governança e valor**, com pontuação reproduzível.
-- **Veredito** — recomendação de **Promover / Mentorar / Aposentar**, com nível de confiança, janela de execução e plano de ação.
-- **Detector de Vitória Ilusória** — sinaliza padrões enganosos de sucesso (ex.: ROI sobe enquanto a qualidade despenca).
-- **Comitê / Governança da Frota** — dono de negócio, dono técnico e sponsor de governança por agente.
-- **Conectores plug-ready** — catálogo de plataformas modelado para que conectores reais possam ser plugados sem mudar a UI.
-- **Telemetria real (R6)** — agentes em execução reportam eventos (execução, erro, escalação, custo, tokens) via o SDK `@workspace/telemetry-reporter`; o Muster armazena em `agent_events`, agrega por janela (7/30/90d) e recalcula a avaliação de 5 camadas com **regras de decisão auditáveis** — o veredito passa a vir de dados reais, não de seed.
-- **Jornadas A2A** — modele frotas de decisão com etapas, agentes participantes, modos autônomo/humano/comitê, handoffs, guardrails e telemetria end-to-end de conclusão, latência, custo e gargalos. Contrato em [`docs/JORNADAS-A2A.md`](docs/JORNADAS-A2A.md).
+| Estado | O que significa |
+| :--- | :--- |
+| `telemetry` | Telemetria real e suficiente. A nota vale. |
+| `mixed` | Parte real, parte declarada. A nota vem com a ressalva na tela. |
+| `seeded` | Só valor de demonstração. Não serve para decidir. |
+| `none` | Sem evidência. **A plataforma se recusa a pontuar.** |
 
-### Telas
+É ruim para a demonstração e ótimo para a auditoria — e é a razão de o agente recém-cadastrado nascer sem nota.
 
-![Landing — Sala de Operações](docs/screenshots/muster-landing.png)
+### 🔌 Como um agente entra
 
-| Frota (Portfólio) | Veredito + Detector de Vitória Ilusória |
+São **duas etapas**, e confundi-las é o erro mais comum: cadastrar cria a ficha; ligar a telemetria é o que produz a avaliação.
+
+**1 · Cadastrar** — três formas:
+
+| Forma | Como | Quando usar |
+| :--- | :--- | :--- |
+| Manual | Tela de admissão: papel, área, autonomia, o que deve e não deve fazer | Poucos agentes, ou você quer controle total da ficha |
+| A partir do código | Cole o código ou aponte um repositório; a IA propõe a ficha para você revisar | O agente já existe e você tem o código |
+| Varredura | Um conector traz rascunhos para aprovar em lote | Muitos agentes de uma vez |
+
+**2 · Ligar a telemetria** — três caminhos:
+
+| Caminho | Como funciona | Estado |
+| :--- | :--- | :--- |
+| **O agente reporta** | SDK ou REST, com credencial própria por agente. Duas linhas no agente | ✅ no ar |
+| **A nuvem entrega** | Azure, AWS e Google — lê o rastro que a nuvem já grava, sem tocar no agente | ⚠️ validado só contra amostras, nunca contra conta real |
+| **Coleta local** | Servidor vLLM on-premise — lê o `/metrics` que ele já publica. Sem sidecar | ✅ no ar |
+
+> A tela **Ligar telemetria** conduz o passo 2: emite a credencial, entrega o trecho pronto para colar em `curl`, TypeScript ou Python, e fica esperando o primeiro evento chegar — confirmando sozinha quando chega.
+
+![Ligar telemetria](docs/screenshots/muster-conectar.png)
+
+### 📊 Como a nota é formada
+
+Cinco camadas, duas perguntas:
+
+| Camada | Pergunta |
+| :--- | :--- |
+| **Eficácia** | O agente resolve mesmo o problema? |
+| **Eficiência** | Faz isso em tempo e custo viáveis? |
+| **Adoção** | A organização realmente usa? |
+| **Governança** | Dá para auditar o que ele decidiu? |
+| **Valor** | O que entra compensa o que sai? |
+
+**Produtividade** = eficiência + adoção · **Propósito** = eficácia + governança + valor
+
+Um agente pode ser altamente produtivo e não ter propósito nenhum: rápido, barato e resolvendo com excelência o problema errado. Separar as duas perguntas é o que impede a frota de comemorar o número errado.
+
+### 🕵️ Detector de Vitória Ilusória
+
+Nenhuma camada sozinha acusa um agente que está enganando o painel. O detector cruza as cinco em busca de contradição — *"volume sobe, conversão real cai"* — e entrega hipótese, recomendação, responsável e prazo. Não só o alerta.
+
+![Detector de Vitória Ilusória](docs/screenshots/muster-veredito.png)
+
+### 🏢 Multi-tenant: organização e área
+
+- **Organização** é a fronteira de isolamento. Dado de uma empresa nunca aparece para outra, e isso é garantido por um teste que varre o código-fonte reprovando qualquer leitura sem filtro.
+- **Área** é a estrutura interna: Atendimento, Financeiro, Engenharia, Jurídico — cada uma com dono, orçamento e centro de custo. Área **não** é fronteira de segurança: quem enxerga a organização enxerga todas as áreas dela.
+
+![Frota por área](docs/screenshots/muster-frota.png)
+
+### ⚡ Demais recursos
+
+- **🔗 Jornadas A2A** — cinco sub-agentes encadeados: etapas, contratos de handoff e telemetria por passo, para achar o elo que derruba o conjunto. → [`docs/JORNADAS-A2A.md`](docs/JORNADAS-A2A.md)
+- **📚 Catálogo de 86 métricas** — cada uma com instrução de instrumentação pronta para colar.
+- **✅ Plano de ação rastreável** — o veredito vira ações com status, e concluir exige evidência.
+- **🔑 Credencial por agente** — `msk_live_…`, SHA-256 em repouso. A do agente A não reporta pelo agente B.
+- **🌐 Trilíngue** — pt-BR (canônico), inglês e espanhol.
+
+<details>
+<summary><b>📸 Mais telas</b></summary>
+
+| Comando | Jornadas A2A |
 | :---: | :---: |
-| ![Frota](docs/screenshots/muster-frota.png) | ![Veredito](docs/screenshots/muster-veredito.png) |
-| **Admissão (⚡ Pré-assessment)** | **Conectores (cadastro + descoberta real)** |
-| ![Admissão](docs/screenshots/muster-admissao.png) | ![Conectores](docs/screenshots/muster-conectores.png) |
-| **Biblioteca de Métricas** | **Carteira de Trabalho (probation)** |
-| ![Métricas](docs/screenshots/muster-metricas.png) | ![Probation](docs/screenshots/muster-probation.png) |
+| ![Comando](docs/screenshots/muster-comando.png) | ![Jornadas](docs/screenshots/muster-jornadas.png) |
+| **Biblioteca de métricas** | **Admissão** |
+| ![Métricas](docs/screenshots/muster-metricas.png) | ![Admissão](docs/screenshots/muster-admissao.png) |
 
-### Arquitetura
+</details>
+
+### 🏗️ Arquitetura
 
 ```mermaid
 flowchart LR
-    U[👤 Usuário<br/>Gestor / Comitê] -->|HTTPS + Clerk| W
+    U[👤 Gestor · Comitê] -->|HTTPS| W
 
-    subgraph Muster
-      W[Web · React + Vite<br/>shadcn/ui]
-      A[API · Express 5<br/>requireAuth · Zod]
-      DB[(PostgreSQL<br/>Drizzle ORM)]
+    subgraph MUSTER
+      W[Web · React + Vite]
+      A[API · Express 5<br/>requireAuth · requireOrg]
+      DB[(PostgreSQL<br/>Drizzle)]
+      W -->|hooks gerados| A
+      A --> DB
     end
 
-    W -->|/api · hooks gerados| A
-    A --> DB
-
-    subgraph Conectores
-      C1[Plataformas de agentes]
-      C2[Observabilidade]
-      C3[CRM / Data warehouse]
+    subgraph COLETA
+      P1[SDK / REST<br/>credencial por agente]
+      P2[Pontes de nuvem<br/>Azure · AWS · GCP]
+      P3[vLLM local<br/>/metrics]
     end
 
-    C1 -. descoberta .-> A
-    C2 -. descoberta .-> A
-    C3 -. descoberta .-> A
+    P1 -->|push| A
+    P2 -.->|pull| A
+    P3 -.->|pull| A
 ```
 
-### Stack
+### 🧰 Stack
 
-- **pnpm workspaces**, Node.js 24, TypeScript 5.9
-- **API:** Express 5 (logging com pino)
-- **Web:** React + Vite + wouter + TanStack Query + shadcn/ui + Clerk
-- **DB:** PostgreSQL + Drizzle ORM
-- **Validação:** Zod + drizzle-zod
-- **Codegen de API:** Orval (a partir de um spec OpenAPI — contrato primeiro)
-- **Telemetria:** SDK `@workspace/telemetry-reporter` (zero dependências, fire-and-forget) → `POST /agents/:id/events` → tabela `agent_events` → agregação em janelas + regras de decisão auditáveis
-- **Build:** esbuild
+| Camada | Tecnologia |
+| :--- | :--- |
+| Monorepo | pnpm workspaces · Node.js 24 · TypeScript 5.9 |
+| API | Express 5 · pino · Zod |
+| Web | React · Vite · wouter · TanStack Query · shadcn/ui · Clerk |
+| Banco | PostgreSQL · Drizzle ORM · migrações versionadas com reversão |
+| Contrato | OpenAPI → Orval (spec primeiro, código depois) |
+| Testes | Vitest · 210 testes · portão e2e em 401 ms |
 
-### Estrutura do monorepo
+### 🚀 Rodar localmente
+
+> Requer **Node.js 24**, **pnpm** e **Docker** (para o PostgreSQL).
+
+```bash
+# 1. Variáveis de ambiente
+cp .env.example .env
+
+# 2. Dependências
+pnpm install
+
+# 3. Banco
+docker compose up -d postgres
+pnpm --filter @workspace/db run push
+
+# 4. API (porta 8087)
+pnpm --filter @workspace/api-server run dev
+
+# 5. Em outro terminal, a web (porta 5173)
+pnpm --filter @workspace/muster run dev
+```
+
+Abra **http://localhost:5173**. Guia passo a passo em [`docs/DEMO-LOCAL.md`](docs/DEMO-LOCAL.md).
+
+**Demonstrações prontas:**
+
+```bash
+pnpm --filter @workspace/scripts run demo:integrar   # integra um agente ao vivo, narrado
+pnpm --filter @workspace/scripts run demo:fluxo      # jornada com sub-agentes
+pnpm --filter @workspace/scripts run bridge:vllm -- --fixture --dry-run   # coleta local, sem GPU
+```
+
+### 📁 Estrutura
 
 ```text
 .
-├── artifacts/            # Aplicações executáveis
-│   ├── api-server/       # API Express (auth, rotas /api)
-│   ├── cohort/           # Frontend web (React + Vite)
-│   └── mockup-sandbox/   # Sandbox de componentes
-├── lib/                  # Bibliotecas compartilhadas
-│   ├── db/               # Schema Drizzle (fonte da verdade do banco)
-│   ├── api-spec/         # Spec OpenAPI + codegen
+├── artifacts/
+│   ├── api-server/       # API Express — rotas, avaliação, isolamento por org
+│   ├── cohort/           # Web (React + Vite)
+│   └── agent-runner/     # Execução de agente para os testes de ponta a ponta
+├── lib/
+│   ├── db/               # Schema Drizzle + migrações (fonte da verdade)
+│   ├── api-spec/         # OpenAPI + codegen
 │   ├── api-zod/          # Schemas Zod gerados
 │   ├── api-client-react/ # Hooks React Query gerados
-│   └── telemetry-reporter/ # SDK que agentes usam p/ reportar telemetria
-├── scripts/              # Utilitários do workspace (inclui simulate-telemetry)
-├── docs/screenshots/     # Imagens usadas neste README
-└── pnpm-workspace.yaml
+│   └── telemetry-reporter/ # SDK que o agente do cliente usa
+├── scripts/              # Demos, pontes de coleta, validação
+└── docs/                 # Guias e contratos
 ```
 
-### Como rodar localmente
+### 📖 Documentação
 
-> Requer **Node.js 24**, **pnpm** e um **PostgreSQL** acessível via `DATABASE_URL`.
+| Documento | Assunto |
+| :--- | :--- |
+| [`DEMO-LOCAL.md`](docs/DEMO-LOCAL.md) | Subir tudo do zero, passo a passo |
+| [`COLETA-LOCAL-VLLM.md`](docs/COLETA-LOCAL-VLLM.md) | Monitorar agente on-premise via vLLM |
+| [`INTEGRACAO-PLATAFORMAS-EXTERNAS.md`](docs/INTEGRACAO-PLATAFORMAS-EXTERNAS.md) | Pontes de nuvem |
+| [`JORNADAS-A2A.md`](docs/JORNADAS-A2A.md) | Contrato das jornadas |
+| [`VALIDACAO-MVP.md`](docs/VALIDACAO-MVP.md) | O que o portão de ponta a ponta cobre |
 
-```bash
-# 1. Copiar as variáveis de ambiente e preencher os valores
-cp .env.example .env
+### ⚖️ Estado atual — o que ainda não existe
 
-# 2. Instalar dependências
-pnpm install
+Coerente com o produto: dizer o que não se sabe, em vez de omitir.
 
-# 3. Aplicar o schema do banco
-pnpm --filter @workspace/db run push        # dev: push rápido do schema
-# pnpm --filter @workspace/db run migrate     # prod: migrations versionadas (lib/db/drizzle)
-
-# 4. Subir a API (porta via variável PORT)
-pnpm --filter @workspace/api-server run dev
-
-# 5. Em outro terminal, subir o frontend web
-pnpm --filter @workspace/muster run dev
-```
-
-Comandos úteis:
-
-```bash
-pnpm run typecheck                               # typecheck de todos os pacotes
-pnpm test                                         # testes (Vitest)
-pnpm run build                                    # typecheck + build
-pnpm --filter @workspace/db run generate          # gerar nova migration após mudar o schema
-pnpm --filter @workspace/api-spec run codegen     # regenerar hooks e schemas a partir do OpenAPI
-pnpm run validate:mvp                             # typecheck + testes do MVP
-MUSTER_BASE_URL=http://localhost:8087 pnpm --filter @workspace/scripts run e2e:journey  # Gauntlet A2A
-MUSTER_BASE_URL=http://localhost:8087 pnpm --filter @workspace/scripts run seed:a2a-demo # demo persistente
-```
-
-### Ambiente local de validação do MVP
-
-Suba um PostgreSQL local reproduzível com Docker:
-
-```bash
-docker compose up -d postgres
-cp .env.example .env
-```
-
-Use `DATABASE_URL=postgresql://postgres:postgres@localhost:5433/muster` no `.env`, ative `AUTH_DEV_BYPASS=true` e `VITE_AUTH_DEV_BYPASS=true`, e então aplique o schema:
-
-```bash
-pnpm --filter @workspace/db run migrate
-pnpm run validate:mvp
-```
-
-Para executar a API e o painel em terminais separados:
-
-```bash
-pnpm --filter @workspace/api-server run dev
-pnpm --filter @workspace/muster run dev
-```
-
-O Postgres usa o volume `muster-postgres-data`; parar o container não remove os dados. Use `docker compose down -v` somente quando quiser recriar o banco demo do zero.
-
-> **Deploy:** a API compila num bundle self-contained e há um `Dockerfile` multi-stage pronto (`docker build -t cohort-api .`). Rode as migrations como passo de release (`pnpm --filter @workspace/db run migrate`). O frontend é um build estático do Vite, com deploy separado (Vercel/Netlify).
-
-### Variáveis de ambiente
-
-Veja **[`.env.example`](.env.example)** para o catálogo completo. Principais:
-
-| Variável | Obrigatória | Descrição |
-| --- | :---: | --- |
-| `DATABASE_URL` | ✅ | String de conexão do PostgreSQL. |
-| `PORT` | ✅ | Porta em que a API escuta. |
-| `AI_INTEGRATIONS_OPENAI_API_KEY` · `AI_INTEGRATIONS_OPENAI_BASE_URL` | ✅ | Credenciais e endpoint OpenAI-compatible para análise de agentes. |
-| `CLERK_SECRET_KEY` · `VITE_CLERK_PUBLISHABLE_KEY` | ✅¹ | Autenticação Clerk. |
-| `GITHUB_TOKEN` | — | Import de repositórios GitHub privados (opcional). |
-
-> ¹ Para executar sem bypass, crie um projeto Clerk e configure as chaves no `.env`. Para desenvolvimento local, use explicitamente `AUTH_DEV_BYPASS=true` e `VITE_AUTH_DEV_BYPASS=true`.
-
-### Vocabulário do produto
-
-| Termo | Significado |
-| --- | --- |
-| **Frota** | O conjunto de agentes de IA sob gestão. |
-| **Carteira de Trabalho** | A identidade do agente: papel, fronteiras, business case e donos. |
-| **Admissão** | Descobrir e admitir um agente na frota. |
-| **Veredito** | Recomendação: Promover, Mentorar ou Aposentar. |
-| **Comitê** | Donos de negócio, técnico e sponsor de governança. |
-| **Detector de Vitória Ilusória** | Sinaliza padrões enganosos de sucesso. |
-
-<div align="right"><a href="#-português">⬆ topo</a></div>
+- **Nenhuma frota real passou pela plataforma.** A telemetria existente é de teste e demonstração.
+- **As pontes de nuvem nunca rodaram contra uma conta real** — estão validadas contra amostras de resposta dos três provedores.
+- **Credenciais de conector ficam em texto puro** no banco. Antes de qualquer piloto real, precisam ser cifradas.
+- **Não há política de retenção** configurável — lacuna de LGPD assumida.
+- **Não há escopo de permissão por perfil**: quem entra na organização pode aprovar veredito.
 
 ---
 
-<a name="-english"></a>
-
 ## 🇺🇸 English
 
-> Muster is a **plug-and-play** platform that gives multi-platform fleets of AI agents **identity, a work record, 5-layer performance analysis, and governance** — so you can confidently decide whether to **Promote, Mentor, or Retire** each agent.
+### 🎯 The idea in one sentence
 
-### Table of contents
+A company hires an AI agent the way it hires a person — defines the role, grants system access, ships it to production. And then it stops. No work record, no performance review, no owner. When the agent fails, nobody knows since when. When it succeeds, nobody can prove it.
 
-- [The problem](#the-problem)
-- [Features](#features)
-- [Screens](#screens)
-- [Architecture](#architecture)
-- [Tech stack](#tech-stack)
-- [Monorepo structure](#monorepo-structure)
-- [Running locally](#running-locally)
-- [Environment variables](#environment-variables)
-- [Product vocabulary](#product-vocabulary)
+Muster treats each agent as a **professional**: a work record, execution telemetry, a five-layer evaluation and a verdict someone signs.
 
-### The problem
+### 🚫 The decision that defines the product
 
-Teams are shipping dozens — soon thousands — of AI agents to production with **no HR or governance layer** for them. Nobody really knows which agents create value, which are gaming their metrics, who owns each one, or when to retire one. Muster treats every agent like an **employee**: with a work record, periodic evaluation, a chain of responsibility, and an actionable verdict.
+**Without evidence, Muster won't score.**
 
-### Features
+Every AI dashboard you've seen averages whatever it receives. Muster checks provenance first:
 
-- **Admission** — discover agents through connectors and admit them to the fleet with an **identity** and a **work record** (role, autonomy boundaries, business case, and owners).
-- **5-layer evaluation** — analysis of **effectiveness, efficiency, adoption, governance, and value**, with reproducible scoring.
-- **Verdict** — a **Promote / Mentor / Retire** recommendation, with confidence level, execution window, and action plan.
-- **Illusory Victory Detector** — flags deceptive success patterns (e.g. ROI rising while quality collapses).
-- **Committee / Fleet Governance** — a business owner, technical owner, and governance sponsor per agent.
-- **Plug-ready connectors** — a platform catalog modeled so real connectors can be swapped in without UI changes.
-- **Real telemetry (R6)** — running agents report events (execution, error, escalation, cost, tokens) through the `@workspace/telemetry-reporter` SDK; Muster stores them in `agent_events`, aggregates per window (7/30/90d) and recomputes the 5-layer evaluation with **auditable decision rules** — verdicts come from real data, not seeds.
+| State | Meaning |
+| :--- | :--- |
+| `telemetry` | Real, sufficient telemetry. The score stands. |
+| `mixed` | Partly real, partly declared. The score ships with the caveat on screen. |
+| `seeded` | Demo values only. Not fit for a decision. |
+| `none` | No evidence. **The platform refuses to score.** |
 
-### Screens
+Bad for the demo, excellent for the audit — and the reason a freshly registered agent starts with no score.
 
-![Landing — Ops Room](docs/screenshots/muster-landing.png)
+### 🔌 How an agent gets in
 
-| Fleet (Portfolio) | Verdict + Illusory Victory Detector |
-| :---: | :---: |
-| ![Fleet](docs/screenshots/muster-frota.png) | ![Verdict](docs/screenshots/muster-veredito.png) |
-| **Admission (⚡ Pre-assessment)** | **Connectors (register + real discovery)** |
-| ![Admission](docs/screenshots/muster-admissao.png) | ![Connectors](docs/screenshots/muster-conectores.png) |
-| **Metric Library** | **Work Record (probation)** |
-| ![Metrics](docs/screenshots/muster-metricas.png) | ![Probation](docs/screenshots/muster-probation.png) |
+**Two steps**, and conflating them is the common mistake: registering creates the record; connecting telemetry is what produces the evaluation.
 
-### Architecture
+**1 · Register** — three ways: manually, from the agent's source code (AI drafts the record for you to review), or via bulk connector discovery.
 
-```mermaid
-flowchart LR
-    U[👤 User<br/>Manager / Committee] -->|HTTPS + Clerk| W
+**2 · Connect telemetry** — three paths:
 
-    subgraph Muster
-      W[Web · React + Vite<br/>shadcn/ui]
-      A[API · Express 5<br/>requireAuth · Zod]
-      DB[(PostgreSQL<br/>Drizzle ORM)]
-    end
+| Path | How it works | State |
+| :--- | :--- | :--- |
+| **Agent reports** | SDK or plain REST, per-agent credential. Two lines in the agent | ✅ live |
+| **Cloud delivers** | Azure, AWS and Google — reads the trail the cloud already records | ⚠️ fixture-validated, never run against a real account |
+| **Local collection** | On-premise vLLM — reads the `/metrics` it already publishes. No sidecar | ✅ live |
 
-    W -->|/api · generated hooks| A
-    A --> DB
+> The **Connect telemetry** screen walks step 2: issues the credential, hands you a ready-to-paste snippet in `curl`, TypeScript or Python, then waits for the first event and confirms on its own when it lands.
 
-    subgraph Connectors
-      C1[Agent platforms]
-      C2[Observability]
-      C3[CRM / Data warehouse]
-    end
+### 📊 How the score is formed
 
-    C1 -. discovery .-> A
-    C2 -. discovery .-> A
-    C3 -. discovery .-> A
-```
+Five layers, two questions: **Efficacy** (does it actually solve it?), **Efficiency** (at viable time and cost?), **Adoption** (does the org really use it?), **Governance** (can you audit what it decided?), **Value** (does the return justify the spend?).
 
-### Tech stack
+**Productivity** = efficiency + adoption · **Purpose** = efficacy + governance + value
 
-- **pnpm workspaces**, Node.js 24, TypeScript 5.9
-- **API:** Express 5 (pino logging)
-- **Web:** React + Vite + wouter + TanStack Query + shadcn/ui + Clerk
-- **DB:** PostgreSQL + Drizzle ORM
-- **Validation:** Zod + drizzle-zod
-- **API codegen:** Orval (from an OpenAPI spec — contract first)
-- **Telemetry:** `@workspace/telemetry-reporter` SDK (zero-dependency, fire-and-forget) → `POST /agents/:id/events` → `agent_events` table → windowed aggregation + auditable decision rules
-- **Build:** esbuild
+An agent can be highly productive with no purpose at all: fast, cheap and excellently solving the wrong problem.
 
-### Monorepo structure
+### 🏢 Multi-tenant: organization and area
 
-```text
-.
-├── artifacts/            # Runnable applications
-│   ├── api-server/       # Express API (auth, /api routes)
-│   ├── cohort/           # Web frontend (React + Vite)
-│   └── mockup-sandbox/   # Component sandbox
-├── lib/                  # Shared libraries
-│   ├── db/               # Drizzle schema (DB source of truth)
-│   ├── api-spec/         # OpenAPI spec + codegen
-│   ├── api-zod/          # Generated Zod schemas
-│   ├── api-client-react/ # Generated React Query hooks
-│   └── telemetry-reporter/ # SDK agents embed to report telemetry
-├── scripts/              # Workspace utilities (includes simulate-telemetry)
-├── docs/screenshots/     # Images used in this README
-└── pnpm-workspace.yaml
-```
+**Organization** is the isolation boundary — one company's data never surfaces for another, enforced by a test that scans the source and fails any unscoped read. **Area** is internal structure (Support, Finance, Engineering), each with an owner and a cost center. Area is **not** a security boundary.
 
-### Running locally
+### ⚡ Other capabilities
 
-> Requires **Node.js 24**, **pnpm**, and a **PostgreSQL** reachable via `DATABASE_URL`.
+- **🔗 A2A journeys** — chained sub-agents with handoff contracts and per-step telemetry → [`docs/JORNADAS-A2A.md`](docs/JORNADAS-A2A.md)
+- **📚 86-metric catalog** — each with ready-to-paste instrumentation guidance
+- **✅ Traceable action plan** — verdicts become tracked actions; closing one requires evidence
+- **🔑 Per-agent credentials** — `msk_live_…`, SHA-256 at rest
+- **🌐 Trilingual** — pt-BR (canonical), English, Spanish
+
+### 🚀 Running locally
+
+> Requires **Node.js 24**, **pnpm** and **Docker**.
 
 ```bash
-# 1. Copy the environment variables and fill in the values
 cp .env.example .env
-
-# 2. Install dependencies
 pnpm install
-
-# 3. Apply the database schema
-pnpm --filter @workspace/db run push        # dev: fast schema push
-# pnpm --filter @workspace/db run migrate     # prod: versioned migrations (lib/db/drizzle)
-
-# 4. Start the API (port via the PORT variable)
-pnpm --filter @workspace/api-server run dev
-
-# 5. In another terminal, start the web frontend
-pnpm --filter @workspace/muster run dev
+docker compose up -d postgres
+pnpm --filter @workspace/db run push
+pnpm --filter @workspace/api-server run dev      # API on 8087
+pnpm --filter @workspace/muster run dev          # Web on 5173
 ```
 
-Useful commands:
+Step-by-step guide in [`docs/DEMO-LOCAL.md`](docs/DEMO-LOCAL.md).
 
-```bash
-pnpm run typecheck                               # typecheck every package
-pnpm test                                         # run tests (Vitest)
-pnpm run build                                    # typecheck + build
-pnpm --filter @workspace/db run generate          # generate a new migration after schema changes
-pnpm --filter @workspace/api-spec run codegen     # regenerate hooks and schemas from OpenAPI
-```
+### ⚖️ Current state — what does not exist yet
 
-> **Deploy:** the API compiles to a self-contained bundle and ships a multi-stage `Dockerfile` (`docker build -t cohort-api .`). Run migrations as a release step (`pnpm --filter @workspace/db run migrate`). The frontend is a static Vite build, deployed separately (Vercel/Netlify).
-
-### Environment variables
-
-See **[`.env.example`](.env.example)** for the full catalog. Key ones:
-
-| Variable | Required | Description |
-| --- | :---: | --- |
-| `DATABASE_URL` | ✅ | PostgreSQL connection string. |
-| `PORT` | ✅ | Port the API listens on. |
-| `AI_INTEGRATIONS_OPENAI_API_KEY` · `AI_INTEGRATIONS_OPENAI_BASE_URL` | ✅ | OpenAI-compatible credentials and endpoint for agent analysis. |
-| `CLERK_SECRET_KEY` · `VITE_CLERK_PUBLISHABLE_KEY` | ✅¹ | Clerk authentication. |
-| `GITHUB_TOKEN` | — | Importing private GitHub repos (optional). |
-
-> ¹ For production authentication, create a Clerk project and configure the keys in `.env`. For local-only development, explicitly enable `AUTH_DEV_BYPASS=true` and `VITE_AUTH_DEV_BYPASS=true`.
-
-### Product vocabulary
-
-| Term | Meaning |
-| --- | --- |
-| **Frota** (Fleet) | The set of AI agents under management. |
-| **Carteira de Trabalho** (Work Record) | The agent's identity: role, boundaries, business case, owners. |
-| **Admissão** (Admission) | Discovering and admitting an agent into the fleet. |
-| **Veredito** (Verdict) | Recommendation: Promote, Mentor, or Retire. |
-| **Comitê** (Committee) | Business, technical, and governance-sponsor owners. |
-| **Detector de Vitória Ilusória** (Illusory Victory Detector) | Flags deceptive success patterns. |
-
-<div align="right"><a href="#-english">⬆ top</a></div>
+- **No real fleet has run through the platform.** Existing telemetry is test and demo data.
+- **The cloud bridges have never touched a real account.**
+- **Connector credentials are stored in plaintext** — must be encrypted before any real pilot.
+- **No configurable retention policy** — an acknowledged privacy gap.
+- **No per-role permission scopes**: anyone in the organization can approve a verdict.
 
 ---
 
 <div align="center">
 
-A interface do Muster é **inteiramente em português do Brasil**, com o design *Trincheira* — papel creme quente, verde-floresta e tipografia serifada editorial.
-<br/>
-*Muster's interface is **entirely in Brazilian Portuguese**, with the "Trincheira" design — warm cream paper, forest green, and editorial serif typography.*
+**Muster** · AI Workforce Operations
+Bruno Oliveira · [bruoacks@gmail.com](mailto:bruoacks@gmail.com)
 
 </div>
