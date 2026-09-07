@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "muster-market-intelligence-lab"
+name = "cenyra-market-intelligence"
 version = "0.1.0"
-description = "Laboratório local de agentes para inteligência contínua de mercado"
+description = "Agentes para inteligência contínua e comparável de mercado"
 requires-python = ">=3.11,<3.14"
 dependencies = [
   "agno==2.8.7",

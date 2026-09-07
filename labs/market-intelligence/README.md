@@ -1,6 +1,18 @@
 # Cenyra — agentes de inteligência de mercado
 
-Laboratório Docker independente do Muster para acompanhar diariamente três fontes públicas, preservar evidências e gerar um relatório web comparável.
+Projeto Docker independente para acompanhar diariamente fontes públicas,
+preservar evidências e gerar um relatório web comparável. Ele pode operar
+sozinho ou funcionar como laboratório de agentes antes da admissão no Muster.
+
+## Consultar
+
+O dashboard organiza os resultados como uma fila priorizada, com destaques,
+valores públicos, ranking, potencial, complexidade e dossiê de oportunidade.
+
+- painel local: `http://localhost:8095`;
+- filtros: fonte, score mínimo e categoria;
+- detalhe: comprador, captura de valor, MVP, GTM, riscos e referências;
+- operação: nova varredura, histórico e saúde de cada agente.
 
 ## Agentes
 
@@ -18,11 +30,15 @@ O agente YC lê todas as estações publicadas no bundle oficial da página, nã
 ## Executar
 
 ```bash
-cd labs/market-intelligence
+git clone https://github.com/Brunooacks/Cenyra-Market-Intelligence.git
+cd Cenyra-Market-Intelligence
 cp .env.example .env
 docker compose up -d --build
 docker compose logs -f scheduler
 ```
+
+Quando executado dentro do monorepo Muster, entre primeiro em
+`labs/market-intelligence` e continue a partir do `cp .env.example .env`.
 
 Dashboard: `http://localhost:8095`
 
