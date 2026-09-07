@@ -1,5 +1,6 @@
 import type { LayerKey } from "@workspace/db";
-import { KPI_DOMAIN_VERTICALS } from "./kpi-domain-catalog";
+import { KPI_DOMAIN_CATALOG, KPI_DOMAIN_VERTICALS } from "./kpi-domain-catalog";
+import type { KpiContract } from "./kpi-contract";
 
 /**
  * Pre-populated metric catalog for R2 of the roadmap. Deep, realistic metric
@@ -35,10 +36,13 @@ export interface MetricVertical {
 export interface MetricStarterKit {
   key: string;
   label: string;
+  scenario: string;
+  adoptionStage: "baseline" | "pilot" | "scale";
   objective: string;
   guidance: string;
   vertical: string;
   metricKeys: string[];
+  requiredSignals: string[];
 }
 
 const BASE_METRIC_CATALOG: MetricVertical[] = [
@@ -846,12 +850,22 @@ export const METRIC_CATALOG: MetricVertical[] = [
 ];
 
 export const METRIC_STARTER_KITS: MetricStarterKit[] = [
-  { key: "baseline-operacional", label: "Baseline operacional", objective: "Validar se o agente está vivo, entrega qualidade e custa o esperado.", guidance: "Colete pelo menos 30 execuções e estabeleça um baseline humano ou de homologação antes de discutir escala.", vertical: "tecnologia", metricKeys: ["tarefas-concluidas", "latencia-p95", "custo-por-mil-tokens", "disponibilidade", "drift-comportamento"] },
-  { key: "atendimento-resolutivo", label: "Atendimento resolutivo", objective: "Provar resolução real sem trocar qualidade por velocidade.", guidance: "Combine resolução, reabertura, satisfação e escalonamento apropriado; não use deflexão isolada.", vertical: "suporte-ti", metricKeys: ["fcr-primeiro-contato", "cliente-volta-72h", "csat-atendimento", "escalonamento-indevido", "mttr-resolucao"] },
-  { key: "vendas-com-guardrail", label: "Vendas com guardrail", objective: "Medir conversão incremental sem gerar pipeline falso ou erosão de margem.", guidance: "Compare com controle e mantenha falso positivo e aderência à política como guardrails de promoção.", vertical: "vendas-crm", metricKeys: ["vendas-conversao-qualificada", "vendas-win-rate-uplift", "vendas-falso-positivo-lead", "vendas-adocao-representante", "aderencia-politica-desconto"] },
-  { key: "engenharia-segura", label: "Engenharia segura", objective: "Aumentar throughput sem aceitar regressão, rollback ou defeito escapado.", guidance: "Produtividade só entra no painel junto com qualidade de mudança e revisão humana.", vertical: "engenharia-it", metricKeys: ["engenharia-sucesso-primeira-passada", "engenharia-defeito-escapado", "engenharia-cobertura-revisao", "engenharia-falha-de-mudanca", "engenharia-mttr"] },
-  { key: "risco-e-supervisao", label: "Risco e supervisão", objective: "Demonstrar que o agente opera dentro do contrato e deixa trilha reconstruível.", guidance: "Kit mínimo para fluxos regulados: exposição sensível e tentativas fora do escopo têm tolerância zero.", vertical: "risco-compliance", metricKeys: ["trilha-auditoria", "exposicao-dado-sensivel", "tentativas-fora-escopo", "aderencia-guardrails", "revisoes-humanas-realizadas"] },
+  { key: "baseline-operacional", label: "Baseline operacional", scenario: "Instrumentação inicial", adoptionStage: "baseline", objective: "Validar se o agente está observável, produz evidência confiável e continua disponível.", guidance: "Ative primeiro heartbeat, completude de trace e avaliação fundamentada; performance sem esses sinais ainda não é decisória.", vertical: "operacoes-backoffice", metricKeys: ["runtime-cobertura-heartbeat", "dados-completude-trace", "eval-saida-fundamentada", "discovery-prontidao-instrumentacao"], requiredSignals: ["heartbeat_coverage", "trace_completeness", "grounded_output_rate", "instrumentation_readiness"] },
+  { key: "atendimento-resolutivo", label: "Atendimento resolutivo", scenario: "Suporte", adoptionStage: "pilot", objective: "Provar resolução real sem trocar qualidade por velocidade.", guidance: "Combine resolução, reabertura, satisfação, escalonamento e tempo ponta a ponta; não use deflexão isolada.", vertical: "atendimento", metricKeys: ["atendimento-fcr", "atendimento-reabertura-72h", "atendimento-csat", "atendimento-escalonamento-apropriado", "atendimento-mttr"], requiredSignals: ["resolution_rate", "cliente_volta_72h", "csat", "escalonamento_correto", "mttr_hours"] },
+  { key: "vendas-com-guardrail", label: "Vendas com guardrail", scenario: "Vendas", adoptionStage: "pilot", objective: "Medir conversão incremental sem gerar pipeline falso ou erosão de margem.", guidance: "Compare com grupo de controle e mantenha falsos positivos como guardrail de promoção.", vertical: "vendas-crm", metricKeys: ["vendas-speed-to-lead", "vendas-conversao-qualificada", "vendas-win-rate-uplift", "vendas-falso-positivo-lead", "vendas-adocao-representante"], requiredSignals: ["speed_to_lead", "lead_conversion", "win_rate_uplift", "false_positive_rate", "rep_adoption"] },
+  { key: "engenharia-segura", label: "Engenharia segura", scenario: "Engenharia", adoptionStage: "pilot", objective: "Aumentar throughput sem aceitar regressão, rollback ou defeito escapado.", guidance: "Produtividade só entra no painel junto com qualidade de mudança, revisão e recuperação.", vertical: "engenharia-it", metricKeys: ["engenharia-sucesso-primeira-passada", "engenharia-defeito-escapado", "engenharia-cobertura-revisao", "engenharia-falha-de-mudanca", "engenharia-mttr"], requiredSignals: ["task_success", "escaped_defect_rate", "review_coverage", "change_failure_rate", "mttr_hours"] },
+  { key: "risco-e-supervisao", label: "Risco e supervisão", scenario: "Risco", adoptionStage: "pilot", objective: "Demonstrar que o agente opera dentro do contrato e deixa trilha defensável.", guidance: "Exposição sensível tem tolerância zero; cobertura e exceções devem ser verificadas antes de ampliar autonomia.", vertical: "risco-financas-rh", metricKeys: ["risco-cobertura-auditoria", "risco-exposicao-dado-sensivel", "risco-excecao-politica", "financas-variacao-custo", "rh-impacto-experiencia"], requiredSignals: ["audit_coverage", "exposicao_dado_sensivel", "exception_rate", "cost_variance", "employee_experience"] },
+  { key: "backoffice-controlado", label: "Backoffice controlado", scenario: "Operações e backoffice", adoptionStage: "scale", objective: "Aumentar processamento sem esconder fila, exceções ou dependência do runtime primário.", guidance: "Promova somente quando fluxo sem toque, cauda da fila, exceções, fallback e qualidade do trace estiverem controlados.", vertical: "operacoes-backoffice", metricKeys: ["operacoes-processamento-sem-toque", "operacoes-taxa-excecao", "operacoes-idade-fila-p95", "runtime-sucesso-fallback", "dados-completude-trace"], requiredSignals: ["straight_through_processing", "operational_exception_rate", "queue_age_p95", "fallback_success_rate", "trace_completeness"] },
+  { key: "workforce-hibrida-controlada", label: "Workforce híbrida controlada", scenario: "Workforce híbrida", adoptionStage: "scale", objective: "Medir o resultado conjunto de humanos e agentes, incluindo handoffs, supervisão e retrabalho.", guidance: "A autonomia cresce apenas quando aceite, override, integridade de contexto e cobertura de supervisão contam a mesma história.", vertical: "workforce-hibrida", metricKeys: ["hibrida-aceite-humano", "hibrida-taxa-override", "hibrida-retrabalho", "a2a-integridade-contexto", "hibrida-cobertura-supervisao"], requiredSignals: ["human_acceptance_rate", "human_override_rate", "human_rework_rate", "a2a_context_integrity", "supervision_coverage"] },
 ];
+
+const KPI_CONTRACT_INDEX = new Map<string, KpiContract>(
+  KPI_DOMAIN_CATALOG.map((contract) => [contract.key, contract]),
+);
+
+export function kpiContractByMetricKey(key: string): KpiContract | undefined {
+  return KPI_CONTRACT_INDEX.get(key);
+}
 
 // Flat index for O(1) lookup by metric key. Built once at module load.
 const CATALOG_INDEX: Map<string, CatalogMetric> = new Map(

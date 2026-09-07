@@ -9,8 +9,163 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface ContinuousTelemetryWorkerDiagnostics {
+  enabled: boolean;
+  running: boolean;
+  /** @nullable */
+  startedAt: string | null;
+  /** @nullable */
+  lastPollAt: string | null;
+  /** @nullable */
+  lastSuccessAt: string | null;
+  /** @nullable */
+  lastErrorAt: string | null;
+  /** @minimum 0 */
+  processed: number;
+  /** @minimum 0 */
+  failed: number;
+  /** @minimum 0 */
+  deadLettered: number;
+  /** @minimum 0 */
+  reclaimed: number;
+}
+
+export interface ContinuousTelemetryQueueHealth {
+  /** @minimum 0 */
+  pending: number;
+  /** @minimum 0 */
+  processing: number;
+  /** @minimum 0 */
+  deadLetter: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  oldestPendingAgeSeconds: number | null;
+}
+
+export type ContinuousTelemetryHealthStatus = typeof ContinuousTelemetryHealthStatus[keyof typeof ContinuousTelemetryHealthStatus];
+
+
+export const ContinuousTelemetryHealthStatus = {
+  ok: 'ok',
+  degraded: 'degraded',
+  unavailable: 'unavailable',
+} as const;
+
+export interface ContinuousTelemetryHealth {
+  status: ContinuousTelemetryHealthStatus;
+  worker: ContinuousTelemetryWorkerDiagnostics;
+  queue: ContinuousTelemetryQueueHealth | null;
+}
+
+export type ContinuousTelemetryActivityPayload = { [key: string]: unknown };
+
+export type ContinuousTelemetryActivityPriority = typeof ContinuousTelemetryActivityPriority[keyof typeof ContinuousTelemetryActivityPriority];
+
+
+export const ContinuousTelemetryActivityPriority = {
+  critical: 'critical',
+  high: 'high',
+  normal: 'normal',
+  low: 'low',
+} as const;
+
+export type ContinuousTelemetryActivityStatus = typeof ContinuousTelemetryActivityStatus[keyof typeof ContinuousTelemetryActivityStatus];
+
+
+export const ContinuousTelemetryActivityStatus = {
+  pending: 'pending',
+  processing: 'processing',
+  completed: 'completed',
+  'dead-letter': 'dead-letter',
+} as const;
+
+export interface ContinuousTelemetryActivity {
+  id: string;
+  aggregateType: string;
+  aggregateId: string;
+  eventType: string;
+  payload: ContinuousTelemetryActivityPayload;
+  priority: ContinuousTelemetryActivityPriority;
+  status: ContinuousTelemetryActivityStatus;
+  /** @minimum 0 */
+  attempts: number;
+  availableAt: string;
+  /** @nullable */
+  processedAt: string | null;
+  /** @nullable */
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface ContinuousTelemetryFreshness {
+  serverTime: string;
+  /** @minimum 1 */
+  pollingRecommendedMs: number;
+  /** @minimum 1 */
+  projectionTargetSeconds: number;
+}
+
+export interface ContinuousTelemetryActivityResponse {
+  items: ContinuousTelemetryActivity[];
+  /** @nullable */
+  nextCursor: string | null;
+  freshness: ContinuousTelemetryFreshness;
+}
+
 export interface Error {
   error: string;
+}
+
+export type OrganizationRole = typeof OrganizationRole[keyof typeof OrganizationRole];
+
+
+export const OrganizationRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export interface OrganizationSummary {
+  /** @nullable */
+  id: string | null;
+  externalId: string;
+  name: string;
+  slug: string;
+  role: OrganizationRole;
+  providerRole: string;
+  active: boolean;
+  provisioned: boolean;
+}
+
+export interface OrganizationList {
+  organizations: OrganizationSummary[];
+}
+
+export interface ProvisionedOrganization {
+  id: string;
+  externalId: string;
+  name: string;
+  slug: string;
+  role: OrganizationRole;
+}
+
+export interface ActiveOrganizationSyncResponse {
+  organization: ProvisionedOrganization;
+}
+
+export type OrganizationErrorCode = typeof OrganizationErrorCode[keyof typeof OrganizationErrorCode];
+
+
+export const OrganizationErrorCode = {
+  ACTIVE_ORGANIZATION_REQUIRED: 'ACTIVE_ORGANIZATION_REQUIRED',
+  ORGANIZATION_MEMBERSHIP_REQUIRED: 'ORGANIZATION_MEMBERSHIP_REQUIRED',
+} as const;
+
+export interface OrganizationError {
+  error: string;
+  code: OrganizationErrorCode;
 }
 
 export interface PlatformCount {
@@ -52,6 +207,194 @@ export interface FleetSummary {
   estimatedMonthlyValue: number;
   estimatedMonthlyCost: number;
   connectedPlatforms: number;
+}
+
+export type GenerateExecutiveReportRequestNarrativeMode = typeof GenerateExecutiveReportRequestNarrativeMode[keyof typeof GenerateExecutiveReportRequestNarrativeMode];
+
+
+export const GenerateExecutiveReportRequestNarrativeMode = {
+  deterministic: 'deterministic',
+  'ai-assisted': 'ai-assisted',
+} as const;
+
+export type GenerateExecutiveReportRequestTemplateId = typeof GenerateExecutiveReportRequestTemplateId[keyof typeof GenerateExecutiveReportRequestTemplateId];
+
+
+export const GenerateExecutiveReportRequestTemplateId = {
+  'board-brief': 'board-brief',
+  'performance-review': 'performance-review',
+  'risk-governance': 'risk-governance',
+} as const;
+
+export interface GenerateExecutiveReportRequest {
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  period?: string;
+  narrativeMode?: GenerateExecutiveReportRequestNarrativeMode;
+  templateId?: GenerateExecutiveReportRequestTemplateId;
+}
+
+export type ExecutiveMetricComparisonDirection = typeof ExecutiveMetricComparisonDirection[keyof typeof ExecutiveMetricComparisonDirection];
+
+
+export const ExecutiveMetricComparisonDirection = {
+  'higher-is-better': 'higher-is-better',
+  'lower-is-better': 'lower-is-better',
+  informational: 'informational',
+} as const;
+
+export interface ExecutiveMetricComparison {
+  /** @nullable */
+  current: number | null;
+  /** @nullable */
+  previous: number | null;
+  /** @nullable */
+  delta: number | null;
+  /** @nullable */
+  deltaPercent: number | null;
+  unit: string;
+  direction: ExecutiveMetricComparisonDirection;
+}
+
+export interface ExecutiveReportMetrics {
+  operationalScore: ExecutiveMetricComparison;
+  executionCount: ExecutiveMetricComparison;
+  successRate: ExecutiveMetricComparison;
+  averageDurationMs: ExecutiveMetricComparison;
+  costPerExecutionCents: ExecutiveMetricComparison;
+  escalationRate: ExecutiveMetricComparison;
+  errorRate: ExecutiveMetricComparison;
+}
+
+export interface ExecutiveLayerComparison {
+  efficacy: ExecutiveMetricComparison;
+  efficiency: ExecutiveMetricComparison;
+  adoption: ExecutiveMetricComparison;
+  governance: ExecutiveMetricComparison;
+  value: ExecutiveMetricComparison;
+}
+
+export interface ExecutiveReportPortfolio {
+  totalAgents: number;
+  activeAgents: number;
+  newAgents: number;
+  agentsWithExecution: number;
+  activeAlerts: number;
+  criticalAlerts: number;
+  verdicts: VerdictBreakdown;
+}
+
+export interface ExecutiveReportQuality {
+  score: number;
+  dataCoverage: number;
+  evaluationConfidence: number;
+  decisionReady: boolean;
+  limitations: string[];
+}
+
+export interface ExecutiveReportSection {
+  key: string;
+  title: string;
+  summary: string;
+  highlights: string[];
+  evidenceRefs: string[];
+}
+
+export type ExecutiveReportInsightSeverity = typeof ExecutiveReportInsightSeverity[keyof typeof ExecutiveReportInsightSeverity];
+
+
+export const ExecutiveReportInsightSeverity = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+  positive: 'positive',
+} as const;
+
+export interface ExecutiveReportInsight {
+  id: string;
+  category: string;
+  title: string;
+  narrative: string;
+  recommendation: string;
+  severity: ExecutiveReportInsightSeverity;
+  confidence: number;
+  evidenceRefs: string[];
+}
+
+export type ExecutiveReportStatus = typeof ExecutiveReportStatus[keyof typeof ExecutiveReportStatus];
+
+
+export const ExecutiveReportStatus = {
+  draft: 'draft',
+  published: 'published',
+  superseded: 'superseded',
+} as const;
+
+export type ExecutiveReportNarrativeSource = typeof ExecutiveReportNarrativeSource[keyof typeof ExecutiveReportNarrativeSource];
+
+
+export const ExecutiveReportNarrativeSource = {
+  deterministic: 'deterministic',
+  'ai-assisted': 'ai-assisted',
+} as const;
+
+export interface ExecutiveReport {
+  id: string;
+  period: string;
+  previousPeriod: string;
+  version: number;
+  status: ExecutiveReportStatus;
+  title: string;
+  executiveSummary: string;
+  generatedAt: string;
+  /** @nullable */
+  sourceWatermark?: string | null;
+  narrativeSource: ExecutiveReportNarrativeSource;
+  /** @nullable */
+  narrativeModel?: string | null;
+  /** @nullable */
+  promptVersion?: string | null;
+  templateId?: string;
+  metrics: ExecutiveReportMetrics;
+  layerComparison: ExecutiveLayerComparison;
+  portfolio: ExecutiveReportPortfolio;
+  quality: ExecutiveReportQuality;
+  sections: ExecutiveReportSection[];
+  insights: ExecutiveReportInsight[];
+}
+
+export type ExecutiveReportSummaryStatus = typeof ExecutiveReportSummaryStatus[keyof typeof ExecutiveReportSummaryStatus];
+
+
+export const ExecutiveReportSummaryStatus = {
+  draft: 'draft',
+  published: 'published',
+  superseded: 'superseded',
+} as const;
+
+export type ExecutiveReportSummaryNarrativeSource = typeof ExecutiveReportSummaryNarrativeSource[keyof typeof ExecutiveReportSummaryNarrativeSource];
+
+
+export const ExecutiveReportSummaryNarrativeSource = {
+  deterministic: 'deterministic',
+  'ai-assisted': 'ai-assisted',
+} as const;
+
+export interface ExecutiveReportSummary {
+  id: string;
+  period: string;
+  version: number;
+  status: ExecutiveReportSummaryStatus;
+  title: string;
+  executiveSummary: string;
+  generatedAt: string;
+  narrativeSource: ExecutiveReportSummaryNarrativeSource;
+  qualityScore: number;
+  decisionReady: boolean;
+}
+
+export interface ExecutiveReportList {
+  reports: ExecutiveReportSummary[];
 }
 
 export type FleetLayerScoreKey = typeof FleetLayerScoreKey[keyof typeof FleetLayerScoreKey];
@@ -199,6 +542,12 @@ export interface Agent {
   areaId?: string | null;
   /** Nome da área, desnormalizado para a lista não precisar de segunda chamada. */
   areaName?: string | null;
+  /** Responsável humano pelo resultado de negócio do agente. */
+  businessOwner?: string;
+  /** Responsável humano pela operação técnica do agente. */
+  technicalOwner?: string;
+  /** Sponsor responsável pelos limites e pela governança. */
+  governanceSponsor?: string;
   role: string;
   platform: string;
   version: string;
@@ -231,11 +580,34 @@ export const AgentIdentityAutonomyLevel = {
   restricted: 'restricted',
 } as const;
 
+export type MetricContractDefinitionLayer = typeof MetricContractDefinitionLayer[keyof typeof MetricContractDefinitionLayer];
+
+
+export const MetricContractDefinitionLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export interface MetricContractDefinition {
+  /** Identidade da métrica herdada do catálogo da organização. */
+  catalogMetricKey?: string;
+  layer: MetricContractDefinitionLayer;
+  label: string;
+  unit: string;
+  target?: string;
+  rationale?: string;
+}
+
 export interface BusinessCase {
   baseline: string;
   targetPayback: string;
   actualPayback: string;
   description: string;
+  /** Métricas contratadas na admissão, preservadas independentemente da telemetria observada. */
+  metricContracts?: MetricContractDefinition[];
 }
 
 export interface AgentIdentity {
@@ -446,9 +818,31 @@ export type ConnectorStatus = typeof ConnectorStatus[keyof typeof ConnectorStatu
 
 
 export const ConnectorStatus = {
-  connected: 'connected',
   available: 'available',
+  configured: 'configured',
+  connected: 'connected',
   syncing: 'syncing',
+  degraded: 'degraded',
+  error: 'error',
+} as const;
+
+export type ConnectorMode = typeof ConnectorMode[keyof typeof ConnectorMode];
+
+
+export const ConnectorMode = {
+  native: 'native',
+  universal: 'universal',
+  runtime: 'runtime',
+} as const;
+
+export type ConnectorHealth = typeof ConnectorHealth[keyof typeof ConnectorHealth];
+
+
+export const ConnectorHealth = {
+  unverified: 'unverified',
+  healthy: 'healthy',
+  degraded: 'degraded',
+  error: 'error',
 } as const;
 
 export interface Connector {
@@ -456,10 +850,21 @@ export interface Connector {
   platform: string;
   name: string;
   status: ConnectorStatus;
+  mode: ConnectorMode;
+  health: ConnectorHealth;
   agentsDiscovered: number;
   category: string;
   /** @nullable */
   lastSyncAt?: string | null;
+  /** @nullable */
+  lastTestedAt?: string | null;
+  /** @nullable */
+  lastEventAt?: string | null;
+  nextAction: string;
+  /** One-time connector ingestion key. Present only in the configuration response. */
+  setupApiKey?: string;
+  /** Relative ingestion endpoint for the universal contract. */
+  setupEndpoint?: string;
 }
 
 export type ConnectorCapabilityMode = typeof ConnectorCapabilityMode[keyof typeof ConnectorCapabilityMode];
@@ -673,6 +1078,8 @@ export const DraftMetricLayer = {
 } as const;
 
 export interface DraftMetric {
+  /** Identidade da métrica herdada do catálogo da organização. */
+  catalogMetricKey?: string;
   layer: DraftMetricLayer;
   label: string;
   unit: string;
@@ -683,6 +1090,16 @@ export interface DraftMetric {
 }
 
 export interface AgentInput {
+  /**
+     * Stable identifier emitted by the external runtime in telemetry envelopes.
+     * @minLength 1
+     */
+  externalId?: string;
+  /**
+     * Connector selected as the authenticated source of discovery and telemetry for this agent.
+     * @minLength 1
+     */
+  connectorId?: string;
   /** Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como "sem área" e a atribuição fica pendente. */
   areaId?: string | null;
   /** @minLength 1 */
@@ -1027,6 +1444,8 @@ export interface DiscoveredAgent {
   name: string;
   role: string;
   platform: string;
+  /** Repository or workload URL that can be sent to the fast assessment. */
+  sourceUrl?: string;
   signals: string[];
   proposedMetrics: ProposedMetric[];
   proposedVerdict?: DiscoveredAgentProposedVerdict;
@@ -1154,6 +1573,383 @@ export interface FleetBenchmarks {
   fleetAvgAccuracy: number;
 }
 
+export type KpiDomain = typeof KpiDomain[keyof typeof KpiDomain];
+
+
+export const KpiDomain = {
+  atendimento: 'atendimento',
+  'vendas-crm': 'vendas-crm',
+  'engenharia-it': 'engenharia-it',
+  'risco-financas-rh': 'risco-financas-rh',
+  'operacoes-backoffice': 'operacoes-backoffice',
+  'workforce-hibrida': 'workforce-hibrida',
+} as const;
+
+export type KpiCapability = typeof KpiCapability[keyof typeof KpiCapability];
+
+
+export const KpiCapability = {
+  'business-outcome': 'business-outcome',
+  'quality-evaluation': 'quality-evaluation',
+  'a2a-orchestration': 'a2a-orchestration',
+  'human-agent-collaboration': 'human-agent-collaboration',
+  'discovery-observability': 'discovery-observability',
+  'runtime-resilience': 'runtime-resilience',
+  'data-quality': 'data-quality',
+} as const;
+
+export interface KpiFreshnessPolicy {
+  expectedWithinMinutes: number;
+  staleAfterMinutes: number;
+  expiresAfterMinutes: number;
+}
+
+export interface KpiConfidencePolicy {
+  minimum: number;
+  decisionGrade: number;
+}
+
+export type KpiEvidencePolicyAllowedItem = typeof KpiEvidencePolicyAllowedItem[keyof typeof KpiEvidencePolicyAllowedItem];
+
+
+export const KpiEvidencePolicyAllowedItem = {
+  observed: 'observed',
+  inferred: 'inferred',
+  synthetic: 'synthetic',
+} as const;
+
+export interface KpiEvidencePolicy {
+  allowed: KpiEvidencePolicyAllowedItem[];
+  minConfidence: number;
+  auditSampleRate: number;
+}
+
+export type KpiOperationalMetadataCadence = typeof KpiOperationalMetadataCadence[keyof typeof KpiOperationalMetadataCadence];
+
+
+export const KpiOperationalMetadataCadence = {
+  'per-run': 'per-run',
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+} as const;
+
+export type KpiOperationalMetadataBaseline = typeof KpiOperationalMetadataBaseline[keyof typeof KpiOperationalMetadataBaseline];
+
+
+export const KpiOperationalMetadataBaseline = {
+  required: 'required',
+  optional: 'optional',
+  'not-applicable': 'not-applicable',
+} as const;
+
+export type KpiOperationalMetadataDirection = typeof KpiOperationalMetadataDirection[keyof typeof KpiOperationalMetadataDirection];
+
+
+export const KpiOperationalMetadataDirection = {
+  'higher-is-better': 'higher-is-better',
+  'lower-is-better': 'lower-is-better',
+  'target-range': 'target-range',
+  informational: 'informational',
+} as const;
+
+export type KpiOperationalMetadataDecisionImpact = typeof KpiOperationalMetadataDecisionImpact[keyof typeof KpiOperationalMetadataDecisionImpact];
+
+
+export const KpiOperationalMetadataDecisionImpact = {
+  promote: 'promote',
+  mentor: 'mentor',
+  retire: 'retire',
+  observation: 'observation',
+} as const;
+
+export interface KpiOperationalMetadata {
+  capability: KpiCapability;
+  cadence: KpiOperationalMetadataCadence;
+  freshness: KpiFreshnessPolicy;
+  sourceSignals: string[];
+  minSampleSize: number;
+  confidence: KpiConfidencePolicy;
+  baseline: KpiOperationalMetadataBaseline;
+  direction: KpiOperationalMetadataDirection;
+  owner: string;
+  decisionImpact: KpiOperationalMetadataDecisionImpact;
+  guardrail: boolean;
+}
+
+export type KpiContractLayer = typeof KpiContractLayer[keyof typeof KpiContractLayer];
+
+
+export const KpiContractLayer = {
+  efficacy: 'efficacy',
+  efficiency: 'efficiency',
+  adoption: 'adoption',
+  governance: 'governance',
+  value: 'value',
+} as const;
+
+export type KpiContractDirection = typeof KpiContractDirection[keyof typeof KpiContractDirection];
+
+
+export const KpiContractDirection = {
+  'higher-is-better': 'higher-is-better',
+  'lower-is-better': 'lower-is-better',
+  'target-range': 'target-range',
+  informational: 'informational',
+} as const;
+
+export type KpiContractCadence = typeof KpiContractCadence[keyof typeof KpiContractCadence];
+
+
+export const KpiContractCadence = {
+  'per-run': 'per-run',
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+} as const;
+
+export type KpiContractBaseline = typeof KpiContractBaseline[keyof typeof KpiContractBaseline];
+
+
+export const KpiContractBaseline = {
+  required: 'required',
+  optional: 'optional',
+  'not-applicable': 'not-applicable',
+} as const;
+
+export type KpiContractDecisionImpact = typeof KpiContractDecisionImpact[keyof typeof KpiContractDecisionImpact];
+
+
+export const KpiContractDecisionImpact = {
+  promote: 'promote',
+  mentor: 'mentor',
+  retire: 'retire',
+  observation: 'observation',
+} as const;
+
+export interface KpiContract {
+  key: string;
+  domain: KpiDomain;
+  capability: KpiCapability;
+  area: string;
+  layer: KpiContractLayer;
+  label: string;
+  purpose: string;
+  unit: string;
+  direction: KpiContractDirection;
+  formula: string;
+  sourceSignals: string[];
+  cadence: KpiContractCadence;
+  freshness: KpiFreshnessPolicy;
+  confidence: KpiConfidencePolicy;
+  baseline: KpiContractBaseline;
+  target?: string;
+  owner: string;
+  decisionImpact: KpiContractDecisionImpact;
+  guardrail: boolean;
+  minSampleSize: number;
+  evidence: KpiEvidencePolicy;
+  rationale: string;
+}
+
+export interface KpiDomainSummary {
+  key: KpiDomain;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+export interface KpiContractsResponse {
+  domains: KpiDomainSummary[];
+  contracts: KpiContract[];
+  total: number;
+}
+
+export interface KpiDomainContractsResponse {
+  domain: KpiDomain;
+  contracts: KpiContract[];
+}
+
+export interface KpiCapabilitySummary {
+  key: KpiCapability;
+  label: string;
+}
+
+export type KpiAdoptionRuleStage = typeof KpiAdoptionRuleStage[keyof typeof KpiAdoptionRuleStage];
+
+
+export const KpiAdoptionRuleStage = {
+  baseline: 'baseline',
+  pilot: 'pilot',
+  scale: 'scale',
+} as const;
+
+export interface KpiAdoptionRule {
+  stage: KpiAdoptionRuleStage;
+  label: string;
+  exitCriteria: string[];
+}
+
+export interface KpiTaxonomy {
+  capabilities: KpiCapabilitySummary[];
+  adoptionRules: KpiAdoptionRule[];
+}
+
+export type FleetInsightFreshnessStatus = typeof FleetInsightFreshnessStatus[keyof typeof FleetInsightFreshnessStatus];
+
+
+export const FleetInsightFreshnessStatus = {
+  fresh: 'fresh',
+  aging: 'aging',
+  stale: 'stale',
+  expired: 'expired',
+  missing: 'missing',
+} as const;
+
+export interface FleetInsightFreshness {
+  status: FleetInsightFreshnessStatus;
+  /** @nullable */
+  ageMinutes: number | null;
+  score: number;
+  decisionEligible: boolean;
+}
+
+export type FleetInsightConfidenceBand = typeof FleetInsightConfidenceBand[keyof typeof FleetInsightConfidenceBand];
+
+
+export const FleetInsightConfidenceBand = {
+  insufficient: 'insufficient',
+  indicative: 'indicative',
+  reliable: 'reliable',
+  'decision-grade': 'decision-grade',
+} as const;
+
+export interface FleetInsightConfidence {
+  band: FleetInsightConfidenceBand;
+  score: number;
+  decisionEligible: boolean;
+}
+
+export type FleetInsightTrendTrend = typeof FleetInsightTrendTrend[keyof typeof FleetInsightTrendTrend];
+
+
+export const FleetInsightTrendTrend = {
+  improving: 'improving',
+  stable: 'stable',
+  degrading: 'degrading',
+  'insufficient-data': 'insufficient-data',
+} as const;
+
+export type FleetInsightTrendAnomaly = typeof FleetInsightTrendAnomaly[keyof typeof FleetInsightTrendAnomaly];
+
+
+export const FleetInsightTrendAnomaly = {
+  spike: 'spike',
+  drop: 'drop',
+  none: 'none',
+  'insufficient-data': 'insufficient-data',
+} as const;
+
+export interface FleetInsightTrend {
+  trend: FleetInsightTrendTrend;
+  anomaly: FleetInsightTrendAnomaly;
+  /** @nullable */
+  relativeChangePercent: number | null;
+  /** @nullable */
+  latestZScore: number | null;
+  pointsAnalyzed: number;
+}
+
+export type FleetInsightAgentBand = typeof FleetInsightAgentBand[keyof typeof FleetInsightAgentBand];
+
+
+export const FleetInsightAgentBand = {
+  critical: 'critical',
+  'at-risk': 'at-risk',
+  controlled: 'controlled',
+  excellent: 'excellent',
+} as const;
+
+export interface FleetInsightAgent {
+  id: string;
+  name: string;
+  platform: string;
+  operationalScore: number;
+  band: FleetInsightAgentBand;
+  freshness: FleetInsightFreshness;
+  confidence: FleetInsightConfidence;
+  trend: FleetInsightTrend;
+  decisionEligible: boolean;
+}
+
+export type FleetOperationalInsightSeverity = typeof FleetOperationalInsightSeverity[keyof typeof FleetOperationalInsightSeverity];
+
+
+export const FleetOperationalInsightSeverity = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+export type FleetOperationalInsightFreshness = typeof FleetOperationalInsightFreshness[keyof typeof FleetOperationalInsightFreshness];
+
+
+export const FleetOperationalInsightFreshness = {
+  fresh: 'fresh',
+  aging: 'aging',
+  stale: 'stale',
+  expired: 'expired',
+  missing: 'missing',
+} as const;
+
+export type FleetOperationalInsightPriority = typeof FleetOperationalInsightPriority[keyof typeof FleetOperationalInsightPriority];
+
+
+export const FleetOperationalInsightPriority = {
+  now: 'now',
+  next: 'next',
+  watch: 'watch',
+} as const;
+
+export interface FleetOperationalInsight {
+  id: string;
+  entityId: string;
+  entityName: string;
+  category: string;
+  title: string;
+  explanation: string;
+  recommendation: string;
+  severity: FleetOperationalInsightSeverity;
+  impact: number;
+  confidence: number;
+  freshness: FleetOperationalInsightFreshness;
+  guardrail: boolean;
+  affectedExecutions?: number;
+  slaRisk?: boolean;
+  priorityScore: number;
+  priority: FleetOperationalInsightPriority;
+  dueWithinMinutes: number;
+}
+
+export interface FleetInsightCoverage {
+  totalAgents: number;
+  evaluatedAgents: number;
+  freshAgents: number;
+  staleAgents: number;
+  decisionGradeAgents: number;
+}
+
+export interface FleetInsights {
+  generatedAt: string;
+  fleetOperationalScore: number;
+  coverage: FleetInsightCoverage;
+  agents: FleetInsightAgent[];
+  insights: FleetOperationalInsight[];
+}
+
 export type CatalogMetricLayer = typeof CatalogMetricLayer[keyof typeof CatalogMetricLayer];
 
 
@@ -1202,14 +1998,27 @@ export interface MetricStarterKitMetric {
   layer: MetricStarterKitMetricLayer;
   unit: string;
   target: string;
+  operationalMetadata?: KpiOperationalMetadata;
 }
+
+export type MetricStarterKitAdoptionStage = typeof MetricStarterKitAdoptionStage[keyof typeof MetricStarterKitAdoptionStage];
+
+
+export const MetricStarterKitAdoptionStage = {
+  baseline: 'baseline',
+  pilot: 'pilot',
+  scale: 'scale',
+} as const;
 
 export interface MetricStarterKit {
   key: string;
   label: string;
+  scenario?: string;
+  adoptionStage?: MetricStarterKitAdoptionStage;
   objective: string;
   guidance: string;
   vertical: string;
+  requiredSignals?: string[];
   metrics: MetricStarterKitMetric[];
 }
 
@@ -1371,6 +2180,107 @@ export interface VerdictActionUpdate {
   owner?: string;
 }
 
+export type ProfessionalPlanActionActorType = typeof ProfessionalPlanActionActorType[keyof typeof ProfessionalPlanActionActorType];
+
+
+export const ProfessionalPlanActionActorType = {
+  muster: 'muster',
+  agent: 'agent',
+  human: 'human',
+} as const;
+
+export type ProfessionalPlanActionStatus = typeof ProfessionalPlanActionStatus[keyof typeof ProfessionalPlanActionStatus];
+
+
+export const ProfessionalPlanActionStatus = {
+  ready: 'ready',
+  in_progress: 'in_progress',
+  blocked: 'blocked',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface ProfessionalPlanAction {
+  sequence: number;
+  actorType: ProfessionalPlanActionActorType;
+  title: string;
+  description: string;
+  owner: string;
+  status: ProfessionalPlanActionStatus;
+  /** @nullable */
+  dueAt: string | null;
+  evidence?: string;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  updatedBy?: string | null;
+}
+
+export type ProfessionalPlanActionUpdateStatus = typeof ProfessionalPlanActionUpdateStatus[keyof typeof ProfessionalPlanActionUpdateStatus];
+
+
+export const ProfessionalPlanActionUpdateStatus = {
+  ready: 'ready',
+  in_progress: 'in_progress',
+  blocked: 'blocked',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface ProfessionalPlanActionUpdate {
+  status: ProfessionalPlanActionUpdateStatus;
+  evidence?: string;
+}
+
+export type ProfessionalPlanDecisionInputDecision = typeof ProfessionalPlanDecisionInputDecision[keyof typeof ProfessionalPlanDecisionInputDecision];
+
+
+export const ProfessionalPlanDecisionInputDecision = {
+  approved: 'approved',
+  adjustment_requested: 'adjustment_requested',
+  rejected: 'rejected',
+} as const;
+
+export interface ProfessionalPlanDecisionInput {
+  /** @minLength 1 */
+  professionalName: string;
+  /** @minLength 1 */
+  recommendation: string;
+  decision: ProfessionalPlanDecisionInputDecision;
+  /** @minLength 3 */
+  reason: string;
+  /** @minLength 1 */
+  owner: string;
+}
+
+export type ProfessionalPlanDecisionDecision = typeof ProfessionalPlanDecisionDecision[keyof typeof ProfessionalPlanDecisionDecision];
+
+
+export const ProfessionalPlanDecisionDecision = {
+  approved: 'approved',
+  adjustment_requested: 'adjustment_requested',
+  rejected: 'rejected',
+} as const;
+
+export interface ProfessionalPlanDecision {
+  id: string;
+  /** @nullable */
+  agentId: string | null;
+  professionalRef: string;
+  professionalName: string;
+  recommendation: string;
+  decision: ProfessionalPlanDecisionDecision;
+  reason: string;
+  owner: string;
+  decidedBy: string;
+  actions: ProfessionalPlanAction[];
+  /** @nullable */
+  nextReviewAt: string | null;
+  decidedAt: string;
+}
+
 export interface AgentApiKeyInput {
   /** Nome operacional da credencial (ex.- "produção", "staging"). */
   label?: string;
@@ -1523,6 +2433,229 @@ export interface ReevaluateOutcome {
   rationale: string;
   rulesFired?: string[];
 }
+
+export type AccessPermission = typeof AccessPermission[keyof typeof AccessPermission];
+
+
+export const AccessPermission = {
+  'agents:read': 'agents:read',
+  'agents:operate': 'agents:operate',
+  'teams:read': 'teams:read',
+  'teams:manage': 'teams:manage',
+  'journeys:read': 'journeys:read',
+  'journeys:manage': 'journeys:manage',
+  'decisions:approve': 'decisions:approve',
+  'governance:read': 'governance:read',
+  'governance:manage': 'governance:manage',
+  'reports:read': 'reports:read',
+  'connectors:manage': 'connectors:manage',
+  'members:manage': 'members:manage',
+} as const;
+
+export type AccessScopeType = typeof AccessScopeType[keyof typeof AccessScopeType];
+
+
+export const AccessScopeType = {
+  organization: 'organization',
+  area: 'area',
+  team: 'team',
+} as const;
+
+export interface AccessGroupMember {
+  id: string;
+  userId: string;
+  userName: string;
+  /** @nullable */
+  userEmail: string | null;
+  createdAt: string;
+}
+
+export interface AccessGroupMemberInput {
+  userId: string;
+  userName: string;
+  /** @nullable */
+  userEmail?: string | null;
+}
+
+export interface AccessGroup {
+  id: string;
+  name: string;
+  description: string;
+  scopeType: AccessScopeType;
+  /** @nullable */
+  scopeId: string | null;
+  scopeLabel: string;
+  permissions: AccessPermission[];
+  memberCount?: number;
+  members?: AccessGroupMember[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccessGroupInput {
+  name: string;
+  description: string;
+  scopeType: AccessScopeType;
+  /** @nullable */
+  scopeId?: string | null;
+  /** @minItems 1 */
+  permissions: AccessPermission[];
+}
+
+export type AccessControlOverviewCurrentUserOrgRole = typeof AccessControlOverviewCurrentUserOrgRole[keyof typeof AccessControlOverviewCurrentUserOrgRole];
+
+
+export const AccessControlOverviewCurrentUserOrgRole = {
+  owner: 'owner',
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export type AccessControlOverviewCurrentUser = {
+  userId: string;
+  orgRole: AccessControlOverviewCurrentUserOrgRole;
+  permissions: AccessPermission[];
+};
+
+export type AccessControlOverviewPresetsItem = {
+  id: string;
+  name: string;
+  description: string;
+  permissions: AccessPermission[];
+};
+
+export interface AccessScope {
+  id: string;
+  name: string;
+}
+
+export type AccessControlOverviewScopes = {
+  areas: AccessScope[];
+  teams: AccessScope[];
+};
+
+export interface AccessControlOverview {
+  currentUser: AccessControlOverviewCurrentUser;
+  presets: AccessControlOverviewPresetsItem[];
+  groups: AccessGroup[];
+  scopes: AccessControlOverviewScopes;
+}
+
+export interface RealtimeGovernanceSummary {
+  totalAgents: number;
+  assessedAgents: number;
+  critical: number;
+  attention: number;
+  insufficientData: number;
+  hallucinationRisk: number;
+  regressions: number;
+  /** @nullable */
+  latestAssessment: string | null;
+}
+
+export type RealtimeGovernanceAgentGovernanceStatus = typeof RealtimeGovernanceAgentGovernanceStatus[keyof typeof RealtimeGovernanceAgentGovernanceStatus];
+
+
+export const RealtimeGovernanceAgentGovernanceStatus = {
+  healthy: 'healthy',
+  attention: 'attention',
+  critical: 'critical',
+  insufficient_data: 'insufficient_data',
+  not_assessed: 'not_assessed',
+} as const;
+
+export type RealtimeGovernanceAgentHallucinationStatus = typeof RealtimeGovernanceAgentHallucinationStatus[keyof typeof RealtimeGovernanceAgentHallucinationStatus];
+
+
+export const RealtimeGovernanceAgentHallucinationStatus = {
+  healthy: 'healthy',
+  warning: 'warning',
+  critical: 'critical',
+  not_measured: 'not_measured',
+} as const;
+
+export type RealtimeGovernanceAgentRegressionStatus = typeof RealtimeGovernanceAgentRegressionStatus[keyof typeof RealtimeGovernanceAgentRegressionStatus];
+
+
+export const RealtimeGovernanceAgentRegressionStatus = {
+  insufficient_data: 'insufficient_data',
+  stable: 'stable',
+  drift: 'drift',
+  warning: 'warning',
+  regression: 'regression',
+} as const;
+
+export type RealtimeGovernanceAgentSignalsItem = { [key: string]: unknown };
+
+export interface RealtimeGovernanceAgent {
+  agentId: string;
+  agentName: string;
+  platform: string;
+  version: string;
+  agentStatus: string;
+  healthScore: number;
+  governanceStatus: RealtimeGovernanceAgentGovernanceStatus;
+  /** @nullable */
+  directionScore?: number | null;
+  /** @nullable */
+  protectionScore?: number | null;
+  /** @nullable */
+  proofScore?: number | null;
+  /** @nullable */
+  contextHealthScore?: number | null;
+  hallucinationStatus: RealtimeGovernanceAgentHallucinationStatus;
+  /** @nullable */
+  groundedOutputRate?: number | null;
+  hallucinationFlags: number;
+  auditedOutputs: number;
+  regressionStatus: RealtimeGovernanceAgentRegressionStatus;
+  regressionAttributable: boolean;
+  /** @nullable */
+  inputDrift?: number | null;
+  /** @nullable */
+  baselineReleaseId?: string | null;
+  /** @nullable */
+  currentReleaseId?: string | null;
+  signals: RealtimeGovernanceAgentSignalsItem[];
+  recommendations: string[];
+  evidenceCount: number;
+  sourceEventCount: number;
+  /** @nullable */
+  assessedAt: string | null;
+}
+
+export type RealtimeGovernanceResponseFreshness = {
+  serverTime: string;
+  pollingRecommendedMs: number;
+  projectionTargetSeconds: number;
+};
+
+export interface RealtimeGovernanceResponse {
+  summary: RealtimeGovernanceSummary;
+  freshness: RealtimeGovernanceResponseFreshness;
+  items: RealtimeGovernanceAgent[];
+}
+
+export type ListContinuousTelemetryActivityParams = {
+after?: string;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+};
+
+export type StreamContinuousTelemetryActivityParams = {
+after?: string;
+};
+
+export type ListExecutiveReportsParams = {
+/**
+ * @minimum 1
+ * @maximum 24
+ */
+limit?: number;
+};
 
 export type ListFleetAlertsParams = {
 severity?: ListFleetAlertsSeverity;

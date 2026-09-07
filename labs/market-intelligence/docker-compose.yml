@@ -1,0 +1,62 @@
+x-market-lab: &market-lab
+  build:
+    context: .
+  restart: unless-stopped
+  environment:
+    DATABASE_URL: postgresql://market_lab:market_lab@database:5432/market_lab
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    LLM_MODEL: ${LLM_MODEL:-gpt-5-mini}
+    LLM_BASE_URL: ${LLM_BASE_URL:-}
+    TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+    DAILY_RUN_HOUR: ${DAILY_RUN_HOUR:-2}
+    DAILY_RUN_MINUTE: ${DAILY_RUN_MINUTE:-30}
+    TIMEZONE: ${TIMEZONE:-America/Sao_Paulo}
+    RUN_ON_START: ${RUN_ON_START:-true}
+    MAX_ITEMS_PER_SOURCE: ${MAX_ITEMS_PER_SOURCE:-300}
+    MAX_ENRICHMENT_ITEMS: ${MAX_ENRICHMENT_ITEMS:-30}
+    MAX_MARKET_SEARCHES: ${MAX_MARKET_SEARCHES:-8}
+    USER_AGENT: ${USER_AGENT:-Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36}
+    AGNO_TELEMETRY: "false"
+    OTEL_SDK_DISABLED: "true"
+  depends_on:
+    database:
+      condition: service_healthy
+  networks:
+    - market-lab
+
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: market_lab
+      POSTGRES_USER: market_lab
+      POSTGRES_PASSWORD: market_lab
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U market_lab -d market_lab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - market-lab-data:/var/lib/postgresql/data
+    networks:
+      - market-lab
+
+  dashboard:
+    <<: *market-lab
+    command: ["uvicorn", "market_lab.web:app", "--host", "0.0.0.0", "--port", "8095"]
+    ports:
+      - "8095:8095"
+
+  scheduler:
+    <<: *market-lab
+    command: ["market-lab", "scheduler"]
+    healthcheck:
+      disable: true
+
+volumes:
+  market-lab-data:
+
+networks:
+  market-lab:
+    driver: bridge

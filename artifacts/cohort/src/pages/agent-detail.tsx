@@ -42,6 +42,11 @@ import {
   AlertTriangle,
   Eye,
   Plug,
+  Gauge,
+  Clock3,
+  ShieldAlert,
+  ShieldCheck,
+  Database,
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +80,11 @@ import {
   detectorPresentation,
 } from "@/components/carteira";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
+import {
+  OperationalSignal,
+  RefreshStatusBar,
+} from "@/components/mission-control/operational-status";
+import { relativeAge } from "@/components/mission-control/presentation";
 
 const AUTONOMY_LABEL: Record<Lang, Record<string, string>> = {
   pt: {
@@ -326,7 +336,13 @@ function TelemetrySection({
   const { data: summary, isLoading, isError, refetch } = useGetAgentTelemetry(agentId, window, {
     query: { enabled: !!agentId, queryKey: getGetAgentTelemetryQueryKey(agentId, window) },
   });
-  const { data: supervision } = useReadAgentSupervision(agentId, {
+  const {
+    data: supervision,
+    isError: supervisionError,
+    isFetching: fetchingSupervision,
+    dataUpdatedAt: supervisionUpdatedAt,
+    refetch: refetchSupervision,
+  } = useReadAgentSupervision(agentId, {
     query: { enabled: !!agentId, queryKey: ["agent-supervision", agentId], refetchInterval: 10_000 },
   });
   const reevaluate = useReevaluateAgent();
@@ -408,6 +424,7 @@ function TelemetrySection({
                 size="sm"
                 className="font-mono text-xs"
                 onClick={() => setWindow(w)}
+                aria-pressed={w === window}
               >
                 {w}
               </Button>
@@ -424,6 +441,23 @@ function TelemetrySection({
               Reavaliar com telemetria
             </Button>
           </div>
+        </div>
+
+        <div className="border-b border-card-border p-4">
+          {supervisionError ? (
+            <div className="flex flex-col gap-3 rounded-lg border border-chart-3/25 bg-chart-3/[0.04] p-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <span>O estado de supervisão não pôde ser confirmado. A telemetria histórica continua disponível abaixo.</span>
+              <Button variant="outline" size="sm" onClick={() => void refetchSupervision()}>Tentar novamente</Button>
+            </div>
+          ) : (
+            <RefreshStatusBar
+              updatedAt={supervisionUpdatedAt}
+              isRefreshing={fetchingSupervision}
+              cadence="10s"
+              onRefresh={() => void refetchSupervision()}
+              sourceLabel="Endpoint de heartbeat"
+            />
+          )}
         </div>
 
         {isLoading ? (
@@ -494,6 +528,7 @@ function TelemetrySection({
                   Último heartbeat: <span className="font-mono">{supervision.lastHeartbeatAt ? new Date(supervision.lastHeartbeatAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—"}</span>
                 </span>
                 <span>idade <span className="font-mono">{supervision.ageSeconds >= 0 ? `${supervision.ageSeconds}s` : "—"}</span></span>
+                <span>SLA esperado <span className="font-mono">{supervision.intervalSeconds}s</span></span>
                 {supervision.runtime && <span>runtime <span className="font-mono">{supervision.runtime}</span></span>}
               </div>
             )}
@@ -662,12 +697,25 @@ export default function AgentDetailPage() {
   const t = carteiraI18n[lang][audience];
   const p = PAGE_I18N[lang];
 
-  const { data: detail, isLoading, isError, refetch } = useGetAgent(agentId, {
-    query: { enabled: !!agentId, queryKey: getGetAgentQueryKey(agentId) },
+  const {
+    data: detail,
+    isLoading,
+    isError,
+    isFetching,
+    dataUpdatedAt: detailUpdatedAt,
+    refetch,
+  } = useGetAgent(agentId, {
+    query: { enabled: !!agentId, queryKey: getGetAgentQueryKey(agentId), refetchInterval: 30_000 },
   });
 
-  const { data: allAlerts, isError: alertsError } = useListFleetAlerts(undefined, {
-    query: { queryKey: getListFleetAlertsQueryKey() },
+  const {
+    data: allAlerts,
+    isError: alertsError,
+    isFetching: fetchingAlerts,
+    dataUpdatedAt: alertsUpdatedAt,
+    refetch: refetchAlerts,
+  } = useListFleetAlerts(undefined, {
+    query: { queryKey: getListFleetAlertsQueryKey(), refetchInterval: 30_000 },
   });
 
   const decideVerdict = useDecideVerdict();
@@ -763,6 +811,9 @@ export default function AgentDetailPage() {
   const { agent, identity, owners, latestEvaluation, currentVerdict } = detail;
   const agentAlerts = (allAlerts ?? []).filter((a) => a.agentId === agent.id && a.status === "active");
   const verdict = currentVerdict ?? undefined;
+  const controlUpdatedAt = Math.min(
+    ...[detailUpdatedAt, alertsUpdatedAt].filter((timestamp) => timestamp > 0),
+  );
 
   const cardBase = "workspace-panel rounded-xl border border-card-border bg-card/90";
 
@@ -774,6 +825,52 @@ export default function AgentDetailPage() {
           <p className="text-[11px] italic text-muted-foreground">{t.audienceHint}</p>
           <AudienceToggle audience={audience} onChange={setAudience} />
         </div>
+
+        <section aria-labelledby="agent-360-title" className="space-y-4">
+          <div>
+            <Eyebrow>Agent 360</Eyebrow>
+            <h2 id="agent-360-title" className="mt-1 font-serif text-2xl font-medium tracking-tight">
+              Estado, evidência e decisão em uma leitura
+            </h2>
+          </div>
+          <RefreshStatusBar
+            updatedAt={Number.isFinite(controlUpdatedAt) ? controlUpdatedAt : undefined}
+            isRefreshing={isFetching || fetchingAlerts}
+            cadence="30s"
+            onRefresh={() => void Promise.all([refetch(), refetchAlerts()])}
+            sourceLabel="Perfil, avaliação e alertas"
+          />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <OperationalSignal
+              icon={Gauge}
+              label="Saúde consolidada"
+              value={`${agent.healthScore}/100`}
+              detail={`Veredito atual: ${agent.currentVerdict}`}
+              tone={agent.healthScore >= 80 ? "stable" : agent.healthScore >= 60 ? "attention" : "critical"}
+            />
+            <OperationalSignal
+              icon={ShieldCheck}
+              label="Confiança do veredito"
+              value={`${Math.round(verdict?.confidence ?? agent.verdictConfidence)}%`}
+              detail={verdict?.executionWindow ? `janela ${verdict.executionWindow}` : "janela não informada"}
+              tone={(verdict?.confidence ?? agent.verdictConfidence) >= 75 ? "stable" : "attention"}
+            />
+            <OperationalSignal
+              icon={Clock3}
+              label="Última avaliação"
+              value={relativeAge(latestEvaluation.evaluatedAt)}
+              detail={latestEvaluation.window || "janela não informada"}
+              tone="neutral"
+            />
+            <OperationalSignal
+              icon={ShieldAlert}
+              label="Incidentes ativos"
+              value={agentAlerts.length}
+              detail={agentAlerts.length > 0 ? "requerem leitura e encaminhamento" : "nenhum alerta ativo retornado"}
+              tone={agentAlerts.length > 0 ? "critical" : "stable"}
+            />
+          </div>
+        </section>
 
         {/* ===== 01 · Carteira de Trabalho ===== */}
         <section>
@@ -922,6 +1019,15 @@ export default function AgentDetailPage() {
         {/* ===== 02 · Avaliação de Desempenho ===== */}
         <section>
           <SectionHeader number="02" title={t.sec02.title} caption={t.sec02.caption} />
+          <div className={`${cardBase} mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4`}>
+            <div className="flex items-start gap-2">
+              <Database className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div><Eyebrow>Origem da evidência</Eyebrow><p className="mt-1 text-xs text-foreground">Não classificada por este endpoint</p></div>
+            </div>
+            <div><Eyebrow>Janela</Eyebrow><p className="mt-1 font-mono text-xs text-foreground">{latestEvaluation.window || "—"}</p></div>
+            <div><Eyebrow>Avaliada</Eyebrow><p className="mt-1 text-xs text-foreground">{new Date(latestEvaluation.evaluatedAt).toLocaleString(localeOf(lang))}</p></div>
+            <div><Eyebrow>Confiança</Eyebrow><p className="mt-1 font-mono text-xs text-foreground">{Math.round(latestEvaluation.verdictConfidence)}%</p></div>
+          </div>
           {latestEvaluation.layers.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {latestEvaluation.layers.map((layer) => {
@@ -1074,22 +1180,18 @@ export default function AgentDetailPage() {
                     <Eyebrow>{t.nextActions}</Eyebrow>
                     <div className="mt-4 space-y-4">
                       {verdict.nextActions.map((action, idx) => (
-                        <div key={idx} className="grid grid-cols-12 items-start gap-3">
-                          <div className="col-span-1">
+                        <div key={idx} className="flex items-start gap-3 rounded-lg border border-card-border/60 bg-secondary/15 p-3">
+                          <div className="shrink-0">
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary font-serif text-sm text-primary-foreground">
                               {idx + 1}
                             </div>
                           </div>
-                          <div className="col-span-2 pt-1">
-                            <Eyebrow>{t.in}</Eyebrow>
-                            <div className="font-mono text-xs text-foreground/90">{action.due}</div>
-                          </div>
-                          <div className="col-span-6 pt-1">
-                            <div className="text-sm font-medium text-foreground/90">{action.action}</div>
-                          </div>
-                          <div className="col-span-3 pt-1 text-right">
-                            <Eyebrow>{t.owner}</Eyebrow>
-                            <div className="text-xs font-medium text-foreground/90">{action.owner}</div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium leading-relaxed text-foreground/90">{action.action}</div>
+                            <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+                              <div><Eyebrow>{t.in}</Eyebrow><div className="mt-0.5 font-mono text-foreground/90">{action.due}</div></div>
+                              <div className="sm:text-right"><Eyebrow>{t.owner}</Eyebrow><div className="mt-0.5 break-words font-medium text-foreground/90">{action.owner}</div></div>
+                            </div>
                           </div>
                         </div>
                       ))}

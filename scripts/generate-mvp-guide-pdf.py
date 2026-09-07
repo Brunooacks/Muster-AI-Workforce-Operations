@@ -203,6 +203,7 @@ def build_story():
         "Docker Desktop aberto e autorizado a executar containers.",
         "Node.js 20 ou superior.",
         "pnpm instalado.",
+        "Um projeto Clerk de teste com publishable key e secret key.",
         "Uma chave OpenAI ou endpoint OpenAI-compatible somente para o teste live.",
         "Um navegador para acessar o painel.",
     ]:
@@ -215,17 +216,17 @@ def build_story():
     story.append(code_box("export DATABASE_URL=postgresql://postgres:postgres@localhost:5433/muster\npnpm --filter @workspace/db run migrate"))
 
     story.extend(section("4. Subir a API", "Use um segundo terminal e mantenha-o aberto para acompanhar os logs."))
-    story.append(code_box("export DATABASE_URL=postgresql://postgres:postgres@localhost:5433/muster\nexport PORT=8080\nexport NODE_ENV=development\nexport AUTH_DEV_BYPASS=true\npnpm --filter @workspace/api-server run dev"))
+    story.append(code_box("export DATABASE_URL=postgresql://postgres:postgres@localhost:5433/muster\nexport PORT=8080\nexport NODE_ENV=development\nexport CLERK_SECRET_KEY=sk_test_SUBSTITUA\nexport CLERK_PUBLISHABLE_KEY=pk_test_SUBSTITUA\nexport WEB_APP_URL=http://localhost:5173\npnpm --filter @workspace/api-server run dev"))
     story.append(Spacer(1, 4))
     story.append(code_box("curl http://localhost:8080/api/health"))
-    story.append(p("A API deve informar que está saudável. O AUTH_DEV_BYPASS é somente para validação local e não deve ser usado em produção."))
+    story.append(p("A API deve informar que está saudável. Rotas protegidas retornam 401 até receberem uma sessão Clerk válida."))
 
     story.extend(section("5. Subir o painel", "Use um terceiro terminal."))
-    story.append(code_box("export PORT=5173\nexport API_PROXY_TARGET=http://localhost:8080\nexport VITE_AUTH_DEV_BYPASS=true\npnpm --filter @workspace/muster run dev"))
-    story.append(p("Abra http://localhost:5173. A API do painel será encaminhada pelo proxy do Vite para localhost:8080."))
+    story.append(code_box("export PORT=5173\nexport API_PROXY_TARGET=http://localhost:8080\nexport VITE_CLERK_PUBLISHABLE_KEY=pk_test_SUBSTITUA\npnpm --filter @workspace/muster run dev"))
+    story.append(p("Abra http://localhost:5173 e autentique-se pelo Clerk. A API do painel será encaminhada pelo proxy do Vite para localhost:8080."))
 
     story.extend(section("6. Testar o runner sem LLM", "Este é o primeiro teste recomendado. Ele valida a integração com o Muster sem consumir créditos de modelo."))
-    story.append(code_box("export MUSTER_BASE_URL=http://localhost:8080\nexport AGENT_MODE=dry-run\npnpm --filter @workspace/agent-runner run start"))
+    story.append(code_box("export MUSTER_BASE_URL=http://localhost:8080\nexport MUSTER_AGENT_ID=agent-id\nexport MUSTER_AUTH_TOKEN=agent-api-key\nexport AGENT_MODE=dry-run\npnpm --filter @workspace/agent-runner run start"))
     story.append(p("Saída esperada: Dry-run concluído. O runner resolve um agente admitido, mede a execução e envia eventos execution e feedback para a API."))
     story.append(callout("Se aparecer 'Nenhum agente encontrado'", "Abra a tela de admissão no painel e admita um agente de demonstração. Depois execute o runner novamente.", PALE_YELLOW))
 
@@ -275,7 +276,7 @@ def build_story():
         [p("Docker não conecta", "TableMuster"), p("Abra o Docker Desktop e repita docker compose up -d postgres.", "TableMuster")],
         [p("Porta 5433 ocupada", "TableMuster"), p("Defina POSTGRES_PORT=55433 e use essa porta no DATABASE_URL.", "TableMuster")],
         [p("API sem DATABASE_URL", "TableMuster"), p("Exporte DATABASE_URL no mesmo terminal que inicia a API.", "TableMuster")],
-        [p("Painel sem dados", "TableMuster"), p("Confirme API_PROXY_TARGET=http://localhost:8080 e AUTH_DEV_BYPASS=true.", "TableMuster")],
+        [p("Painel sem dados", "TableMuster"), p("Confirme o proxy, a sessão Clerk e o vínculo do usuário com a organização.", "TableMuster")],
         [p("Runner não acha agente", "TableMuster"), p("Admite um agente no painel ou defina MUSTER_AGENT_ID manualmente.", "TableMuster")],
         [p("Live falha por credencial", "TableMuster"), p("Use AGENT_MODE=dry-run primeiro; depois configure OPENAI_API_KEY.", "TableMuster")],
     ]

@@ -13,6 +13,8 @@ export interface DiscoveredAgent {
   name: string;
   role: string;
   platform: string;
+  /** Repository or workload URL that can be sent to the fast assessment. */
+  sourceUrl?: string;
   signals: string[];
   proposedMetrics: ProposedMetric[];
   proposedVerdict?: DiscoveredAgentProposedVerdict;

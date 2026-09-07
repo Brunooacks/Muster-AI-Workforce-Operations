@@ -1,0 +1,23 @@
+{
+  "duration": 87.5,
+  "assertions": [
+    {
+      "kind": "appearsBy",
+      "selector": "#scene-intro h1",
+      "bySec": 1.6
+    },
+    {
+      "kind": "before",
+      "a": "#scene-intro h1",
+      "b": "#scene-connect .rail h2"
+    },
+    {
+      "kind": "staysInFrame",
+      "selector": "#scene-alerts .rail"
+    },
+    {
+      "kind": "staysInFrame",
+      "selector": "#scene-report .capture"
+    }
+  ]
+}

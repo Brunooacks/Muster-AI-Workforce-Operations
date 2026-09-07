@@ -6,6 +6,7 @@ import type {
 } from "./types";
 import { getGitHubAccessToken } from "../github-auth";
 import { logger } from "../logger";
+import { redactConnectorMetadata } from "./redaction";
 
 const API = "https://api.github.com";
 const MAX_REPOS = 60; // discovery guardrail — first N most recently pushed
@@ -43,7 +44,14 @@ async function gh<T>(path: string, token: string): Promise<T | null> {
   });
   if (!res.ok) {
     if (res.status !== 404) {
-      logger.warn({ path, status: res.status }, "GitHub API request failed");
+      logger.warn(
+        redactConnectorMetadata({
+          platform: "github",
+          path,
+          status: res.status,
+        }),
+        "GitHub API request failed",
+      );
     }
     return null;
   }

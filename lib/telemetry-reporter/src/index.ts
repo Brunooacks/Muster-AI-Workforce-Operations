@@ -32,12 +32,105 @@ export interface AgentEvent {
   metadata?: Record<string, unknown>;
 }
 
+export type MusterCaptureMode =
+  | "metadata_only"
+  | "redacted_sample"
+  | "full_controlled"
+  | "local_only";
+
+export interface MusterContextSource {
+  type: "instruction" | "memory" | "retrieval" | "file" | "database" | "api" | "tool" | "handoff";
+  ref?: string;
+  version?: string;
+  hash?: string;
+  capturedAt?: string;
+  owner?: string;
+  authorizationScope?: string;
+  tokens?: number;
+  freshnessSeconds?: number;
+  relevance?: number;
+  status?: "available" | "missing" | "stale" | "denied" | "truncated" | "not_collected";
+}
+
+export interface MusterExecutionContext {
+  correlation?: {
+    runId?: string;
+    traceId?: string;
+    spanId?: string;
+    parentSpanId?: string;
+    sessionId?: string;
+    journeyId?: string;
+    stageId?: string;
+    workItemId?: string;
+    handoffId?: string;
+  };
+  release?: {
+    environment?: string;
+    deploymentId?: string;
+    releaseId?: string;
+    agentVersion?: string;
+    contractVersion?: string;
+    group?: "control" | "canary" | "shadow";
+  };
+  configuration?: {
+    provider?: string;
+    model?: string;
+    modelVersion?: string;
+    promptId?: string;
+    promptVersion?: string;
+    toolsetVersion?: string;
+    inputSchemaVersion?: string;
+    outputSchemaVersion?: string;
+    contextPolicyId?: string;
+  };
+  input?: {
+    caseId?: string;
+    taskClass?: string;
+    domain?: string;
+    channel?: string;
+    language?: string;
+    complexity?: string;
+    format?: string;
+    hash?: string;
+    sizeBytes?: number;
+    tokens?: number;
+    sensitivity?: string[];
+    captureMode: MusterCaptureMode;
+  };
+  context?: {
+    captureMode: MusterCaptureMode;
+    required?: string[];
+    sources?: MusterContextSource[];
+  };
+  evaluation?: {
+    grounded?: boolean;
+    hallucinationFlag?: boolean;
+    evaluator?: string;
+    score?: number;
+    evidenceRefs?: string[];
+  };
+}
+
+export function withMusterExecutionContext(
+  metadata: Record<string, unknown> | undefined,
+  context: MusterExecutionContext | undefined,
+): Record<string, unknown> | undefined {
+  if (!context) return metadata;
+  return {
+    ...metadata,
+    muster: {
+      schemaVersion: "1.0",
+      ...context,
+    },
+  };
+}
+
 export interface MusterReporterOptions {
   /** Muster API origin, e.g. "http://localhost:8080". */
   baseUrl: string;
   /** Muster agent id (the fleet identity this telemetry belongs to). */
   agentId: string;
-  /** Bearer token. Optional when the API runs with AUTH_DEV_BYPASS. */
+  /** Per-agent Muster API key used as the bearer token. */
   token?: string;
   /** Abort slow deliveries so the agent never hangs on telemetry. */
   timeoutMs?: number;
@@ -54,6 +147,8 @@ export interface TrackOptions {
    */
   enrich?: (result: unknown) => Omit<AgentEvent, "kind" | "ts" | "durationMs">;
   metadata?: Record<string, unknown>;
+  /** Structured descriptors for comparison and attribution. Raw content is intentionally absent. */
+  executionContext?: MusterExecutionContext;
 }
 
 export interface MusterReporter {
@@ -184,7 +279,7 @@ export function createMusterReporter(
         kind: "execution",
         success: true,
         durationMs: Date.now() - startedAt,
-        metadata: trackOptions.metadata,
+        metadata: withMusterExecutionContext(trackOptions.metadata, trackOptions.executionContext),
         ...enriched,
       });
       return result;
@@ -192,10 +287,10 @@ export function createMusterReporter(
       void report({
         kind: "error",
         durationMs: Date.now() - startedAt,
-        metadata: {
+        metadata: withMusterExecutionContext({
           ...trackOptions.metadata,
           message: error instanceof Error ? error.message : String(error),
-        },
+        }, trackOptions.executionContext),
       });
       throw error;
     }

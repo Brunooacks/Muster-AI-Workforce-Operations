@@ -377,7 +377,7 @@ router.post(
     }
 
     const [journey] = await db
-      .select({ id: journeys.id })
+      .select({ id: journeys.id, slaMinutes: journeys.slaMinutes })
       .from(journeys)
       .where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
     if (!journey) {
@@ -431,6 +431,7 @@ router.post(
         agentId: step.agentId,
         agentName: step.agentId ? agentNames.get(step.agentId) ?? null : null,
       })),
+      { slaMinutes: journey.slaMinutes },
     );
 
     try {

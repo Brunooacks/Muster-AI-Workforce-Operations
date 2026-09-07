@@ -6,8 +6,61 @@ export const KPI_DOMAINS = [
   "vendas-crm",
   "engenharia-it",
   "risco-financas-rh",
+  "operacoes-backoffice",
+  "workforce-hibrida",
 ] as const;
 export type KpiDomain = (typeof KPI_DOMAINS)[number];
+
+export const KPI_CAPABILITIES = [
+  "business-outcome",
+  "quality-evaluation",
+  "a2a-orchestration",
+  "human-agent-collaboration",
+  "discovery-observability",
+  "runtime-resilience",
+  "data-quality",
+] as const;
+export type KpiCapability = (typeof KPI_CAPABILITIES)[number];
+
+export const KPI_CAPABILITY_LABELS: Record<KpiCapability, string> = {
+  "business-outcome": "Resultado de negócio",
+  "quality-evaluation": "Qualidade e avaliações",
+  "a2a-orchestration": "Orquestração A2A",
+  "human-agent-collaboration": "Colaboração humano-agente",
+  "discovery-observability": "Discovery e observabilidade",
+  "runtime-resilience": "Runtime e fallback",
+  "data-quality": "Qualidade de dados",
+};
+
+export const KPI_ADOPTION_RULES = [
+  {
+    stage: "baseline",
+    label: "Instrumentar",
+    exitCriteria: [
+      "sinais obrigatórios do kit ativos",
+      "frescor dentro da janela do contrato",
+      "amostra mínima alcançada",
+    ],
+  },
+  {
+    stage: "pilot",
+    label: "Validar",
+    exitCriteria: [
+      "baseline comparável disponível",
+      "confiança mínima atingida",
+      "nenhum guardrail crítico violado",
+    ],
+  },
+  {
+    stage: "scale",
+    label: "Escalar",
+    exitCriteria: [
+      "confiança decision-grade",
+      "resultado sustentado por duas janelas",
+      "owner e impacto decisório definidos",
+    ],
+  },
+] as const;
 
 export const KPI_DIRECTIONS = [
   "higher-is-better",
@@ -32,9 +85,21 @@ export interface KpiEvidencePolicy {
   auditSampleRate: number;
 }
 
+export interface KpiFreshnessPolicy {
+  expectedWithinMinutes: number;
+  staleAfterMinutes: number;
+  expiresAfterMinutes: number;
+}
+
+export interface KpiConfidencePolicy {
+  minimum: number;
+  decisionGrade: number;
+}
+
 export interface KpiContract {
   key: string;
   domain: KpiDomain;
+  capability: KpiCapability;
   area: string;
   layer: LayerKey;
   label: string;
@@ -44,6 +109,8 @@ export interface KpiContract {
   formula: string;
   sourceSignals: string[];
   cadence: KpiCadence;
+  freshness: KpiFreshnessPolicy;
+  confidence: KpiConfidencePolicy;
   baseline: KpiBaselinePolicy;
   target?: string;
   owner: string;
@@ -125,12 +192,39 @@ export function validateKpiContract(input: unknown): KpiContractValidation {
   }
   for (const field of ["area", "label", "purpose", "unit", "formula", "owner", "rationale"]) requireText(field);
   if (!isOneOf(input.domain, KPI_DOMAINS)) issues.push({ path: "domain", message: "Domínio de KPI inválido." });
+  if (!isOneOf(input.capability, KPI_CAPABILITIES)) issues.push({ path: "capability", message: "Capacidade operacional de KPI inválida." });
   if (!isOneOf(input.layer, LAYER_KEYS)) issues.push({ path: "layer", message: "Camada de avaliação inválida." });
   if (!isOneOf(input.direction, KPI_DIRECTIONS)) issues.push({ path: "direction", message: "Direção de KPI inválida." });
   if (!isOneOf(input.cadence, KPI_CADENCES)) issues.push({ path: "cadence", message: "Cadência de KPI inválida." });
   if (!isOneOf(input.baseline, KPI_BASELINE_POLICIES)) issues.push({ path: "baseline", message: "Política de baseline inválida." });
   if (!isOneOf(input.decisionImpact, VERDICTS)) issues.push({ path: "decisionImpact", message: "Impacto de decisão inválido." });
   if (!isStringArray(input.sourceSignals)) issues.push({ path: "sourceSignals", message: "Informe ao menos um sinal de origem." });
+  if (!isRecord(input.freshness)) {
+    issues.push({ path: "freshness", message: "Política de frescor é obrigatória." });
+  } else {
+    const expected = input.freshness.expectedWithinMinutes;
+    const stale = input.freshness.staleAfterMinutes;
+    const expires = input.freshness.expiresAfterMinutes;
+    if (![expected, stale, expires].every((value) => Number.isInteger(value) && Number(value) > 0)) {
+      issues.push({ path: "freshness", message: "Janelas de frescor devem ser inteiros positivos em minutos." });
+    } else if (!(Number(expected) <= Number(stale) && Number(stale) <= Number(expires))) {
+      issues.push({ path: "freshness", message: "Use expectedWithinMinutes ≤ staleAfterMinutes ≤ expiresAfterMinutes." });
+    }
+  }
+  if (!isRecord(input.confidence)) {
+    issues.push({ path: "confidence", message: "Política de confiança é obrigatória." });
+  } else {
+    const minimum = input.confidence.minimum;
+    const decisionGrade = input.confidence.decisionGrade;
+    if (
+      typeof minimum !== "number" || minimum < 0 || minimum > 100 ||
+      typeof decisionGrade !== "number" || decisionGrade < 0 || decisionGrade > 100
+    ) {
+      issues.push({ path: "confidence", message: "Limites de confiança devem estar entre 0 e 100." });
+    } else if (minimum > decisionGrade) {
+      issues.push({ path: "confidence", message: "Confiança mínima não pode superar o nível decisório." });
+    }
+  }
   if (typeof input.guardrail !== "boolean") issues.push({ path: "guardrail", message: "Guardrail deve ser booleano." });
   if (!Number.isInteger(input.minSampleSize) || Number(input.minSampleSize) < 1) {
     issues.push({ path: "minSampleSize", message: "A amostra mínima deve ser um inteiro positivo." });
@@ -189,4 +283,3 @@ export function evaluateKpi(contract: KpiContract, observation: KpiObservation):
     reasons: [],
   };
 }
-

@@ -6,6 +6,7 @@ import {
   doublePrecision,
   timestamp,
   jsonb,
+  boolean,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -16,6 +17,20 @@ const id = () =>
     .$defaultFn(() => randomUUID());
 
 export type OrgMemberRole = "owner" | "admin" | "member";
+export type AccessScopeType = "organization" | "area" | "team";
+export type AccessPermission =
+  | "agents:read"
+  | "agents:operate"
+  | "teams:read"
+  | "teams:manage"
+  | "journeys:read"
+  | "journeys:manage"
+  | "decisions:approve"
+  | "governance:read"
+  | "governance:manage"
+  | "reports:read"
+  | "connectors:manage"
+  | "members:manage";
 
 // --- Tenancy (R7 · gauntlet rodada 4) -----------------------------------------
 // Toda entidade-raiz pertence a uma organização. As entidades filhas derivam a
@@ -41,6 +56,36 @@ export const organizationMembers = pgTable("organization_members", {
 }, (table) => ({
   orgMemberUnique: uniqueIndex("organization_members_org_user_idx").on(table.orgId, table.userId),
   orgMemberUserIdx: index("organization_members_user_idx").on(table.userId),
+}));
+
+export const accessGroups = pgTable("access_groups", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description").notNull().default(""),
+  scopeType: text("scope_type").$type<AccessScopeType>().notNull().default("organization"),
+  scopeId: text("scope_id"),
+  permissions: jsonb("permissions").$type<AccessPermission[]>().notNull().default([]),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  accessGroupsOrgSlugIdx: uniqueIndex("access_groups_org_slug_idx").on(table.orgId, table.slug),
+  accessGroupsOrgIdx: index("access_groups_org_idx").on(table.orgId),
+  accessGroupsScopeIdx: index("access_groups_scope_idx").on(table.orgId, table.scopeType, table.scopeId),
+}));
+
+export const accessGroupMembers = pgTable("access_group_members", {
+  id: id(),
+  groupId: text("group_id").notNull().references(() => accessGroups.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  userName: text("user_name").notNull().default(""),
+  userEmail: text("user_email"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  accessGroupMemberUnique: uniqueIndex("access_group_members_group_user_idx").on(table.groupId, table.userId),
+  accessGroupMemberUserIdx: index("access_group_members_user_idx").on(table.userId),
 }));
 
 /**
@@ -83,6 +128,30 @@ export type VerdictType = "promote" | "mentor" | "retire" | "observation";
 export type Severity = "critical" | "high" | "medium" | "stable";
 export type AutonomyLevel = "autonomous" | "escalates" | "restricted";
 export type DecisionStatus = "pending" | "approved" | "disagreed" | "exported";
+export type ProfessionalPlanDecisionType =
+  | "approved"
+  | "adjustment_requested"
+  | "rejected";
+export type ProfessionalPlanActionStatus =
+  | "ready"
+  | "in_progress"
+  | "blocked"
+  | "completed"
+  | "cancelled";
+export type ProfessionalPlanActionActor = "muster" | "agent" | "human";
+export type ProfessionalPlanAction = {
+  sequence: number;
+  actorType: ProfessionalPlanActionActor;
+  title: string;
+  description: string;
+  owner: string;
+  status: ProfessionalPlanActionStatus;
+  dueAt: string | null;
+  evidence?: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  updatedBy?: string | null;
+};
 export type PurposeRiskTier = "low" | "medium" | "high" | "critical";
 export type TeamStatus = "active" | "archived";
 export type TeamMemberRole = "owner" | "supervisor" | "operator" | "observer";
@@ -166,6 +235,14 @@ export interface BusinessCase {
   targetPayback: string;
   actualPayback: string;
   description: string;
+  metricContracts?: Array<{
+    catalogMetricKey?: string;
+    layer: LayerKey;
+    label: string;
+    unit: string;
+    target?: string;
+    rationale?: string;
+  }>;
 }
 
 export const purposes = pgTable("purposes", {
@@ -285,7 +362,7 @@ export const journeys = pgTable("journeys", {
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
+  slug: text("slug").notNull(),
   description: text("description").notNull().default(""),
   entryCriterion: text("entry_criterion").notNull().default(""),
   successCriterion: text("success_criterion").notNull().default(""),
@@ -295,6 +372,7 @@ export const journeys = pgTable("journeys", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
+  journeysOrgSlugIdx: uniqueIndex("journeys_org_slug_idx").on(table.orgId, table.slug),
   journeysOrgIdx: index("journeys_org_idx").on(table.orgId),
   journeysTeamIdx: index("journeys_team_idx").on(table.teamId),
 }));
@@ -545,6 +623,22 @@ export const verdicts = pgTable("verdicts", {
 
 export type AlertSeverity = "critical" | "high" | "medium" | "antecedent";
 export type AlertStatus = "active" | "acknowledged" | "resolved";
+export type GovernanceAssessmentStatus =
+  | "healthy"
+  | "attention"
+  | "critical"
+  | "insufficient_data";
+export type HallucinationAssessmentStatus =
+  | "healthy"
+  | "warning"
+  | "critical"
+  | "not_measured";
+export type RegressionAssessmentStatus =
+  | "insufficient_data"
+  | "stable"
+  | "drift"
+  | "warning"
+  | "regression";
 
 export const alerts = pgTable("alerts", {
   id: id(),
@@ -569,7 +663,56 @@ export const alerts = pgTable("alerts", {
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 });
 
-export type ConnectorStatus = "connected" | "available" | "syncing";
+export const agentGovernanceAssessments = pgTable("agent_governance_assessments", {
+  agentId: text("agent_id")
+    .primaryKey()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  status: text("status")
+    .$type<GovernanceAssessmentStatus>()
+    .notNull()
+    .default("insufficient_data"),
+  directionScore: doublePrecision("direction_score").notNull().default(0),
+  protectionScore: doublePrecision("protection_score").notNull().default(0),
+  proofScore: doublePrecision("proof_score").notNull().default(0),
+  contextHealthScore: doublePrecision("context_health_score"),
+  hallucinationStatus: text("hallucination_status")
+    .$type<HallucinationAssessmentStatus>()
+    .notNull()
+    .default("not_measured"),
+  groundedOutputRate: doublePrecision("grounded_output_rate"),
+  hallucinationFlags: integer("hallucination_flags").notNull().default(0),
+  auditedOutputs: integer("audited_outputs").notNull().default(0),
+  regressionStatus: text("regression_status").$type<RegressionAssessmentStatus>().notNull().default("insufficient_data"),
+  regressionAttributable: boolean("regression_attributable").notNull().default(false),
+  inputDrift: doublePrecision("input_drift"),
+  baselineReleaseId: text("baseline_release_id"),
+  currentReleaseId: text("current_release_id"),
+  signals: jsonb("signals").$type<Record<string, unknown>[]>().notNull().default([]),
+  recommendations: jsonb("recommendations").$type<string[]>().notNull().default([]),
+  evidenceCount: integer("evidence_count").notNull().default(0),
+  sourceEventCount: integer("source_event_count").notNull().default(0),
+  assessedAt: timestamp("assessed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  governanceAssessmentOrgStatusIdx: index("agent_governance_assessments_org_status_idx").on(
+    table.orgId,
+    table.status,
+  ),
+  governanceAssessmentOrgAssessedIdx: index("agent_governance_assessments_org_assessed_idx").on(
+    table.orgId,
+    table.assessedAt,
+  ),
+}));
+
+export type ConnectorStatus =
+  | "available"
+  | "configured"
+  | "connected"
+  | "syncing"
+  | "degraded"
+  | "error";
+export type ConnectorMode = "native" | "universal" | "runtime";
+export type ConnectorHealth = "unverified" | "healthy" | "degraded" | "error";
 
 export const connectors = pgTable("connectors", {
   id: id(),
@@ -580,11 +723,41 @@ export const connectors = pgTable("connectors", {
     .$type<ConnectorStatus>()
     .notNull()
     .default("available"),
+  mode: text("mode").$type<ConnectorMode>().notNull().default("native"),
+  health: text("health")
+    .$type<ConnectorHealth>()
+    .notNull()
+    .default("unverified"),
   agentsDiscovered: integer("agents_discovered").notNull().default(0),
   category: text("category").notNull().default(""),
   lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+  lastTestedAt: timestamp("last_tested_at", { withTimezone: true }),
+  lastEventAt: timestamp("last_event_at", { withTimezone: true }),
 }, (table) => ({
   connectorsOrgIdx: index("connectors_org_idx").on(table.orgId),
+}));
+
+export type AgentConnectorRole = "primary" | "telemetry" | "discovery";
+
+export const agentConnectorLinks = pgTable("agent_connector_links", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  agentId: text("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  connectorId: text("connector_id").notNull().references(() => connectors.id, { onDelete: "cascade" }),
+  externalId: text("external_id").notNull(),
+  role: text("role").$type<AgentConnectorRole>().notNull().default("primary"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  agentConnectorUnique: uniqueIndex("agent_connector_links_agent_connector_idx").on(
+    table.agentId,
+    table.connectorId,
+  ),
+  connectorExternalUnique: uniqueIndex("agent_connector_links_connector_external_idx").on(
+    table.connectorId,
+    table.externalId,
+  ),
+  agentConnectorOrgIdx: index("agent_connector_links_org_idx").on(table.orgId),
 }));
 
 export const metricPoints = pgTable("metric_points", {
@@ -623,6 +796,7 @@ export type DraftEnrichmentStatus =
 export type DraftReviewStatus = "pending" | "approved" | "rejected";
 
 export interface DraftKpiMetric {
+  catalogMetricKey?: string;
   layer: LayerKey;
   label: string;
   unit: string;
@@ -723,8 +897,8 @@ export const agentDrafts = pgTable("agent_drafts", {
 export const catalogMetrics = pgTable("catalog_metrics", {
   id: id(),
   orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
-  // Unique kebab-case key, e.g. "acuracia-das-decisoes".
-  key: text("key").notNull().unique(),
+  // Kebab-case key unique inside the organization, e.g. "acuracia-das-decisoes".
+  key: text("key").notNull(),
   // One of the vertical keys defined in the metric catalog seed
   // (negocios, tecnologia, operacoes, suporte-ti, risco-compliance, financeiro).
   vertical: text("vertical").notNull(),
@@ -742,6 +916,7 @@ export const catalogMetrics = pgTable("catalog_metrics", {
     .notNull()
     .defaultNow(),
 }, (table) => ({
+  catalogMetricsOrgKeyIdx: uniqueIndex("catalog_metrics_org_key_idx").on(table.orgId, table.key),
   catalogMetricsOrgIdx: index("catalog_metrics_org_idx").on(table.orgId),
 }));
 
@@ -757,11 +932,37 @@ export const connectorCredentials = pgTable("connector_credentials", {
     .unique()
     .references(() => connectors.id, { onDelete: "cascade" }),
   authMethod: text("auth_method").$type<ConnectorAuthMethod>().notNull().default("token"),
-  // Plaintext at rest for local dev; production must move to a KMS/vault.
+  // Versioned AES-256-GCM envelope; plaintext is materialized only in-memory
+  // at the connector adapter boundary. Production may replace this with KMS.
   credential: text("credential"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Credential used by an EXTERNAL CONNECTOR to publish normalized envelopes.
+// It is distinct from provider credentials above: provider secrets are
+// encrypted and used by native adapters, while ingestion keys are one-way
+// hashes and can only call the tenant-scoped ingestion boundary.
+export const connectorApiKeys = pgTable("connector_api_keys", {
+  id: id(),
+  orgId: text("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  connectorId: text("connector_id")
+    .notNull()
+    .references(() => connectors.id, { onDelete: "cascade" }),
+  label: text("label"),
+  prefix: text("prefix").notNull(),
+  keyHash: text("key_hash").notNull(),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+}, (table) => ({
+  connectorApiKeysOrgIdx: index("connector_api_keys_org_idx").on(table.orgId),
+  connectorApiKeysPrefixIdx: uniqueIndex("connector_api_keys_prefix_idx").on(table.prefix),
+  connectorApiKeysConnectorIdx: index("connector_api_keys_connector_idx").on(table.connectorId),
+}));
 
 // --- Telemetry (R6) -----------------------------------------------------------
 // Raw execution events reported by agents (SDK/reporter). Aggregations derive
@@ -787,14 +988,95 @@ export const agentEvents = pgTable("agent_events", {
   tokensOut: integer("tokens_out"),
   success: integer("success"), // 1/0/null — drizzle boolean-as-int keeps parity with is_custom
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
-});
+}, (table) => ({
+  agentEventsAgentTsIdx: index("agent_events_agent_ts_idx").on(table.agentId, table.ts),
+}));
+
+export type OutboxStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "dead-letter";
+
+export type OutboxPriority = "critical" | "high" | "normal" | "low";
+
+// Durable, tenant-aware boundary between telemetry ingestion and continuous
+// projections. Producers always insert this row in the same transaction as
+// the domain event; workers claim rows with SKIP LOCKED.
+export const eventOutbox = pgTable("event_outbox", {
+  id: id(),
+  orgId: text("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  aggregateType: text("aggregate_type").notNull(),
+  aggregateId: text("aggregate_id").notNull(),
+  eventType: text("event_type").notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+  priority: text("priority")
+    .$type<OutboxPriority>()
+    .notNull()
+    .default("normal"),
+  availableAt: timestamp("available_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  attempts: integer("attempts").notNull().default(0),
+  status: text("status")
+    .$type<OutboxStatus>()
+    .notNull()
+    .default("pending"),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => ({
+  eventOutboxClaimIdx: index("event_outbox_claim_idx").on(
+    table.status,
+    table.availableAt,
+    table.priority,
+    table.createdAt,
+  ),
+  eventOutboxOrgActivityIdx: index("event_outbox_org_activity_idx").on(
+    table.orgId,
+    table.createdAt,
+  ),
+  eventOutboxAggregateIdx: index("event_outbox_aggregate_idx").on(
+    table.orgId,
+    table.aggregateType,
+    table.aggregateId,
+    table.createdAt,
+  ),
+}));
+
+// Atomic idempotency boundary for external ingestion. Keeping it separate from
+// agent_events matters because a single envelope may materialize more than one
+// event (execution + feedback) and several evidence observations.
+export const externalEventReceipts = pgTable("external_event_receipts", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  agentId: text("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(),
+  eventId: text("event_id").notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  externalEventReceiptsDedupeIdx: uniqueIndex("external_event_receipts_dedupe_idx").on(
+    table.orgId,
+    table.platform,
+    table.eventId,
+  ),
+  externalEventReceiptsAgentIdx: index("external_event_receipts_agent_idx").on(table.agentId),
+}));
 
 // --- Metric evidence (R7) ----------------------------------------------------
 // Persisted observations are the auditable bridge between telemetry/discovery
 // and KPI decisions. References are optional because evidence can be scoped to
-// an agent, a mixed team, a purpose, or remain unscoped during ingestion.
+// an agent, a mixed team, a purpose, or remain entity-unscoped inside its org.
 export const metricEvidence = pgTable("metric_evidence", {
   id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   metricKey: text("metric_key").notNull(),
   label: text("label").notNull(),
   agentId: text("agent_id").references(() => agents.id, { onDelete: "cascade" }),
@@ -812,6 +1094,121 @@ export const metricEvidence = pgTable("metric_evidence", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   metricEvidenceMetricKeyIdx: index("metric_evidence_metric_key_idx").on(table.metricKey),
+  metricEvidenceOrgAgentMetricCapturedIdx: index(
+    "metric_evidence_org_agent_metric_captured_idx",
+  ).on(table.orgId, table.agentId, table.metricKey, table.capturedAt),
+}));
+
+export type ExecutiveReportStatus = "draft" | "published" | "superseded";
+export type ExecutiveNarrativeSource = "deterministic" | "ai-assisted";
+export type InsightGenerationMethod = "rules" | "ai-assisted" | "human";
+export type InsightRecordStatus = "generated" | "accepted" | "dismissed" | "expired";
+export type ExecutiveInsightSeverity = "critical" | "high" | "medium" | "low" | "positive";
+
+export interface ExecutiveMetricComparison {
+  current: number | null;
+  previous: number | null;
+  delta: number | null;
+  deltaPercent: number | null;
+  unit: string;
+  direction: "higher-is-better" | "lower-is-better" | "informational";
+}
+
+export interface ExecutiveReportSection {
+  key: string;
+  title: string;
+  summary: string;
+  highlights: string[];
+  evidenceRefs: string[];
+}
+
+export interface ExecutiveReportQuality {
+  score: number;
+  dataCoverage: number;
+  evaluationConfidence: number;
+  decisionReady: boolean;
+  limitations: string[];
+}
+
+export const executiveReportSnapshots = pgTable("executive_report_snapshots", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  period: text("period").notNull(),
+  version: integer("version").notNull().default(1),
+  status: text("status").$type<ExecutiveReportStatus>().notNull().default("draft"),
+  templateId: text("template_id").notNull().default("board-brief"),
+  title: text("title").notNull(),
+  executiveSummary: text("executive_summary").notNull(),
+  metrics: jsonb("metrics")
+    .$type<Record<string, ExecutiveMetricComparison>>()
+    .notNull()
+    .default({}),
+  layerComparison: jsonb("layer_comparison")
+    .$type<Record<string, ExecutiveMetricComparison>>()
+    .notNull()
+    .default({}),
+  portfolio: jsonb("portfolio").$type<Record<string, unknown>>().notNull().default({}),
+  sections: jsonb("sections").$type<ExecutiveReportSection[]>().notNull().default([]),
+  quality: jsonb("quality").$type<ExecutiveReportQuality>().notNull(),
+  narrativeSource: text("narrative_source")
+    .$type<ExecutiveNarrativeSource>()
+    .notNull()
+    .default("deterministic"),
+  narrativeModel: text("narrative_model"),
+  promptVersion: text("prompt_version"),
+  sourceWatermark: timestamp("source_watermark", { withTimezone: true }),
+  generatedBy: text("generated_by"),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  executiveReportsOrgPeriodVersionIdx: uniqueIndex(
+    "executive_reports_org_period_version_idx",
+  ).on(table.orgId, table.period, table.version),
+  executiveReportsOrgPeriodIdx: index("executive_reports_org_period_idx").on(
+    table.orgId,
+    table.period,
+    table.generatedAt,
+  ),
+}));
+
+export const insightRecords = pgTable("insight_records", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  reportId: text("report_id").references(() => executiveReportSnapshots.id, { onDelete: "cascade" }),
+  period: text("period").notNull(),
+  entityType: text("entity_type").notNull().default("organization"),
+  entityId: text("entity_id"),
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  narrative: text("narrative").notNull(),
+  recommendation: text("recommendation").notNull().default(""),
+  severity: text("severity").$type<ExecutiveInsightSeverity>().notNull().default("medium"),
+  confidence: doublePrecision("confidence").notNull().default(0),
+  evidenceRefs: jsonb("evidence_refs").$type<string[]>().notNull().default([]),
+  generationMethod: text("generation_method")
+    .$type<InsightGenerationMethod>()
+    .notNull()
+    .default("rules"),
+  model: text("model"),
+  promptVersion: text("prompt_version"),
+  status: text("status").$type<InsightRecordStatus>().notNull().default("generated"),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+}, (table) => ({
+  insightRecordsOrgPeriodIdx: index("insight_records_org_period_idx").on(
+    table.orgId,
+    table.period,
+    table.generatedAt,
+  ),
+  insightRecordsReportIdx: index("insight_records_report_idx").on(table.reportId),
+  insightRecordsEntityIdx: index("insight_records_entity_idx").on(
+    table.orgId,
+    table.entityType,
+    table.entityId,
+  ),
 }));
 
 // --- Agent credentials (R7 · gauntlet rodada 3) -------------------------------
@@ -878,4 +1275,35 @@ export const verdictActions = pgTable("verdict_actions", {
 }, (table) => ({
   verdictActionsVerdictIdx: index("verdict_actions_verdict_idx").on(table.verdictId),
   verdictActionsAgentIdx: index("verdict_actions_agent_idx").on(table.agentId),
+}));
+
+// --- Professional development-plan decisions --------------------------------
+// The Workforce OS can review a professional before or after formal admission.
+// `professionalRef` therefore remains stable for discovered/demo records while
+// `agentId`, when available, links the decision to the admitted runtime identity.
+// Decisions are append-only so approval, adjustment and rejection remain
+// auditable instead of overwriting the previous management judgment.
+export const professionalPlanDecisions = pgTable("professional_plan_decisions", {
+  id: id(),
+  orgId: text("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  professionalRef: text("professional_ref").notNull(),
+  professionalName: text("professional_name").notNull(),
+  recommendation: text("recommendation").notNull(),
+  decision: text("decision").$type<ProfessionalPlanDecisionType>().notNull(),
+  reason: text("reason").notNull(),
+  owner: text("owner").notNull(),
+  decidedBy: text("decided_by").notNull(),
+  actions: jsonb("actions").$type<ProfessionalPlanAction[]>().notNull().default([]),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  professionalPlanOrgRefIdx: index("professional_plan_org_ref_idx").on(
+    table.orgId,
+    table.professionalRef,
+    table.decidedAt,
+  ),
+  professionalPlanAgentIdx: index("professional_plan_agent_idx").on(table.agentId),
 }));

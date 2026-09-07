@@ -1,0 +1,108 @@
+{
+  "cenario": "Workforce completa — tecnologia, atendimento e operações",
+  "descricao": "Frota heterogênea para demonstrar gestão por propósito, qualidade, eficiência, adoção, governança e valor não exclusivamente financeiro.",
+  "agentes": [
+    {
+      "nome": "Atlas PR Reviewer",
+      "papel": "Revisa pull requests e bloqueia regressões antes do merge",
+      "plataforma": "github-copilot",
+      "vertical": "engenharia-it",
+      "comportamento": "saudavel",
+      "execucoesPorDia": 85,
+      "custoPorExecucaoCentavos": 11,
+      "deveFazer": ["Revisar alterações elegíveis", "Apontar risco com evidência no diff", "Escalar mudanças críticas ao tech lead"],
+      "naoDeveFazer": ["Aprovar alteração crítica sem cobertura de testes"],
+      "metricas": [
+        { "camada": "efficacy", "label": "Cobertura de revisão", "unidade": "%", "meta": "≥ 90%" },
+        { "camada": "efficiency", "label": "Lead time de revisão", "unidade": "min", "meta": "≤ 12 min" },
+        { "camada": "governance", "label": "Regressões após merge", "unidade": "%", "meta": "≤ 2%" },
+        { "camada": "value", "label": "Histórias aceitas sem retrabalho", "unidade": "%", "meta": "≥ 88%" }
+      ]
+    },
+    {
+      "nome": "Sofia Resolution Copilot",
+      "papel": "Resolve atendimentos N1 com base de conhecimento e escalonamento seguro",
+      "plataforma": "zendesk-ai",
+      "vertical": "atendimento",
+      "comportamento": "saudavel",
+      "execucoesPorDia": 180,
+      "custoPorExecucaoCentavos": 6,
+      "deveFazer": ["Classificar intenção e prioridade", "Resolver casos cobertos", "Transferir contexto completo ao humano"],
+      "naoDeveFazer": ["Encerrar ticket sem critério de sucesso"],
+      "metricas": [
+        { "camada": "efficacy", "label": "Resolução no primeiro contato", "unidade": "%", "meta": "≥ 78%" },
+        { "camada": "efficiency", "label": "Custo por resolução", "unidade": "R$", "meta": "≤ R$ 0,12" },
+        { "camada": "adoption", "label": "Cobertura de tickets elegíveis", "unidade": "%", "meta": "≥ 85%" },
+        { "camada": "governance", "label": "Handoffs com contexto completo", "unidade": "%", "meta": "≥ 98%" }
+      ]
+    },
+    {
+      "nome": "Nora Lead Qualifier",
+      "papel": "Qualifica oportunidades e recomenda a próxima melhor ação comercial",
+      "plataforma": "salesforce-agentforce",
+      "vertical": "vendas-crm",
+      "comportamento": "degradando",
+      "execucoesPorDia": 115,
+      "custoPorExecucaoCentavos": 13,
+      "deveFazer": ["Aplicar critérios de ICP", "Registrar evidências da qualificação", "Entregar recomendação ao vendedor"],
+      "naoDeveFazer": ["Alterar condição comercial sem aprovação"],
+      "metricas": [
+        { "camada": "efficacy", "label": "Conversão qualificada", "unidade": "%", "meta": "≥ 25%" },
+        { "camada": "efficiency", "label": "Tempo até qualificação", "unidade": "min", "meta": "≤ 5 min" },
+        { "camada": "adoption", "label": "Recomendações utilizadas", "unidade": "%", "meta": "≥ 70%" },
+        { "camada": "governance", "label": "Decisões com evidência", "unidade": "%", "meta": "100%" }
+      ]
+    },
+    {
+      "nome": "Lume Knowledge Analyst",
+      "papel": "Pesquisa fontes internas e produz briefings fundamentados para decisão",
+      "plataforma": "openai-agents",
+      "vertical": "knowledge-work",
+      "comportamento": "saudavel",
+      "execucoesPorDia": 45,
+      "custoPorExecucaoCentavos": 22,
+      "deveFazer": ["Citar fontes utilizadas", "Separar fato, hipótese e recomendação", "Sinalizar baixa confiança"],
+      "naoDeveFazer": ["Apresentar hipótese como fato"],
+      "metricas": [
+        { "camada": "efficacy", "label": "Saída fundamentada", "unidade": "%", "meta": "≥ 95%" },
+        { "camada": "efficiency", "label": "Tempo até briefing", "unidade": "min", "meta": "≤ 8 min" },
+        { "camada": "adoption", "label": "Briefings usados em decisão", "unidade": "%", "meta": "≥ 65%" },
+        { "camada": "value", "label": "Decisões suportadas no prazo", "unidade": "%", "meta": "≥ 90%" }
+      ]
+    },
+    {
+      "nome": "Dora Reconciliation Local",
+      "papel": "Reconcilia documentos financeiros em runtime privado com GPU local",
+      "plataforma": "vllm-local",
+      "vertical": "operacoes-backoffice",
+      "comportamento": "erratico",
+      "execucoesPorDia": 70,
+      "custoPorExecucaoCentavos": 4,
+      "deveFazer": ["Conciliar campos conforme contrato", "Anexar evidência de divergência", "Acionar fallback quando o runtime falhar"],
+      "naoDeveFazer": ["Aprovar divergência material automaticamente"],
+      "metricas": [
+        { "camada": "efficacy", "label": "Conciliação sem toque", "unidade": "%", "meta": "≥ 80%" },
+        { "camada": "efficiency", "label": "Custo computacional por documento", "unidade": "R$", "meta": "≤ R$ 0,06" },
+        { "camada": "governance", "label": "Sucesso do fallback cloud", "unidade": "%", "meta": "≥ 99%" },
+        { "camada": "value", "label": "Documentos processados no SLA", "unidade": "%", "meta": "≥ 96%" }
+      ]
+    },
+    {
+      "nome": "Maia People Onboarding",
+      "papel": "Orquestra o onboarding de profissionais humanos e agentes do time",
+      "plataforma": "azure-ai-foundry",
+      "vertical": "workforce-hibrida",
+      "comportamento": "degradando",
+      "execucoesPorDia": 35,
+      "custoPorExecucaoCentavos": 9,
+      "deveFazer": ["Distribuir responsabilidades do plano", "Cobrar evidências de conclusão", "Escalar bloqueios ao gestor"],
+      "naoDeveFazer": ["Alterar papel ou alçada sem aprovação do owner"],
+      "metricas": [
+        { "camada": "efficacy", "label": "Planos concluídos no prazo", "unidade": "%", "meta": "≥ 92%" },
+        { "camada": "efficiency", "label": "Tempo até produtividade", "unidade": "dias", "meta": "≤ 10 dias" },
+        { "camada": "adoption", "label": "Uso ativo após onboarding", "unidade": "%", "meta": "≥ 85%" },
+        { "camada": "governance", "label": "Responsabilidades com owner", "unidade": "%", "meta": "100%" }
+      ]
+    }
+  ]
+}

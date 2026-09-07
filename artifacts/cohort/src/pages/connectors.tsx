@@ -6,7 +6,10 @@ import {
   useImportDiscoveredAgents,
   useRegisterConnector,
   useListConnectorCapabilities,
+  usePreAssessAgentSource,
+  usePreAssessConnectorSource,
 } from "@workspace/api-client-react";
+import type { PreAssessResult } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +29,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link2, Search, Check, Download, Plug, Plus, Radio } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Check,
+  Code2,
+  Download,
+  Gauge,
+  Link2,
+  Plug,
+  Plus,
+  Radio,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TriangleAlert,
+} from "lucide-react";
 import { ErrorState } from "@/components/query-state";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +53,11 @@ import { queryClient } from "@/lib/queryClient";
 import { getListConnectorsQueryKey } from "@workspace/api-client-react";
 import { PageHeading, Pill, Eyebrow } from "@/components/cohort";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
+import { useLocation } from "wouter";
+import {
+  summarizeFastAssessment,
+  type FastAssessmentSummary,
+} from "@/lib/fast-assessment";
 
 // Platforms with a REAL connector implementation; the rest of the list still
 // comes from the demo catalog until their connectors land (R3 incremental).
@@ -97,9 +121,58 @@ const PT = {
   capabilityReady: "Contrato pronto",
   capabilityPlanned: "Planejado",
   capabilityHint: "A integração pode começar pelo webhook universal enquanto o adapter nativo é construído.",
+  fastEyebrow: "Fast assessment · sem integração prévia",
+  fastTitle: "Comece pelo código do agente, não por um formulário vazio.",
+  fastDesc: "Informe um repositório ou URL pública. O Muster lê estrutura, framework, ferramentas, runtime, telemetria e métricas declaradas para montar uma pré-qualificação auditável.",
+  repoUrl: "URL do repositório ou código",
+  repoPlaceholder: "https://github.com/empresa/agente",
+  nameHint: "Nome opcional",
+  nameHintPlaceholder: "ex.: Revisor de PR",
+  assess: "Analisar e pré-qualificar",
+  assessing: "Analisando código…",
+  assessDone: "Fast assessment concluído",
+  assessFail: "Não foi possível analisar esta origem.",
+  scoreLabel: "Prontidão para instrumentação",
+  statusReady: "Pronto para revisão",
+  statusReview: "Instrumentação pendente",
+  statusBlocked: "Evidência insuficiente",
+  codeConfidence: "Leitura do código",
+  purposeConfidence: "Propósito e papel",
+  telemetryReadiness: "Coleta e telemetria",
+  metricReadiness: "Contrato de métricas",
+  detectedStack: "Stack detectada",
+  detectedSignals: "Sinais encontrados",
+  metricsPreview: "Métricas pré-enquadradas",
+  declaredMetrics: (n: number) => `${n} declaradas no código`,
+  suggestedMetrics: (n: number) => `${n} sugeridas pelo catálogo`,
+  gapsTitle: "Lacunas antes da avaliação real",
+  nextTitle: "Próximo passo recomendado",
+  nextReady: "Revisar a função e conectar uma execução real para iniciar baseline e probation.",
+  nextReview: "Completar telemetria, metas e guardrails antes de admitir o agente como observável.",
+  nextBlocked: "Definir propósito, runtime e sinais mínimos antes de usar esta origem para decisão.",
+  continueAdmission: "Continuar na admissão",
+  assessCandidate: "Avaliar código",
+  staticDisclaimer: "Pré-qualificação estática: não representa desempenho real até receber execuções, outcomes e evidências.",
+  noCriticalGaps: "Nenhuma lacuna estrutural crítica detectada.",
+  gaps: {
+    framework: "Framework não identificado",
+    runtime: "Runtime não identificado",
+    telemetry: "Telemetria não encontrada",
+    metrics: "Poucas métricas declaradas",
+    purpose: "Propósito ou responsabilidades incompletos",
+    governance: "Guardrails ou autonomia pouco claros",
+  },
 };
 
 type Dict = typeof PT;
+
+const FAST_ASSESSMENT_HANDOFF_KEY = "muster:fast-assessment-handoff";
+
+interface FastAssessmentView {
+  sourceUrl: string;
+  result: PreAssessResult;
+  summary: FastAssessmentSummary;
+}
 
 const L: Record<Lang, Dict> = {
   pt: PT,
@@ -159,6 +232,47 @@ const L: Record<Lang, Dict> = {
     capabilityReady: "Contract ready",
     capabilityPlanned: "Planned",
     capabilityHint: "Integration can start with the universal webhook while the native adapter is built.",
+    fastEyebrow: "Fast assessment · no prior integration",
+    fastTitle: "Start from the agent code, not an empty form.",
+    fastDesc: "Provide a repository or public URL. Muster reads structure, framework, tools, runtime, telemetry and declared metrics to build an auditable pre-qualification.",
+    repoUrl: "Repository or code URL",
+    repoPlaceholder: "https://github.com/company/agent",
+    nameHint: "Optional name",
+    nameHintPlaceholder: "e.g. PR Reviewer",
+    assess: "Analyze and pre-qualify",
+    assessing: "Analyzing code…",
+    assessDone: "Fast assessment complete",
+    assessFail: "This source could not be analyzed.",
+    scoreLabel: "Instrumentation readiness",
+    statusReady: "Ready for review",
+    statusReview: "Instrumentation pending",
+    statusBlocked: "Insufficient evidence",
+    codeConfidence: "Code understanding",
+    purposeConfidence: "Purpose and role",
+    telemetryReadiness: "Collection and telemetry",
+    metricReadiness: "Metrics contract",
+    detectedStack: "Detected stack",
+    detectedSignals: "Detected signals",
+    metricsPreview: "Pre-framed metrics",
+    declaredMetrics: (n: number) => `${n} declared in code`,
+    suggestedMetrics: (n: number) => `${n} suggested by the catalog`,
+    gapsTitle: "Gaps before real evaluation",
+    nextTitle: "Recommended next step",
+    nextReady: "Review the role and connect a real execution to start baseline and probation.",
+    nextReview: "Complete telemetry, targets and guardrails before admitting the agent as observable.",
+    nextBlocked: "Define purpose, runtime and minimum signals before using this source for decisions.",
+    continueAdmission: "Continue to admission",
+    assessCandidate: "Assess code",
+    staticDisclaimer: "Static pre-qualification: it is not real performance until executions, outcomes and evidence arrive.",
+    noCriticalGaps: "No critical structural gap detected.",
+    gaps: {
+      framework: "Framework not identified",
+      runtime: "Runtime not identified",
+      telemetry: "Telemetry not found",
+      metrics: "Too few declared metrics",
+      purpose: "Purpose or responsibilities incomplete",
+      governance: "Guardrails or autonomy unclear",
+    },
   },
   es: {
     bcAccount: "Cuenta",
@@ -216,10 +330,52 @@ const L: Record<Lang, Dict> = {
     capabilityReady: "Contrato listo",
     capabilityPlanned: "Planificado",
     capabilityHint: "La integración puede comenzar por el webhook universal mientras se construye el adapter nativo.",
+    fastEyebrow: "Fast assessment · sin integración previa",
+    fastTitle: "Comienza por el código del agente, no por un formulario vacío.",
+    fastDesc: "Informa un repositorio o URL pública. Muster lee estructura, framework, herramientas, runtime, telemetría y métricas declaradas para crear una precalificación auditable.",
+    repoUrl: "URL del repositorio o código",
+    repoPlaceholder: "https://github.com/empresa/agente",
+    nameHint: "Nombre opcional",
+    nameHintPlaceholder: "ej.: Revisor de PR",
+    assess: "Analizar y precalificar",
+    assessing: "Analizando código…",
+    assessDone: "Fast assessment completado",
+    assessFail: "No fue posible analizar este origen.",
+    scoreLabel: "Preparación para instrumentación",
+    statusReady: "Listo para revisión",
+    statusReview: "Instrumentación pendiente",
+    statusBlocked: "Evidencia insuficiente",
+    codeConfidence: "Lectura del código",
+    purposeConfidence: "Propósito y rol",
+    telemetryReadiness: "Colecta y telemetría",
+    metricReadiness: "Contrato de métricas",
+    detectedStack: "Stack detectado",
+    detectedSignals: "Señales encontradas",
+    metricsPreview: "Métricas preencuadradas",
+    declaredMetrics: (n: number) => `${n} declaradas en el código`,
+    suggestedMetrics: (n: number) => `${n} sugeridas por el catálogo`,
+    gapsTitle: "Brechas antes de la evaluación real",
+    nextTitle: "Próximo paso recomendado",
+    nextReady: "Revisar la función y conectar una ejecución real para iniciar baseline y probation.",
+    nextReview: "Completar telemetría, metas y guardrails antes de admitir al agente como observable.",
+    nextBlocked: "Definir propósito, runtime y señales mínimas antes de usar este origen para decisiones.",
+    continueAdmission: "Continuar a admisión",
+    assessCandidate: "Evaluar código",
+    staticDisclaimer: "Precalificación estática: no representa desempeño real hasta recibir ejecuciones, outcomes y evidencias.",
+    noCriticalGaps: "No se detectó ninguna brecha estructural crítica.",
+    gaps: {
+      framework: "Framework no identificado",
+      runtime: "Runtime no identificado",
+      telemetry: "Telemetría no encontrada",
+      metrics: "Pocas métricas declaradas",
+      purpose: "Propósito o responsabilidades incompletos",
+      governance: "Guardrails o autonomía poco claros",
+    },
   },
 };
 
 export default function ConnectorsPage() {
+  const [, setLocation] = useLocation();
   const { data: connectors, isLoading, isError, refetch } = useListConnectors();
   const { data: capabilities } = useListConnectorCapabilities();
   const { toast } = useToast();
@@ -231,11 +387,63 @@ export default function ConnectorsPage() {
   const discoverAgents = useDiscoverAgents();
   const importAgents = useImportDiscoveredAgents();
   const registerConnector = useRegisterConnector();
+  const preAssess = usePreAssessAgentSource();
+  const preAssessConnector = usePreAssessConnectorSource();
 
   const [discoveringId, setDiscoveringId] = useState<string | null>(null);
   const [discoveryResult, setDiscoveryResult] = useState<any>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [regForm, setRegForm] = useState({ platform: "github", name: "", token: "" });
+  const [assessmentForm, setAssessmentForm] = useState({ url: "", nameHint: "" });
+  const [assessment, setAssessment] = useState<FastAssessmentView | null>(null);
+
+  const presentAssessment = (sourceUrl: string, result: PreAssessResult) => {
+    const summary = summarizeFastAssessment(result);
+    setAssessment({ sourceUrl, result, summary });
+    toast({ title: t.assessDone, description: `${result.draft.name} · ${summary.score}/100` });
+  };
+
+  const runFastAssessment = (sourceUrl = assessmentForm.url, nameHint = assessmentForm.nameHint) => {
+    const url = sourceUrl.trim();
+    if (!url) return;
+    setAssessmentForm({ url, nameHint });
+    preAssess.mutate(
+      { data: { url, nameHint: nameHint.trim() || undefined } },
+      {
+        onSuccess: (result) => presentAssessment(url, result),
+        onError: (error) => toast({
+          title: t.toastErr,
+          description: error instanceof Error ? error.message : t.assessFail,
+          variant: "destructive",
+        }),
+      },
+    );
+  };
+
+  const runConnectorAssessment = (connectorId: string, sourceUrl: string, nameHint: string) => {
+    const url = sourceUrl.trim();
+    setAssessmentForm({ url, nameHint });
+    preAssessConnector.mutate(
+      { connectorId, data: { url, nameHint: nameHint.trim() || undefined } },
+      {
+        onSuccess: (result) => presentAssessment(url, result),
+        onError: (error) => toast({
+          title: t.toastErr,
+          description: error instanceof Error ? error.message : t.assessFail,
+          variant: "destructive",
+        }),
+      },
+    );
+  };
+
+  const continueAdmission = () => {
+    if (!assessment) return;
+    sessionStorage.setItem(
+      FAST_ASSESSMENT_HANDOFF_KEY,
+      JSON.stringify({ sourceUrl: assessment.sourceUrl, result: assessment.result }),
+    );
+    setLocation("/admissao?assessment=fast");
+  };
 
   const handleRegister = () => {
     if (!regForm.name.trim()) return;
@@ -308,6 +516,22 @@ export default function ConnectorsPage() {
     );
   };
 
+  const assessmentTone = assessment?.summary.status === "ready"
+    ? "sage"
+    : assessment?.summary.status === "review"
+      ? "ochre"
+      : "terracotta";
+  const assessmentStatus = assessment?.summary.status === "ready"
+    ? t.statusReady
+    : assessment?.summary.status === "review"
+      ? t.statusReview
+      : t.statusBlocked;
+  const assessmentNext = assessment?.summary.status === "ready"
+    ? t.nextReady
+    : assessment?.summary.status === "review"
+      ? t.nextReview
+      : t.nextBlocked;
+
   return (
     <AppLayout breadcrumbs={[{ label: t.bcAccount }, { label: t.bcConnectors }]}>
       <div className="max-w-5xl space-y-7 animate-in fade-in duration-500">
@@ -322,6 +546,134 @@ export default function ConnectorsPage() {
             </Button>
           }
         />
+
+        <Card className="overflow-hidden border-primary/35 bg-primary/[0.03]">
+          <div className="grid gap-5 p-5 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Eyebrow>{t.fastEyebrow}</Eyebrow>
+              </div>
+              <h2 className="mt-2 font-serif text-2xl font-medium tracking-tight">{t.fastTitle}</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">{t.fastDesc}</p>
+            </div>
+            <Pill tone="blue">read-only · sem IA</Pill>
+          </div>
+          <div className="grid gap-3 border-t border-card-border bg-background/35 p-5 lg:grid-cols-[1fr_230px_auto]">
+            <div className="space-y-2">
+              <Label htmlFor="assessment-url">{t.repoUrl}</Label>
+              <Input
+                id="assessment-url"
+                value={assessmentForm.url}
+                onChange={(event) => setAssessmentForm((current) => ({ ...current, url: event.target.value }))}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !preAssess.isPending) runFastAssessment();
+                }}
+                placeholder={t.repoPlaceholder}
+                className="font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="assessment-name">{t.nameHint}</Label>
+              <Input
+                id="assessment-name"
+                value={assessmentForm.nameHint}
+                onChange={(event) => setAssessmentForm((current) => ({ ...current, nameHint: event.target.value }))}
+                placeholder={t.nameHintPlaceholder}
+              />
+            </div>
+            <Button
+              className="self-end"
+              onClick={() => runFastAssessment()}
+              disabled={!assessmentForm.url.trim() || preAssess.isPending}
+            >
+              <Code2 className="mr-2 h-4 w-4" />
+              {preAssess.isPending ? t.assessing : t.assess}
+            </Button>
+          </div>
+        </Card>
+
+        {assessment && (
+          <Card className="overflow-hidden border-primary/35">
+            <div className="flex flex-col gap-4 border-b border-card-border bg-primary/[0.04] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Pill tone={assessmentTone}>{assessmentStatus}</Pill>
+                  <span className="font-mono text-xs text-muted-foreground">{assessment.result.platform ?? "stack não identificada"}</span>
+                </div>
+                <h2 className="mt-3 font-serif text-2xl font-medium tracking-tight">{assessment.result.draft.name}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{assessment.result.draft.role}</p>
+              </div>
+              <div className="rounded-xl border border-primary/20 bg-card px-5 py-3 text-right">
+                <span className="block text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t.scoreLabel}</span>
+                <strong className="mt-1 block font-mono text-3xl font-medium text-primary">{assessment.summary.score}</strong>
+              </div>
+            </div>
+
+            <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: t.codeConfidence, value: assessment.summary.codeConfidence, icon: Code2 },
+                { label: t.purposeConfidence, value: assessment.summary.purposeConfidence, icon: Target },
+                { label: t.telemetryReadiness, value: assessment.summary.telemetryReadiness, icon: Activity },
+                { label: t.metricReadiness, value: assessment.summary.metricReadiness, icon: Gauge },
+              ].map(({ label, value, icon: Icon }) => (
+                <div key={label} className="rounded-xl border border-card-border bg-secondary/25 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <strong className="mt-3 block font-mono text-xl font-medium">{value}%</strong>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-5 border-t border-card-border p-5 xl:grid-cols-[.8fr_1.15fr_1fr]">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-medium"><ShieldCheck className="h-4 w-4 text-primary" />{t.detectedSignals}</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {assessment.result.signals.slice(0, 12).map((signal) => <Pill key={signal} tone="muted">{signal.replace(/^[^:]+:/, "")}</Pill>)}
+                </div>
+                <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{assessment.result.draft.summary}</p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs font-medium"><Gauge className="h-4 w-4 text-primary" />{t.metricsPreview}</div>
+                  <span className="text-[10px] text-muted-foreground">{t.declaredMetrics(assessment.summary.declaredMetrics)} · {t.suggestedMetrics(assessment.summary.suggestedMetrics)}</span>
+                </div>
+                <div className="mt-3 divide-y divide-card-border rounded-xl border border-card-border">
+                  {assessment.result.draft.proposedMetrics.slice(0, 6).map((metric) => (
+                    <div key={`${metric.layer}-${metric.label}`} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                      <div className="min-w-0"><span className="block truncate text-xs font-medium">{metric.label}</span><span className="mt-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">{metric.layer}</span></div>
+                      <span className="shrink-0 font-mono text-xs text-primary">{metric.target || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 text-xs font-medium"><TriangleAlert className="h-4 w-4 text-chart-2" />{t.gapsTitle}</div>
+                <div className="mt-3 space-y-2">
+                  {assessment.summary.gaps.length > 0 ? assessment.summary.gaps.map((gap) => (
+                    <div key={gap} className="rounded-lg bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">{t.gaps[gap]}</div>
+                  )) : <div className="rounded-lg bg-chart-1/10 px-3 py-2 text-xs text-chart-1">{t.noCriticalGaps}</div>}
+                </div>
+                <div className="mt-4 rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-primary">{t.nextTitle}</span>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{assessmentNext}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-card-border bg-secondary/15 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground">{t.staticDisclaimer}</p>
+              <Button onClick={continueAdmission}>{t.continueAdmission}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+            </div>
+          </Card>
+        )}
 
         {capabilities && capabilities.length > 0 && (
           <Card className="border-card-border bg-secondary/20 px-5 py-4">
@@ -373,14 +725,27 @@ export default function ConnectorsPage() {
                       <span>{t.confidence(agent.confidence)}</span>
                     </div>
                   </div>
-                  {agent.alreadyImported ? (
-                    <Pill tone="sage">{t.alreadyInFleet}</Pill>
-                  ) : (
-                    <Button size="sm" onClick={() => handleImport([agent.externalId])}>
-                      <Download className="mr-1 h-4 w-4" />
-                      {t.importAdmit}
-                    </Button>
-                  )}
+                  <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                    {agent.sourceUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => runConnectorAssessment(discoveryResult.connectorId, agent.sourceUrl, agent.name)}
+                        disabled={preAssessConnector.isPending}
+                      >
+                        <Code2 className="mr-1 h-4 w-4" />
+                        {t.assessCandidate}
+                      </Button>
+                    )}
+                    {agent.alreadyImported ? (
+                      <Pill tone="sage">{t.alreadyInFleet}</Pill>
+                    ) : (
+                      <Button size="sm" onClick={() => handleImport([agent.externalId])}>
+                        <Download className="mr-1 h-4 w-4" />
+                        {t.importAdmit}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

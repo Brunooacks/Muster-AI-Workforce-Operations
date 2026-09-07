@@ -97,6 +97,13 @@ function temEscopo(bloco: string): boolean {
   );
 }
 
+function temEscopoPorAgente(bloco: string): boolean {
+  return (
+    bloco.includes("byAgentsOf(") ||
+    (bloco.includes("innerJoin(agents") && bloco.includes("ofOrg(agents"))
+  );
+}
+
 describe("isolamento por organização — varredura do código", () => {
   const nomesDeTabela = Object.keys(ROOT_TABLES);
 
@@ -128,6 +135,41 @@ describe("isolamento por organização — varredura do código", () => {
     for (const [nome, tabela] of Object.entries(ROOT_TABLES)) {
       expect((tabela as { orgId?: unknown }).orgId, `${nome} sem orgId`).toBeDefined();
     }
+  });
+
+  it("fleet restringe toda leitura filha à frota da organização", () => {
+    const fonte = readFileSync(join(DIR_ROTAS, "fleet.ts"), "utf8");
+    const tabelasFilhas = [
+      "alerts",
+      "evaluations",
+      "metricPoints",
+      "agentOwners",
+      "verdicts",
+    ];
+    const faltando: string[] = [];
+
+    for (const tabela of tabelasFilhas) {
+      for (const { bloco, linha } of blocosDeAcesso(fonte, tabela)) {
+        if (linha.includes(`.update(${tabela})`)) continue;
+        if (!temEscopoPorAgente(bloco)) faltando.push(`${tabela} · ${linha}`);
+      }
+    }
+
+    expect(
+      faltando,
+      `Leituras filhas de fleet sem escopo (${faltando.length}):\n  ${faltando.join("\n  ")}`,
+    ).toEqual([]);
+  });
+
+  it("update de alerta exige posse previamente resolvida na organização", () => {
+    const fonte = readFileSync(join(DIR_ROTAS, "fleet.ts"), "utf8");
+    const inicio = fonte.indexOf('router.patch("/fleet/alerts/:alertId"');
+    const fim = fonte.indexOf('router.get("/fleet/decisions"');
+    const handler = fonte.slice(inicio, fim);
+
+    expect(handler).toContain("requireOrgOperator");
+    expect(handler).toContain("ofOrg(agents, req.orgId!)");
+    expect(handler).toContain("eq(alerts.agentId, current.alert.agentId)");
   });
 
   /**

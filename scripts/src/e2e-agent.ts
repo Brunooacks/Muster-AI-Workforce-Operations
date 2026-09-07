@@ -2,12 +2,13 @@ import {
   createMusterReporter,
   type AgentEvent,
 } from "@workspace/telemetry-reporter";
+import { requireMusterSessionToken } from "./muster-session";
 
 const baseUrl = (process.env.MUSTER_BASE_URL ?? "http://localhost:8087").replace(
   /\/+$/,
   "",
 );
-const authToken = process.env.MUSTER_AUTH_TOKEN?.trim();
+const authToken = requireMusterSessionToken();
 const syntheticPrefix = "Gauntlet E2E";
 const realtimeBudgetMs = 30_000;
 
@@ -182,7 +183,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       ...(init.body ? { "content-type": "application/json" } : {}),
-      ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+      authorization: `Bearer ${authToken}`,
       ...init.headers,
     },
   });
@@ -407,10 +408,14 @@ async function exerciseProfile(
 ): Promise<ProfileResult> {
   const agentId = detail.agent.id;
   const reporterErrors: unknown[] = [];
+  const credential = await request<{ plaintext: string }>(
+    `/agents/${encodeURIComponent(agentId)}/api-keys`,
+    { method: "POST", body: JSON.stringify({ label: "gauntlet-e2e" }) },
+  );
   const reporter = createMusterReporter({
     baseUrl,
     agentId,
-    token: authToken,
+    token: credential.plaintext,
     onError: (error, event) => reporterErrors.push({ error: String(error), event }),
   });
 
@@ -731,7 +736,7 @@ async function main(): Promise<void> {
       "Fast Assessment ainda depende de fonte GitHub remota; esta versão admite a carteira pela API pública.",
       "Os três frameworks são representados pelo SDK, mas o disparo dos containers reais entra na evolução multi-plataforma.",
       "A reavaliação atual usa métricas operacionais genéricas; o vínculo automático ao catálogo vertical entra na rodada de lentes KPI.",
-      "A autenticação ainda usa sessão/bypass; credencial própria e revogável por agente é o próximo critério de produção.",
+      "A sessão Clerk administra a frota; cada agente reporta com uma credencial própria e revogável.",
     ],
     ...(failure ? { failure: observedError(failure) } : {}),
   };

@@ -3,6 +3,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { db, agents, areas } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireOrgAdmin } from "../middlewares/orgRole";
 import { ofOrg } from "../lib/tenant-scope";
 import { slugify } from "../lib/admission";
 
@@ -99,7 +100,7 @@ router.get("/areas", requireAuth, requireOrg, async (req, res) => {
   });
 });
 
-router.post("/areas", requireAuth, requireOrg, async (req, res) => {
+router.post("/areas", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const orgId = req.orgId!;
   const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
   if (!name) {
@@ -132,7 +133,7 @@ router.post("/areas", requireAuth, requireOrg, async (req, res) => {
   res.status(201).json(toArea(linha!, VAZIO));
 });
 
-router.patch("/areas/:areaId", requireAuth, requireOrg, async (req, res) => {
+router.patch("/areas/:areaId", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const orgId = req.orgId!;
   const areaId = req.params.areaId as string;
 
@@ -164,7 +165,7 @@ router.patch("/areas/:areaId", requireAuth, requireOrg, async (req, res) => {
   res.json(toArea(linha!, resumos.get(areaId) ?? VAZIO));
 });
 
-router.delete("/areas/:areaId", requireAuth, requireOrg, async (req, res) => {
+router.delete("/areas/:areaId", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const orgId = req.orgId!;
   const areaId = req.params.areaId as string;
 
@@ -185,7 +186,7 @@ router.delete("/areas/:areaId", requireAuth, requireOrg, async (req, res) => {
 });
 
 /** Atribui (ou remove) a área de um agente. */
-router.patch("/agents/:agentId/area", requireAuth, requireOrg, async (req, res) => {
+router.patch("/agents/:agentId/area", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const orgId = req.orgId!;
   const agentId = req.params.agentId as string;
   const areaId: string | null =

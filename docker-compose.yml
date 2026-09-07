@@ -27,10 +27,11 @@ services:
     environment:
       MUSTER_BASE_URL: ${MUSTER_BASE_URL:-http://host.docker.internal:8080}
       MUSTER_AGENT_ID: ${MUSTER_AGENT_ID:-}
+      MUSTER_AUTH_TOKEN: ${MUSTER_AUTH_TOKEN:-}
       MUSTER_AGENT_MODEL: ${MUSTER_AGENT_MODEL:-gpt-4o-mini}
       AGENT_MODE: ${AGENT_MODE:-dry-run}
       MUSTER_EXECUTION_BACKEND: ${MUSTER_EXECUTION_BACKEND:-local}
-      MUSTER_WORKSPACE: ${MUSTER_WORKSPACE:-/app}
+      MUSTER_WORKSPACE: ${MUSTER_WORKSPACE:-/workspace}
       MUSTER_TASK_TIMEOUT_MS: ${MUSTER_TASK_TIMEOUT_MS:-120000}
       MUSTER_DOCKER_CONTAINER: ${MUSTER_DOCKER_CONTAINER:-}
       MUSTER_EXECUTION_GATEWAY_URL: ${MUSTER_EXECUTION_GATEWAY_URL:-}
@@ -38,6 +39,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       AGENT_TASK: ${AGENT_TASK:-Analise a saúde operacional de um agente de suporte, proponha uma próxima ação e registre a decisão.}
+    volumes:
+      - "${MUSTER_WORKSPACE_PATH:-.}:/workspace"
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,6 +51,10 @@ services:
     profiles: ["agent-docker"]
     extends:
       service: agent-runner
+    build:
+      context: .
+      dockerfile: artifacts/agent-runner/Dockerfile
+      target: runner-docker
     environment:
       MUSTER_EXECUTION_BACKEND: docker
     volumes:

@@ -3,11 +3,62 @@
 ## Estado global
 
 - Branch: `codex/feat/gauntlet-1-validator`
-- Rodadas concluídas: 1 — validador E2E; 2 — zero dado semeado por padrão
-- Próxima rodada: 3 — credencial própria por agente
+- Rodadas concluídas: 1 — validador E2E; 2 — zero dado semeado; consolidação —
+  autenticação real, tenancy, KPIs, conectores seguros, runner e telemetria contínua
+- Próxima rodada: Clerk E2E automatizado, autorização integral, carga, retenção e caos operacional
 - Baseline capturado em: 2026-08-14
-- Orçamento de rodadas restante: 23
-- Limite temporal informado: 6 horas
+- Gate atual: typecheck, 275 testes de API, 15 integrações PostgreSQL, 60 E2E públicos e 9 rotas autenticadas aprovados
+
+## Rodada — acesso contextual e governança contínua — 2026-09-06
+
+### Entregas
+
+- CRUD tenant-scoped de grupos de acesso com presets e escopos de organização,
+  área e equipe.
+- Sincronização de membros com Clerk e resolução de permissões efetivas.
+- Avaliação contínua por agente com Direction, Protection, Proof, contexto,
+  fundamentação, risco de alucinação, regressão e drift de input.
+- Backfill automático para agentes já existentes e alerta consolidado por agente.
+- Painel de governança em tempo real no shell produtivo, com cobertura explícita
+  e distinção entre saudável e não medido.
+- Correção do proxy Vite para a API 8087, startup da API com `.env` raiz e chave
+  única na fila de decisões.
+- Admin Console como rota corporativa protegida, com criação de organização pelo
+  Clerk, gestão de membros, grupos e permissões e entrada para criar equipes.
+
+### Evidência
+
+- Banco local: 21 agentes e 21 avaliações persistidas.
+- Distribuição observada: 10 saudáveis, 7 com dados insuficientes, 1 em atenção e
+  3 críticas antes da limpeza das fixtures de integração.
+- `pnpm run typecheck && pnpm test`: aprovado; API com 275 testes aprovados.
+- `pnpm run test:integration`: 6 arquivos e 15 cenários PostgreSQL aprovados.
+- Playwright público controlado: 62/62 em Chromium desktop e mobile.
+- Browser autenticado: Admin Console carregado com papel administrador; modal de
+  nova organização e formulário administrativo de nova equipe abertos com sucesso.
+- Browser autenticado: comando, portfólio, equipes, jornadas, conectores,
+  governança, métricas, relatórios e configurações carregaram sem 404, bootstrap
+  interrompido ou erro de console.
+
+### Achados do Gauntlet
+
+- O painel de governança havia sido adicionado a uma página legada não roteada;
+  foi movido para o `ManagerScreen` usado pelo shell produtivo.
+- O Vite apontava por padrão para `localhost:8080`, causando falha no bootstrap;
+  o padrão agora é a API real em `localhost:8087`.
+- Cinco workers Playwright saturavam a instância Clerk development e geravam
+  timeouts de teardown. O arquivo público agora executa serialmente por projeto,
+  mantendo desktop e mobile em paralelo.
+- Um segundo worker concorrente pode consumir a mesma fixture de integração;
+  a suíte PostgreSQL deve executar com a API isolada até existir leader election.
+
+### Gate residual
+
+- Aplicar a matriz de permissões contextuais a todas as mutações, não somente à
+  gestão de grupos e equipes.
+- Automatizar sessão Clerk de teste sem bypass.
+- Separar worker em processo dedicado com lease/leader election.
+- Provar carga, retenção, replay, dead-letter e recuperação do provider.
 
 ## Rodada 0 — baseline
 
@@ -111,7 +162,7 @@ Concluída.
 - Perfis e vereditos: saudável → `mentor` (70), degradando → `observation`
   (59), errático → `retire` (28).
 - Telemetria: 30 execuções por perfil, refletidas muito abaixo do limite de 30s.
-- Comitê: decisões `approved`/`disagreed` persistidas com `dev-user`, data,
+- Comitê: decisões `approved`/`disagreed` persistidas com usuário Clerk, data,
   confiança 90,3 e rastro recuperado por `/api/agents/:id/verdicts`.
 - Evidência: 7 registros por agente, vinculados ao agente correto.
 - Idempotência: segunda reavaliação sem eventos novos retornou `changed: false`.
@@ -268,3 +319,169 @@ instância sem se ver, pela interface.
 
 **Verificador:** um observador não consegue aprovar veredito nem pela tela nem
 por chamada direta à API.
+
+## Consolidação arquitetural — 2026-08-23
+
+Esta consolidação substitui as pendências técnicas já entregues nas seções
+históricas anteriores; os itens de produto ainda não implementados continuam
+válidos.
+
+### Entregue
+
+- Bypass removido: Clerk é obrigatório na API e no frontend, com CORS por
+  allowlist e landing pública separada das rotas autenticadas.
+- Tenant utilizável: organização ativa vem do Clerk, o vínculo é verificado no
+  provedor, o tenant local é provisionado e o cache/onboarding muda junto com
+  usuário + organização.
+- Isolamento aplicativo: evidências, catálogo, jornadas, frota, deduplicação e
+  mutações sensíveis são tenant-scoped; RBAC protege configuração e operação.
+- Credenciais: chaves próprias por agente para ingestão e segredos de conectores
+  cifrados com AES-256-GCM, AAD por conector e migração legada bloqueada.
+- Execução híbrida: runner validado nos backends local, Docker e gateway remoto,
+  com allowlist, timeout, limite de saída e heartbeat.
+- Métricas: 38 contratos em sete kits, com domínio, fórmula, baseline, owner,
+  freshness, confiança, guardrail e impacto decisório.
+- Supervisão contínua: outbox transacional, `SKIP LOCKED`, lock por
+  tenant/agente, debounce, retry, dead-letter, recuperação de lease, polling e
+  SSE durável.
+- Experiência: Mission Control acompanha atividade de projeção em polling de
+  dois segundos; métricas, Agent 360 e Jornadas A2A ganharam leitura operacional.
+- Contrato: OpenAPI inclui autenticação bearer, organizações, KPI/insights,
+  saúde do worker, atividade contínua e SSE; clientes React e Zod regenerados.
+
+### Verificadores aprovados
+
+- `pnpm run build`: typecheck do monorepo e builds de API/frontends aprovados.
+- `pnpm test`: 289 testes puros aprovados; seis integrações ficam fora da suíte
+  padrão por dependerem de PostgreSQL.
+- `pnpm run test:integration`: seis testes PostgreSQL de tenancy e outbox
+  aprovados em banco migrado.
+- `pnpm --filter @workspace/db run migrate`: migrations `0012` e `0013`
+  aplicadas com sucesso.
+- Docker Compose: configuração validada nos perfis padrão, `agent` e
+  `agent-docker`.
+- Playwright: doze cenários descobertos — seis públicos em desktop/mobile e
+  seis autenticados em desktop.
+- `git diff --check`: nenhum erro de whitespace.
+
+### Gate externo restante
+
+O ambiente local não possui `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`,
+`VITE_CLERK_PUBLISHABLE_KEY` nem `PLAYWRIGHT_STORAGE_STATE`. Por isso os doze
+cenários de browser não foram executados nesta consolidação; o bloqueio é de
+configuração externa, não um bypass temporário. O comando reproduzível é
+`pnpm run validate:gauntlet` depois de configurar Clerk, iniciar PostgreSQL/API
+e fornecer a sessão de teste.
+
+### Próximos gates de escala
+
+- RLS PostgreSQL com transação request-scoped e role sem `BYPASSRLS`.
+- KMS/Vault com rotação online e chaves por ambiente ou tenant.
+- Testes de carga, retenção/particionamento do outbox e worker independente.
+- Broker/fan-out para throughput elevado e milhares de conexões SSE.
+- Alertas de heartbeat stale, backlog, dead-letter e guardrails de KPI.
+- Fluxos de convite/gestão de membros e autorização contextual na interface.
+
+## Rodada UX — scorecard gerencial multicamada — 2026-08-23
+
+### Objetivo
+
+Unir a clareza do modelo de agente como profissional com a profundidade da
+visão gerencial anterior, sem transformar retorno financeiro no único critério.
+O gestor deve conseguir ler custo por execução, acurácia, eficácia, eficiência,
+adoção, governança, confiabilidade e cumprimento do propósito na mesma jornada.
+
+### Mudanças
+
+- A entrada do Workforce OS passou a ser uma visão gerencial configurável.
+- O gestor escolhe quais métricas aparecem sem alterar contratos ou guardrails.
+- Custo por execução e economia mensal aparecem junto de qualidade, resultado,
+  adoção, governança, confiabilidade e propósito.
+- O histórico consolidado compara quatro dimensões durante seis meses.
+- O portfólio por equipe preserva cada dimensão em vez de produzir um ranking
+  universal opaco.
+- A fila de decisões ordena sinais por risco, impacto e prazo e leva ao
+  prontuário do agente.
+- O prontuário individual recebeu o mesmo scorecard da visão gerencial para não
+  perder contexto entre diagnóstico e decisão.
+- Um Gauntlet da decisão expõe suficiência de evidência, comparabilidade,
+  aderência ao papel, acionabilidade e accountability humana.
+
+### Abordagem corrigida
+
+A primeira direção visual priorizou propósito e contrato, mas removeu métricas,
+histórico e economia demais. A rodada seguinte recuperou gráficos e análise de
+equipes, porém ainda não oferecia uma entrada gerencial consolidada. A estratégia
+final mantém propósito como eixo e trata as demais métricas como lentes
+complementares e configuráveis.
+
+### Verificadores
+
+| Verificador | Score | Evidência |
+|---|---:|---|
+| Clareza gerencial | 9/10 | scorecard agrupado e configurável |
+| Profundidade analítica | 9/10 | oito KPIs, histórico e portfólio por equipe |
+| Continuidade da jornada | 9/10 | visão gerencial abre prontuário com as mesmas lentes |
+| Acionabilidade | 9/10 | fila de decisões e gates antes da execução |
+| Não-regressão técnica | 10/10 | typecheck completo, build e 289 testes aprovados |
+| Dados reais | 4/10 | experiência ainda usa dados demonstrativos isolados |
+
+### Evidência técnica
+
+- `pnpm run typecheck`: aprovado em todos os projetos do monorepo.
+- `pnpm --filter @workspace/muster run build`: aprovado; 2.555 módulos.
+- `pnpm test`: 289 testes aprovados; seis integrações PostgreSQL ignoradas pela
+  suíte padrão, conforme configuração existente.
+
+### Próxima ação
+
+Promover o scorecard demonstrativo para um contrato OpenAPI aditivo e alimentar
+cada lente com telemetria real. O primeiro corte deve cobrir custo por execução,
+acurácia, eficácia, eficiência e adoção para um agente de engenharia e uma
+jornada A2A, mantendo estados explícitos de `sem evidência` quando não houver
+dados suficientes.
+
+## Rodada UX — continuidade de rotas — 2026-08-23
+
+### Falha observada
+
+As rotas canônicas apontavam para componentes legados diferentes, enquanto o
+novo Workforce OS mantinha a tela ativa apenas em estado local. Ao navegar pelo
+produto, a URL e o shell visual divergiam e o usuário retornava ao modelo antigo.
+
+### Correção
+
+- Um contrato único liga tela, grupo, rótulo e URL canônica.
+- Comando, guia, relatórios, portfólio, profissional, métricas, equipes,
+  jornadas, benchmarks, conectores e governança usam o mesmo shell produtivo.
+- Admissão, alertas, configurações, perfil e conexão de telemetria preservam as
+  funções existentes em modo embutido, sem remontar o layout legado.
+- A navegação atualiza a URL e a URL restaura a tela correta em reload, voltar e
+  avançar do navegador.
+- `/frota` permanece como alias compatível do novo portfólio.
+- `/agentes/:id/conectar` preserva o ID do agente e abre a integração dentro do
+  mesmo shell.
+- O atalho de uma linha do portfólio passa explicitamente o agente escolhido,
+  eliminando a abertura acidental do profissional selecionado anteriormente.
+
+### Gates
+
+- Contrato puro: rotas e telas únicas, alias controlado e IDs codificados.
+- Público: toda rota do novo shell redireciona sem sessão e não vaza conteúdo.
+- Autenticado: cada URL deve renderizar `data-workforce-screen` correspondente.
+- Jornada: clicar em todos os itens mantém o shell novo e nunca cria
+  `.workspace-shell`, marcador do layout legado.
+- Portfólio: abrir Vega deve terminar em `/agentes/vega`.
+- O comando `validate:gauntlet` inclui os testes puros antes das integrações e
+  dos testes de navegador.
+
+### Resultado desta rodada
+
+- Testes focados do frontend: 21/21 aprovados.
+- Suíte do monorepo: 317 testes aprovados; oito integrações PostgreSQL são
+  condicionais na execução padrão.
+- Integrações PostgreSQL dedicadas: 8/8 aprovadas.
+- Playwright público: 42/42 aprovados em desktop e mobile.
+- Build Vite e typecheck do frontend: aprovados.
+- Playwright autenticado: cenários implementados, mas não executados porque
+  `PLAYWRIGHT_STORAGE_STATE` não está configurado no ambiente atual.

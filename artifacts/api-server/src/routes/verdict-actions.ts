@@ -4,6 +4,7 @@ import { db, agents, verdicts, verdictActions } from "@workspace/db";
 import type { VerdictActionStatus } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireOrgOperator } from "../middlewares/orgRole";
 import {
   VERDICT_ACTION_STATUSES,
   canCompleteAction,
@@ -62,7 +63,7 @@ router.get("/agents/:agentId/actions", requireAuth, requireOrg, async (req, res)
   res.json(rows.map(toVerdictAction));
 });
 
-router.patch("/agents/:agentId/actions/:actionId", requireAuth, requireOrg, async (req, res) => {
+router.patch("/agents/:agentId/actions/:actionId", requireAuth, requireOrg, requireOrgOperator, async (req, res) => {
   const agentId = req.params.agentId as string;
   const actionId = req.params.actionId as string;
 
@@ -142,5 +143,4 @@ export async function materializeVerdictActions(
     })),
   );
 }
-
 

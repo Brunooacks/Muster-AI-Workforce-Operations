@@ -19,7 +19,7 @@ import { createMusterReporter } from "@workspace/telemetry-reporter";
 const reporter = createMusterReporter({
   baseUrl: "https://muster.example.com", // ou http://localhost:8080 em dev
   agentId: "<id do agente na frota>",
-  token: process.env.MUSTER_TOKEN,       // dispensável com AUTH_DEV_BYPASS
+  token: process.env.MUSTER_AGENT_API_KEY, // obrigatório para o agente
 });
 
 // 1) Evento avulso

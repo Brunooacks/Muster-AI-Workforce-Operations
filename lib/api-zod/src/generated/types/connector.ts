@@ -5,6 +5,8 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { ConnectorHealth } from './connectorHealth';
+import type { ConnectorMode } from './connectorMode';
 import type { ConnectorStatus } from './connectorStatus';
 
 export interface Connector {
@@ -12,8 +14,19 @@ export interface Connector {
   platform: string;
   name: string;
   status: ConnectorStatus;
+  mode: ConnectorMode;
+  health: ConnectorHealth;
   agentsDiscovered: number;
   category: string;
   /** @nullable */
   lastSyncAt?: string | null;
+  /** @nullable */
+  lastTestedAt?: string | null;
+  /** @nullable */
+  lastEventAt?: string | null;
+  nextAction: string;
+  /** One-time connector ingestion key. Present only in the configuration response. */
+  setupApiKey?: string;
+  /** Relative ingestion endpoint for the universal contract. */
+  setupEndpoint?: string;
 }

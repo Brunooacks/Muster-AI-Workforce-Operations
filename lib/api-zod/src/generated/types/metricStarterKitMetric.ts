@@ -5,6 +5,7 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { KpiOperationalMetadata } from './kpiOperationalMetadata';
 import type { MetricStarterKitMetricLayer } from './metricStarterKitMetricLayer';
 
 export interface MetricStarterKitMetric {
@@ -13,4 +14,5 @@ export interface MetricStarterKitMetric {
   layer: MetricStarterKitMetricLayer;
   unit: string;
   target: string;
+  operationalMetadata?: KpiOperationalMetadata;
 }

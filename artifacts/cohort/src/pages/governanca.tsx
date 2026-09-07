@@ -1,4 +1,4 @@
-import { AppLayout } from "@/components/layout";
+import { OperationalPageFrame } from "@/components/layout";
 import { useGetFleetGovernance } from "@workspace/api-client-react";
 import {
   Card,
@@ -145,7 +145,7 @@ function fmtDate(value: string | null | undefined, locale: string) {
   return value ? new Date(value).toLocaleDateString(locale) : "—";
 }
 
-export default function GovernancePage() {
+export default function GovernancePage({ embedded = false }: { embedded?: boolean } = {}) {
   const { data, isLoading, isError, refetch } = useGetFleetGovernance();
   const { lang } = useLang();
   const t = L[lang];
@@ -153,8 +153,8 @@ export default function GovernancePage() {
   const summary = data?.summary;
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.bcGov }, { label: t.title }]}>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.bcGov }, { label: t.title }]}>
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500" data-operational-source="api">
         <PageHeading
           eyebrow={t.eyebrow}
           title={t.title}
@@ -341,6 +341,6 @@ export default function GovernancePage() {
           </>
         )}
       </div>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }

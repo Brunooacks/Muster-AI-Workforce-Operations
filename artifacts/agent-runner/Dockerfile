@@ -1,8 +1,9 @@
-FROM node:20-alpine
+FROM node:20-alpine AS runner-base
 
-WORKDIR /workspace
+RUN apk add --no-cache git \
+    && corepack enable
 
-RUN corepack enable
+WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY artifacts/agent-runner/package.json artifacts/agent-runner/package.json
@@ -13,4 +14,13 @@ RUN pnpm install --frozen-lockfile --filter @workspace/agent-runner...
 COPY artifacts/agent-runner artifacts/agent-runner
 COPY lib/telemetry-reporter lib/telemetry-reporter
 
-CMD ["pnpm", "--filter", "@workspace/agent-runner", "run", "start"]
+ENV MUSTER_WORKSPACE=/workspace
+VOLUME ["/workspace"]
+
+CMD ["pnpm", "--dir", "/app", "--filter", "@workspace/agent-runner", "run", "start"]
+
+FROM runner-base AS runner-docker
+
+RUN apk add --no-cache docker-cli docker-cli-compose
+
+FROM runner-base AS runner

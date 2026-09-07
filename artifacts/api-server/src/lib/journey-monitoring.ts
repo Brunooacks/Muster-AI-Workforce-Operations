@@ -193,7 +193,7 @@ function summarizeRun(run: AggregatedRun): JourneyRunMonitoringSummary {
     durationMs: runDuration(run.events, terminal),
     costCents: run.events.reduce((sum, event) => sum + eventCost(event), 0),
     eventCount: run.events.length,
-    currentStepId: currentStepId(run.events),
+    currentStepId: terminal ? null : currentStepId(run.events),
   };
 }
 

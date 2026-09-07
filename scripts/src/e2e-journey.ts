@@ -1,10 +1,12 @@
 export {};
 
+import { requireMusterSessionToken } from "./muster-session";
+
 const baseUrl = (process.env.MUSTER_BASE_URL ?? "http://localhost:8087").replace(
   /\/+$/,
   "",
 );
-const authToken = process.env.MUSTER_AUTH_TOKEN?.trim();
+const authToken = requireMusterSessionToken();
 const prefix = "Gauntlet A2A";
 
 type Created = { id: string };
@@ -60,7 +62,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       ...(init.body ? { "content-type": "application/json" } : {}),
-      ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+      authorization: `Bearer ${authToken}`,
       ...init.headers,
     },
   });

@@ -1,4 +1,9 @@
-import type { KpiContract, KpiDomain } from "./kpi-contract";
+import type {
+  KpiCadence,
+  KpiContract,
+  KpiDomain,
+  KpiFreshnessPolicy,
+} from "./kpi-contract";
 
 export interface KpiDomainVertical {
   key: KpiDomain;
@@ -8,15 +13,37 @@ export interface KpiDomainVertical {
   metrics: KpiContract[];
 }
 
-type KpiDefinition = Omit<KpiContract, "minSampleSize" | "evidence"> & {
+type KpiDefinition = Omit<
+  KpiContract,
+  "capability" | "minSampleSize" | "evidence" | "freshness" | "confidence"
+> & {
+  capability?: KpiContract["capability"];
   minSampleSize?: number;
   evidence?: KpiContract["evidence"];
+  freshness?: KpiContract["freshness"];
+  confidence?: KpiContract["confidence"];
+};
+
+const FRESHNESS_BY_CADENCE: Record<KpiCadence, KpiFreshnessPolicy> = {
+  "per-run": { expectedWithinMinutes: 5, staleAfterMinutes: 15, expiresAfterMinutes: 60 },
+  daily: { expectedWithinMinutes: 1_440, staleAfterMinutes: 2_160, expiresAfterMinutes: 4_320 },
+  weekly: { expectedWithinMinutes: 10_080, staleAfterMinutes: 14_400, expiresAfterMinutes: 21_600 },
+  monthly: { expectedWithinMinutes: 43_200, staleAfterMinutes: 64_800, expiresAfterMinutes: 86_400 },
+  quarterly: { expectedWithinMinutes: 129_600, staleAfterMinutes: 194_400, expiresAfterMinutes: 259_200 },
 };
 
 function defineKpi(definition: KpiDefinition): KpiContract {
+  const confidence = definition.confidence ?? { minimum: 80, decisionGrade: 90 };
   return {
+    capability: "business-outcome",
     minSampleSize: 30,
-    evidence: { allowed: ["observed", "inferred"], minConfidence: 80, auditSampleRate: 10 },
+    freshness: FRESHNESS_BY_CADENCE[definition.cadence],
+    confidence,
+    evidence: {
+      allowed: ["observed", "inferred"],
+      minConfidence: confidence.minimum,
+      auditSampleRate: 10,
+    },
     ...definition,
   };
 }
@@ -74,7 +101,40 @@ export const KPI_DOMAIN_VERTICALS: KpiDomainVertical[] = [
       defineKpi({ key: "rh-impacto-experiencia", domain: "risco-financas-rh", area: "Pessoas", layer: "value", label: "Experiência do time", purpose: "Medir se a colaboração com o agente melhora ou degrada o trabalho humano.", unit: "/5", direction: "higher-is-better", formula: "média da pesquisa pós-ciclo com usuários impactados", sourceSignals: ["employee_experience"], cadence: "monthly", baseline: "required", target: "≥ 4/5", owner: "People Operations", decisionImpact: "mentor", guardrail: false, rationale: "Performance de equipe mista inclui o impacto percebido pelas pessoas." }),
     ],
   },
+  {
+    key: "operacoes-backoffice",
+    label: "Operações & Backoffice",
+    description: "Fluxo ponta a ponta, observabilidade, resiliência e qualidade dos dados operacionais.",
+    icon: "Workflow",
+    metrics: [
+      defineKpi({ key: "operacoes-processamento-sem-toque", domain: "operacoes-backoffice", capability: "business-outcome", area: "Operações", layer: "efficacy", label: "Processamento sem toque", purpose: "Medir casos concluídos sem correção ou intervenção humana não planejada.", unit: "%", direction: "higher-is-better", formula: "casos concluídos sem intervenção / casos elegíveis × 100", sourceSignals: ["straight_through_processing"], cadence: "daily", baseline: "required", target: "≥ 80%", owner: "Líder de Operações", decisionImpact: "promote", guardrail: false, rationale: "Automação só gera capacidade quando conclui o fluxo, não quando apenas desloca trabalho." }),
+      defineKpi({ key: "operacoes-taxa-excecao", domain: "operacoes-backoffice", capability: "quality-evaluation", area: "Controle operacional", layer: "governance", label: "Taxa de exceção operacional", purpose: "Detectar casos que saem do caminho padrão por erro de regra, dado ou decisão.", unit: "%", direction: "lower-is-better", formula: "casos com exceção / casos processados × 100", sourceSignals: ["operational_exception_rate"], cadence: "daily", baseline: "required", target: "≤ 8%", owner: "Controle de Operações", decisionImpact: "mentor", guardrail: true, rationale: "Exceções recorrentes escondem retrabalho e risco sob uma taxa alta de execução." }),
+      defineKpi({ key: "operacoes-idade-fila-p95", domain: "operacoes-backoffice", capability: "business-outcome", area: "Gestão de filas", layer: "efficiency", label: "Idade da fila p95", purpose: "Controlar a cauda de espera dos itens ainda não processados.", unit: "min", direction: "lower-is-better", formula: "percentil 95 da idade dos itens abertos", sourceSignals: ["queue_age_p95"], cadence: "daily", baseline: "required", target: "≤ 30 min", owner: "Líder de Operações", decisionImpact: "mentor", guardrail: false, rationale: "Média saudável pode ocultar uma fila crítica; o p95 mostra quem está ficando para trás." }),
+      defineKpi({ key: "discovery-cobertura-sinais", domain: "operacoes-backoffice", capability: "discovery-observability", area: "Discovery", layer: "adoption", label: "Cobertura de sinais descobertos", purpose: "Medir quanto do workload elegível possui sinais reconhecidos pelo Muster.", unit: "%", direction: "higher-is-better", formula: "workloads com sinais reconhecidos / workloads descobertos × 100", sourceSignals: ["discovery_signal_coverage"], cadence: "daily", baseline: "optional", target: "≥ 90%", owner: "Platform Operations", decisionImpact: "observation", guardrail: false, rationale: "Sem cobertura de sinais, o cadastro existe mas a avaliação permanece cega." }),
+      defineKpi({ key: "discovery-prontidao-instrumentacao", domain: "operacoes-backoffice", capability: "discovery-observability", area: "Discovery", layer: "governance", label: "Prontidão de instrumentação", purpose: "Confirmar que os sinais necessários ao kit escolhido estão sendo coletados.", unit: "%", direction: "higher-is-better", formula: "sinais obrigatórios ativos / sinais obrigatórios do kit × 100", sourceSignals: ["instrumentation_readiness"], cadence: "daily", baseline: "not-applicable", target: "≥ 95%", owner: "Observability Lead", decisionImpact: "mentor", guardrail: true, rationale: "Nenhum agente deve ser promovido com lacunas materiais de instrumentação." }),
+      defineKpi({ key: "runtime-cobertura-heartbeat", domain: "operacoes-backoffice", capability: "runtime-resilience", area: "Runtime", layer: "governance", label: "Cobertura de heartbeat", purpose: "Detectar agentes ativos que deixaram de publicar sinal de vida dentro da janela.", unit: "%", direction: "higher-is-better", formula: "agentes com heartbeat fresco / agentes ativos × 100", sourceSignals: ["heartbeat_coverage"], cadence: "per-run", freshness: { expectedWithinMinutes: 1, staleAfterMinutes: 3, expiresAfterMinutes: 5 }, baseline: "not-applicable", target: "≥ 99%", owner: "SRE / Platform", decisionImpact: "mentor", guardrail: true, minSampleSize: 1, rationale: "Telemetria contínua começa por saber quais workloads estão realmente vivos." }),
+      defineKpi({ key: "runtime-sucesso-fallback", domain: "operacoes-backoffice", capability: "runtime-resilience", area: "Runtime", layer: "efficacy", label: "Sucesso do fallback", purpose: "Medir se a rota alternativa conclui a execução quando o runtime primário falha.", unit: "%", direction: "higher-is-better", formula: "fallbacks concluídos / fallbacks acionados × 100", sourceSignals: ["fallback_success_rate"], cadence: "per-run", baseline: "required", target: "≥ 99%", owner: "SRE / Platform", decisionImpact: "mentor", guardrail: true, minSampleSize: 10, rationale: "Fallback configurado sem teste real cria uma sensação falsa de resiliência." }),
+      defineKpi({ key: "dados-completude-trace", domain: "operacoes-backoffice", capability: "data-quality", area: "Qualidade de dados", layer: "governance", label: "Completude de trace", purpose: "Garantir que execuções tenham identidade, timestamps, resultado, custo e linhagem essenciais.", unit: "%", direction: "higher-is-better", formula: "traces com campos obrigatórios / traces recebidos × 100", sourceSignals: ["trace_completeness"], cadence: "daily", baseline: "not-applicable", target: "≥ 98%", owner: "Data Platform", decisionImpact: "mentor", guardrail: true, rationale: "Métrica sem trace reconstruível não sustenta auditoria nem decisão." }),
+      defineKpi({ key: "dados-duplicidade-eventos", domain: "operacoes-backoffice", capability: "data-quality", area: "Qualidade de dados", layer: "efficiency", label: "Duplicidade de eventos", purpose: "Medir eventos repetidos que distorcem volume, custo e sucesso.", unit: "%", direction: "lower-is-better", formula: "eventos deduplicados / eventos recebidos × 100", sourceSignals: ["duplicate_event_rate"], cadence: "daily", baseline: "optional", target: "≤ 1%", owner: "Data Platform", decisionImpact: "observation", guardrail: false, rationale: "Duplicidade baixa é requisito para tendências e custos confiáveis." }),
+      defineKpi({ key: "eval-saida-fundamentada", domain: "operacoes-backoffice", capability: "quality-evaluation", area: "Avaliação", layer: "efficacy", label: "Saída fundamentada", purpose: "Medir respostas sustentadas pelas evidências e fontes disponíveis à execução.", unit: "%", direction: "higher-is-better", formula: "saídas fundamentadas / saídas auditadas × 100", sourceSignals: ["grounded_output_rate"], cadence: "daily", baseline: "required", target: "≥ 95%", owner: "Quality & Evaluation", decisionImpact: "mentor", guardrail: true, rationale: "Uma resposta plausível sem sustentação não deve orientar ação operacional." }),
+    ],
+  },
+  {
+    key: "workforce-hibrida",
+    label: "Workforce Híbrida",
+    description: "Colaboração humano-agente, supervisão e desempenho de jornadas com múltiplos participantes.",
+    icon: "UsersRound",
+    metrics: [
+      defineKpi({ key: "hibrida-aceite-humano", domain: "workforce-hibrida", capability: "human-agent-collaboration", area: "Colaboração", layer: "adoption", label: "Aceite humano das entregas", purpose: "Medir entregas aceitas sem edição material pelo responsável humano.", unit: "%", direction: "higher-is-better", formula: "entregas aceitas sem edição material / entregas revisadas × 100", sourceSignals: ["human_acceptance_rate"], cadence: "weekly", baseline: "required", target: "≥ 80%", owner: "Workforce Manager", decisionImpact: "promote", guardrail: false, rationale: "Aceite recorrente demonstra confiança e utilidade no trabalho real." }),
+      defineKpi({ key: "hibrida-taxa-override", domain: "workforce-hibrida", capability: "human-agent-collaboration", area: "Supervisão", layer: "governance", label: "Taxa de override humano", purpose: "Medir decisões do agente substituídas pelo supervisor.", unit: "%", direction: "lower-is-better", formula: "decisões substituídas / decisões revisadas × 100", sourceSignals: ["human_override_rate"], cadence: "weekly", baseline: "required", target: "≤ 10%", owner: "Supervisor da Jornada", decisionImpact: "mentor", guardrail: true, rationale: "Override alto revela desalinhamento entre autonomia declarada e desempenho real." }),
+      defineKpi({ key: "hibrida-retrabalho", domain: "workforce-hibrida", capability: "human-agent-collaboration", area: "Qualidade", layer: "efficacy", label: "Retrabalho humano", purpose: "Quantificar entregas que exigem reconstrução relevante por uma pessoa.", unit: "%", direction: "lower-is-better", formula: "entregas com retrabalho material / entregas concluídas × 100", sourceSignals: ["human_rework_rate"], cadence: "weekly", baseline: "required", target: "≤ 8%", owner: "Workforce Manager", decisionImpact: "mentor", guardrail: false, rationale: "Automação que gera retrabalho consome capacidade em vez de liberá-la." }),
+      defineKpi({ key: "hibrida-sla-escalonamento", domain: "workforce-hibrida", capability: "human-agent-collaboration", area: "Supervisão", layer: "efficiency", label: "SLA de escalonamento humano", purpose: "Medir escalonamentos atendidos dentro do tempo necessário à jornada.", unit: "%", direction: "higher-is-better", formula: "escalonamentos atendidos no SLA / escalonamentos elegíveis × 100", sourceSignals: ["human_escalation_sla"], cadence: "daily", baseline: "required", target: "≥ 95%", owner: "Supervisor da Jornada", decisionImpact: "mentor", guardrail: true, rationale: "Human-in-the-loop lento pode ser tão prejudicial quanto uma decisão autônoma incorreta." }),
+      defineKpi({ key: "a2a-sucesso-handoff", domain: "workforce-hibrida", capability: "a2a-orchestration", area: "Jornadas A2A", layer: "efficacy", label: "Sucesso de handoff A2A", purpose: "Medir transferências aceitas e processadas pelo próximo participante.", unit: "%", direction: "higher-is-better", formula: "handoffs aceitos e processados / handoffs iniciados × 100", sourceSignals: ["a2a_handoff_success"], cadence: "per-run", baseline: "required", target: "≥ 98%", owner: "Journey Owner", decisionImpact: "mentor", guardrail: true, rationale: "Uma jornada é tão forte quanto a transferência entre seus participantes." }),
+      defineKpi({ key: "a2a-integridade-contexto", domain: "workforce-hibrida", capability: "a2a-orchestration", area: "Jornadas A2A", layer: "governance", label: "Integridade de contexto no handoff", purpose: "Verificar se fatos, restrições e evidências obrigatórias chegam ao próximo agente.", unit: "%", direction: "higher-is-better", formula: "handoffs com contexto obrigatório íntegro / handoffs auditados × 100", sourceSignals: ["a2a_context_integrity"], cadence: "per-run", baseline: "not-applicable", target: "≥ 99%", owner: "Journey Owner", decisionImpact: "mentor", guardrail: true, rationale: "Perda de contexto transforma decisões corretas isoladamente em falha end-to-end." }),
+      defineKpi({ key: "eval-concordancia-humano-agente", domain: "workforce-hibrida", capability: "quality-evaluation", area: "Avaliação", layer: "efficacy", label: "Concordância humano-agente", purpose: "Medir concordância entre avaliação automatizada e auditoria humana calibrada.", unit: "%", direction: "higher-is-better", formula: "avaliações concordantes / itens avaliados por ambos × 100", sourceSignals: ["human_agent_eval_agreement"], cadence: "weekly", baseline: "required", target: "≥ 85%", owner: "Quality & Evaluation", decisionImpact: "mentor", guardrail: false, rationale: "Sem calibração, o score automatizado pode apenas repetir o viés do avaliador." }),
+      defineKpi({ key: "hibrida-cobertura-supervisao", domain: "workforce-hibrida", capability: "human-agent-collaboration", area: "Supervisão", layer: "governance", label: "Cobertura de supervisão", purpose: "Confirmar revisão integral dos casos definidos como obrigatórios pela política.", unit: "%", direction: "higher-is-better", formula: "casos obrigatórios revisados / casos obrigatórios × 100", sourceSignals: ["supervision_coverage"], cadence: "daily", baseline: "not-applicable", target: "100%", owner: "Governance Sponsor", decisionImpact: "retire", guardrail: true, rationale: "Supervisão configurada mas não executada invalida o modelo de autonomia." }),
+    ],
+  },
 ];
 
 export const KPI_DOMAIN_CATALOG: KpiContract[] = KPI_DOMAIN_VERTICALS.flatMap((vertical) => vertical.metrics);
-

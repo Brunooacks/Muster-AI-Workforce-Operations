@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Muster Workforce OS — Gauntlet operacional</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    :root {
+      --canvas: #eef2ef;
+      --paper: #fffefa;
+      --ink: #14231e;
+      --muted: #5e6d66;
+      --line: #cfdbd5;
+      --teal: #07776f;
+      --teal-soft: #d9f0eb;
+      --lime: #98d665;
+      --lime-soft: #eaf7df;
+      --amber: #bb7a16;
+      --amber-soft: #fff0d6;
+      --red: #c65645;
+      --red-soft: #fbe6e2;
+      --shadow: 0 28px 80px rgba(24, 48, 40, .14);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--canvas); }
+    .scene-clip { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; }
+    .scene { position: absolute; inset: 0; overflow: hidden; background: var(--canvas); }
+    .wash {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 88% 8%, rgba(152, 214, 101, .16), transparent 29%),
+        radial-gradient(circle at 10% 92%, rgba(8, 127, 118, .12), transparent 31%),
+        linear-gradient(135deg, rgba(255,255,255,.7), transparent 52%);
+    }
+    .grid {
+      position: absolute; inset: 0; opacity: .42;
+      background-image:
+        linear-gradient(rgba(20,35,30,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,35,30,.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+    .masthead {
+      position: absolute; z-index: 20; left: 74px; right: 74px; top: 38px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 14px; font-weight: 760; letter-spacing: -.02em; }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+      color: var(--teal); background: var(--teal-soft); border: 1px solid rgba(8,127,118,.15);
+      font-size: 20px; line-height: 1; box-shadow: 0 8px 24px rgba(8,127,118,.12);
+    }
+    .brand-name { font-size: 22px; }
+    .brand-sub { margin-left: 3px; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .17em; }
+    .run-state { display: inline-flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; font-weight: 650; letter-spacing: .04em; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 6px rgba(152,214,101,.14); }
+    .step-counter { padding: 10px 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,254,250,.72); color: var(--ink); }
+    .flow-layout {
+      position: absolute; z-index: 4; left: 74px; right: 74px; top: 132px; bottom: 82px;
+      display: grid; grid-template-columns: 420px minmax(0, 1fr); gap: 34px; align-items: center;
+    }
+    .rail {
+      position: relative; padding: 34px 32px 32px; border: 1px solid var(--line); border-radius: 26px;
+      background: rgba(255,254,250,.91); box-shadow: 0 20px 64px rgba(24,48,40,.08);
+    }
+    .rail:before {
+      content: ""; position: absolute; left: -1px; top: 32px; bottom: 32px; width: 4px;
+      border-radius: 99px; background: linear-gradient(var(--teal), var(--lime));
+    }
+    .eyebrow { color: var(--teal); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .17em; }
+    .rail h2 {
+      margin-top: 18px; font-family: Georgia, "Times New Roman", serif; font-size: 48px;
+      font-weight: 400; letter-spacing: -.04em; line-height: 1.03;
+    }
+    .rail > p { margin-top: 18px; color: var(--muted); font-size: 19px; line-height: 1.48; }
+    .evidence { display: grid; gap: 10px; margin-top: 24px; }
+    .evidence-item {
+      display: flex; align-items: flex-start; gap: 11px; padding: 12px 13px; border-radius: 14px;
+      color: #415149; background: #edf3ef; font-size: 14px; line-height: 1.34;
+    }
+    .check {
+      flex: none; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 7px;
+      color: var(--teal); background: var(--teal-soft); font-size: 12px; font-weight: 900;
+    }
+    .verdict { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .badge { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 9px 12px; font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .11em; }
+    .badge.pass { color: #176d4c; background: var(--lime-soft); }
+    .badge.contract { color: #8f5a09; background: var(--amber-soft); }
+    .badge.action { color: var(--teal); background: var(--teal-soft); }
+    .proof-note { color: var(--muted); font-size: 12px; text-align: right; }
+    .capture {
+      position: relative; width: 100%; overflow: hidden; border: 1px solid #c8d3ce; border-radius: 25px;
+      background: var(--paper); box-shadow: var(--shadow); transform-origin: 58% 50%;
+    }
+    .windowbar {
+      height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+      border-bottom: 1px solid var(--line); background: #f8faf8; color: var(--muted); font-size: 12px;
+    }
+    .traffic { display: flex; align-items: center; gap: 7px; }
+    .traffic i { width: 9px; height: 9px; border-radius: 50%; background: #d8dfdb; }
+    .traffic i:first-child { background: #f1a093; }
+    .traffic i:nth-child(2) { background: #eecb76; }
+    .traffic i:nth-child(3) { background: #98d665; }
+    .capture-label { display: inline-flex; align-items: center; gap: 7px; }
+    .screen-art { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #f5f7f4; }
+    .screen-state { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+    .state-next, .state-third { opacity: 0; }
+    .phase-chip {
+      position: absolute; z-index: 5; left: 18px; bottom: 18px; padding: 10px 13px; border-radius: 999px;
+      color: var(--ink); background: rgba(255,254,250,.94); border: 1px solid var(--line);
+      box-shadow: 0 12px 34px rgba(20,35,30,.14); font-size: 12px; font-weight: 760;
+    }
+    .phase-next, .phase-third { opacity: 0; }
+    .progress { position: absolute; z-index: 40; left: 74px; right: 74px; bottom: 34px; height: 3px; background: rgba(20,35,30,.1); }
+    .progress span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, var(--teal), var(--lime)); transform: scaleX(0); transform-origin: left center; }
+    .hero { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; text-align: center; }
+    .hero-inner { width: 1480px; }
+    .hero-kicker { display: inline-flex; align-items: center; gap: 10px; padding: 10px 15px; border: 1px solid rgba(8,127,118,.2); border-radius: 999px; color: var(--teal); background: rgba(217,240,235,.72); font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .15em; }
+    .hero h1 { margin-top: 28px; font-family: Georgia, "Times New Roman", serif; font-size: 94px; font-weight: 400; letter-spacing: -.055em; line-height: .98; }
+    .hero h1 em { color: var(--teal); font-style: normal; }
+    .hero p { max-width: 970px; margin: 27px auto 0; color: var(--muted); font-size: 25px; line-height: 1.45; }
+    .flow-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1200px; margin: 42px auto 0; }
+    .flow-chip { padding: 12px 15px; border: 1px solid var(--line); border-radius: 12px; color: #42534b; background: rgba(255,254,250,.82); font-size: 13px; font-weight: 700; }
+    .close-panel { width: 1540px; padding: 62px 70px; border-radius: 36px; color: #fff; background: var(--ink); box-shadow: 0 34px 100px rgba(20,35,30,.22); }
+    .close-panel .hero-kicker { color: #bde79a; border-color: rgba(189,231,154,.28); background: rgba(189,231,154,.08); }
+    .close-panel h2 { margin-top: 26px; font-family: Georgia, "Times New Roman", serif; font-size: 72px; font-weight: 400; line-height: 1; letter-spacing: -.045em; }
+    .close-panel p { margin-top: 20px; color: #bac8c1; font-size: 22px; line-height: 1.45; }
+    .proof-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 38px; }
+    .proof-card { padding: 22px 24px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(255,255,255,.06); text-align: left; }
+    .proof-card strong { display: block; color: #bde79a; font-family: Georgia, "Times New Roman", serif; font-size: 42px; font-weight: 400; }
+    .proof-card span { display: block; margin-top: 7px; color: #bac8c1; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; }
+    .next-cycle { display: inline-flex; align-items: center; gap: 12px; margin-top: 34px; color: #fff; font-size: 15px; font-weight: 760; }
+    .next-cycle b { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--ink); background: var(--lime); font-size: 18px; }
+  </style>
+</head>
+<body>
+  <main data-hf-id="hf-root" id="root" class="clip" data-composition-id="main" data-width="1920" data-height="1080" data-duration="87.5">
+    <section data-hf-id="hf-s00" id="scene-intro" class="clip scene-clip" data-start="0" data-duration="4.5">
+      <div data-hf-id="hf-s00-scene" class="scene">
+        <div data-hf-id="hf-s00-wash" class="wash"></div><div data-hf-id="hf-s00-grid" class="grid"></div>
+        <div data-hf-id="hf-s00-mast" class="masthead"><div data-hf-id="hf-s00-brand" class="brand"><span data-hf-id="hf-s00-mark" class="brand-mark">≋</span><span data-hf-id="hf-s00-name" class="brand-name">Muster</span><span data-hf-id="hf-s00-sub" class="brand-sub">Workforce OS</span></div><div data-hf-id="hf-s00-state" class="run-state"><span data-hf-id="hf-s00-dot" class="live-dot"></span>Gauntlet operacional</div></div>
+        <div data-hf-id="hf-s00-hero" class="hero"><div data-hf-id="hf-s00-inner" class="hero-inner"><div data-hf-id="hf-s00-kicker" class="hero-kicker">Validação ponta a ponta · interface atual</div><h1 data-hf-id="hf-s00-title">Treze fluxos.<br data-hf-id="hf-x5px"><em data-hf-id="hf-s00-em">Uma cadeia de evidência.</em></h1><p data-hf-id="hf-s00-copy">Conectar não é concluir. O Muster precisa fechar o ciclo da orientação ao board — com ação, responsabilidade e prova.</p><div data-hf-id="hf-s00-chips" class="flow-chips"><span data-hf-id="hf-s00-c1" class="flow-chip">Orientar</span><span data-hf-id="hf-s00-c2" class="flow-chip">Priorizar</span><span data-hf-id="hf-s00-c3" class="flow-chip">Conectar</span><span data-hf-id="hf-s00-c4" class="flow-chip">Provar</span><span data-hf-id="hf-s00-c5" class="flow-chip">Admitir</span><span data-hf-id="hf-s00-c6" class="flow-chip">Medir</span><span data-hf-id="hf-s00-c7" class="flow-chip">Agir</span><span data-hf-id="hf-s00-c8" class="flow-chip">Decidir</span><span data-hf-id="hf-s00-c9" class="flow-chip">Coordenar</span><span data-hf-id="hf-s00-c10" class="flow-chip">Acompanhar</span><span data-hf-id="hf-s00-c11" class="flow-chip">Comparar</span><span data-hf-id="hf-s00-c12" class="flow-chip">Governar</span><span data-hf-id="hf-s00-c13" class="flow-chip">Reportar</span></div></div></div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s01" id="scene-guide" class="clip scene-clip flow-scene" data-start="4.5" data-duration="5">
+      <div data-hf-id="hf-s01-scene" class="scene"><div data-hf-id="hf-s01-wash" class="wash"></div><div data-hf-id="hf-s01-grid" class="grid"></div>
+        <div data-hf-id="hf-s01-mast" class="masthead"><div data-hf-id="hf-s01-brand" class="brand"><span data-hf-id="hf-s01-mark" class="brand-mark">≋</span><span data-hf-id="hf-s01-name" class="brand-name">Muster</span><span data-hf-id="hf-s01-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s01-state" class="run-state"><span data-hf-id="hf-s01-dot" class="live-dot"></span><span data-hf-id="hf-s01-count" class="step-counter">01 / 13</span></div></div>
+        <div data-hf-id="hf-s01-layout" class="flow-layout"><aside data-hf-id="hf-s01-rail" class="rail"><div data-hf-id="hf-s01-eye" class="eyebrow">Orientar</div><h2 data-hf-id="hf-s01-title">Começar pelo contexto.</h2><p data-hf-id="hf-s01-copy">A operação apresenta maturidade, jornadas e próximo passo antes de pedir configuração.</p><div data-hf-id="hf-s01-evidence" class="evidence"><div data-hf-id="hf-s01-e1" class="evidence-item"><span data-hf-id="hf-s01-k1" class="check">✓</span>Entrada guiada por objetivo</div><div data-hf-id="hf-s01-e2" class="evidence-item"><span data-hf-id="hf-s01-k2" class="check">✓</span>Estado operacional visível</div><div data-hf-id="hf-s01-e3" class="evidence-item"><span data-hf-id="hf-s01-k3" class="check">✓</span>Próxima ação explícita</div></div><div data-hf-id="hf-s01-verdict" class="verdict"><span data-hf-id="hf-s01-badge" class="badge pass">Passou</span><span data-hf-id="hf-s01-note" class="proof-note">fluxo de orientação</span></div></aside>
+          <div data-hf-id="hf-s01-capture" class="capture"><div data-hf-id="hf-s01-bar" class="windowbar"><span data-hf-id="hf-s01-traffic" class="traffic"><i data-hf-id="hf-s01-i1"></i><i data-hf-id="hf-s01-i2"></i><i data-hf-id="hf-s01-i3"></i></span><span data-hf-id="hf-s01-label" class="capture-label">Guia inicial · produto atual</span></div><div data-hf-id="hf-s01-art" class="screen-art"><img data-hf-id="hf-s01-img" class="screen-state" src="assets/ui-light/guia-inicial.png" alt="Guia inicial atual do Muster"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s02" id="scene-portfolio" class="clip scene-clip flow-scene" data-start="9.5" data-duration="5.5">
+      <div data-hf-id="hf-s02-scene" class="scene"><div data-hf-id="hf-s02-wash" class="wash"></div><div data-hf-id="hf-s02-grid" class="grid"></div>
+        <div data-hf-id="hf-s02-mast" class="masthead"><div data-hf-id="hf-s02-brand" class="brand"><span data-hf-id="hf-s02-mark" class="brand-mark">≋</span><span data-hf-id="hf-s02-name" class="brand-name">Muster</span><span data-hf-id="hf-s02-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s02-state" class="run-state"><span data-hf-id="hf-s02-dot" class="live-dot"></span><span data-hf-id="hf-s02-count" class="step-counter">02 / 13</span></div></div>
+        <div data-hf-id="hf-s02-layout" class="flow-layout"><aside data-hf-id="hf-s02-rail" class="rail"><div data-hf-id="hf-s02-eye" class="eyebrow">Priorizar</div><h2 data-hf-id="hf-s02-title">Valor é cumprir o propósito.</h2><p data-hf-id="hf-s02-copy">O portfólio cruza valor contratual e saúde operacional para ordenar atenção gerencial.</p><div data-hf-id="hf-s02-evidence" class="evidence"><div data-hf-id="hf-s02-e1" class="evidence-item"><span data-hf-id="hf-s02-k1" class="check">✓</span>Propósito × saúde</div><div data-hf-id="hf-s02-e2" class="evidence-item"><span data-hf-id="hf-s02-k2" class="check">✓</span>Estágio profissional visível</div><div data-hf-id="hf-s02-e3" class="evidence-item"><span data-hf-id="hf-s02-k3" class="check">✓</span>Prioridade sem reduzir tudo a ROI</div></div><div data-hf-id="hf-s02-verdict" class="verdict"><span data-hf-id="hf-s02-badge" class="badge pass">Passou</span><span data-hf-id="hf-s02-note" class="proof-note">visão de portfólio</span></div></aside>
+          <div data-hf-id="hf-s02-capture" class="capture"><div data-hf-id="hf-s02-bar" class="windowbar"><span data-hf-id="hf-s02-traffic" class="traffic"><i data-hf-id="hf-s02-i1"></i><i data-hf-id="hf-s02-i2"></i><i data-hf-id="hf-s02-i3"></i></span><span data-hf-id="hf-s02-label" class="capture-label">Portfólio · agentes como profissionais</span></div><div data-hf-id="hf-s02-art" class="screen-art"><img data-hf-id="hf-s02-img" class="screen-state" src="assets/ui-light/portfolio.png" alt="Portfólio atual de profissionais digitais"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s03" id="scene-connect" class="clip scene-clip flow-scene" data-start="15" data-duration="6">
+      <div data-hf-id="hf-s03-scene" class="scene"><div data-hf-id="hf-s03-wash" class="wash"></div><div data-hf-id="hf-s03-grid" class="grid"></div>
+        <div data-hf-id="hf-s03-mast" class="masthead"><div data-hf-id="hf-s03-brand" class="brand"><span data-hf-id="hf-s03-mark" class="brand-mark">≋</span><span data-hf-id="hf-s03-name" class="brand-name">Muster</span><span data-hf-id="hf-s03-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s03-state" class="run-state"><span data-hf-id="hf-s03-dot" class="live-dot"></span><span data-hf-id="hf-s03-count" class="step-counter">03 / 13</span></div></div>
+        <div data-hf-id="hf-s03-layout" class="flow-layout"><aside data-hf-id="hf-s03-rail" class="rail"><div data-hf-id="hf-s03-eye" class="eyebrow">Conectar</div><h2 data-hf-id="hf-s03-title">Cobertura sem ficção.</h2><p data-hf-id="hf-s03-copy">Cada integração declara o que já é nativo, o que usa contrato universal e o que ainda está planejado.</p><div data-hf-id="hf-s03-evidence" class="evidence"><div data-hf-id="hf-s03-e1" class="evidence-item"><span data-hf-id="hf-s03-k1" class="check">✓</span>GitHub · adapter nativo</div><div data-hf-id="hf-s03-e2" class="evidence-item"><span data-hf-id="hf-s03-k2" class="check">✓</span>SaaS e cloud · contrato universal</div><div data-hf-id="hf-s03-e3" class="evidence-item"><span data-hf-id="hf-s03-k3" class="check">✓</span>Local e Kubernetes · ingestão operacional</div></div><div data-hf-id="hf-s03-verdict" class="verdict"><span data-hf-id="hf-s03-badge" class="badge contract">Contrato real</span><span data-hf-id="hf-s03-note" class="proof-note">sem adapter fictício</span></div></aside>
+          <div data-hf-id="hf-s03-capture" class="capture"><div data-hf-id="hf-s03-bar" class="windowbar"><span data-hf-id="hf-s03-traffic" class="traffic"><i data-hf-id="hf-s03-i1"></i><i data-hf-id="hf-s03-i2"></i><i data-hf-id="hf-s03-i3"></i></span><span data-hf-id="hf-s03-label" class="capture-label">Conectores · capacidades declaradas</span></div><div data-hf-id="hf-s03-art" class="screen-art"><img data-hf-id="hf-s03-img" class="screen-state" src="assets/ui-light/conectores.png" alt="Central atual de conectores do Muster"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s04" id="scene-proof" class="clip scene-clip flow-scene" data-start="21" data-duration="6">
+      <div data-hf-id="hf-s04-scene" class="scene"><div data-hf-id="hf-s04-wash" class="wash"></div><div data-hf-id="hf-s04-grid" class="grid"></div>
+        <div data-hf-id="hf-s04-mast" class="masthead"><div data-hf-id="hf-s04-brand" class="brand"><span data-hf-id="hf-s04-mark" class="brand-mark">≋</span><span data-hf-id="hf-s04-name" class="brand-name">Muster</span><span data-hf-id="hf-s04-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s04-state" class="run-state"><span data-hf-id="hf-s04-dot" class="live-dot"></span><span data-hf-id="hf-s04-count" class="step-counter">04 / 13</span></div></div>
+        <div data-hf-id="hf-s04-layout" class="flow-layout"><aside data-hf-id="hf-s04-rail" class="rail"><div data-hf-id="hf-s04-eye" class="eyebrow">Provar</div><h2 data-hf-id="hf-s04-title">Credencial não é telemetria.</h2><p data-hf-id="hf-s04-copy">A conexão só é comprovada depois do teste e do primeiro evento autenticado.</p><div data-hf-id="hf-s04-evidence" class="evidence"><div data-hf-id="hf-s04-e1" class="evidence-item"><span data-hf-id="hf-s04-k1" class="check">✓</span>Sequência de ativação explícita</div><div data-hf-id="hf-s04-e2" class="evidence-item"><span data-hf-id="hf-s04-k2" class="check">✓</span>Envelope e chave por tenant</div><div data-hf-id="hf-s04-e3" class="evidence-item"><span data-hf-id="hf-s04-k3" class="check">✓</span>AWS sem evento continua não verificado</div></div><div data-hf-id="hf-s04-verdict" class="verdict"><span data-hf-id="hf-s04-badge" class="badge pass">Passou</span><span data-hf-id="hf-s04-note" class="proof-note">credencial → evento</span></div></aside>
+          <div data-hf-id="hf-s04-capture" class="capture"><div data-hf-id="hf-s04-bar" class="windowbar"><span data-hf-id="hf-s04-traffic" class="traffic"><i data-hf-id="hf-s04-i1"></i><i data-hf-id="hf-s04-i2"></i><i data-hf-id="hf-s04-i3"></i></span><span data-hf-id="hf-s04-label" class="capture-label">Ativação · contrato operacional</span></div><div data-hf-id="hf-s04-art" class="screen-art"><img data-hf-id="hf-s04-img1" class="screen-state" src="assets/ui-light/conector-ativacao.png" alt="Contrato de ativação do conector"><span data-hf-id="hf-s04-p1" class="phase-chip">Credencial → teste → primeiro evento</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s05" id="scene-admission" class="clip scene-clip flow-scene" data-start="27" data-duration="5.5">
+      <div data-hf-id="hf-s05-scene" class="scene"><div data-hf-id="hf-s05-wash" class="wash"></div><div data-hf-id="hf-s05-grid" class="grid"></div>
+        <div data-hf-id="hf-s05-mast" class="masthead"><div data-hf-id="hf-s05-brand" class="brand"><span data-hf-id="hf-s05-mark" class="brand-mark">≋</span><span data-hf-id="hf-s05-name" class="brand-name">Muster</span><span data-hf-id="hf-s05-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s05-state" class="run-state"><span data-hf-id="hf-s05-dot" class="live-dot"></span><span data-hf-id="hf-s05-count" class="step-counter">05 / 13</span></div></div>
+        <div data-hf-id="hf-s05-layout" class="flow-layout"><aside data-hf-id="hf-s05-rail" class="rail"><div data-hf-id="hf-s05-eye" class="eyebrow">Admitir</div><h2 data-hf-id="hf-s05-title">O contrato nasce antes do agente.</h2><p data-hf-id="hf-s05-copy">Sete etapas definem identidade, função, responsabilidade, autonomia, origem, conexão e probation.</p><div data-hf-id="hf-s05-evidence" class="evidence"><div data-hf-id="hf-s05-e1" class="evidence-item"><span data-hf-id="hf-s05-k1" class="check">✓</span>Pré-preenchimento assistido por IA</div><div data-hf-id="hf-s05-e2" class="evidence-item"><span data-hf-id="hf-s05-k2" class="check">✓</span>Owner confirma o papel</div><div data-hf-id="hf-s05-e3" class="evidence-item"><span data-hf-id="hf-s05-k3" class="check">✓</span>Probation antes da promoção</div></div><div data-hf-id="hf-s05-verdict" class="verdict"><span data-hf-id="hf-s05-badge" class="badge pass">Passou</span><span data-hf-id="hf-s05-note" class="proof-note">admissão em 7 etapas</span></div></aside>
+          <div data-hf-id="hf-s05-capture" class="capture"><div data-hf-id="hf-s05-bar" class="windowbar"><span data-hf-id="hf-s05-traffic" class="traffic"><i data-hf-id="hf-s05-i1"></i><i data-hf-id="hf-s05-i2"></i><i data-hf-id="hf-s05-i3"></i></span><span data-hf-id="hf-s05-label" class="capture-label">Carteira de Trabalho · admissão</span></div><div data-hf-id="hf-s05-art" class="screen-art"><img data-hf-id="hf-s05-img" class="screen-state" src="assets/ui-light/admissao.png" alt="Fluxo de admissão do agente"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s06" id="scene-metrics" class="clip scene-clip flow-scene" data-start="32.5" data-duration="6">
+      <div data-hf-id="hf-s06-scene" class="scene"><div data-hf-id="hf-s06-wash" class="wash"></div><div data-hf-id="hf-s06-grid" class="grid"></div>
+        <div data-hf-id="hf-s06-mast" class="masthead"><div data-hf-id="hf-s06-brand" class="brand"><span data-hf-id="hf-s06-mark" class="brand-mark">≋</span><span data-hf-id="hf-s06-name" class="brand-name">Muster</span><span data-hf-id="hf-s06-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s06-state" class="run-state"><span data-hf-id="hf-s06-dot" class="live-dot"></span><span data-hf-id="hf-s06-count" class="step-counter">06 / 13</span></div></div>
+        <div data-hf-id="hf-s06-layout" class="flow-layout"><aside data-hf-id="hf-s06-rail" class="rail"><div data-hf-id="hf-s06-eye" class="eyebrow">Medir</div><h2 data-hf-id="hf-s06-title">Número vira contrato.</h2><p data-hf-id="hf-s06-copy">Fórmula, fonte, baseline, alvo e owner explicam cada KPI antes da leitura gerencial.</p><div data-hf-id="hf-s06-evidence" class="evidence"><div data-hf-id="hf-s06-e1" class="evidence-item"><span data-hf-id="hf-s06-k1" class="check">✓</span>Acurácia, eficácia e eficiência</div><div data-hf-id="hf-s06-e2" class="evidence-item"><span data-hf-id="hf-s06-k2" class="check">✓</span>Custo, adoção e confiabilidade</div><div data-hf-id="hf-s06-e3" class="evidence-item"><span data-hf-id="hf-s06-k3" class="check">✓</span>Propósito e governança</div></div><div data-hf-id="hf-s06-verdict" class="verdict"><span data-hf-id="hf-s06-badge" class="badge pass">Passou</span><span data-hf-id="hf-s06-note" class="proof-note">contrato → scorecard</span></div></aside>
+          <div data-hf-id="hf-s06-capture" class="capture"><div data-hf-id="hf-s06-bar" class="windowbar"><span data-hf-id="hf-s06-traffic" class="traffic"><i data-hf-id="hf-s06-i1"></i><i data-hf-id="hf-s06-i2"></i><i data-hf-id="hf-s06-i3"></i></span><span data-hf-id="hf-s06-label" class="capture-label">KPI contract · leitura gerencial</span></div><div data-hf-id="hf-s06-art" class="screen-art"><img data-hf-id="hf-s06-img1" class="screen-state state-base" src="assets/ui-light/metricas.png" alt="Catálogo de métricas"><img data-hf-id="hf-s06-img2" class="screen-state state-next" src="assets/ui-light/visao-gerencial.png" alt="Scorecard gerencial"><span data-hf-id="hf-s06-p1" class="phase-chip phase-base">Definir o contrato</span><span data-hf-id="hf-s06-p2" class="phase-chip phase-next">Ler a evolução</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s07" id="scene-alerts" class="clip scene-clip flow-scene" data-start="38.5" data-duration="6">
+      <div data-hf-id="hf-s07-scene" class="scene"><div data-hf-id="hf-s07-wash" class="wash"></div><div data-hf-id="hf-s07-grid" class="grid"></div>
+        <div data-hf-id="hf-s07-mast" class="masthead"><div data-hf-id="hf-s07-brand" class="brand"><span data-hf-id="hf-s07-mark" class="brand-mark">≋</span><span data-hf-id="hf-s07-name" class="brand-name">Muster</span><span data-hf-id="hf-s07-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s07-state" class="run-state"><span data-hf-id="hf-s07-dot" class="live-dot"></span><span data-hf-id="hf-s07-count" class="step-counter">07 / 13</span></div></div>
+        <div data-hf-id="hf-s07-layout" class="flow-layout"><aside data-hf-id="hf-s07-rail" class="rail"><div data-hf-id="hf-s07-eye" class="eyebrow">Detectar e agir</div><h2 data-hf-id="hf-s07-title">Alerta sem ação é ruído.</h2><p data-hf-id="hf-s07-copy">A contradição entre KPIs vira hipótese, recomendação e compromisso operacional.</p><div data-hf-id="hf-s07-evidence" class="evidence"><div data-hf-id="hf-s07-e1" class="evidence-item"><span data-hf-id="hf-s07-k1" class="check">✓</span>Owner e prazo</div><div data-hf-id="hf-s07-e2" class="evidence-item"><span data-hf-id="hf-s07-k2" class="check">✓</span>Reconhecer, resolver e reabrir</div><div data-hf-id="hf-s07-e3" class="evidence-item"><span data-hf-id="hf-s07-k3" class="check">✓</span>Severidade e antecedência</div></div><div data-hf-id="hf-s07-verdict" class="verdict"><span data-hf-id="hf-s07-badge" class="badge action">Acionável</span><span data-hf-id="hf-s07-note" class="proof-note">detecção → resolução</span></div></aside>
+          <div data-hf-id="hf-s07-capture" class="capture"><div data-hf-id="hf-s07-bar" class="windowbar"><span data-hf-id="hf-s07-traffic" class="traffic"><i data-hf-id="hf-s07-i1"></i><i data-hf-id="hf-s07-i2"></i><i data-hf-id="hf-s07-i3"></i></span><span data-hf-id="hf-s07-label" class="capture-label">Detector · estado e ação</span></div><div data-hf-id="hf-s07-art" class="screen-art"><img data-hf-id="hf-s07-img1" class="screen-state state-base" src="assets/ui-light/alertas.png" alt="Alertas ativos"><img data-hf-id="hf-s07-img2" class="screen-state state-next" src="assets/ui-light/alerta-acoes.png" alt="Ações operacionais do alerta"><span data-hf-id="hf-s07-p1" class="phase-chip phase-base">Detectar a contradição</span><span data-hf-id="hf-s07-p2" class="phase-chip phase-next">Atribuir e resolver</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s08" id="scene-decision" class="clip scene-clip flow-scene" data-start="44.5" data-duration="6.5">
+      <div data-hf-id="hf-s08-scene" class="scene"><div data-hf-id="hf-s08-wash" class="wash"></div><div data-hf-id="hf-s08-grid" class="grid"></div>
+        <div data-hf-id="hf-s08-mast" class="masthead"><div data-hf-id="hf-s08-brand" class="brand"><span data-hf-id="hf-s08-mark" class="brand-mark">≋</span><span data-hf-id="hf-s08-name" class="brand-name">Muster</span><span data-hf-id="hf-s08-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s08-state" class="run-state"><span data-hf-id="hf-s08-dot" class="live-dot"></span><span data-hf-id="hf-s08-count" class="step-counter">08 / 13</span></div></div>
+        <div data-hf-id="hf-s08-layout" class="flow-layout"><aside data-hf-id="hf-s08-rail" class="rail"><div data-hf-id="hf-s08-eye" class="eyebrow">Decidir</div><h2 data-hf-id="hf-s08-title">Toda recomendação desdobra trabalho.</h2><p data-hf-id="hf-s08-copy">Rejeitar, ajustar ou aprovar exige justificativa e mantém a decisão no histórico do tenant.</p><div data-hf-id="hf-s08-evidence" class="evidence"><div data-hf-id="hf-s08-e1" class="evidence-item"><span data-hf-id="hf-s08-k1" class="check">✓</span>Muster prepara a coorte</div><div data-hf-id="hf-s08-e2" class="evidence-item"><span data-hf-id="hf-s08-k2" class="check">✓</span>Agente executa o plano</div><div data-hf-id="hf-s08-e3" class="evidence-item"><span data-hf-id="hf-s08-k3" class="check">✓</span>Humano valida a evolução</div></div><div data-hf-id="hf-s08-verdict" class="verdict"><span data-hf-id="hf-s08-badge" class="badge pass">Passou</span><span data-hf-id="hf-s08-note" class="proof-note">3 decisões + justificativa</span></div></aside>
+          <div data-hf-id="hf-s08-capture" class="capture"><div data-hf-id="hf-s08-bar" class="windowbar"><span data-hf-id="hf-s08-traffic" class="traffic"><i data-hf-id="hf-s08-i1"></i><i data-hf-id="hf-s08-i2"></i><i data-hf-id="hf-s08-i3"></i></span><span data-hf-id="hf-s08-label" class="capture-label">Plano profissional · decisão responsável</span></div><div data-hf-id="hf-s08-art" class="screen-art"><img data-hf-id="hf-s08-img1" class="screen-state state-base" src="assets/ui-light/profissional.png" alt="Perfil profissional do agente"><img data-hf-id="hf-s08-img2" class="screen-state state-next" src="assets/ui-light/decisao-acoes.png" alt="Ações rejeitar ajustar e aprovar"><img data-hf-id="hf-s08-img3" class="screen-state state-third" src="assets/ui-light/decisao-aprovacao.png" alt="Justificativa obrigatória da aprovação"><span data-hf-id="hf-s08-p1" class="phase-chip phase-base">Diagnóstico e plano</span><span data-hf-id="hf-s08-p2" class="phase-chip phase-next">Rejeitar · Ajustar · Aprovar</span><span data-hf-id="hf-s08-p3" class="phase-chip phase-third">Justificar e registrar</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s09" id="scene-teams" class="clip scene-clip flow-scene" data-start="51" data-duration="5.5">
+      <div data-hf-id="hf-s09-scene" class="scene"><div data-hf-id="hf-s09-wash" class="wash"></div><div data-hf-id="hf-s09-grid" class="grid"></div>
+        <div data-hf-id="hf-s09-mast" class="masthead"><div data-hf-id="hf-s09-brand" class="brand"><span data-hf-id="hf-s09-mark" class="brand-mark">≋</span><span data-hf-id="hf-s09-name" class="brand-name">Muster</span><span data-hf-id="hf-s09-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s09-state" class="run-state"><span data-hf-id="hf-s09-dot" class="live-dot"></span><span data-hf-id="hf-s09-count" class="step-counter">09 / 13</span></div></div>
+        <div data-hf-id="hf-s09-layout" class="flow-layout"><aside data-hf-id="hf-s09-rail" class="rail"><div data-hf-id="hf-s09-eye" class="eyebrow">Coordenar</div><h2 data-hf-id="hf-s09-title">Humano e agente no mesmo objetivo.</h2><p data-hf-id="hf-s09-copy">Outcome, papéis, automação, trabalho manual e direitos de decisão ficam explícitos.</p><div data-hf-id="hf-s09-evidence" class="evidence"><div data-hf-id="hf-s09-e1" class="evidence-item"><span data-hf-id="hf-s09-k1" class="check">✓</span>Objetivo e resultado final</div><div data-hf-id="hf-s09-e2" class="evidence-item"><span data-hf-id="hf-s09-k2" class="check">✓</span>Quem faz o quê</div><div data-hf-id="hf-s09-e3" class="evidence-item"><span data-hf-id="hf-s09-k3" class="check">✓</span>Backlog e capacidade por membro</div></div><div data-hf-id="hf-s09-verdict" class="verdict"><span data-hf-id="hf-s09-badge" class="badge pass">Passou</span><span data-hf-id="hf-s09-note" class="proof-note">equipe mista</span></div></aside>
+          <div data-hf-id="hf-s09-capture" class="capture"><div data-hf-id="hf-s09-bar" class="windowbar"><span data-hf-id="hf-s09-traffic" class="traffic"><i data-hf-id="hf-s09-i1"></i><i data-hf-id="hf-s09-i2"></i><i data-hf-id="hf-s09-i3"></i></span><span data-hf-id="hf-s09-label" class="capture-label">Equipe mista · divisão do trabalho</span></div><div data-hf-id="hf-s09-art" class="screen-art"><img data-hf-id="hf-s09-img" class="screen-state" src="assets/ui-light/equipes-mistas.png" alt="Equipes mistas no Muster"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s10" id="scene-journeys" class="clip scene-clip flow-scene" data-start="56.5" data-duration="6">
+      <div data-hf-id="hf-s10-scene" class="scene"><div data-hf-id="hf-s10-wash" class="wash"></div><div data-hf-id="hf-s10-grid" class="grid"></div>
+        <div data-hf-id="hf-s10-mast" class="masthead"><div data-hf-id="hf-s10-brand" class="brand"><span data-hf-id="hf-s10-mark" class="brand-mark">≋</span><span data-hf-id="hf-s10-name" class="brand-name">Muster</span><span data-hf-id="hf-s10-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s10-state" class="run-state"><span data-hf-id="hf-s10-dot" class="live-dot"></span><span data-hf-id="hf-s10-count" class="step-counter">10 / 13</span></div></div>
+        <div data-hf-id="hf-s10-layout" class="flow-layout"><aside data-hf-id="hf-s10-rail" class="rail"><div data-hf-id="hf-s10-eye" class="eyebrow">Acompanhar</div><h2 data-hf-id="hf-s10-title">O resultado vive na jornada.</h2><p data-hf-id="hf-s10-copy">Agentes isolados podem parecer saudáveis enquanto o handoff destrói o resultado end-to-end.</p><div data-hf-id="hf-s10-evidence" class="evidence"><div data-hf-id="hf-s10-e1" class="evidence-item"><span data-hf-id="hf-s10-k1" class="check">✓</span>SLA por etapa e E2E</div><div data-hf-id="hf-s10-e2" class="evidence-item"><span data-hf-id="hf-s10-k2" class="check">✓</span>Contexto e evidência preservados</div><div data-hf-id="hf-s10-e3" class="evidence-item"><span data-hf-id="hf-s10-k3" class="check">✓</span>Gargalo correlacionado</div></div><div data-hf-id="hf-s10-verdict" class="verdict"><span data-hf-id="hf-s10-badge" class="badge pass">Passou</span><span data-hf-id="hf-s10-note" class="proof-note">jornada A2A</span></div></aside>
+          <div data-hf-id="hf-s10-capture" class="capture"><div data-hf-id="hf-s10-bar" class="windowbar"><span data-hf-id="hf-s10-traffic" class="traffic"><i data-hf-id="hf-s10-i1"></i><i data-hf-id="hf-s10-i2"></i><i data-hf-id="hf-s10-i3"></i></span><span data-hf-id="hf-s10-label" class="capture-label">Jornada A2A · telemetria contínua</span></div><div data-hf-id="hf-s10-art" class="screen-art"><img data-hf-id="hf-s10-img" class="screen-state" src="assets/ui-light/jornadas-a2a.png" alt="Jornada A2A atual do Muster"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s11" id="scene-benchmarks" class="clip scene-clip flow-scene" data-start="62.5" data-duration="5.5">
+      <div data-hf-id="hf-s11-scene" class="scene"><div data-hf-id="hf-s11-wash" class="wash"></div><div data-hf-id="hf-s11-grid" class="grid"></div>
+        <div data-hf-id="hf-s11-mast" class="masthead"><div data-hf-id="hf-s11-brand" class="brand"><span data-hf-id="hf-s11-mark" class="brand-mark">≋</span><span data-hf-id="hf-s11-name" class="brand-name">Muster</span><span data-hf-id="hf-s11-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s11-state" class="run-state"><span data-hf-id="hf-s11-dot" class="live-dot"></span><span data-hf-id="hf-s11-count" class="step-counter">11 / 13</span></div></div>
+        <div data-hf-id="hf-s11-layout" class="flow-layout"><aside data-hf-id="hf-s11-rail" class="rail"><div data-hf-id="hf-s11-eye" class="eyebrow">Comparar</div><h2 data-hf-id="hf-s11-title">Pares antes do ranking.</h2><p data-hf-id="hf-s11-copy">Domínio, função, autonomia, volume e risco definem a coorte antes da comparação.</p><div data-hf-id="hf-s11-evidence" class="evidence"><div data-hf-id="hf-s11-e1" class="evidence-item"><span data-hf-id="hf-s11-k1" class="check">✓</span>Baseline contextual</div><div data-hf-id="hf-s11-e2" class="evidence-item"><span data-hf-id="hf-s11-k2" class="check">✓</span>Distância para o alvo</div><div data-hf-id="hf-s11-e3" class="evidence-item"><span data-hf-id="hf-s11-k3" class="check">✓</span>Comparação sem punição arbitrária</div></div><div data-hf-id="hf-s11-verdict" class="verdict"><span data-hf-id="hf-s11-badge" class="badge pass">Passou</span><span data-hf-id="hf-s11-note" class="proof-note">benchmark contextual</span></div></aside>
+          <div data-hf-id="hf-s11-capture" class="capture"><div data-hf-id="hf-s11-bar" class="windowbar"><span data-hf-id="hf-s11-traffic" class="traffic"><i data-hf-id="hf-s11-i1"></i><i data-hf-id="hf-s11-i2"></i><i data-hf-id="hf-s11-i3"></i></span><span data-hf-id="hf-s11-label" class="capture-label">Benchmarks · coortes equivalentes</span></div><div data-hf-id="hf-s11-art" class="screen-art"><img data-hf-id="hf-s11-img" class="screen-state" src="assets/ui-light/benchmarks.png" alt="Benchmarks contextuais do Muster"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s12" id="scene-governance" class="clip scene-clip flow-scene" data-start="68" data-duration="6">
+      <div data-hf-id="hf-s12-scene" class="scene"><div data-hf-id="hf-s12-wash" class="wash"></div><div data-hf-id="hf-s12-grid" class="grid"></div>
+        <div data-hf-id="hf-s12-mast" class="masthead"><div data-hf-id="hf-s12-brand" class="brand"><span data-hf-id="hf-s12-mark" class="brand-mark">≋</span><span data-hf-id="hf-s12-name" class="brand-name">Muster</span><span data-hf-id="hf-s12-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s12-state" class="run-state"><span data-hf-id="hf-s12-dot" class="live-dot"></span><span data-hf-id="hf-s12-count" class="step-counter">12 / 13</span></div></div>
+        <div data-hf-id="hf-s12-layout" class="flow-layout"><aside data-hf-id="hf-s12-rail" class="rail"><div data-hf-id="hf-s12-eye" class="eyebrow">Governar</div><h2 data-hf-id="hf-s12-title">Política herdável. Exceção auditável.</h2><p data-hf-id="hf-s12-copy">A governança desce da companhia ao agente sem apagar a condição local de cada operação.</p><div data-hf-id="hf-s12-evidence" class="evidence"><div data-hf-id="hf-s12-e1" class="evidence-item"><span data-hf-id="hf-s12-k1" class="check">✓</span>Companhia → unidade → squad</div><div data-hf-id="hf-s12-e2" class="evidence-item"><span data-hf-id="hf-s12-k2" class="check">✓</span>Grupo → pessoa → agente</div><div data-hf-id="hf-s12-e3" class="evidence-item"><span data-hf-id="hf-s12-k3" class="check">✓</span>Telemetria, evidência e fallback</div></div><div data-hf-id="hf-s12-verdict" class="verdict"><span data-hf-id="hf-s12-badge" class="badge pass">Passou</span><span data-hf-id="hf-s12-note" class="proof-note">escopo de tenant</span></div></aside>
+          <div data-hf-id="hf-s12-capture" class="capture"><div data-hf-id="hf-s12-bar" class="windowbar"><span data-hf-id="hf-s12-traffic" class="traffic"><i data-hf-id="hf-s12-i1"></i><i data-hf-id="hf-s12-i2"></i><i data-hf-id="hf-s12-i3"></i></span><span data-hf-id="hf-s12-label" class="capture-label">Governança · políticas e exceções</span></div><div data-hf-id="hf-s12-art" class="screen-art"><img data-hf-id="hf-s12-img" class="screen-state" src="assets/ui-light/governanca.png" alt="Governança hierárquica do Muster"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s13" id="scene-report" class="clip scene-clip flow-scene" data-start="74" data-duration="6.5">
+      <div data-hf-id="hf-s13-scene" class="scene"><div data-hf-id="hf-s13-wash" class="wash"></div><div data-hf-id="hf-s13-grid" class="grid"></div>
+        <div data-hf-id="hf-s13-mast" class="masthead"><div data-hf-id="hf-s13-brand" class="brand"><span data-hf-id="hf-s13-mark" class="brand-mark">≋</span><span data-hf-id="hf-s13-name" class="brand-name">Muster</span><span data-hf-id="hf-s13-sub" class="brand-sub">Gauntlet</span></div><div data-hf-id="hf-s13-state" class="run-state"><span data-hf-id="hf-s13-dot" class="live-dot"></span><span data-hf-id="hf-s13-count" class="step-counter">13 / 13</span></div></div>
+        <div data-hf-id="hf-s13-layout" class="flow-layout"><aside data-hf-id="hf-s13-rail" class="rail"><div data-hf-id="hf-s13-eye" class="eyebrow">Reportar</div><h2 data-hf-id="hf-s13-title">O board recebe decisão, não ruído.</h2><p data-hf-id="hf-s13-copy">O fechamento versionado conecta fatos, comparação, limitações, responsáveis e próximos compromissos.</p><div data-hf-id="hf-s13-evidence" class="evidence"><div data-hf-id="hf-s13-e1" class="evidence-item"><span data-hf-id="hf-s13-k1" class="check">✓</span>Comparativo mês a mês</div><div data-hf-id="hf-s13-e2" class="evidence-item"><span data-hf-id="hf-s13-k2" class="check">✓</span>Qualidade e cobertura da evidência</div><div data-hf-id="hf-s13-e3" class="evidence-item"><span data-hf-id="hf-s13-k3" class="check">✓</span>Exportação executiva em PDF</div></div><div data-hf-id="hf-s13-verdict" class="verdict"><span data-hf-id="hf-s13-badge" class="badge pass">Passou</span><span data-hf-id="hf-s13-note" class="proof-note">fechamento mensal</span></div></aside>
+          <div data-hf-id="hf-s13-capture" class="capture"><div data-hf-id="hf-s13-bar" class="windowbar"><span data-hf-id="hf-s13-traffic" class="traffic"><i data-hf-id="hf-s13-i1"></i><i data-hf-id="hf-s13-i2"></i><i data-hf-id="hf-s13-i3"></i></span><span data-hf-id="hf-s13-label" class="capture-label">Board Brief · versão publicada</span></div><div data-hf-id="hf-s13-art" class="screen-art"><img data-hf-id="hf-s13-img" class="screen-state" src="assets/ui-light/relatorios-executivos.png" alt="Relatório executivo mensal do Muster"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-hf-id="hf-s14" id="scene-close" class="clip scene-clip" data-start="80.5" data-duration="7">
+      <div data-hf-id="hf-s14-scene" class="scene"><div data-hf-id="hf-s14-wash" class="wash"></div><div data-hf-id="hf-s14-grid" class="grid"></div>
+        <div data-hf-id="hf-s14-mast" class="masthead"><div data-hf-id="hf-s14-brand" class="brand"><span data-hf-id="hf-s14-mark" class="brand-mark">≋</span><span data-hf-id="hf-s14-name" class="brand-name">Muster</span><span data-hf-id="hf-s14-sub" class="brand-sub">Workforce OS</span></div><div data-hf-id="hf-s14-state" class="run-state"><span data-hf-id="hf-s14-dot" class="live-dot"></span>Validação concluída</div></div>
+        <div data-hf-id="hf-s14-hero" class="hero"><div data-hf-id="hf-s14-panel" class="close-panel"><div data-hf-id="hf-s14-kicker" class="hero-kicker">Gate documentado · produto atual</div><h2 data-hf-id="hf-s14-title">Do agente ao board,<br data-hf-id="hf-rsrt">com evidência no caminho.</h2><p data-hf-id="hf-s14-copy">O próximo ciclo mede agentes locais, cloud, de desenvolvimento e de negócio sob os mesmos contratos operacionais.</p><div data-hf-id="hf-s14-proofs" class="proof-grid"><div data-hf-id="hf-s14-proof1" class="proof-card"><strong data-hf-id="hf-s14-n1">13</strong><span data-hf-id="hf-s14-l1">fluxos percorridos</span></div><div data-hf-id="hf-s14-proof2" class="proof-card"><strong data-hf-id="hf-s14-n2">17</strong><span data-hf-id="hf-s14-l2">estados atuais capturados</span></div><div data-hf-id="hf-s14-proof3" class="proof-card"><strong data-hf-id="hf-s14-n3">334</strong><span data-hf-id="hf-s14-l3">testes automatizados</span></div><div data-hf-id="hf-s14-proof4" class="proof-card"><strong data-hf-id="hf-s14-n4">54</strong><span data-hf-id="hf-s14-l4">jornadas públicas</span></div></div><div data-hf-id="hf-s14-next" class="next-cycle"><b data-hf-id="hf-s14-arrow">→</b>Executar cenários autenticados, cloud e de negócio</div></div></div>
+      </div>
+    </section>
+
+    <div data-hf-id="hf-progress" class="progress"><span data-hf-id="hf-progress-fill"></span></div>
+  </main>
+  <script>
+    (() => {
+      gsap.config({ nullTargetWarn: false });
+      const totalDuration = 87.5;
+      const scenes = [
+        ["#scene-intro", 0, 4.5],
+        ["#scene-guide", 4.5, 5],
+        ["#scene-portfolio", 9.5, 5.5],
+        ["#scene-connect", 15, 6],
+        ["#scene-proof", 21, 6],
+        ["#scene-admission", 27, 5.5],
+        ["#scene-metrics", 32.5, 6],
+        ["#scene-alerts", 38.5, 6],
+        ["#scene-decision", 44.5, 6.5],
+        ["#scene-teams", 51, 5.5],
+        ["#scene-journeys", 56.5, 6],
+        ["#scene-benchmarks", 62.5, 5.5],
+        ["#scene-governance", 68, 6],
+        ["#scene-report", 74, 6.5],
+        ["#scene-close", 80.5, 7]
+      ];
+      const timeline = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+
+      gsap.set(".scene-clip", { autoAlpha: 0 });
+      timeline.to("#hf-progress-fill", { scaleX: 1, duration: totalDuration, ease: "none" }, 0);
+
+      scenes.forEach(([selector, start, duration]) => {
+        const end = start + duration;
+        timeline
+          .set(selector, { autoAlpha: 1 }, start)
+          .fromTo(selector, { opacity: 0 }, { opacity: 1, duration: .28, ease: "power2.out" }, start)
+          .from(`${selector} .masthead`, { y: -18, opacity: 0, duration: .5 }, start + .06)
+          .to(selector, { opacity: 0, duration: .28, ease: "power2.in" }, end - .28)
+          .set(selector, { autoAlpha: 0 }, end);
+
+        if (selector === "#scene-intro") {
+          timeline
+            .from(`${selector} .hero-kicker`, { y: 16, opacity: 0, duration: .45 }, start + .2)
+            .from(`${selector} h1`, { y: 46, opacity: 0, duration: .78 }, start + .38)
+            .from(`${selector} .hero p`, { y: 24, opacity: 0, duration: .52 }, start + .88)
+            .from(`${selector} .flow-chip`, { y: 18, opacity: 0, stagger: .055, duration: .36 }, start + 1.2);
+          return;
+        }
+
+        if (selector === "#scene-close") {
+          timeline
+            .from(`${selector} .close-panel`, { y: 44, opacity: 0, scale: .98, duration: .78 }, start + .2)
+            .from(`${selector} .hero-kicker`, { y: 14, opacity: 0, duration: .4 }, start + .62)
+            .from(`${selector} h2`, { y: 34, opacity: 0, duration: .68 }, start + .82)
+            .from(`${selector} p`, { y: 18, opacity: 0, duration: .45 }, start + 1.22)
+            .from(`${selector} .proof-card`, { y: 24, opacity: 0, stagger: .12, duration: .48 }, start + 1.6)
+            .from(`${selector} .next-cycle`, { y: 16, opacity: 0, duration: .42 }, start + 2.18);
+          return;
+        }
+
+        timeline
+          .from(`${selector} .rail`, { x: -34, opacity: 0, duration: .65 }, start + .18)
+          .from(`${selector} .eyebrow`, { y: 14, opacity: 0, duration: .4 }, start + .32)
+          .from(`${selector} .rail h2`, { y: 22, opacity: 0, duration: .58 }, start + .46)
+          .from(`${selector} .rail > p`, { y: 14, opacity: 0, duration: .42 }, start + .72)
+          .from(`${selector} .evidence-item`, { y: 12, opacity: 0, stagger: .09, duration: .34 }, start + .92)
+          .from(`${selector} .verdict`, { y: 12, opacity: 0, duration: .38 }, start + 1.28)
+          .from(`${selector} .capture`, { x: 44, opacity: 0, scale: .978, duration: .72 }, start + .28);
+      });
+
+      const crossfade = (selector, start, nextAt) => {
+        timeline
+          .to(`${selector} .state-base`, { opacity: 0, duration: .34, ease: "power2.inOut" }, start + nextAt)
+          .to(`${selector} .phase-base`, { opacity: 0, duration: .22 }, start + nextAt)
+          .fromTo(`${selector} .state-next`, { opacity: 0 }, { opacity: 1, duration: .48, ease: "power2.inOut" }, start + nextAt)
+          .to(`${selector} .phase-next`, { opacity: 1, duration: .3 }, start + nextAt + .18);
+      };
+
+      crossfade("#scene-metrics", 32.5, 2.85);
+      crossfade("#scene-alerts", 38.5, 2.75);
+      crossfade("#scene-decision", 44.5, 2.15);
+      timeline
+        .to("#scene-decision .state-next", { opacity: 0, duration: .3 }, 48.78)
+        .to("#scene-decision .phase-next", { opacity: 0, duration: .2 }, 48.78)
+        .fromTo("#scene-decision .state-third", { opacity: 0 }, { opacity: 1, duration: .46, ease: "power2.inOut" }, 48.78)
+        .to("#scene-decision .phase-third", { opacity: 1, duration: .28 }, 48.96);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines.main = timeline;
+    })();
+  </script>
+</body>
+</html>

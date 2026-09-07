@@ -1,0 +1,1 @@
+ALTER TABLE "executive_report_snapshots" ADD COLUMN "template_id" text DEFAULT 'board-brief' NOT NULL;

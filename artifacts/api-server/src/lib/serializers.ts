@@ -57,6 +57,10 @@ export function toAgentSummary(
   // Desnormalizado de propósito: a lista da frota mostra a área de cada agente,
   // e resolver o nome aqui evita uma segunda chamada por linha na tela.
   areaName: string | null = null,
+  owners: Pick<
+    OwnersRow,
+    "businessOwner" | "technicalOwner" | "governanceSponsor"
+  > | null = null,
 ) {
   return {
     id: a.id,
@@ -64,6 +68,9 @@ export function toAgentSummary(
     slug: a.slug,
     areaId: a.areaId ?? null,
     areaName,
+    businessOwner: owners?.businessOwner ?? "",
+    technicalOwner: owners?.technicalOwner ?? "",
+    governanceSponsor: owners?.governanceSponsor ?? "",
     role: a.role,
     platform: a.platform,
     version: a.version,
@@ -207,6 +214,9 @@ export async function buildAgentDetail(agentId: string, orgId: string) {
   };
 
   const resolvedVerdict = currentVerdict ?? anyVerdict;
+  const latestMetrics = latestEvaluation
+    ? (latestEvaluation.layers as KpiLayer[]).flatMap((layer) => layer.metrics)
+    : [];
 
   // A área já foi validada como pertencente à organização quando foi atribuída;
   // aqui é só o nome para exibição.
@@ -218,7 +228,7 @@ export async function buildAgentDetail(agentId: string, orgId: string) {
     : [];
 
   return {
-    agent: toAgentSummary(agent, [], area?.name ?? null),
+    agent: toAgentSummary(agent, latestMetrics, area?.name ?? null, owners ?? null),
     identity: identity ? toIdentity(identity) : emptyIdentity,
     owners: owners
       ? toOwners(owners)

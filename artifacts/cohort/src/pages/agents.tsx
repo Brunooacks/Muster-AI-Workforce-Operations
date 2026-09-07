@@ -1,9 +1,9 @@
 import { AppLayout } from "@/components/layout";
-import { useListAgents } from "@workspace/api-client-react";
+import { getListAgentsQueryKey, useListAgents } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle, MapPin } from "lucide-react";
+import { Plus, AlertTriangle, MapPin, Clock3 } from "lucide-react";
 import { Link } from "wouter";
 import { useMemo, useState } from "react";
 import { ErrorState } from "@/components/query-state";
@@ -19,6 +19,8 @@ import {
 import { platformLabel, platformArea } from "@/lib/platforms";
 import { countMissedGoals } from "@/components/carteira";
 import { useLang, type Lang } from "@/lib/i18n";
+import { RefreshStatusBar } from "@/components/mission-control/operational-status";
+import { relativeAge } from "@/components/mission-control/presentation";
 
 /* ── Dicionário de Agentes (pt canônico · en · es) ─────────── */
 
@@ -42,6 +44,7 @@ interface AgentsDict {
   goalsOffTitle: (n: number) => string;
   goalsOff: (n: number) => string;
   allOnTarget: string;
+  lastEvaluation: string;
   noAgentsFiltered: string;
   noAgentsFound: string;
 }
@@ -71,6 +74,7 @@ const L: Record<Lang, AgentsDict> = {
     goalsOffTitle: (n) => `${n} ${n === 1 ? "métrica fora" : "métricas fora"} da meta`,
     goalsOff: (n) => `${n} ${n === 1 ? "meta fora" : "metas fora"}`,
     allOnTarget: "Todas na meta",
+    lastEvaluation: "Última avaliação",
     noAgentsFiltered: "Nenhum agente para os filtros atuais.",
     noAgentsFound: "Nenhum agente encontrado.",
   },
@@ -98,6 +102,7 @@ const L: Record<Lang, AgentsDict> = {
     goalsOffTitle: (n) => `${n} ${n === 1 ? "metric off" : "metrics off"} target`,
     goalsOff: (n) => `${n} ${n === 1 ? "goal off" : "goals off"}`,
     allOnTarget: "All on target",
+    lastEvaluation: "Last evaluation",
     noAgentsFiltered: "No agents match the current filters.",
     noAgentsFound: "No agents found.",
   },
@@ -125,6 +130,7 @@ const L: Record<Lang, AgentsDict> = {
     goalsOffTitle: (n) => `${n} ${n === 1 ? "métrica fuera" : "métricas fuera"} de la meta`,
     goalsOff: (n) => `${n} ${n === 1 ? "meta fuera" : "metas fuera"}`,
     allOnTarget: "Todas en meta",
+    lastEvaluation: "Última evaluación",
     noAgentsFiltered: "Ningún agente para los filtros actuales.",
     noAgentsFound: "Ningún agente encontrado.",
   },
@@ -153,11 +159,20 @@ export default function AgentsPage() {
   const { lang } = useLang();
   const t = L[lang];
   const { search, perspective } = useAppShell();
+  const agentParams = { search: search || undefined };
   const [healthTab, setHealthTab] = useState<string>("all");
   const [areaFilter, setAreaFilter] = useState<string>("all");
-  const { data: agents, isLoading, isError, refetch } = useListAgents({
-    search: search || undefined,
-  });
+  const {
+    data: agents,
+    isLoading,
+    isError,
+    isFetching,
+    dataUpdatedAt,
+    refetch,
+  } = useListAgents(
+    agentParams,
+    { query: { queryKey: getListAgentsQueryKey(agentParams), refetchInterval: 30_000 } },
+  );
 
   /**
    * A área agora vem da organização, não da plataforma.
@@ -215,6 +230,14 @@ export default function AgentsPage() {
               </Link>
             </Button>
           }
+        />
+
+        <RefreshStatusBar
+          updatedAt={dataUpdatedAt}
+          isRefreshing={isFetching}
+          cadence="30s"
+          onRefresh={() => void refetch()}
+          sourceLabel="Cadastro e última avaliação"
         />
 
         {/* Health tabs */}
@@ -304,6 +327,11 @@ export default function AgentsPage() {
                   ) : (
                     <span>{platformLabel(agent.platform)}</span>
                   )}
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  <span>{t.lastEvaluation}: {relativeAge(agent.lastEvaluatedAt)}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 border-t border-card-border pt-3">

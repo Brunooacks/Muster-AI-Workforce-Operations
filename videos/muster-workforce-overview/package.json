@@ -1,0 +1,14 @@
+{
+  "name": "muster-workforce-overview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.29 preview",
+    "preview": "npx --yes hyperframes@0.8.29 preview --background",
+    "check": "npx --yes hyperframes@0.8.29 check",
+    "snapshot": "npx --yes hyperframes@0.8.29 snapshot --at 2.4,7,12.2,18,24,29.4,35,41,47,53,58.5,64.5,70.5,76.8,84 --output snapshots",
+    "render": "npx --yes hyperframes@0.8.29 render --quality high --output renders/muster-workforce-overview.mp4",
+    "render:onboarding": "node scripts/render-onboarding.mjs",
+    "publish": "npx --yes hyperframes@0.8.29 publish"
+  }
+}

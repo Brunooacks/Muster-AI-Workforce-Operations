@@ -180,11 +180,13 @@ describe("summarizeJourneyMonitoring", () => {
     expect(summary.recentRuns[1]).toMatchObject({
       status: "failed",
       durationMs: 9_000,
+      currentStepId: null,
     });
     expect(summary.recentRuns[2]).toMatchObject({
       status: "completed",
       durationMs: 4_500,
       costCents: 30,
+      currentStepId: null,
     });
   });
 

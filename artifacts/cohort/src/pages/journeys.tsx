@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
+import { customFetch } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Eyebrow, PageHeading, Pill } from "@/components/cohort";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ScenarioSourceBadge } from "@/components/mission-control/operational-status";
+import { classifyScenarioSource } from "@/components/mission-control/presentation";
+import { isActionableJourneyBottleneck } from "@/lib/journey-performance";
 import {
   Activity,
   AlertTriangle,
@@ -327,41 +331,28 @@ const EMPTY_HANDOFF: CreateHandoffForm = {
   requiredContext: "",
 };
 
-async function readError(response: Response, fallback: string) {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message || body.error || fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { credentials: "include" });
-  if (!response.ok) throw new Error(await readError(response, "Não foi possível carregar os dados"));
-  return response.json() as Promise<T>;
+  return customFetch<T>(url, { credentials: "include", responseType: "json" });
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
+  return customFetch<T>(url, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    responseType: "json",
   });
-  if (!response.ok) throw new Error(await readError(response, "Não foi possível salvar"));
-  return response.json() as Promise<T>;
 }
 
 async function patchJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
+  return customFetch<T>(url, {
     method: "PATCH",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    responseType: "json",
   });
-  if (!response.ok) throw new Error(await readError(response, "Não foi possível atualizar"));
-  return response.json() as Promise<T>;
 }
 
 function slugify(value: string) {
@@ -590,7 +581,7 @@ function StepCard({
     <div
       className={cn(
         "relative min-w-0 shrink-0 rounded-xl border bg-card p-4 transition-colors",
-        direction === "horizontal" ? "w-[300px]" : "w-full",
+        direction === "horizontal" ? "w-[320px] sm:w-[340px]" : "w-full",
         bottleneck ? "border-chart-2/70 shadow-[0_0_0_1px_hsl(var(--chart-2)/0.15)]" : "border-card-border",
       )}
     >
@@ -601,20 +592,23 @@ function StepCard({
           </span>
           <div className="min-w-0">
             <Eyebrow>Etapa {step.sequence}</Eyebrow>
-            <p className="line-clamp-2 font-medium leading-snug text-foreground">{step.name}</p>
+            <p className="break-words font-medium leading-snug text-foreground">{step.name}</p>
           </div>
         </div>
         {bottleneck && <Pill tone="ochre">Gargalo</Pill>}
       </div>
 
       <div className="space-y-3">
-        <div>
-          <p className="text-xs text-muted-foreground">Responsável</p>
-          <p className="mt-0.5 text-sm font-medium text-foreground">
+        <div className="rounded-lg border border-border/60 bg-secondary/20 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Eyebrow>Participante</Eyebrow>
+            <Pill tone="muted">{step.stepType === "agent" ? "Agente" : step.stepType === "human" ? "Humano" : "Sistema"}</Pill>
+          </div>
+          <p className="mt-2 break-words text-sm font-medium text-foreground">
             {step.agent?.name ?? (step.stepType === "human" ? "Operação humana" : "Serviço interno")}
           </p>
-          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-            {step.agent ? `${step.agent.role} · ${step.agent.platform}` : step.responsibility}
+          <p className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">
+            {step.agent ? `${step.agent.role} · ${step.agent.platform}` : step.responsibility || "Responsabilidade não descrita"}
           </p>
         </div>
 
@@ -626,7 +620,7 @@ function StepCard({
             </div>
             <div className="rounded-lg bg-secondary/45 p-2">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Decisão</p>
-              <p className="mt-1 truncate text-xs font-medium text-foreground">{step.agent.currentVerdict}</p>
+              <p className="mt-1 break-words text-xs font-medium text-foreground">{step.agent.currentVerdict}</p>
             </div>
           </div>
         )}
@@ -656,7 +650,7 @@ function StepCard({
             <p className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               <ShieldCheck className="h-3 w-3" /> Guardrails
             </p>
-            <p className="line-clamp-2 text-xs leading-relaxed text-foreground">{guardrails.join(" · ")}</p>
+            <p className="break-words text-xs leading-relaxed text-foreground">{guardrails.join(" · ")}</p>
           </div>
         )}
       </div>
@@ -671,14 +665,16 @@ function HandoffConnector({ handoff, direction }: { handoff?: JourneyHandoff; di
     <div
       className={cn(
         "flex shrink-0 items-center justify-center gap-2 text-muted-foreground",
-        direction === "horizontal" ? "w-40 flex-col px-3" : "min-h-24 w-full flex-row py-3",
+        direction === "horizontal" ? "w-52 flex-col px-3" : "min-h-28 w-full flex-col py-3 sm:flex-row",
       )}
+      role="group"
+      aria-label={handoff ? `Handoff ${handoff.protocol}` : "Conexão sem contrato de handoff"}
     >
       <Arrow className={cn("text-primary", direction === "horizontal" ? "h-5 w-5" : "h-6 w-6")} />
       {handoff ? (
-        <div className={cn("text-center", direction === "horizontal" ? "w-36" : "max-w-md")}>
+        <div className={cn("rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-center", direction === "horizontal" ? "w-48" : "w-full max-w-xl")}>
           <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-primary">Handoff · {handoff.protocol}</p>
-          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-foreground">{handoff.condition}</p>
+          <p className="mt-1 break-words text-xs leading-relaxed text-foreground">{handoff.condition || "Condição não definida"}</p>
           {contextCount > 0 && (
             <p className="mt-1 text-[10px] text-muted-foreground">{contextCount} campos de contexto</p>
           )}
@@ -1060,18 +1056,25 @@ function RecommendationCard({
   );
 }
 
-export default function JourneysPage() {
+function JourneyPageLayout({ embedded, children }: { embedded: boolean; children: ReactNode }) {
+  if (embedded) {
+    return <div className="p-4 sm:p-6" data-workforce-embedded-page="true" data-operational-source="api">{children}</div>;
+  }
+  return <AppLayout breadcrumbs={[{ label: "Operação" }, { label: "Jornadas A2A" }]}>{children}</AppLayout>;
+}
+
+export default function JourneysPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useUser();
   const { toast } = useToast();
   const [selectedJourneyId, setSelectedJourneyId] = useState("");
-  const [flowDirection, setFlowDirection] = useState<FlowDirection>("horizontal");
+  const [flowDirection, setFlowDirection] = useState<FlowDirection>("vertical");
   const [showJourneyForm, setShowJourneyForm] = useState(false);
   const [showStepForm, setShowStepForm] = useState(false);
   const [showHandoffForm, setShowHandoffForm] = useState(false);
   const [journeyForm, setJourneyForm] = useState<CreateJourneyForm>(EMPTY_JOURNEY);
   const [stepForm, setStepForm] = useState<CreateStepForm>(EMPTY_STEP);
   const [handoffForm, setHandoffForm] = useState<CreateHandoffForm>(EMPTY_HANDOFF);
-  const [saving, setSaving] = useState<"journey" | "step" | "handoff" | "status" | null>(null);
+  const [saving, setSaving] = useState<"journey" | "step" | "handoff" | "status" | "validation" | null>(null);
   const [recommendationOperation, setRecommendationOperation] = useState<string | null>(null);
   const [decisionDraft, setDecisionDraft] = useState<DecisionDraft | null>(null);
 
@@ -1290,6 +1293,20 @@ export default function JourneysPage() {
     (journey) => journey.id === selectedJourneyId,
   );
   const monitor = monitoring.data;
+  const actionableBottleneckStepId = monitor && selectedJourney && isActionableJourneyBottleneck({
+    totalRuns: monitor.totalRuns,
+    p95DurationMs: monitor.p95DurationMs,
+    bottleneckStepId: monitor.bottleneckStepId,
+    slaMinutes: selectedJourney.slaMinutes,
+  })
+    ? monitor.bottleneckStepId
+    : null;
+  const slowestStepName = monitor?.bottleneckStepId
+    ? orderedSteps.find((step) => step.id === monitor.bottleneckStepId)?.name ?? "Etapa observada"
+    : null;
+  const scenarioSource = classifyScenarioSource(
+    `${selectedJourney?.name ?? ""} ${selectedJourney?.description ?? ""} ${(monitoring.data?.recentRuns ?? []).map((run) => run.runId).join(" ")}`,
+  );
   const refreshAll = () => Promise.all([
     journeys.refetch(),
     detail.refetch(),
@@ -1338,6 +1355,109 @@ export default function JourneysPage() {
       });
     } finally {
       setRecommendationOperation(null);
+    }
+  }
+
+  async function runValidationScenario() {
+    if (!selectedJourneyId || !selectedJourney || orderedSteps.length === 0) return;
+    if (orderedSteps.length > 1 && selectedJourney.handoffs.length < orderedSteps.length - 1) {
+      toast({
+        title: "Complete os handoffs antes do teste",
+        description: "O cenário de validação só executa jornadas com contratos de passagem explícitos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving("validation");
+    const runId = `validacao-ui-${Date.now()}`;
+    const startedAt = Date.now();
+    let elapsedMs = 0;
+    let totalCostCents = 0;
+    try {
+      await postJson(`/api/journeys/${selectedJourneyId}/events`, {
+        externalEventId: `${runId}-inicio`,
+        runId,
+        kind: "journey_started",
+        ts: new Date(startedAt).toISOString(),
+        metadata: { source: "validation-ui", testScenario: true },
+      });
+
+      for (let index = 0; index < orderedSteps.length; index += 1) {
+        const step = orderedSteps[index]!;
+        const durationMs = Math.max(1_000, step.expectedDurationMs || 60_000);
+        const costCents = step.stepType === "agent" ? 18 : 0;
+        elapsedMs += durationMs;
+        totalCostCents += costCents;
+        await postJson(`/api/journeys/${selectedJourneyId}/events`, {
+          externalEventId: `${runId}-etapa-${index + 1}`,
+          runId,
+          stepId: step.id,
+          agentId: step.agentId,
+          kind: "step_completed",
+          ts: new Date(startedAt + elapsedMs).toISOString(),
+          durationMs,
+          costCents,
+          success: true,
+          metadata: {
+            source: "validation-ui",
+            testScenario: true,
+            responsibility: step.responsibility,
+          },
+        });
+
+        const nextStep = orderedSteps[index + 1];
+        if (nextStep) {
+          const handoff = handoffByEdge.get(`${step.id}:${nextStep.id}`);
+          if (!handoff) throw new Error(`Handoff ausente entre ${step.name} e ${nextStep.name}.`);
+          elapsedMs += 1_000;
+          await postJson(`/api/journeys/${selectedJourneyId}/events`, {
+            externalEventId: `${runId}-handoff-${index + 1}`,
+            runId,
+            agentId: step.agentId,
+            fromStepId: step.id,
+            toStepId: nextStep.id,
+            kind: "handoff",
+            ts: new Date(startedAt + elapsedMs).toISOString(),
+            durationMs: 1_000,
+            costCents: 0,
+            success: true,
+            metadata: {
+              source: "validation-ui",
+              testScenario: true,
+              protocol: handoff.protocol,
+            },
+          });
+        }
+      }
+
+      await postJson(`/api/journeys/${selectedJourneyId}/events`, {
+        externalEventId: `${runId}-fim`,
+        runId,
+        kind: "journey_completed",
+        ts: new Date(startedAt + elapsedMs).toISOString(),
+        durationMs: elapsedMs,
+        costCents: 0,
+        success: true,
+        metadata: {
+          source: "validation-ui",
+          testScenario: true,
+          observedTotalCostCents: totalCostCents,
+        },
+      });
+      await monitoring.refetch();
+      toast({
+        title: "Cenário de validação concluído",
+        description: `${orderedSteps.length} etapas e ${Math.max(orderedSteps.length - 1, 0)} handoffs enviados como dados de teste.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Falha no cenário de validação",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(null);
     }
   }
 
@@ -1424,7 +1544,7 @@ export default function JourneysPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Operação" }, { label: "Jornadas A2A" }]}>
+    <JourneyPageLayout embedded={embedded}>
       <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <PageHeading
           eyebrow="Orquestração humano-agente"
@@ -1571,6 +1691,7 @@ export default function JourneysPage() {
                       <div className="min-w-0">
                         <div className="mb-2 flex flex-wrap items-center gap-2">
                           <Pill tone={statusTone(selectedJourney.status)}>{statusLabel(selectedJourney.status)}</Pill>
+                          <ScenarioSourceBadge source={scenarioSource} />
                           <span className="text-xs text-muted-foreground">Atualizada em {formatDate(selectedJourney.updatedAt)}</span>
                         </div>
                         <h2 className="font-serif text-2xl font-medium text-foreground sm:text-3xl">{selectedJourney.name}</h2>
@@ -1631,10 +1752,10 @@ export default function JourneysPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex rounded-lg border border-border bg-secondary/30 p-1">
-                          <Button variant={flowDirection === "horizontal" ? "secondary" : "ghost"} size="sm" onClick={() => setFlowDirection("horizontal")} className="h-8 px-2.5">
+                          <Button variant={flowDirection === "horizontal" ? "secondary" : "ghost"} size="sm" onClick={() => setFlowDirection("horizontal")} className="h-8 px-2.5" aria-pressed={flowDirection === "horizontal"}>
                             <Columns3 className="mr-1.5 h-3.5 w-3.5" />Horizontal
                           </Button>
-                          <Button variant={flowDirection === "vertical" ? "secondary" : "ghost"} size="sm" onClick={() => setFlowDirection("vertical")} className="h-8 px-2.5">
+                          <Button variant={flowDirection === "vertical" ? "secondary" : "ghost"} size="sm" onClick={() => setFlowDirection("vertical")} className="h-8 px-2.5" aria-pressed={flowDirection === "vertical"}>
                             <Rows3 className="mr-1.5 h-3.5 w-3.5" />Vertical
                           </Button>
                         </div>
@@ -1692,7 +1813,7 @@ export default function JourneysPage() {
                             const handoff = next ? handoffByEdge.get(`${step.id}:${next.id}`) : undefined;
                             return (
                               <div key={step.id} className="flex items-center">
-                                <StepCard step={step} monitoring={monitoringByStep.get(step.id)} bottleneck={monitor?.bottleneckStepId === step.id} direction="horizontal" />
+                                <StepCard step={step} monitoring={monitoringByStep.get(step.id)} bottleneck={actionableBottleneckStepId === step.id} direction="horizontal" />
                                 {next && <HandoffConnector handoff={handoff} direction="horizontal" />}
                               </div>
                             );
@@ -1707,7 +1828,7 @@ export default function JourneysPage() {
                           const handoff = next ? handoffByEdge.get(`${step.id}:${next.id}`) : undefined;
                           return (
                             <div key={step.id} className="flex w-full flex-col items-center">
-                              <StepCard step={step} monitoring={monitoringByStep.get(step.id)} bottleneck={monitor?.bottleneckStepId === step.id} direction="vertical" />
+                              <StepCard step={step} monitoring={monitoringByStep.get(step.id)} bottleneck={actionableBottleneckStepId === step.id} direction="vertical" />
                               {next && <HandoffConnector handoff={handoff} direction="vertical" />}
                             </div>
                           );
@@ -1718,9 +1839,23 @@ export default function JourneysPage() {
                 </Card>
 
                 <section id="journey-performance" className="scroll-mt-24 space-y-4">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div><Eyebrow>Telemetria contínua</Eyebrow><h2 className="mt-1 font-serif text-2xl font-medium text-foreground">Performance end-to-end</h2></div>
-                    <span className="flex items-center gap-2 text-xs text-muted-foreground"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-chart-1 opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-chart-1" /></span>Atualização a cada 15s</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {import.meta.env.DEV && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={runValidationScenario}
+                          disabled={saving === "validation" || orderedSteps.length === 0}
+                        >
+                          <Play className={cn("mr-2 h-4 w-4", saving === "validation" && "animate-pulse")} />
+                          {saving === "validation" ? "Executando teste…" : "Executar cenário de teste"}
+                        </Button>
+                      )}
+                      <ScenarioSourceBadge source={scenarioSource} />
+                      <span className="flex items-center gap-2 text-xs text-muted-foreground"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-chart-1 opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-chart-1" /></span>Atualização automática a cada 15s</span>
+                    </div>
                   </div>
 
                   {monitoring.isLoading ? (
@@ -1731,11 +1866,21 @@ export default function JourneysPage() {
                     <>
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <KpiCard label="Conclusão" value={formatPercent(monitor.completionRate)} detail={`${monitor.completedRuns} concluídas · ${monitor.failedRuns} falharam`} icon={CheckCircle2} attention={normalizePercent(monitor.completionRate) < 80} />
-                        <KpiCard label="Execuções" value={String(monitor.totalRuns)} detail={`${monitor.activeRuns} em tempo real`} icon={Activity} />
+                        <KpiCard label="Execuções" value={String(monitor.totalRuns)} detail={`${monitor.activeRuns} em andamento`} icon={Activity} />
                         <KpiCard label="Tempo médio" value={formatDuration(monitor.avgDurationMs)} detail={`p95 em ${formatDuration(monitor.p95DurationMs)}`} icon={Timer} attention={monitor.avgDurationMs > selectedJourney.slaMinutes * 60_000} />
                         <KpiCard label="Handoffs" value={formatPercent(monitor.handoffSuccessRate)} detail={`${selectedJourney.handoffs.length} contratos no fluxo`} icon={GitBranch} attention={normalizePercent(monitor.handoffSuccessRate) < 90} />
                         <KpiCard label="Custo médio" value={formatCost(monitor.avgCostCentsPerRun)} detail={`${formatCost(monitor.totalCostCents)} acumulado`} icon={DollarSign} />
-                        <KpiCard label="Gargalo" value={monitor.bottleneckStepId ? orderedSteps.find((step) => step.id === monitor.bottleneckStepId)?.name ?? "Etapa detectada" : "Nenhum"} detail={monitor.bottleneckStepId ? "Maior latência relativa da jornada" : "Fluxo sem concentração crítica"} icon={AlertTriangle} attention={Boolean(monitor.bottleneckStepId)} />
+                        <KpiCard
+                          label={actionableBottleneckStepId ? "Gargalo" : "Etapa mais lenta"}
+                          value={slowestStepName ?? "Sem amostra"}
+                          detail={actionableBottleneckStepId
+                            ? `p95 acima do SLA de ${selectedJourney.slaMinutes} min`
+                            : slowestStepName
+                              ? `Ainda dentro do SLA de ${selectedJourney.slaMinutes} min`
+                              : "Execute a jornada para criar a baseline"}
+                          icon={AlertTriangle}
+                          attention={Boolean(actionableBottleneckStepId)}
+                        />
                       </div>
 
                       {(monitor.illusoryVictory || monitor.warnings.length > 0) && (
@@ -1821,12 +1966,20 @@ export default function JourneysPage() {
                           <CardHeader><CardTitle>Desempenho por etapa</CardTitle><CardDescription>Compare sucesso, latência e custo de cada participante.</CardDescription></CardHeader>
                           <CardContent className="space-y-3">
                             {monitor.steps.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma etapa executada ainda.</p> : monitor.steps.map((step) => {
-                              const bottleneck = step.stepId === monitor.bottleneckStepId;
+                              const bottleneck = step.stepId === actionableBottleneckStepId;
+                              const journeyStep = orderedSteps.find((item) => item.id === step.stepId);
+                              const participantName = step.agentName
+                                ?? (step.agentId ? agentNameById.get(step.agentId) : undefined)
+                                ?? (journeyStep?.stepType === "human"
+                                  ? "Responsável humano"
+                                  : journeyStep?.stepType === "system"
+                                    ? "Serviço interno"
+                                    : "Agente não atribuído");
                               return (
                                 <div key={step.stepId} className={cn("rounded-xl border p-3", bottleneck ? "border-chart-2/45 bg-chart-2/5" : "border-border/70 bg-secondary/15")}>
                                   <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div><div className="flex items-center gap-2"><p className="text-sm font-medium text-foreground">{step.stepName}</p>{bottleneck && <Pill tone="ochre">Gargalo</Pill>}</div><p className="mt-0.5 text-xs text-muted-foreground">{step.agentName ?? (step.agentId ? agentNameById.get(step.agentId) : undefined) ?? "Etapa não atribuída"} · {step.executions} execuções</p></div>
-                                    <div className="flex gap-4 text-right"><div><p className="font-mono text-sm text-foreground">{formatPercent(step.successRate)}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">sucesso</p></div><div><p className="font-mono text-sm text-foreground">{formatDuration(step.avgDurationMs)}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">latência</p></div><div><p className="font-mono text-sm text-foreground">{formatCost(step.totalCostCents)}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">custo</p></div></div>
+                                    <div><div className="flex items-center gap-2"><p className="text-sm font-medium text-foreground">{step.stepName}</p>{bottleneck && <Pill tone="ochre">Gargalo</Pill>}</div><p className="mt-0.5 text-xs text-muted-foreground">{participantName} · {step.executions} execuções</p></div>
+                                    <div className="grid w-full grid-cols-3 gap-2 text-left sm:w-auto sm:min-w-[260px] sm:text-right"><div><p className="font-mono text-sm text-foreground">{formatPercent(step.successRate)}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">sucesso</p></div><div><p className="font-mono text-sm text-foreground">{formatDuration(step.avgDurationMs)}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">latência</p></div><div><p className="font-mono text-sm text-foreground">{formatCost(step.totalCostCents)}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">custo</p></div></div>
                                   </div>
                                   <Progress value={normalizePercent(step.successRate)} className="mt-3 h-1.5" />
                                 </div>
@@ -1871,6 +2024,6 @@ export default function JourneysPage() {
             )}
           </div>
       </div>
-    </AppLayout>
+    </JourneyPageLayout>
   );
 }

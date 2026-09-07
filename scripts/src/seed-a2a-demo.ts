@@ -1,6 +1,9 @@
 export {};
 
+import { requireMusterSessionToken } from "./muster-session";
+
 const baseUrl = (process.env.MUSTER_BASE_URL ?? "http://localhost:8087").replace(/\/+$/, "");
+const sessionToken = requireMusterSessionToken();
 const demoJourneySlug = "resolucao-atendimento-a2a-demo";
 
 type Agent = { id: string; name: string; role: string };
@@ -17,6 +20,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       ...(init.body ? { "content-type": "application/json" } : {}),
+      authorization: `Bearer ${sessionToken}`,
       ...init.headers,
     },
   });

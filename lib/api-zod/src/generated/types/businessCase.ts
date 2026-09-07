@@ -5,10 +5,13 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { MetricContractDefinition } from './metricContractDefinition';
 
 export interface BusinessCase {
   baseline: string;
   targetPayback: string;
   actualPayback: string;
   description: string;
+  /** Métricas contratadas na admissão, preservadas independentemente da telemetria observada. */
+  metricContracts?: MetricContractDefinition[];
 }

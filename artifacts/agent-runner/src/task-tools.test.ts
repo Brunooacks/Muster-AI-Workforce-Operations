@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createTaskTools, type WorkNote } from "./task-tools";
-import type { ExecutionResult } from "./execution";
+import type { ExecutionResult, TaskKey } from "./execution";
 
 describe("agent task tools", () => {
   it("records an operational work note", async () => {
@@ -37,5 +37,22 @@ describe("agent task tools", () => {
     expect(JSON.parse(result)).toMatchObject({ ok: true, taskKey: "typecheck" });
     expect(executions).toEqual([fakeResult]);
     expect(notes[0]?.action).toBe("Executar tarefa typecheck");
+  });
+
+  it("rejects command injection before invoking the executor", async () => {
+    const notes: WorkNote[] = [];
+    let invoked = false;
+    const [, , executeTask] = createTaskTools(notes, {
+      execute: async () => {
+        invoked = true;
+        throw new Error("não deveria executar");
+      },
+    });
+
+    await expect(executeTask.invoke({
+      taskKey: "run_tests; cat /etc/passwd" as TaskKey,
+    })).rejects.toThrow();
+    expect(invoked).toBe(false);
+    expect(notes).toHaveLength(0);
   });
 });

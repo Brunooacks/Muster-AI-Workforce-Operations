@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { authorizeMixedTeamRole } from "../lib/mixed-team-auth";
+import {
+  authorizeMixedTeamManagement,
+  authorizeMixedTeamRole,
+} from "../lib/mixed-team-auth";
 import {
   isRoleAllowed,
   isTeamMemberRole,
@@ -48,12 +51,38 @@ describe("mixed team role authorization", () => {
     });
   });
 
-  it("keeps local development bypass enabled as owner", () => {
-    expect(
-      authorizeMixedTeamRole("observer", ["owner", "supervisor"], true),
-    ).toEqual({
-      authorized: true,
-      role: "owner",
+  it("never elevates an observer to a management role", () => {
+    expect(authorizeMixedTeamRole("observer", ["owner", "supervisor"])).toEqual({
+      authorized: false,
+      status: 403,
+      reason: "forbidden",
     });
+  });
+
+  it("permite que owner e admin da organização estruturem equipes", () => {
+    expect(
+      authorizeMixedTeamManagement("owner", null, ["owner", "supervisor"]),
+    ).toEqual({ authorized: true, role: "owner" });
+    expect(
+      authorizeMixedTeamManagement("admin", "observer", [
+        "owner",
+        "supervisor",
+      ]),
+    ).toEqual({ authorized: true, role: "owner" });
+  });
+
+  it("limita membros comuns à alçada explícita da equipe", () => {
+    expect(
+      authorizeMixedTeamManagement("member", "supervisor", [
+        "owner",
+        "supervisor",
+      ]),
+    ).toEqual({ authorized: true, role: "supervisor" });
+    expect(
+      authorizeMixedTeamManagement("member", "operator", [
+        "owner",
+        "supervisor",
+      ]),
+    ).toEqual({ authorized: false, status: 403, reason: "forbidden" });
   });
 });

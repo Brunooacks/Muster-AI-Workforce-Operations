@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   db,
   agents,
@@ -61,7 +61,13 @@ import {
 } from "../lib/analyze";
 import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
 import { getGitHubStatus } from "../lib/github-auth";
-import { admitAgent, AlreadyAdmittedError } from "../lib/admission";
+import {
+  admitAgent,
+  AlreadyAdmittedError,
+  InvalidAdmissionCatalogMetricError,
+  InvalidAdmissionConnectorError,
+  MissingConnectorExternalIdError,
+} from "../lib/admission";
 
 const router: IRouter = Router();
 
@@ -120,6 +126,13 @@ router.get("/agents", requireAuth, requireOrg, async (req, res) => {
     .from(areas)
     .where(ofOrg(areas, req.orgId!));
   const areaNames = new Map(areaRows.map((a) => [a.id, a.name]));
+  const ownerRows = filtered.length > 0
+    ? await db
+        .select()
+        .from(agentOwners)
+        .where(inArray(agentOwners.agentId, filtered.map((agent) => agent.id)))
+    : [];
+  const ownersByAgent = new Map(ownerRows.map((owner) => [owner.agentId, owner]));
 
   const data = ListAgentsResponse.parse(
     filtered.map((a) =>
@@ -127,6 +140,7 @@ router.get("/agents", requireAuth, requireOrg, async (req, res) => {
         a,
         latestMetricsByAgent.get(a.id) ?? [],
         a.areaId ? (areaNames.get(a.areaId) ?? null) : null,
+        ownersByAgent.get(a.id) ?? null,
       ),
     ),
   );
@@ -140,6 +154,8 @@ router.post("/agents", requireAuth, requireOrg, async (req, res) => {
   try {
     agentId = await admitAgent({
       orgId: req.orgId!,
+      externalId: body.externalId,
+      connectorId: body.connectorId,
       areaId: body.areaId ?? null,
       name: body.name,
       role: body.role,
@@ -163,6 +179,18 @@ router.post("/agents", requireAuth, requireOrg, async (req, res) => {
   } catch (err) {
     if (err instanceof AlreadyAdmittedError) {
       res.status(409).json({ error: "Agente já admitido na frota." });
+      return;
+    }
+    if (err instanceof InvalidAdmissionConnectorError) {
+      res.status(400).json({ error: "O conector selecionado não pertence à organização ativa." });
+      return;
+    }
+    if (err instanceof MissingConnectorExternalIdError) {
+      res.status(400).json({ error: "Informe o ID externo emitido pelo runtime do agente." });
+      return;
+    }
+    if (err instanceof InvalidAdmissionCatalogMetricError) {
+      res.status(400).json({ error: "A métrica selecionada não pertence ao catálogo da organização ativa." });
       return;
     }
     throw err;

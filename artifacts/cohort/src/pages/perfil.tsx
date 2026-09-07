@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/react";
 import { Link } from "wouter";
 import { Briefcase, Terminal } from "lucide-react";
-import { AppLayout } from "@/components/layout";
+import { OperationalPageFrame } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -117,7 +117,7 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
   const { user, isLoaded } = useUser();
   const { perspective, setPerspective } = useAppShell();
   const { data: agents, isLoading } = useListAgents();
@@ -129,7 +129,7 @@ export default function ProfilePage() {
   const followed = (agents ?? []).slice(0, 4);
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.bcAccount }, { label: t.bcProfile }]}>
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.bcAccount }, { label: t.bcProfile }]}>
       <div className="mx-auto max-w-3xl space-y-7 animate-in fade-in duration-500">
         <PageHeading
           eyebrow={t.eyebrow}
@@ -296,6 +296,6 @@ export default function ProfilePage() {
           )}
         </Card>
       </div>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }

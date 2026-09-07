@@ -18,6 +18,12 @@ export interface Agent {
   areaId?: string | null;
   /** Nome da área, desnormalizado para a lista não precisar de segunda chamada. */
   areaName?: string | null;
+  /** Responsável humano pelo resultado de negócio do agente. */
+  businessOwner?: string;
+  /** Responsável humano pela operação técnica do agente. */
+  technicalOwner?: string;
+  /** Sponsor responsável pelos limites e pela governança. */
+  governanceSponsor?: string;
   role: string;
   platform: string;
   version: string;

@@ -1,6 +1,18 @@
 import { and, eq, inArray, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
-import { agents, areas, teams, purposes, connectors, journeys, catalogMetrics, discoveryRuns, agentDrafts } from "@workspace/db/schema";
+import {
+  agents,
+  areas,
+  teams,
+  purposes,
+  connectors,
+  journeys,
+  catalogMetrics,
+  discoveryRuns,
+  agentDrafts,
+  metricEvidence,
+  externalEventReceipts,
+} from "@workspace/db/schema";
 
 /**
  * Escopo por organização (gauntlet rodada 6).
@@ -26,6 +38,8 @@ export const ROOT_TABLES = {
   catalogMetrics,
   discoveryRuns,
   agentDrafts,
+  metricEvidence,
+  externalEventReceipts,
 } as const;
 
 export type RootTableName = keyof typeof ROOT_TABLES;

@@ -4,6 +4,8 @@ import { ensureSeed } from "./lib/seed";
 import { ensureCatalogSeed } from "./lib/catalog-seed";
 import { backfillAgentScores } from "./lib/reevaluate";
 import { seededEvaluationsAllowed } from "./lib/evaluation-policy";
+import { startContinuousTelemetryWorker } from "./lib/continuous-telemetry-worker";
+import { runStartupMigrations } from "./lib/startup-migrations";
 
 const rawPort = process.env["PORT"];
 
@@ -21,29 +23,43 @@ if (Number.isNaN(port) || port <= 0) {
 
 const allowSeeded = seededEvaluationsAllowed();
 
-(allowSeeded
-  ? ensureSeed()
-  : Promise.resolve().then(() => {
-      logger.info("Demo fleet seed disabled; starting without fabricated agent data.");
-    }))
-  .catch((err) => {
-    logger.error({ err }, "Failed to seed database");
-  })
-  .then(() => ensureCatalogSeed())
-  .catch((err) => {
-    logger.error({ err }, "Failed to seed metric catalog");
-  })
-  .then(() => (allowSeeded ? backfillAgentScores() : undefined))
-  .catch((err) => {
-    logger.error({ err }, "Failed to backfill agent scores");
-  })
-  .finally(() => {
-    app.listen(port, (err) => {
-      if (err) {
-        logger.error({ err }, "Error listening on port");
-        process.exit(1);
-      }
+async function initializeApplication(): Promise<void> {
+  await runStartupMigrations();
 
+  try {
+    if (allowSeeded) {
+      await ensureSeed();
+    } else {
+      logger.info("Demo fleet seed disabled; starting without fabricated agent data.");
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to seed database");
+  }
+
+  try {
+    await ensureCatalogSeed();
+  } catch (err) {
+    logger.error({ err }, "Failed to seed metric catalog");
+  }
+
+  if (allowSeeded) {
+    try {
+      await backfillAgentScores();
+    } catch (err) {
+      logger.error({ err }, "Failed to backfill agent scores");
+    }
+  }
+}
+
+initializeApplication()
+  .then(() => {
+    app.listen(port, (err) => {
+      if (err) throw err;
       logger.info({ port }, "Server listening");
+      startContinuousTelemetryWorker();
     });
+  })
+  .catch((err) => {
+    logger.fatal({ err }, "Application startup failed");
+    process.exit(1);
   });

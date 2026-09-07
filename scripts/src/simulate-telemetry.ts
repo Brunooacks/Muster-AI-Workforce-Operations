@@ -9,7 +9,7 @@
  *   degrading — sucesso decai 95%→60% ao longo da janela      → tende a MENTOR
  *   erratic   — ~55% sucesso, caro, muitos erros/escalações   → tende a RETIRE
  *
- * Uso (API rodando com AUTH_DEV_BYPASS=true):
+ * Uso (API rodando e MUSTER_AUTH_TOKEN com uma sessão Clerk válida):
  *   pnpm --filter @workspace/scripts run simulate-telemetry
  *   pnpm --filter @workspace/scripts run simulate-telemetry -- --days=30 --base-url=http://localhost:8080
  */
@@ -17,6 +17,9 @@ import {
   createMusterReporter,
   type AgentEvent,
 } from "@workspace/telemetry-reporter";
+import { requireMusterSessionToken } from "./muster-session";
+
+const sessionToken = requireMusterSessionToken();
 
 interface AgentSummary {
   id: string;
@@ -155,7 +158,11 @@ function arg(name: string, fallback: string): string {
 async function api<T>(baseUrl: string, path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${baseUrl}/api${path}`, {
     ...init,
-    headers: { "content-type": "application/json", ...init?.headers },
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${sessionToken}`,
+      ...init?.headers,
+    },
   });
   if (!res.ok) {
     throw new Error(`${init?.method ?? "GET"} ${path} → ${res.status}: ${await res.text()}`);
@@ -181,9 +188,17 @@ async function main(): Promise<void> {
 
   for (const [index, agent] of targets.entries()) {
     const profile = PROFILES[index]!;
+    const credential = await api<{
+      key: { id: string };
+      plaintext: string;
+    }>(baseUrl, `/agents/${agent.id}/api-keys`, {
+      method: "POST",
+      body: JSON.stringify({ label: "simulate-telemetry" }),
+    });
     const reporter = createMusterReporter({
       baseUrl,
       agentId: agent.id,
+      token: credential.plaintext,
       onError: (err) => console.error(`  ! falha de entrega: ${String(err)}`),
     });
 
@@ -203,6 +218,11 @@ async function main(): Promise<void> {
       `  ↳ reavaliação: verdict=${outcome.verdict} health=${outcome.healthScore} fonte=${outcome.dataSource}`,
     );
     console.log(`  ↳ ${outcome.rationale}\n`);
+    await api(
+      baseUrl,
+      `/agents/${agent.id}/api-keys/${credential.key.id}/revoke`,
+      { method: "POST", body: "{}" },
+    );
   }
 
   console.log("Pronto — abra a frota no Muster e veja os agentes com dados reais.");

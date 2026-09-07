@@ -1,15 +1,16 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import {
   db,
   agents,
-  agentIdentities,
   agentEvents,
-  evaluations,
+  externalEventReceipts,
+  eventOutbox,
   metricEvidence,
-  verdicts,
+  connectors,
+  agentConnectorLinks,
 } from "@workspace/db";
-import type { KpiLayer } from "@workspace/db";
+import type { AgentEventKind } from "@workspace/db";
 import {
   IngestAgentEventBody,
   GetAgentTelemetryResponse,
@@ -25,51 +26,51 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
 import { ofOrg } from "../lib/tenant-scope";
 import { requireAgentCredential } from "../middlewares/requireAgentCredential";
+import { requireIntegrationCredential } from "../middlewares/requireIntegrationCredential";
 import {
   summarizeEvents,
-  layersFromTelemetry,
-  proposedMetricsFromTelemetry,
   type AgentEventRow,
 } from "../lib/telemetry";
-import { decideVerdict } from "../lib/decision-rules";
-import { scoreEvaluation, LAYER_ORDER, layerLabel } from "../lib/discovery";
-import { metricsFromLayers } from "../lib/reevaluate";
-import { hasDeclaredBaseline } from "../lib/evaluation-metrics";
-import {
-  noEvidenceEvaluation,
-  seededEvaluationsAllowed,
-} from "../lib/evaluation-policy";
 import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
 import { preAssess } from "../lib/pre-assessment";
 import { supervisionFromHeartbeat } from "../lib/supervision";
 import { normalizeExternalObservation } from "../lib/connectors/ingestion";
 import { MUSTER_AGENT_INGESTION_CONTRACT_VERSION } from "../lib/connectors/types";
+import {
+  AGENT_TELEMETRY_EVENT_TYPE,
+  loadAgentEvents,
+  reevaluateAgentFromTelemetry,
+} from "../lib/agent-telemetry-reevaluation";
+import { supervisionDispatchFor } from "../lib/continuous-supervision";
 
 const router: IRouter = Router();
 
 const WINDOW_DAYS: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
 
-async function loadEvents(
-  agentId: string,
-  windowDays: number,
-): Promise<AgentEventRow[]> {
-  const since = new Date(Date.now() - windowDays * 86_400_000);
-  const rows = await db
-    .select()
-    .from(agentEvents)
-    .where(and(eq(agentEvents.agentId, agentId), gte(agentEvents.ts, since)));
-  return rows.map((r) => ({
-    id: r.id,
-    agentId: r.agentId,
-    ts: r.ts,
-    kind: r.kind,
-    durationMs: r.durationMs,
-    costCents: r.costCents,
-    tokensIn: r.tokensIn,
-    tokensOut: r.tokensOut,
-    success: r.success === null ? null : r.success === 1,
-    metadata: r.metadata ?? null,
-  }));
+function telemetryOutboxEntry(input: {
+  orgId: string;
+  agentId: string;
+  agentEventId: string;
+  kind: AgentEventKind;
+  occurredAt: Date;
+}): typeof eventOutbox.$inferInsert | null {
+  const dispatch = supervisionDispatchFor(input.kind);
+  if (!dispatch.shouldReevaluate) return null;
+  return {
+    orgId: input.orgId,
+    aggregateType: "agent",
+    aggregateId: input.agentId,
+    eventType: AGENT_TELEMETRY_EVENT_TYPE,
+    priority: dispatch.priority,
+    availableAt: new Date(Date.now() + dispatch.debounceMs),
+    payload: {
+      agentId: input.agentId,
+      agentEventId: input.agentEventId,
+      kind: input.kind,
+      occurredAt: input.occurredAt.toISOString(),
+      debounceMs: dispatch.debounceMs,
+    },
+  };
 }
 
 // ── Ingest: agents report execution events here (fire-and-forget SDK) ──────
@@ -98,16 +99,33 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
     }
   }
 
-  await db.insert(agentEvents).values({
-    agentId,
-    ...(ts ? { ts } : {}),
-    kind: (body.kind ?? "execution") as AgentEventRow["kind"],
-    durationMs: body.durationMs != null ? Math.round(body.durationMs) : null,
-    costCents: body.costCents != null ? Math.round(body.costCents) : null,
-    tokensIn: body.tokensIn != null ? Math.round(body.tokensIn) : null,
-    tokensOut: body.tokensOut != null ? Math.round(body.tokensOut) : null,
-    success: body.success === undefined ? null : body.success ? 1 : 0,
-    metadata: (body.metadata as Record<string, unknown> | undefined) ?? null,
+  const kind = (body.kind ?? "execution") as AgentEventRow["kind"];
+  await db.transaction(async (transaction) => {
+    const [event] = await transaction
+      .insert(agentEvents)
+      .values({
+        agentId,
+        ...(ts ? { ts } : {}),
+        kind,
+        durationMs:
+          body.durationMs != null ? Math.round(body.durationMs) : null,
+        costCents: body.costCents != null ? Math.round(body.costCents) : null,
+        tokensIn: body.tokensIn != null ? Math.round(body.tokensIn) : null,
+        tokensOut: body.tokensOut != null ? Math.round(body.tokensOut) : null,
+        success: body.success === undefined ? null : body.success ? 1 : 0,
+        metadata:
+          (body.metadata as Record<string, unknown> | undefined) ?? null,
+      })
+      .returning({ id: agentEvents.id, ts: agentEvents.ts });
+    if (!event) throw new Error("Falha ao persistir evento do agente.");
+    const outbox = telemetryOutboxEntry({
+      orgId: req.orgId!,
+      agentId,
+      agentEventId: event.id,
+      kind,
+      occurredAt: event.ts,
+    });
+    if (outbox) await transaction.insert(eventOutbox).values(outbox);
   });
 
   res.status(202).json({ accepted: true });
@@ -146,18 +164,74 @@ router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, re
   res.status(202).json({ accepted: true, observedAt });
 });
 
-router.post("/integrations/agent-events", requireAuth, requireOrg, async (req, res) => {
+router.post("/integrations/agent-events", requireIntegrationCredential, async (req, res) => {
   const body = IngestExternalAgentEnvelopeBody.parse(req.body) as ExternalAgentEnvelope;
   if (body.contractVersion !== MUSTER_AGENT_INGESTION_CONTRACT_VERSION) {
     res.status(400).json({ error: "Versão de contrato não suportada." });
     return;
   }
 
-  const [agent] = await db
-    .select({ id: agents.id, externalId: agents.externalId })
-    .from(agents)
-    .where(and(eq(agents.externalId, body.agent.externalId), ofOrg(agents, req.orgId!)))
-    .limit(1);
+  const requestedConnectorId = body.source.connectorId;
+  const authenticatedConnectorId = req.integrationConnectorId;
+  if (
+    authenticatedConnectorId &&
+    requestedConnectorId &&
+    requestedConnectorId !== authenticatedConnectorId
+  ) {
+    res.status(401).json({ error: "A credencial não pertence ao conector informado." });
+    return;
+  }
+  const connectorId = authenticatedConnectorId ?? requestedConnectorId;
+  if (connectorId) {
+    const [connector] = await db
+      .select({ id: connectors.id, platform: connectors.platform })
+      .from(connectors)
+      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)))
+      .limit(1);
+    if (!connector) {
+      res.status(404).json({ error: "Conector não encontrado nesta organização." });
+      return;
+    }
+    if (connector.platform !== body.source.platform) {
+      res.status(400).json({
+        error: `A origem ${body.source.platform} não corresponde ao conector ${connector.platform}.`,
+      });
+      return;
+    }
+    await db
+      .update(connectors)
+      .set({
+        status: "connected",
+        health: "healthy",
+        lastEventAt: new Date(),
+      })
+      .where(and(eq(connectors.id, connector.id), ofOrg(connectors, req.orgId!)));
+  }
+
+  const [linkedAgent] = connectorId
+    ? await db
+        .select({ id: agents.id, externalId: agents.externalId })
+        .from(agentConnectorLinks)
+        .innerJoin(agents, eq(agents.id, agentConnectorLinks.agentId))
+        .where(
+          and(
+            eq(agentConnectorLinks.connectorId, connectorId),
+            eq(agentConnectorLinks.externalId, body.agent.externalId),
+            eq(agentConnectorLinks.orgId, req.orgId!),
+            ofOrg(agents, req.orgId!),
+          ),
+        )
+        .limit(1)
+    : [];
+
+  const [legacyAgent] = linkedAgent
+    ? []
+    : await db
+        .select({ id: agents.id, externalId: agents.externalId })
+        .from(agents)
+        .where(and(eq(agents.externalId, body.agent.externalId), ofOrg(agents, req.orgId!)))
+        .limit(1);
+  const agent = linkedAgent ?? legacyAgent;
 
   if (!agent) {
     res.status(202).json({
@@ -172,91 +246,169 @@ router.post("/integrations/agent-events", requireAuth, requireOrg, async (req, r
     return;
   }
 
+  if (connectorId && !linkedAgent) {
+    await db
+      .insert(agentConnectorLinks)
+      .values({
+        orgId: req.orgId!,
+        agentId: agent.id,
+        connectorId,
+        externalId: body.agent.externalId,
+        role: "telemetry",
+      })
+      .onConflictDoNothing();
+  }
+
   const source = {
     platform: body.source.platform,
-    ...(body.source.connectorId ? { connectorId: body.source.connectorId } : {}),
+    ...(connectorId ? { connectorId } : {}),
     ...(body.source.tenant ? { tenant: body.source.tenant } : {}),
     ...(body.source.reference ? { reference: body.source.reference } : {}),
   };
-  const dedupeKey = body.eventId
-    ? `${body.source.platform}:${body.eventId}`
-    : undefined;
-  if (dedupeKey && (body.execution || body.feedback)) {
-    const [duplicate] = await db
-      .select({ id: agentEvents.id })
-      .from(agentEvents)
-      .where(sql`${agentEvents.metadata}->>'dedupeKey' = ${dedupeKey}`)
-      .limit(1);
-    if (duplicate) {
-      res.status(202).json({
-        accepted: true,
-        mapped: true,
-        agentExternalId: body.agent.externalId,
-        agentId: agent.id,
-        eventsAccepted: 0,
-        observationsAccepted: 0,
-        nextAction: "Envelope já processado; nenhuma duplicidade foi criada.",
-      });
-      return;
+  const materialized = await db.transaction(async (tx) => {
+    if (body.eventId) {
+      const claimed = await tx
+        .insert(externalEventReceipts)
+        .values({
+          orgId: req.orgId!,
+          agentId: agent.id,
+          platform: body.source.platform,
+          eventId: body.eventId,
+        })
+        .onConflictDoNothing({
+          target: [
+            externalEventReceipts.orgId,
+            externalEventReceipts.platform,
+            externalEventReceipts.eventId,
+          ],
+        })
+        .returning({ id: externalEventReceipts.id });
+      if (claimed.length === 0) {
+        return { duplicate: true, eventsAccepted: 0, observationsAccepted: 0 };
+      }
     }
-  }
 
-  let eventsAccepted = 0;
-  if (body.execution) {
-    const execution = body.execution;
-    const kind =
-      execution.status === "error"
-        ? "error"
-        : execution.status === "escalated"
-          ? "escalation"
-          : "execution";
-    const startedAt = execution.startedAt ? new Date(execution.startedAt) : null;
-    await db.insert(agentEvents).values({
-      agentId: agent.id,
-      ...(startedAt && !Number.isNaN(startedAt.getTime()) ? { ts: startedAt } : {}),
-      kind,
-      durationMs: execution.durationMs != null ? Math.round(execution.durationMs) : null,
-      costCents: execution.costCents != null ? Math.round(execution.costCents) : null,
-      tokensIn: execution.tokensIn != null ? Math.round(execution.tokensIn) : null,
-      tokensOut: execution.tokensOut != null ? Math.round(execution.tokensOut) : null,
-      success:
-        execution.status === "running" ? null : execution.status === "success" ? 1 : 0,
-      metadata: {
-        ...(execution.metadata ?? {}),
-        source,
-        ...(dedupeKey ? { dedupeKey } : {}),
-        ...(execution.id ? { externalExecutionId: execution.id } : {}),
-      },
-    });
-    eventsAccepted += 1;
-  }
+    let eventsAccepted = 0;
+    if (body.execution) {
+      const execution = body.execution;
+      const kind =
+        execution.status === "error"
+          ? "error"
+          : execution.status === "escalated"
+            ? "escalation"
+            : "execution";
+      const startedAt = execution.startedAt ? new Date(execution.startedAt) : null;
+      const [event] = await tx
+        .insert(agentEvents)
+        .values({
+          agentId: agent.id,
+          ...(startedAt && !Number.isNaN(startedAt.getTime())
+            ? { ts: startedAt }
+            : {}),
+          kind,
+          durationMs:
+            execution.durationMs != null
+              ? Math.round(execution.durationMs)
+              : null,
+          costCents:
+            execution.costCents != null
+              ? Math.round(execution.costCents)
+              : null,
+          tokensIn:
+            execution.tokensIn != null ? Math.round(execution.tokensIn) : null,
+          tokensOut:
+            execution.tokensOut != null
+              ? Math.round(execution.tokensOut)
+              : null,
+          success:
+            execution.status === "running"
+              ? null
+              : execution.status === "success"
+                ? 1
+                : 0,
+          metadata: {
+            ...(execution.metadata ?? {}),
+            source,
+            ...(body.eventId ? { externalEventId: body.eventId } : {}),
+            ...(execution.id ? { externalExecutionId: execution.id } : {}),
+          },
+        })
+        .returning({ id: agentEvents.id, ts: agentEvents.ts });
+      if (!event) throw new Error("Falha ao persistir execução externa.");
+      const outbox = telemetryOutboxEntry({
+        orgId: req.orgId!,
+        agentId: agent.id,
+        agentEventId: event.id,
+        kind,
+        occurredAt: event.ts,
+      });
+      if (outbox) await tx.insert(eventOutbox).values(outbox);
+      eventsAccepted += 1;
+    }
 
-  if (body.feedback) {
-    await db.insert(agentEvents).values({
-      agentId: agent.id,
-      kind: "feedback",
-      success: body.feedback.kind === "negative" ? 0 : 1,
-      metadata: { ...body.feedback, source, ...(dedupeKey ? { dedupeKey } : {}) },
-    });
-    eventsAccepted += 1;
-  }
+    if (body.feedback) {
+      const [event] = await tx
+        .insert(agentEvents)
+        .values({
+          agentId: agent.id,
+          kind: "feedback",
+          success: body.feedback.kind === "negative" ? 0 : 1,
+          metadata: {
+            ...body.feedback,
+            source,
+            ...(body.eventId ? { externalEventId: body.eventId } : {}),
+          },
+        })
+        .returning({ id: agentEvents.id, ts: agentEvents.ts });
+      if (!event) throw new Error("Falha ao persistir feedback externo.");
+      const outbox = telemetryOutboxEntry({
+        orgId: req.orgId!,
+        agentId: agent.id,
+        agentEventId: event.id,
+        kind: "feedback",
+        occurredAt: event.ts,
+      });
+      if (outbox) await tx.insert(eventOutbox).values(outbox);
+      eventsAccepted += 1;
+    }
 
-  for (const input of body.observations ?? []) {
-    const observation = normalizeExternalObservation(input, source);
-    await db.insert(metricEvidence).values({
-      metricKey: observation.metricKey,
-      label: observation.label,
+    for (const input of body.observations ?? []) {
+      const observation = normalizeExternalObservation(input, source);
+      await tx.insert(metricEvidence).values({
+        orgId: req.orgId!,
+        metricKey: observation.metricKey,
+        label: observation.label,
+        agentId: agent.id,
+        value: observation.value,
+        unit: observation.unit,
+        kind: observation.kind,
+        source: { type: "connector", ...observation.source },
+        lineage: observation.lineage,
+        confidence: observation.confidence,
+        sampleSize: observation.sampleSize ?? null,
+        qualityFlags: [],
+        capturedAt: new Date(observation.capturedAt),
+      });
+    }
+
+    return {
+      duplicate: false,
+      eventsAccepted,
+      observationsAccepted: body.observations?.length ?? 0,
+    };
+  });
+
+  if (materialized.duplicate) {
+    res.status(202).json({
+      accepted: true,
+      mapped: true,
+      agentExternalId: body.agent.externalId,
       agentId: agent.id,
-      value: observation.value,
-      unit: observation.unit,
-      kind: observation.kind,
-      source: { type: "connector", ...observation.source },
-      lineage: observation.lineage,
-      confidence: observation.confidence,
-      sampleSize: observation.sampleSize ?? null,
-      qualityFlags: [],
-      capturedAt: new Date(observation.capturedAt),
+      eventsAccepted: 0,
+      observationsAccepted: 0,
+      nextAction: "Envelope já processado nesta organização; nenhuma duplicidade foi criada.",
     });
+    return;
   }
 
   const accepted = {
@@ -264,9 +416,10 @@ router.post("/integrations/agent-events", requireAuth, requireOrg, async (req, r
     mapped: true,
     agentExternalId: body.agent.externalId,
     agentId: agent.id,
-    eventsAccepted,
-    observationsAccepted: body.observations?.length ?? 0,
-    nextAction: `Reavaliar o agente em POST /api/agents/${agent.id}/reevaluate para atualizar métricas e decisão.`,
+    eventsAccepted: materialized.eventsAccepted,
+    observationsAccepted: materialized.observationsAccepted,
+    nextAction:
+      "A reavaliação foi enfileirada; acompanhe a atividade contínua para métricas e decisão atualizadas.",
   };
   res.status(202).json(accepted);
 });
@@ -307,7 +460,16 @@ router.get(
   async (req, res) => {
     const agentId = req.params.agentId as string;
     const windowDays = WINDOW_DAYS[req.params.window as string] ?? 30;
-    const events = await loadEvents(agentId, windowDays);
+    const [agent] = await db
+      .select({ id: agents.id })
+      .from(agents)
+      .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
+      .limit(1);
+    if (!agent) {
+      res.status(404).json({ error: "Agente não encontrado." });
+      return;
+    }
+    const events = await loadAgentEvents(agentId, windowDays);
     const summary = summarizeEvents(events, windowDays);
     res.json(GetAgentTelemetryResponse.parse(summary));
   },
@@ -319,215 +481,15 @@ router.get(
 // auditable decision rules. Seeded scoring remains only as demo fallback.
 router.post("/agents/:agentId/reevaluate", requireAuth, requireOrg, async (req, res) => {
   const agentId = req.params.agentId as string;
-  const [agent] = await db
-    .select()
-    .from(agents)
-    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
-    .limit(1);
-  if (!agent) {
+  const result = await reevaluateAgentFromTelemetry({
+    agentId,
+    orgId: req.orgId!,
+  });
+  if (!result) {
     res.status(404).json({ error: "Agente não encontrado." });
     return;
   }
-
-  const [identity] = await db
-    .select({ businessCase: agentIdentities.businessCase })
-    .from(agentIdentities)
-    .where(eq(agentIdentities.agentId, agentId))
-    .limit(1);
-
-  const windowDays = 30;
-  const events = await loadEvents(agentId, windowDays);
-  const summary = summarizeEvents(events, windowDays);
-  const rawRealLayers = layersFromTelemetry(summary);
-  const baselineAvailable = hasDeclaredBaseline(identity?.businessCase);
-  const telemetryMetrics = proposedMetricsFromTelemetry(summary).map(
-    (metric) => ({ ...metric, baselineAvailable }),
-  );
-  const telemetryEvaluation = scoreEvaluation(
-    agent.externalId ?? agent.id,
-    telemetryMetrics,
-  );
-  const realLayers = Object.fromEntries(
-    Object.entries(rawRealLayers).map(([key, rawLayer]) => {
-      const evaluatedLayer = telemetryEvaluation.layers.find(
-        (layer) => layer.key === key,
-      );
-      return [
-        key,
-        rawLayer && evaluatedLayer
-          ? { ...rawLayer, metrics: evaluatedLayer.metrics }
-          : rawLayer,
-      ];
-    }),
-  ) as ReturnType<typeof layersFromTelemetry>;
-  const realLayerKeys = Object.keys(realLayers);
-
-  // Base: latest stored evaluation (seeded or previous), for layers without data.
-  const [latest] = await db
-    .select()
-    .from(evaluations)
-    .where(eq(evaluations.agentId, agentId))
-    .orderBy(desc(evaluations.evaluatedAt))
-    .limit(1);
-  const allowSeeded = seededEvaluationsAllowed();
-  const externalId = agent.externalId ?? agent.id;
-  const fallback = allowSeeded
-    ? scoreEvaluation(
-        externalId,
-        latest ? metricsFromLayers(latest.layers as KpiLayer[]) : [],
-      )
-    : noEvidenceEvaluation();
-
-  const layers: KpiLayer[] = LAYER_ORDER.map((key) => {
-    const real = realLayers[key];
-    const fallbackLayer = fallback.layers.find((layer) => layer.key === key);
-    if (real) {
-      return {
-        key,
-        label: layerLabel(key),
-        score: real.score,
-        severity:
-          real.score < 45
-            ? "critical"
-            : real.score < 60
-              ? "high"
-              : real.score < 75
-                ? "medium"
-                : "stable",
-        metrics: real.metrics,
-      };
-    }
-    return (
-      fallbackLayer ?? {
-        key,
-        label: layerLabel(key),
-        score: 50,
-        severity: "medium",
-        metrics: [],
-      }
-    );
-  });
-
-  const healthScore = Math.round(
-    layers.reduce((s, l) => s + l.score, 0) / layers.length,
-  );
-  const dataSource =
-    realLayerKeys.length === 0
-      ? allowSeeded
-        ? "seeded"
-        : "none"
-      : realLayerKeys.length >= 4
-        ? "telemetry"
-        : "mixed";
-
-  const decision = decideVerdict({
-    healthScore,
-    layerScores: Object.fromEntries(layers.map((l) => [l.key, l.score])),
-    dataSource,
-    totalExecutions: summary.totalExecutions,
-    windowDays,
-    trendDelta: null,
-    insufficientEvidence:
-      realLayerKeys.length > 0
-        ? telemetryEvaluation.evidence.insufficientEvidence
-        : 0,
-    notComparable:
-      realLayerKeys.length > 0 ? telemetryEvaluation.evidence.notComparable : 0,
-  });
-
-  const changed =
-    agent.healthScore !== healthScore ||
-    agent.currentVerdict !== decision.verdict;
-
-  await db.transaction(async (tx) => {
-    if (latest) {
-      await tx
-        .update(evaluations)
-        .set({
-          layers,
-          verdict: decision.verdict,
-          verdictConfidence: decision.confidence,
-          evaluatedAt: new Date(),
-        })
-        .where(eq(evaluations.id, latest.id));
-    }
-    await tx
-      .update(agents)
-      .set({
-        healthScore,
-        severity:
-          healthScore < 45
-            ? "critical"
-            : healthScore < 60
-              ? "high"
-              : healthScore < 75
-                ? "medium"
-                : "stable",
-        currentVerdict: decision.verdict,
-        verdictConfidence: decision.confidence,
-        lastEvaluatedAt: new Date(),
-      })
-      .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)));
-    // Keep the open committee verdict aligned.
-    await tx
-      .update(verdicts)
-      .set({
-        verdict: decision.verdict,
-        confidence: decision.confidence,
-        rationale: decision.rationale,
-      })
-      .where(
-        and(eq(verdicts.agentId, agentId), eq(verdicts.decision, "pending")),
-      );
-
-    for (const metric of telemetryMetrics) {
-      if (!metric.evidence) continue;
-      const capturedAt = metric.evidence.capturedAt
-        ? new Date(metric.evidence.capturedAt)
-        : null;
-      const existing = await tx
-        .select({ id: metricEvidence.id })
-        .from(metricEvidence)
-        .where(
-          and(
-            eq(metricEvidence.agentId, agentId),
-            eq(metricEvidence.metricKey, metric.evidence.metricKey),
-            capturedAt
-              ? eq(metricEvidence.capturedAt, capturedAt)
-              : isNull(metricEvidence.capturedAt),
-          ),
-        )
-        .limit(1);
-      if (existing.length > 0) continue;
-
-      await tx.insert(metricEvidence).values({
-        metricKey: metric.evidence.metricKey,
-        label: metric.evidence.label,
-        agentId,
-        value: metric.evidence.value,
-        unit: metric.evidence.unit,
-        kind: metric.evidence.kind,
-        source: metric.evidence.source as unknown as Record<string, unknown>,
-        lineage: metric.evidence.lineage as unknown as Record<string, unknown>[],
-        confidence: metric.evidence.confidence,
-        sampleSize: metric.evidence.sampleSize ?? null,
-        qualityFlags: metric.evidence.qualityFlags as string[],
-        capturedAt,
-      } as typeof metricEvidence.$inferInsert);
-    }
-  });
-
-  res.json(
-    ReevaluateAgentResponse.parse({
-      agentId,
-      changed,
-      healthScore,
-      verdict: decision.verdict,
-      dataSource,
-      rationale: decision.rationale,
-      rulesFired: decision.rulesFired,
-    }),
-  );
+  res.json(ReevaluateAgentResponse.parse(result));
 });
 
 // ── Pre-assessment (R4): repo → carteira draft, no AI key needed ────────────

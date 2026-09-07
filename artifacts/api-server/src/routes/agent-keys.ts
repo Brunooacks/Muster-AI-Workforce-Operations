@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db, agents, agentApiKeys } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireOrgAdmin } from "../middlewares/orgRole";
 import { generateAgentApiKey, maskAgentApiKey } from "../lib/agent-api-key";
 
 const router: IRouter = Router();
@@ -55,7 +56,7 @@ router.get("/agents/:agentId/api-keys", requireAuth, requireOrg, async (req, res
   res.json(rows.map(toAgentApiKey));
 });
 
-router.post("/agents/:agentId/api-keys", requireAuth, requireOrg, async (req, res) => {
+router.post("/agents/:agentId/api-keys", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const agentId = req.params.agentId as string;
   const orgId = req.orgId!;
   if (!(await agentBelongsToOrg(agentId, orgId))) {
@@ -89,7 +90,7 @@ router.post("/agents/:agentId/api-keys", requireAuth, requireOrg, async (req, re
   });
 });
 
-router.post("/agents/:agentId/api-keys/:keyId/revoke", requireAuth, requireOrg, async (req, res) => {
+router.post("/agents/:agentId/api-keys/:keyId/revoke", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const agentId = req.params.agentId as string;
   const keyId = req.params.keyId as string;
 

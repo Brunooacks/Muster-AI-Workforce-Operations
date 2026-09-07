@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createMusterReporter, type AgentEvent } from "./index";
+import {
+  createMusterReporter,
+  withMusterExecutionContext,
+  type AgentEvent,
+} from "./index";
 
 function okFetch() {
   return vi.fn(async () => new Response(JSON.stringify({ accepted: true }), { status: 202 }));
@@ -90,6 +94,71 @@ describe("createMusterReporter", () => {
     expect(body.success).toBe(true);
     expect(body.tokensOut).toBe(100);
     expect(typeof body.durationMs).toBe("number");
+  });
+
+  it("adds a versioned execution manifest without collecting raw input", async () => {
+    const metadata = withMusterExecutionContext(
+      { feature: "qualification" },
+      {
+        correlation: { runId: "run-1", journeyId: "journey-1" },
+        release: { releaseId: "release-7", group: "canary" },
+        configuration: { model: "model-a", promptVersion: "prompt-3" },
+        input: {
+          taskClass: "lead-qualification",
+          hash: "sha256:input",
+          captureMode: "metadata_only",
+        },
+        context: {
+          captureMode: "local_only",
+          required: ["crm-account"],
+          sources: [{ type: "api", ref: "crm-account", status: "available" }],
+        },
+      },
+    );
+
+    expect(metadata).toEqual({
+      feature: "qualification",
+      muster: {
+        schemaVersion: "1.0",
+        correlation: { runId: "run-1", journeyId: "journey-1" },
+        release: { releaseId: "release-7", group: "canary" },
+        configuration: { model: "model-a", promptVersion: "prompt-3" },
+        input: {
+          taskClass: "lead-qualification",
+          hash: "sha256:input",
+          captureMode: "metadata_only",
+        },
+        context: {
+          captureMode: "local_only",
+          required: ["crm-account"],
+          sources: [{ type: "api", ref: "crm-account", status: "available" }],
+        },
+      },
+    });
+    expect(JSON.stringify(metadata)).not.toContain("rawInput");
+  });
+
+  it("trackExecution carries the manifest on success and error", async () => {
+    const fetchImpl = okFetch();
+    const reporter = createMusterReporter({ ...base, fetchImpl });
+    const executionContext = {
+      release: { releaseId: "release-8" },
+      input: { taskClass: "support", captureMode: "metadata_only" as const },
+    };
+
+    await reporter.trackExecution(() => "ok", { executionContext });
+    await expect(reporter.trackExecution(() => {
+      throw new Error("failed");
+    }, { executionContext })).rejects.toThrow("failed");
+
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
+    const bodies = fetchImpl.mock.calls.map((call) => {
+      const [, init] = call as unknown as [string, RequestInit];
+      return JSON.parse(init.body as string);
+    });
+    expect(bodies[0].metadata.muster.release.releaseId).toBe("release-8");
+    expect(bodies[1].metadata.muster.release.releaseId).toBe("release-8");
+    expect(bodies[1].metadata.message).toBe("failed");
   });
 
   it("trackExecution reports kind=error and re-throws", async () => {

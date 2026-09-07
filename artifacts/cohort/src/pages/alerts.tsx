@@ -1,4 +1,4 @@
-import { AppLayout } from "@/components/layout";
+import { OperationalPageFrame } from "@/components/layout";
 import {
   getListFleetAlertsQueryKey,
   useListFleetAlerts,
@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Eye, AlertTriangle, Activity, Lightbulb, SlidersHorizontal } from "lucide-react";
+import { ShieldCheck, Eye, AlertTriangle, Activity, Lightbulb } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { ErrorState } from "@/components/query-state";
@@ -29,7 +29,6 @@ type AlertsDict = {
   breadcrumbGov: string;
   title: string;
   subtitle: string;
-  configure: string;
   errorTitle: string;
   statActive: string;
   statActiveDelta: string;
@@ -70,7 +69,6 @@ const alertsI18n: Record<Lang, AlertsDict> = {
     title: "Detector de Vitória Ilusória",
     subtitle:
       "Monitoramento passivo que cruza as 5 camadas de KPIs em busca de contradições — ex.: adoção caindo enquanto o sucesso aparente sobe.",
-    configure: "Configurar padrões",
     errorTitle: "Não foi possível carregar os alertas",
     statActive: "Alertas ativos",
     statActiveDelta: "Padrões em monitoramento",
@@ -109,7 +107,6 @@ const alertsI18n: Record<Lang, AlertsDict> = {
     title: "Illusory Victory Detector",
     subtitle:
       "Passive monitoring that crosses the 5 KPI layers looking for contradictions — e.g. adoption falling while apparent success rises.",
-    configure: "Configure patterns",
     errorTitle: "Could not load alerts",
     statActive: "Active alerts",
     statActiveDelta: "Patterns under monitoring",
@@ -148,7 +145,6 @@ const alertsI18n: Record<Lang, AlertsDict> = {
     title: "Detector de Victoria Ilusoria",
     subtitle:
       "Monitoreo pasivo que cruza las 5 capas de KPIs en busca de contradicciones — ej.: adopción cayendo mientras el éxito aparente sube.",
-    configure: "Configurar patrones",
     errorTitle: "No fue posible cargar las alertas",
     statActive: "Alertas activas",
     statActiveDelta: "Patrones en monitoreo",
@@ -209,7 +205,7 @@ function deadlineState(
   return null;
 }
 
-export default function AlertsPage() {
+export default function AlertsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { lang } = useLang();
   const t = alertsI18n[lang];
   const { toast } = useToast();
@@ -262,18 +258,12 @@ export default function AlertsPage() {
   const severityCount = (sev: string) => alerts?.filter((a) => a.severity === sev).length ?? 0;
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.breadcrumbGov }, { label: t.title }]}>
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.breadcrumbGov }, { label: t.title }]}>
       <div className="space-y-7 animate-in fade-in duration-500">
         <PageHeading
           eyebrow={t.breadcrumbGov}
           title={t.title}
           subtitle={t.subtitle}
-          action={
-            <Button variant="outline" disabled>
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              {t.configure}
-            </Button>
-          }
         />
 
         {isError ? (
@@ -491,6 +481,6 @@ export default function AlertsPage() {
           </>
         )}
       </div>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }

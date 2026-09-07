@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useUser } from "@clerk/react";
+import { useClerk } from "@clerk/react";
 import {
   Building2,
   Plug,
@@ -12,12 +12,13 @@ import {
   ArrowRight,
   Check,
 } from "lucide-react";
-import { AppLayout } from "@/components/layout";
+import { OperationalPageFrame } from "@/components/layout";
+import { AccessControlPanel } from "@/components/access-control/access-control-panel";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeading, Eyebrow, Pill, AgentDisc } from "@/components/cohort";
+import { PageHeading, Eyebrow, Pill } from "@/components/cohort";
 import { useListConnectors } from "@workspace/api-client-react";
 import { getTrialInfo } from "@/lib/plan";
 import { useLang, type Lang } from "@/lib/i18n";
@@ -517,7 +518,7 @@ function IntegrationsSection() {
 }
 
 function TeamSection() {
-  const { user } = useUser();
+  const { openOrganizationProfile } = useClerk();
   const { lang } = useLang();
   const t = L[lang];
   return (
@@ -525,31 +526,7 @@ function TeamSection() {
       title={t.teamTitle}
       description={t.teamDesc}
     >
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-card-border px-5 py-3">
-          <Eyebrow>{t.membersEyebrow}</Eyebrow>
-          <Button size="sm" variant="outline" disabled>
-            {t.inviteMember}
-          </Button>
-        </div>
-        <div className="flex items-center justify-between gap-3 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <AgentDisc name={user?.fullName ?? t.userFallback} size="sm" />
-            <div>
-              <div className="text-sm font-medium text-foreground">
-                {user?.fullName || t.userFallback}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {user?.primaryEmailAddress?.emailAddress}
-              </div>
-            </div>
-          </div>
-          <Pill tone="sage">{t.adminPill}</Pill>
-        </div>
-      </Card>
-      <p className="text-xs text-muted-foreground">
-        {t.rolesNote}
-      </p>
+      <AccessControlPanel onInvite={() => openOrganizationProfile()} />
     </SectionShell>
   );
 }
@@ -584,6 +561,7 @@ function NotificationsSection() {
 }
 
 function SecuritySection() {
+  const { openUserProfile } = useClerk();
   const { lang } = useLang();
   const t = L[lang];
   return (
@@ -606,7 +584,7 @@ function SecuritySection() {
             <div className="text-sm font-medium text-foreground">{t.sec2fa}</div>
             <div className="text-xs text-muted-foreground">{t.sec2faDesc}</div>
           </div>
-          <Button size="sm" variant="outline" disabled>
+          <Button size="sm" variant="outline" onClick={() => openUserProfile()}>
             {t.configure}
           </Button>
         </div>
@@ -665,14 +643,11 @@ function BillingSection() {
                 </li>
               ))}
             </ul>
-            <Button
-              size="sm"
-              variant={plan.current ? "outline" : "default"}
-              className="mt-auto"
-              disabled={plan.current}
-            >
-              {plan.current ? t.currentPlanBtn : t.selectBtn}
-            </Button>
+            <div className="mt-auto">
+              <Pill tone={plan.current ? "sage" : "muted"}>
+                {plan.current ? t.currentPlanBtn : "Disponível sob proposta"}
+              </Pill>
+            </div>
           </Card>
         ))}
       </div>
@@ -719,8 +694,8 @@ function WebhooksSection() {
         <div className="rounded-lg border border-border bg-secondary/40 px-3 py-2 font-mono text-xs text-muted-foreground">
           ch_live_••••••••••••••••••••••
         </div>
-        <Button size="sm" variant="outline" disabled>
-          {t.genKey}
+        <Button asChild size="sm" variant="outline">
+          <Link href="/conectores">{t.genKey}</Link>
         </Button>
       </Card>
     </SectionShell>
@@ -737,14 +712,14 @@ const SECTION_CONTENT: Record<SectionId, React.FC> = {
   webhooks: WebhooksSection,
 };
 
-export default function SettingsPage() {
+export default function SettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [section, setSection] = useState<SectionId>(readInitialSection);
   const { lang } = useLang();
   const t = L[lang];
   const Content = SECTION_CONTENT[section];
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.bcAccount }, { label: t.bcSettings }]}>
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.bcAccount }, { label: t.bcSettings }]}>
       <div className="mx-auto max-w-5xl space-y-7 animate-in fade-in duration-500">
         <PageHeading
           eyebrow={t.eyebrow}
@@ -783,6 +758,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }

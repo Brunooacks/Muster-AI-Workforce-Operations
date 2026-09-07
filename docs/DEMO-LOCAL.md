@@ -15,6 +15,7 @@ Você precisa de três coisas instaladas:
 | Node.js 24+ | `node --version` | https://nodejs.org |
 | pnpm | `pnpm --version` | `npm install -g pnpm` |
 | Docker | `docker info` | Docker Desktop |
+| Projeto Clerk | chaves `pk_test_...` e `sk_test_...` | https://dashboard.clerk.com |
 
 > Se `docker info` travar ou demorar mais de um minuto, abra o Docker Desktop e
 > espere a baleia ficar verde antes de seguir.
@@ -76,8 +77,11 @@ cat > .env <<'FIM'
 DATABASE_URL=postgresql://postgres:postgres@localhost:5433/muster
 PORT=8087
 NODE_ENV=development
-AUTH_DEV_BYPASS=true
-VITE_AUTH_DEV_BYPASS=true
+CLERK_SECRET_KEY=sk_test_SUBSTITUA
+CLERK_PUBLISHABLE_KEY=pk_test_SUBSTITUA
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_SUBSTITUA
+WEB_APP_URL=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 AI_INTEGRATIONS_OPENAI_BASE_URL=http://localhost:9/unused
 AI_INTEGRATIONS_OPENAI_API_KEY=dummy-local
 FIM
@@ -85,8 +89,10 @@ FIM
 
 **Por que cada linha importa:**
 
-- `AUTH_DEV_BYPASS=true` dispensa o login durante a demo. É travado por código:
-  não tem efeito quando `NODE_ENV=production`.
+- As três variáveis Clerk são obrigatórias. A API não inicia sem as chaves de
+  backend e o frontend mostra um erro de configuração sem a publishable key.
+- `WEB_APP_URL` e `CORS_ALLOWED_ORIGINS` limitam quais aplicações web podem
+  enviar credenciais para a API.
 - As duas variáveis de OpenAI são valores de descarte. A telemetria e a
   avaliação **não** usam IA — só a análise opcional de repositório usa, e ela
   não faz parte deste roteiro.
@@ -108,10 +114,11 @@ pnpm --filter @workspace/api-server run dev
 Confira em outro terminal:
 
 ```bash
-curl -s http://localhost:8087/api/agents | head -c 200
+curl -s http://localhost:8087/api/healthz
 ```
 
-Deve devolver um JSON (uma lista, possivelmente vazia — tudo bem).
+Deve devolver `{"status":"ok"}`. Já `GET /api/agents` sem sessão deve retornar
+`401`, inclusive em desenvolvimento.
 
 ---
 
@@ -120,12 +127,19 @@ Deve devolver um JSON (uma lista, possivelmente vazia — tudo bem).
 Em um **segundo** terminal, deixe rodando:
 
 ```bash
-VITE_AUTH_DEV_BYPASS=true API_PROXY_TARGET=http://localhost:8087 \
-  pnpm --filter @workspace/muster run dev
+set -a && . ./.env && set +a
+API_PROXY_TARGET=http://localhost:8087 pnpm --filter @workspace/muster run dev
 ```
 
-Abra **http://localhost:5173**. Se aparecer a tela de boas-vindas, clique em
-**Pular configuração** — ela serve para o onboarding real, não para a demo.
+No dashboard do Clerk, habilite **Organizations**, crie uma organização de
+teste e adicione o usuário. Abra **http://localhost:5173**, entre e escolha essa
+organização no seletor. O frontend chama
+`POST /api/organizations/active/sync`: a API valida o vínculo diretamente no
+Clerk, cria ou atualiza o tenant local e semeia seu catálogo. Não insira
+`organization_members` manualmente e não envie um `orgId` pelo cliente.
+
+A landing permanece pública; as demais páginas exigem sessão e organização
+ativa.
 
 ---
 
@@ -133,9 +147,27 @@ Abra **http://localhost:5173**. Se aparecer a tela de boas-vindas, clique em
 
 Aqui o Muster deixa de ser uma tela e passa a ser uma decisão.
 
+Com o usuário autenticado, abra o console do navegador e copie um token curto
+da sessão com `copy(await window.Clerk.session.getToken())`. Exporte-o no
+terminal que executará os scripts:
+
+```bash
+export MUSTER_AUTH_TOKEN='cole-o-token-Clerk-aqui'
+```
+
 ```bash
 pnpm --filter @workspace/scripts run demo
 ```
+
+Para uma demonstração completa, com seis agentes em plataformas e domínios
+distintos mais uma jornada A2A de cinco subagentes, execute:
+
+```bash
+pnpm --filter @workspace/scripts run demo:complete
+```
+
+Se quiser criar apenas o portfólio profissional multissetorial, use
+`pnpm --filter @workspace/scripts run demo:workforce`.
 
 **O que acontece, em ordem:**
 
@@ -264,7 +296,8 @@ agente em degradação receber promoção.
 | --- | --- | --- |
 | `ECONNREFUSED ... 5433` | Postgres não subiu | `docker compose up -d postgres` e aguardar `healthy` |
 | Comandos `docker` travam | Docker Desktop engasgado | Reiniciar o Docker Desktop e esperar |
-| `API respondeu 401` no demo | `AUTH_DEV_BYPASS` ausente | Conferir que o `.env` foi carregado no terminal da API |
+| `API respondeu 401` no demo | token Clerk ausente ou expirado | Gere outro token no navegador e exporte `MUSTER_AUTH_TOKEN` |
+| `API respondeu 403` após login | usuário sem organização ativa | Crie/associe a organização no Clerk e selecione-a no switcher |
 | `Porta 8087 em uso` | Outra instância rodando | `lsof -ti:8087 \| xargs kill` |
 | Tela de onboarding sempre volta | Estado do navegador | Clicar em **Pular configuração** |
 | Veredito sai como `Fonte: none` | Agente sem telemetria | Rodar o passo 7 — é o comportamento correto, não um erro |

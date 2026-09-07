@@ -1,17 +1,22 @@
 import { useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles, ChevronDown } from "lucide-react";
-import { AppLayout } from "@/components/layout";
+import { ArrowLeft, ArrowRight, CheckCircle2, LibraryBig, Link2, Plus, Sparkles, ChevronDown } from "lucide-react";
+import { OperationalPageFrame } from "@/components/layout";
 import {
   useCreateAgent,
   useAnalyzeAgentSource,
   useFetchAgentSource,
   usePreAssessAgentSource,
   useListConnectors,
+  useListCatalogMetrics,
+  useCreateCatalogMetric,
+  getListCatalogMetricsQueryKey,
   useListAreas,
   useGetGitHubStatus,
   type AgentDraft,
   type AgentInput,
+  type CatalogMetric,
+  type CatalogVertical,
   type DraftMetric,
   type DraftMetricLayer,
 } from "@workspace/api-client-react";
@@ -32,6 +37,11 @@ import { PageHeading, Eyebrow, Pill } from "@/components/cohort";
 import { PLATFORM_LABELS } from "@/lib/platforms";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { queryClient } from "@/lib/queryClient";
+import {
+  consumeAdmissionHandoff,
+  type AdmissionHandoff,
+} from "@/lib/admission-handoff";
 
 const AUTONOMY_VALUES = ["autonomous", "escalates", "restricted"] as const;
 type AutonomyValue = (typeof AUTONOMY_VALUES)[number];
@@ -97,6 +107,10 @@ const PT = {
   preAssessStrong: "Pré-assessment",
   preAssessRest:
     'entende o repositório sem IA: detecta a stack, extrai papel/limites/KPIs do dossiê e enquadra as métricas pelo catálogo — preenchendo a carteira inteira para revisão. "Importar" apenas carrega os arquivos para a análise com IA.',
+  fastImportedTitle: "Pré-qualificação importada",
+  fastImportedDesc: "Código, função e métricas já foram preenchidos pelo fast assessment. Revise os campos antes de admitir.",
+  connectorImportedTitle: (name: string) => `Origem vinculada: ${name}`,
+  connectorImportedDesc: "A conexão trouxe o candidato até aqui. A admissão formaliza propósito, responsáveis, autonomia e KPIs antes da primeira execução monitorada.",
   importedFilesHeader: (selected: number, total: number) =>
     `Arquivos importados (${selected}/${total} selecionados)`,
   selectAll: "Selecionar todos",
@@ -169,6 +183,9 @@ const PT = {
   dataSourceLabel: "Fonte de dados",
   dataSourceHint: "Vincule um conector para alimentar as métricas.",
   dataSourcePh: "Selecione um conector",
+  externalIdLabel: "ID externo do agente",
+  externalIdHint: "Use exatamente o identificador emitido pelo runtime no envelope de telemetria.",
+  externalIdPh: "ex.: triagem-financeira-prod",
   connectedSuffix: " · conectado",
   manageLater: "Você pode gerenciar conectores depois em Conta · Conectores.",
   probationTitle: "Probation",
@@ -178,6 +195,19 @@ const PT = {
   metricsGoalsEyebrow: "Metas das métricas",
   metricsGoalsHint:
     "Ajuste o valor atual, a meta e a justificativa de cada métrica antes de admitir. Deixe o valor atual em branco para gerá-lo automaticamente.",
+  catalogTitle: "Contrato de métricas",
+  catalogHint: "Reutilize uma métrica governada ou crie uma nova sem sair da admissão.",
+  catalogSelectPh: "Herdar métrica do catálogo",
+  catalogLoading: "Carregando catálogo…",
+  catalogInherited: "Herdada do catálogo",
+  catalogCreate: "Criar nova métrica",
+  catalogCreateTitle: "Nova métrica governada",
+  catalogCreateHint: "Ela será usada neste contrato e ficará disponível no catálogo da organização.",
+  catalogVertical: "Vertical",
+  catalogLayer: "Camada",
+  catalogDescriptionPh: "Como esta métrica orienta uma decisão?",
+  catalogCreateAndUse: "Criar e usar",
+  catalogCancel: "Cancelar",
   addMetric: "+ Adicionar",
   noMetricsLayer: "Nenhuma métrica nesta camada.",
   metricLabelPh: "Rótulo",
@@ -234,6 +264,10 @@ const PT = {
   toastAdmissionDoneDesc: "Carteira de Trabalho gerada com sucesso.",
   toastAdmissionErrTitle: "Erro na admissão",
   toastAdmissionErrDesc: "Ocorreu um erro ao registrar a agente.",
+  toastMetricInheritedTitle: "Métrica adicionada ao contrato",
+  toastMetricDuplicateTitle: "Métrica já selecionada",
+  toastMetricCreatedTitle: "Métrica criada e vinculada",
+  toastMetricCreateErrorTitle: "Não foi possível criar a métrica",
   changeApproverLine: (name: string) => `Aprovador de mudanças: ${name}`,
   dataSourceLine: (source: string) => `Fonte de dados: ${source}`,
   probationLine: (weeks: string) => `Período de probation: ${weeks} semanas`,
@@ -293,6 +327,10 @@ const L: Record<Lang, Dict> = {
     preAssessStrong: "Pre-assessment",
     preAssessRest:
       'understands the repository without AI: it detects the stack, extracts role/limits/KPIs from the dossier and frames the metrics from the catalog — filling the whole record for review. "Import" only loads the files for the AI analysis.',
+    fastImportedTitle: "Pre-qualification imported",
+    fastImportedDesc: "Code, role and metrics were filled by the fast assessment. Review the fields before admission.",
+    connectorImportedTitle: (name: string) => `Linked source: ${name}`,
+    connectorImportedDesc: "The connection brought the candidate here. Admission formalizes purpose, owners, autonomy and KPIs before the first monitored execution.",
     importedFilesHeader: (selected: number, total: number) =>
       `Imported files (${selected}/${total} selected)`,
     selectAll: "Select all",
@@ -362,9 +400,12 @@ const L: Record<Lang, Dict> = {
     paybackPh: "E.g.: 3 months",
     connectTitle: "Connect",
     connectSub: "Where the agent's performance signals will come from.",
-    dataSourceLabel: "Data source",
-    dataSourceHint: "Link a connector to feed the metrics.",
-    dataSourcePh: "Select a connector",
+  dataSourceLabel: "Data source",
+  dataSourceHint: "Link a connector to feed the metrics.",
+  dataSourcePh: "Select a connector",
+  externalIdLabel: "External agent ID",
+  externalIdHint: "Use the exact identifier emitted by the runtime in telemetry envelopes.",
+  externalIdPh: "e.g. finance-triage-prod",
     connectedSuffix: " · connected",
     manageLater: "You can manage connectors later in Account · Connectors.",
     probationTitle: "Probation",
@@ -374,6 +415,19 @@ const L: Record<Lang, Dict> = {
     metricsGoalsEyebrow: "Metric targets",
     metricsGoalsHint:
       "Adjust each metric's current value, target and rationale before admitting. Leave the current value blank to generate it automatically.",
+    catalogTitle: "Metric contract",
+    catalogHint: "Reuse a governed metric or create a new one without leaving admission.",
+    catalogSelectPh: "Inherit a catalog metric",
+    catalogLoading: "Loading catalog…",
+    catalogInherited: "Inherited from catalog",
+    catalogCreate: "Create new metric",
+    catalogCreateTitle: "New governed metric",
+    catalogCreateHint: "It will be used in this contract and remain available in the organization's catalog.",
+    catalogVertical: "Vertical",
+    catalogLayer: "Layer",
+    catalogDescriptionPh: "How does this metric guide a decision?",
+    catalogCreateAndUse: "Create and use",
+    catalogCancel: "Cancel",
     addMetric: "+ Add",
     noMetricsLayer: "No metrics in this layer.",
     metricLabelPh: "Label",
@@ -430,6 +484,10 @@ const L: Record<Lang, Dict> = {
     toastAdmissionDoneDesc: "Work Record generated successfully.",
     toastAdmissionErrTitle: "Admission error",
     toastAdmissionErrDesc: "An error occurred while registering the agent.",
+    toastMetricInheritedTitle: "Metric added to the contract",
+    toastMetricDuplicateTitle: "Metric already selected",
+    toastMetricCreatedTitle: "Metric created and linked",
+    toastMetricCreateErrorTitle: "Could not create the metric",
     changeApproverLine: (name: string) => `Change approver: ${name}`,
     dataSourceLine: (source: string) => `Data source: ${source}`,
     probationLine: (weeks: string) => `Probation period: ${weeks} weeks`,
@@ -484,6 +542,10 @@ const L: Record<Lang, Dict> = {
     preAssessStrong: "Pre-assessment",
     preAssessRest:
       'entiende el repositorio sin IA: detecta el stack, extrae rol/límites/KPIs del dossier y encuadra las métricas según el catálogo — rellenando el expediente completo para revisión. "Importar" solo carga los archivos para el análisis con IA.',
+    fastImportedTitle: "Precalificación importada",
+    fastImportedDesc: "Código, función y métricas fueron completados por el fast assessment. Revisa los campos antes de admitir.",
+    connectorImportedTitle: (name: string) => `Origen vinculado: ${name}`,
+    connectorImportedDesc: "La conexión trajo al candidato hasta aquí. La admisión formaliza propósito, responsables, autonomía y KPIs antes de la primera ejecución monitorizada.",
     importedFilesHeader: (selected: number, total: number) =>
       `Archivos importados (${selected}/${total} seleccionados)`,
     selectAll: "Seleccionar todos",
@@ -553,9 +615,12 @@ const L: Record<Lang, Dict> = {
     paybackPh: "Ej.: 3 meses",
     connectTitle: "Conectar",
     connectSub: "De dónde vendrán las señales de desempeño de la agente.",
-    dataSourceLabel: "Fuente de datos",
-    dataSourceHint: "Vincula un conector para alimentar las métricas.",
-    dataSourcePh: "Selecciona un conector",
+  dataSourceLabel: "Fuente de datos",
+  dataSourceHint: "Vincula un conector para alimentar las métricas.",
+  dataSourcePh: "Selecciona un conector",
+  externalIdLabel: "ID externo del agente",
+  externalIdHint: "Usa exactamente el identificador emitido por el runtime en el sobre de telemetría.",
+  externalIdPh: "ej.: triaje-financiero-prod",
     connectedSuffix: " · conectado",
     manageLater: "Puedes gestionar conectores después en Cuenta · Conectores.",
     probationTitle: "Probation",
@@ -565,6 +630,19 @@ const L: Record<Lang, Dict> = {
     metricsGoalsEyebrow: "Metas de las métricas",
     metricsGoalsHint:
       "Ajusta el valor actual, la meta y la justificación de cada métrica antes de admitir. Deja el valor actual en blanco para generarlo automáticamente.",
+    catalogTitle: "Contrato de métricas",
+    catalogHint: "Reutiliza una métrica gobernada o crea una nueva sin salir de la admisión.",
+    catalogSelectPh: "Heredar métrica del catálogo",
+    catalogLoading: "Cargando catálogo…",
+    catalogInherited: "Heredada del catálogo",
+    catalogCreate: "Crear nueva métrica",
+    catalogCreateTitle: "Nueva métrica gobernada",
+    catalogCreateHint: "Se usará en este contrato y quedará disponible en el catálogo de la organización.",
+    catalogVertical: "Vertical",
+    catalogLayer: "Capa",
+    catalogDescriptionPh: "¿Cómo orienta esta métrica una decisión?",
+    catalogCreateAndUse: "Crear y usar",
+    catalogCancel: "Cancelar",
     addMetric: "+ Agregar",
     noMetricsLayer: "Ninguna métrica en esta capa.",
     metricLabelPh: "Etiqueta",
@@ -621,6 +699,10 @@ const L: Record<Lang, Dict> = {
     toastAdmissionDoneDesc: "Expediente Laboral generado con éxito.",
     toastAdmissionErrTitle: "Error en la admisión",
     toastAdmissionErrDesc: "Ocurrió un error al registrar a la agente.",
+    toastMetricInheritedTitle: "Métrica agregada al contrato",
+    toastMetricDuplicateTitle: "Métrica ya seleccionada",
+    toastMetricCreatedTitle: "Métrica creada y vinculada",
+    toastMetricCreateErrorTitle: "No fue posible crear la métrica",
     changeApproverLine: (name: string) => `Aprobador de cambios: ${name}`,
     dataSourceLine: (source: string) => `Fuente de datos: ${source}`,
     probationLine: (weeks: string) => `Período de probation: ${weeks} semanas`,
@@ -631,7 +713,28 @@ const L: Record<Lang, Dict> = {
 // A draft metric row in the wizard. `valueText` is the editing buffer for the
 // optional reviewer-set starting value, kept as free text so pt-BR decimals
 // (e.g. "4,2") can be typed without the input fighting the parser.
-type MetricRow = Omit<DraftMetric, "value"> & { valueText?: string };
+type MetricRow = Omit<DraftMetric, "value"> & {
+  valueText?: string;
+  catalogVertical?: string;
+};
+
+type NewCatalogMetric = {
+  vertical: string;
+  layer: DraftMetricLayer;
+  label: string;
+  unit: string;
+  target: string;
+  rationale: string;
+};
+
+const EMPTY_CATALOG_METRIC: NewCatalogMetric = {
+  vertical: "negocios",
+  layer: "efficacy",
+  label: "",
+  unit: "%",
+  target: "",
+  rationale: "",
+};
 
 /** Radix não aceita string vazia como value de item; este é o marcador. */
 const NENHUMA_AREA = "__sem_area__";
@@ -656,6 +759,7 @@ interface WizardData {
   businessCaseDescription: string;
   baseline: string;
   targetPayback: string;
+  externalId: string;
   dataSource: string;
   probationWeeks: string;
 }
@@ -679,9 +783,86 @@ const INITIAL: WizardData = {
   businessCaseDescription: "",
   baseline: "",
   targetPayback: "",
+  externalId: "",
   dataSource: "",
   probationWeeks: "4",
 };
+
+function dataFromDraft(previous: WizardData, draft: AgentDraft, platform?: string | null): WizardData {
+  return {
+    ...previous,
+    name: draft.name || previous.name,
+    tagline: draft.tagline || previous.tagline,
+    role: draft.role || previous.role,
+    platform: platform || previous.platform,
+    bio: draft.bio || previous.bio,
+    shouldDo: draft.shouldDo?.length ? draft.shouldDo.join("\n") : previous.shouldDo,
+    shouldNotDo: draft.shouldNotDo?.length ? draft.shouldNotDo.join("\n") : previous.shouldNotDo,
+    autonomyLevel: draft.autonomyLevel ?? previous.autonomyLevel,
+    autonomyNotes: draft.autonomyNotes || previous.autonomyNotes,
+    limits: draft.limits?.length ? draft.limits.join("\n") : previous.limits,
+    businessCaseDescription: draft.businessCase?.description || previous.businessCaseDescription,
+    baseline: draft.businessCase?.baseline || previous.baseline,
+    targetPayback: draft.businessCase?.targetPayback || previous.targetPayback,
+  };
+}
+
+function dataFromHandoff(handoff: AdmissionHandoff | null): WizardData {
+  let next = handoff?.result
+    ? dataFromDraft(INITIAL, handoff.result.draft, handoff.result.platform)
+    : INITIAL;
+  if (handoff?.candidate) {
+    next = {
+      ...next,
+      name: handoff.candidate.name,
+      role: handoff.candidate.role,
+      platform: handoff.candidate.platform,
+      externalId: handoff.candidate.externalId,
+      tagline: next.tagline || `Candidato descoberto com ${handoff.candidate.confidence}% de confiança`,
+      businessCaseDescription:
+        next.businessCaseDescription ||
+        `Candidato descoberto por sinais operacionais: ${handoff.candidate.signals.join(", ")}.`,
+    };
+  }
+  if (handoff?.connector) {
+    next = {
+      ...next,
+      dataSource: handoff.connector.id,
+      platform: handoff.candidate?.platform || handoff.connector.platform,
+    };
+  }
+  return next;
+}
+
+function metricsFromDraft(draft: AgentDraft): MetricRow[] | null {
+  return draft.proposedMetrics
+    ?.filter((metric) => metric.label.trim())
+    .map((metric) => ({
+      layer: metric.layer,
+      label: metric.label.trim(),
+      unit: metric.unit?.trim() || "%",
+      target: metric.target?.trim() ?? "",
+      valueText:
+        typeof metric.value === "number" && Number.isFinite(metric.value)
+          ? String(metric.value)
+          : "",
+      rationale: metric.rationale,
+      catalogMetricKey: metric.catalogMetricKey,
+    })) ?? null;
+}
+
+function metricsFromHandoff(handoff: AdmissionHandoff | null): MetricRow[] | null {
+  if (handoff?.result) return metricsFromDraft(handoff.result.draft);
+  if (!handoff?.candidate?.proposedMetrics.length) return null;
+  return handoff.candidate.proposedMetrics.map((metric) => ({
+    layer: metric.layer,
+    label: metric.label,
+    unit: metric.unit || "%",
+    target: "",
+    valueText: String(metric.value),
+    rationale: `Sinal ${metric.sourceSignal} · confiança ${metric.confidence}%`,
+  }));
+}
 
 function toLines(value: string): string[] {
   return value
@@ -773,7 +954,7 @@ function serializeImportedFiles(files: ImportedFile[]): string {
     .join("\n\n");
 }
 
-export default function AdmissionPage() {
+export default function AdmissionPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { lang } = useLang();
@@ -784,18 +965,28 @@ export default function AdmissionPage() {
   const fetchSource = useFetchAgentSource();
   const preAssess = usePreAssessAgentSource();
   const { data: connectors } = useListConnectors();
+  const { data: catalogVerticals, isLoading: catalogLoading } =
+    useListCatalogMetrics();
+  const createCatalogMetric = useCreateCatalogMetric();
   const { data: areasData } = useListAreas();
   const { data: githubStatus, isLoading: githubStatusLoading } =
     useGetGitHubStatus();
 
+  const [admissionHandoff] = useState(consumeAdmissionHandoff);
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<WizardData>(INITIAL);
-  const [metrics, setMetrics] = useState<MetricRow[] | null>(null);
+  const [data, setData] = useState<WizardData>(() => dataFromHandoff(admissionHandoff));
+  const [metrics, setMetrics] = useState<MetricRow[] | null>(() =>
+    metricsFromHandoff(admissionHandoff),
+  );
+  const [catalogMetricKey, setCatalogMetricKey] = useState("");
+  const [newMetricOpen, setNewMetricOpen] = useState(false);
+  const [newCatalogMetric, setNewCatalogMetric] =
+    useState<NewCatalogMetric>(EMPTY_CATALOG_METRIC);
 
   // AI assist (optional)
   const [aiOpen, setAiOpen] = useState(false);
   const [source, setSource] = useState("");
-  const [importUrl, setImportUrl] = useState("");
+  const [importUrl, setImportUrl] = useState(admissionHandoff?.sourceUrl ?? "");
   const [importedFiles, setImportedFiles] = useState<ImportedFile[]>([]);
   const [importTruncated, setImportTruncated] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -832,6 +1023,92 @@ export default function AdmissionPage() {
         { layer, label: "", unit: "%", target: "", valueText: "" },
       ]);
 
+    const catalogOptions = (catalogVerticals ?? []).flatMap((vertical) =>
+      vertical.metrics.map((metric) => ({ metric, vertical })),
+    );
+
+    const addMetricFromCatalog = (
+      metric: CatalogMetric,
+      vertical?: CatalogVertical,
+      notify = true,
+    ) => {
+      const duplicate = (metrics ?? []).some(
+        (current) =>
+          current.catalogMetricKey === metric.key ||
+          (current.layer === metric.layer &&
+            current.label.trim().toLocaleLowerCase() ===
+              metric.label.trim().toLocaleLowerCase()),
+      );
+      if (duplicate) {
+        toast({ title: t.toastMetricDuplicateTitle });
+        setCatalogMetricKey("");
+        return;
+      }
+      setMetrics((current) => [
+        ...(current ?? []),
+        {
+          layer: metric.layer,
+          label: metric.label,
+          unit: metric.unit || "%",
+          target: metric.target === "—" ? "" : metric.target,
+          valueText: "",
+          rationale: metric.rationale || metric.description,
+          catalogMetricKey: metric.key,
+          catalogVertical: vertical?.label ?? metric.vertical,
+        },
+      ]);
+      setCatalogMetricKey("");
+      if (notify) {
+        toast({ title: t.toastMetricInheritedTitle, description: metric.label });
+      }
+    };
+
+    const inheritCatalogMetric = (metricKey: string) => {
+      setCatalogMetricKey(metricKey);
+      const selected = catalogOptions.find(({ metric }) => metric.key === metricKey);
+      if (selected) addMetricFromCatalog(selected.metric, selected.vertical);
+    };
+
+    const saveCatalogMetric = () => {
+      if (!newCatalogMetric.label.trim()) return;
+      createCatalogMetric.mutate(
+        {
+          data: {
+            vertical: newCatalogMetric.vertical,
+            layer: newCatalogMetric.layer,
+            label: newCatalogMetric.label.trim(),
+            unit: newCatalogMetric.unit.trim(),
+            target: newCatalogMetric.target.trim() || "—",
+            description: newCatalogMetric.rationale.trim(),
+            rationale: newCatalogMetric.rationale.trim(),
+          },
+        },
+        {
+          onSuccess: (created) => {
+            const vertical = catalogVerticals?.find(
+              (item) => item.key === created.vertical,
+            );
+            addMetricFromCatalog(created, vertical, false);
+            setNewCatalogMetric(EMPTY_CATALOG_METRIC);
+            setNewMetricOpen(false);
+            toast({
+              title: t.toastMetricCreatedTitle,
+              description: created.label,
+            });
+            queryClient.invalidateQueries({
+              queryKey: getListCatalogMetricsQueryKey(),
+            });
+          },
+          onError: (error) =>
+            toast({
+              variant: "destructive",
+              title: t.toastMetricCreateErrorTitle,
+              description: error instanceof Error ? error.message : undefined,
+            }),
+        },
+      );
+    };
+
     // Parse the free-text value input (pt-BR comma decimals allowed) into a
     // number, or undefined when blank/invalid so the server seeds it instead.
     const parseMetricValue = (raw: string): number | undefined => {
@@ -843,44 +1120,20 @@ export default function AdmissionPage() {
 
   const ownersComplete =
     data.businessOwner.trim() && data.technicalOwner.trim() && data.governanceSponsor.trim();
+  const selectedConnector = (connectors ?? []).find(
+    (connector) => connector.id === data.dataSource,
+  );
 
   const canAdvance = (() => {
     if (step === 0) return data.name.trim().length >= 2 && data.role.trim().length >= 2;
     if (step === 2) return Boolean(ownersComplete);
+    if (step === 5) return !data.dataSource || data.externalId.trim().length > 0;
     return true;
   })();
 
   function applyDraft(d: AgentDraft) {
-    setData((prev) => ({
-      ...prev,
-      name: d.name || prev.name,
-      tagline: d.tagline || prev.tagline,
-      role: d.role || prev.role,
-      bio: d.bio || prev.bio,
-      shouldDo: d.shouldDo?.length ? d.shouldDo.join("\n") : prev.shouldDo,
-      shouldNotDo: d.shouldNotDo?.length ? d.shouldNotDo.join("\n") : prev.shouldNotDo,
-      autonomyLevel: d.autonomyLevel ?? prev.autonomyLevel,
-      autonomyNotes: d.autonomyNotes || prev.autonomyNotes,
-      limits: d.limits?.length ? d.limits.join("\n") : prev.limits,
-      businessCaseDescription: d.businessCase?.description || prev.businessCaseDescription,
-      baseline: d.businessCase?.baseline || prev.baseline,
-      targetPayback: d.businessCase?.targetPayback || prev.targetPayback,
-    }));
-    setMetrics(
-      d.proposedMetrics
-        ?.filter((m) => m.label.trim())
-        .map((m) => ({
-          layer: m.layer,
-          label: m.label.trim(),
-          unit: m.unit?.trim() || "%",
-          target: m.target?.trim() ?? "",
-          valueText:
-            typeof m.value === "number" && Number.isFinite(m.value)
-              ? String(m.value)
-              : "",
-          rationale: m.rationale,
-        })) ?? null,
-    );
+    setData((previous) => dataFromDraft(previous, d));
+    setMetrics(metricsFromDraft(d));
     setAiOpen(false);
     toast({
       title: t.toastDraftApplied,
@@ -1062,13 +1315,19 @@ export default function AdmissionPage() {
 
     const businessCaseDescription = [
       data.businessCaseDescription.trim(),
-      data.dataSource.trim() ? t.dataSourceLine(data.dataSource.trim()) : "",
+      selectedConnector
+        ? t.dataSourceLine(
+            `${selectedConnector.name} (${selectedConnector.platform}) · connectorId=${selectedConnector.id}`,
+          )
+        : "",
       data.probationWeeks.trim() ? t.probationLine(data.probationWeeks.trim()) : "",
     ]
       .filter(Boolean)
       .join("\n");
 
     const payload: AgentInput = {
+      externalId: data.externalId.trim() || undefined,
+      connectorId: selectedConnector?.id,
       name: data.name.trim(),
       role: data.role.trim(),
       platform: data.platform,
@@ -1098,6 +1357,7 @@ export default function AdmissionPage() {
                 target: m.target.trim(),
                 ...(value !== undefined ? { value } : {}),
                 rationale: m.rationale?.trim() || undefined,
+                catalogMetricKey: m.catalogMetricKey,
               };
             });
           return cleaned.length > 0 ? { proposedMetrics: cleaned } : {};
@@ -1116,7 +1376,17 @@ export default function AdmissionPage() {
           // Cadastro sem telemetria produz um agente mudo: a plataforma mostra
           // a carteira de trabalho e se recusa a dar nota, corretamente, mas
           // até aqui o fluxo terminava sem dizer qual era o passo seguinte.
-          setLocation(`/agentes/${agent.agent.id}/conectar`);
+          if (selectedConnector) {
+            const query = new URLSearchParams({
+              connectorId: selectedConnector.id,
+              agentId: agent.agent.id,
+              externalId: data.externalId.trim(),
+              agentName: agent.agent.name,
+            });
+            setLocation(`/conectores?${query.toString()}`);
+          } else {
+            setLocation(`/agentes/${agent.agent.id}/conectar`);
+          }
         },
         onError: () => {
           toast({
@@ -1130,13 +1400,29 @@ export default function AdmissionPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.bcAccount }, { label: t.bcAdmission }]}>
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.bcAccount }, { label: t.bcAdmission }]}>
       <div className="mx-auto max-w-3xl space-y-7 animate-in fade-in duration-500">
         <PageHeading
           eyebrow={t.eyebrow}
           title={t.title}
           subtitle={t.subtitle}
         />
+
+        {admissionHandoff && (
+          <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/[0.05] p-4">
+            {admissionHandoff.connector ? <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> : <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {admissionHandoff.connector
+                  ? t.connectorImportedTitle(admissionHandoff.connector.name)
+                  : t.fastImportedTitle}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {admissionHandoff.connector ? t.connectorImportedDesc : t.fastImportedDesc}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Stepper */}
         <div className="flex flex-wrap items-center gap-1.5">
@@ -1607,6 +1893,13 @@ export default function AdmissionPage() {
                   {t.connectSub}
                 </p>
               </div>
+              <StepField label={t.externalIdLabel} hint={t.externalIdHint}>
+                <Input
+                  value={data.externalId}
+                  onChange={(e) => set("externalId", e.target.value)}
+                  placeholder={t.externalIdPh}
+                />
+              </StepField>
               <StepField label={t.dataSourceLabel} hint={t.dataSourceHint}>
                 <Select
                   value={data.dataSource || undefined}
@@ -1616,8 +1909,8 @@ export default function AdmissionPage() {
                     <SelectValue placeholder={t.dataSourcePh} />
                   </SelectTrigger>
                   <SelectContent>
-                    {(connectors ?? []).map((c) => (
-                      <SelectItem key={c.id} value={c.name}>
+                    {(connectors ?? []).filter((c) => !c.id.startsWith("catalog_")).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
                         {c.name}
                         {c.status === "connected" ? t.connectedSuffix : ""}
                       </SelectItem>
@@ -1625,6 +1918,14 @@ export default function AdmissionPage() {
                   </SelectContent>
                 </Select>
               </StepField>
+              {selectedConnector && (
+                <div className="rounded-xl border border-primary/25 bg-primary/[0.04] p-4 text-xs leading-relaxed text-muted-foreground">
+                  <strong className="block text-foreground">Conector e admissão integrados</strong>
+                  <span className="mt-1 block">
+                    Ao concluir, o Muster grava este vínculo e abre um payload de teste com o mesmo ID externo para iniciar a telemetria.
+                  </span>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 {t.manageLater}
               </p>
@@ -1655,93 +1956,275 @@ export default function AdmissionPage() {
                 </Select>
               </StepField>
 
-              {metrics && metrics.length > 0 && (
-                  <div className="space-y-4 rounded-xl border border-card-border bg-secondary/30 p-4">
-                    <div>
-                      <Eyebrow>{t.metricsGoalsEyebrow}</Eyebrow>
-                      <p className="mt-0.5 text-sm text-muted-foreground">
-                        {t.metricsGoalsHint}
-                      </p>
+              <div
+                className="space-y-4 rounded-xl border border-card-border bg-secondary/30 p-4"
+                data-testid="admission-metric-contract"
+              >
+                <div>
+                  <Eyebrow>{t.metricsGoalsEyebrow}</Eyebrow>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {t.metricsGoalsHint}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-primary/20 bg-background/60 p-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex gap-3">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                        <LibraryBig className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <strong className="block text-sm text-foreground">
+                          {t.catalogTitle}
+                        </strong>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          {t.catalogHint}
+                        </p>
+                      </div>
                     </div>
-                    {LAYER_ORDER.map((layer) => {
-                      const rows = metrics
-                        .map((m, i) => ({ m, i }))
-                        .filter((x) => x.m.layer === layer);
-                      return (
-                        <div key={layer} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                              {t.layers[layer]}
-                            </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNewMetricOpen((current) => !current)}
+                      data-testid="open-create-catalog-metric"
+                    >
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      {t.catalogCreate}
+                    </Button>
+                  </div>
+                  <Select
+                    value={catalogMetricKey}
+                    onValueChange={inheritCatalogMetric}
+                    disabled={catalogLoading || catalogOptions.length === 0}
+                  >
+                    <SelectTrigger className="mt-3 bg-background" data-testid="inherit-catalog-metric">
+                      <SelectValue
+                        placeholder={catalogLoading ? t.catalogLoading : t.catalogSelectPh}
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {catalogOptions.map(({ metric, vertical }) => (
+                        <SelectItem key={metric.key} value={metric.key}>
+                          {vertical.label} · {metric.label} · {metric.target}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {newMetricOpen && (
+                    <div className="mt-3 space-y-3 rounded-lg border border-card-border bg-background p-3" data-testid="create-catalog-metric-form">
+                      <div>
+                        <strong className="text-sm text-foreground">
+                          {t.catalogCreateTitle}
+                        </strong>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t.catalogCreateHint}
+                        </p>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <StepField label={t.catalogVertical}>
+                          <Select
+                            value={newCatalogMetric.vertical}
+                            onValueChange={(vertical) =>
+                              setNewCatalogMetric((current) => ({ ...current, vertical }))
+                            }
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {(catalogVerticals ?? []).map((vertical) => (
+                                <SelectItem key={vertical.key} value={vertical.key}>
+                                  {vertical.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </StepField>
+                        <StepField label={t.catalogLayer}>
+                          <Select
+                            value={newCatalogMetric.layer}
+                            onValueChange={(layer) =>
+                              setNewCatalogMetric((current) => ({
+                                ...current,
+                                layer: layer as DraftMetricLayer,
+                              }))
+                            }
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {LAYER_ORDER.map((layer) => (
+                                <SelectItem key={layer} value={layer}>
+                                  {t.layers[layer]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </StepField>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-[1fr_5rem_7rem]">
+                        <Input
+                          value={newCatalogMetric.label}
+                          onChange={(event) =>
+                            setNewCatalogMetric((current) => ({
+                              ...current,
+                              label: event.target.value,
+                            }))
+                          }
+                          placeholder={t.metricLabelPh}
+                        />
+                        <Input
+                          value={newCatalogMetric.unit}
+                          onChange={(event) =>
+                            setNewCatalogMetric((current) => ({
+                              ...current,
+                              unit: event.target.value,
+                            }))
+                          }
+                          placeholder={t.metricUnitPh}
+                        />
+                        <Input
+                          value={newCatalogMetric.target}
+                          onChange={(event) =>
+                            setNewCatalogMetric((current) => ({
+                              ...current,
+                              target: event.target.value,
+                            }))
+                          }
+                          placeholder={t.metricTargetPh}
+                        />
+                      </div>
+                      <Textarea
+                        value={newCatalogMetric.rationale}
+                        onChange={(event) =>
+                          setNewCatalogMetric((current) => ({
+                            ...current,
+                            rationale: event.target.value,
+                          }))
+                        }
+                        placeholder={t.catalogDescriptionPh}
+                        className="min-h-[64px]"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => {
+                            setNewMetricOpen(false);
+                            setNewCatalogMetric(EMPTY_CATALOG_METRIC);
+                          }}
+                        >
+                          {t.catalogCancel}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={saveCatalogMetric}
+                          disabled={
+                            createCatalogMetric.isPending ||
+                            !newCatalogMetric.label.trim()
+                          }
+                          data-testid="create-and-use-catalog-metric"
+                        >
+                          {createCatalogMetric.isPending
+                            ? t.analyzing
+                            : t.catalogCreateAndUse}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {LAYER_ORDER.map((layer) => {
+                  const rows = (metrics ?? [])
+                    .map((metric, index) => ({ metric, index }))
+                    .filter(({ metric }) => metric.layer === layer);
+                  return (
+                    <div key={layer} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                          {t.layers[layer]}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addMetric(layer)}
+                        >
+                          {t.addMetric}
+                        </Button>
+                      </div>
+                      {rows.length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {t.noMetricsLayer}
+                        </p>
+                      )}
+                      {rows.map(({ metric, index }) => (
+                        <div
+                          key={`${metric.catalogMetricKey ?? "manual"}-${index}`}
+                          className="space-y-2 rounded-md border border-card-border bg-background/40 p-2"
+                        >
+                          {metric.catalogMetricKey && (
+                            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wide text-primary">
+                              <LibraryBig className="h-3 w-3" />
+                              {t.catalogInherited} · {metric.catalogVertical}
+                            </div>
+                          )}
+                          <div className="grid gap-2 sm:grid-cols-[1fr_4.5rem_5rem_6rem_auto]">
+                            <Input
+                              value={metric.label}
+                              onChange={(event) =>
+                                updateMetric(index, { label: event.target.value })
+                              }
+                              placeholder={t.metricLabelPh}
+                              className="text-sm"
+                            />
+                            <Input
+                              value={metric.unit}
+                              onChange={(event) =>
+                                updateMetric(index, { unit: event.target.value })
+                              }
+                              placeholder={t.metricUnitPh}
+                              className="text-sm"
+                            />
+                            <Input
+                              value={metric.valueText ?? ""}
+                              onChange={(event) =>
+                                updateMetric(index, { valueText: event.target.value })
+                              }
+                              inputMode="decimal"
+                              placeholder={t.metricCurrentPh}
+                              className="text-sm font-mono"
+                            />
+                            <Input
+                              value={metric.target}
+                              onChange={(event) =>
+                                updateMetric(index, { target: event.target.value })
+                              }
+                              placeholder={t.metricTargetPh}
+                              className="text-sm"
+                            />
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => addMetric(layer)}
+                              onClick={() => removeMetric(index)}
                             >
-                              {t.addMetric}
+                              {t.metricRemove}
                             </Button>
                           </div>
-                          {rows.length === 0 && (
-                            <p className="text-xs text-muted-foreground">
-                              {t.noMetricsLayer}
-                            </p>
-                          )}
-                          {rows.map(({ m, i }) => (
-                            <div
-                              key={i}
-                              className="space-y-2 rounded-md border border-card-border bg-background/40 p-2"
-                            >
-                              <div className="grid grid-cols-[1fr_4.5rem_5rem_6rem_auto] gap-2">
-                                <Input
-                                  value={m.label}
-                                  onChange={(e) => updateMetric(i, { label: e.target.value })}
-                                  placeholder={t.metricLabelPh}
-                                  className="text-sm"
-                                />
-                                <Input
-                                  value={m.unit}
-                                  onChange={(e) => updateMetric(i, { unit: e.target.value })}
-                                  placeholder={t.metricUnitPh}
-                                  className="text-sm"
-                                />
-                                <Input
-                                  value={m.valueText ?? ""}
-                                  onChange={(e) =>
-                                    updateMetric(i, { valueText: e.target.value })
-                                  }
-                                  inputMode="decimal"
-                                  placeholder={t.metricCurrentPh}
-                                  className="text-sm font-mono"
-                                />
-                                <Input
-                                  value={m.target}
-                                  onChange={(e) => updateMetric(i, { target: e.target.value })}
-                                  placeholder={t.metricTargetPh}
-                                  className="text-sm"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeMetric(i)}
-                                >
-                                  {t.metricRemove}
-                                </Button>
-                              </div>
-                              <Textarea
-                                value={m.rationale ?? ""}
-                                onChange={(e) => updateMetric(i, { rationale: e.target.value })}
-                                placeholder={t.metricRationalePh}
-                                className="min-h-[48px] text-sm"
-                              />
-                            </div>
-                          ))}
+                          <Textarea
+                            value={metric.rationale ?? ""}
+                            onChange={(event) =>
+                              updateMetric(index, { rationale: event.target.value })
+                            }
+                            placeholder={t.metricRationalePh}
+                            className="min-h-[48px] text-sm"
+                          />
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
 
                 {/* Resumo */}
               <div className="rounded-xl border border-card-border bg-secondary/30 p-4">
@@ -1812,6 +2295,6 @@ export default function AdmissionPage() {
           </div>
         </Card>
       </div>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }
