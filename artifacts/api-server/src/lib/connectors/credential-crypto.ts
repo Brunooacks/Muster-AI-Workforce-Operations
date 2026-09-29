@@ -3,6 +3,10 @@ import {
   createDecipheriv,
   randomBytes,
 } from "node:crypto";
+import {
+  parseLangfuseCredentialBundle,
+  type LangfuseCredentialBundleV1,
+} from "./langfuse-client";
 
 const ALGORITHM = "aes-256-gcm";
 const ENVELOPE_PREFIX = "mustercred:v1";
@@ -124,6 +128,24 @@ export function decryptConnectorCredential(
   } catch {
     throw corruptedCredentialError();
   }
+}
+
+export function encryptLangfuseCredentialBundle(
+  bundle: LangfuseCredentialBundleV1,
+  connectorId: string,
+  key: Buffer,
+): string {
+  return encryptConnectorCredential(JSON.stringify(bundle), connectorId, key);
+}
+
+export function decryptLangfuseCredentialBundle(
+  envelope: string,
+  connectorId: string,
+  key: Buffer,
+): LangfuseCredentialBundleV1 {
+  return parseLangfuseCredentialBundle(
+    decryptConnectorCredential(envelope, connectorId, key),
+  );
 }
 
 export function isEncryptedConnectorCredential(value: string): boolean {

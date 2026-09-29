@@ -1,6 +1,6 @@
 const REDACTED = "[REDACTED]";
 const SENSITIVE_KEY =
-  /(?:authorization|cookie|credentials?|password|passphrase|secrets?|tokens?|api[_-]?key|client[_-]?secret|private[_-]?key)$/i;
+  /(?:authorization|cookie|credentials?|password|passphrase|secrets?|tokens?|api[_-]?key|client[_-]?secret|private[_-]?key|public[_-]?key)$/i;
 
 export function redactConnectorMetadata<T>(value: T): T {
   return redactValue(value, new WeakSet<object>()) as T;

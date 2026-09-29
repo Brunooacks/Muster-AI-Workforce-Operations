@@ -5,7 +5,9 @@ import {
   ConnectorCredentialError,
   LEGACY_MIGRATION_ENV,
   decryptConnectorCredential,
+  decryptLangfuseCredentialBundle,
   encryptConnectorCredential,
+  encryptLangfuseCredentialBundle,
   isEncryptedConnectorCredential,
   materializeConnectorCredentialForAdapter,
   parseConnectorCredentialEncryptionKey,
@@ -42,6 +44,30 @@ describe("connector credential encryption", () => {
 
     expect(first).not.toBe(second);
     expect(first.split(":")[2]).not.toBe(second.split(":")[2]);
+  });
+
+  it("encrypts the complete Langfuse credential bundle as one envelope", () => {
+    const key = randomBytes(32);
+    const encrypted = encryptLangfuseCredentialBundle(
+      {
+        version: 1,
+        baseUrl: "https://cloud.langfuse.com",
+        publicKey: "pk-lf-public",
+        secretKey: "sk-lf-secret",
+      },
+      connectorId,
+      key,
+    );
+
+    expect(encrypted).not.toContain("cloud.langfuse.com");
+    expect(encrypted).not.toContain("pk-lf-public");
+    expect(encrypted).not.toContain("sk-lf-secret");
+    expect(decryptLangfuseCredentialBundle(encrypted, connectorId, key)).toEqual({
+      version: 1,
+      baseUrl: "https://cloud.langfuse.com",
+      publicKey: "pk-lf-public",
+      secretKey: "sk-lf-secret",
+    });
   });
 
   it("rejects missing, malformed, and incorrectly-sized keys", () => {

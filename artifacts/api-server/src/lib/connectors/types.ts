@@ -9,6 +9,11 @@ export interface ConnectorCredential {
   token: string | null;
 }
 
+/** Credential material available only in server memory after AES-GCM decryption. */
+export interface LangfuseConnectorCredential extends ConnectorCredential {
+  credentialBundle: import("./langfuse-client").LangfuseCredentialBundleV1;
+}
+
 export interface DiscoveredAgentCandidate {
   /** Stable external identifier on the source platform (e.g. "org/repo"). */
   externalId: string;

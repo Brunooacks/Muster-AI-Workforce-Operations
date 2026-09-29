@@ -42,4 +42,18 @@ describe("redactConnectorMetadata", () => {
     });
     expect(redacted.payload).toBe("[REDACTED]");
   });
+
+  it("redacts complete Langfuse credential bundles", () => {
+    const redacted = redactConnectorMetadata({
+      baseUrl: "https://cloud.langfuse.com",
+      publicKey: "pk-lf-example-public-key",
+      secretKey: "sk-lf-example-secret-key",
+    });
+
+    expect(redacted).toEqual({
+      baseUrl: "https://cloud.langfuse.com",
+      publicKey: "[REDACTED]",
+      secretKey: "[REDACTED]",
+    });
+  });
 });
