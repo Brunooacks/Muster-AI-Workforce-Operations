@@ -39,3 +39,48 @@ jobs:
 
       - name: Build
         run: pnpm -r --if-present run build
+
+  e2e-authenticated:
+    name: e2e autenticado · Clerk
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: muster
+        options: >-
+          --health-cmd "pg_isready -U postgres -d muster"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CI: true
+      E2E_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/muster
+      CLERK_TEST_PUBLISHABLE_KEY: ${{ secrets.CLERK_TEST_PUBLISHABLE_KEY }}
+      CLERK_TEST_SECRET_KEY: ${{ secrets.CLERK_TEST_SECRET_KEY }}
+      E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+      E2E_CLERK_ORG_NAME: ${{ secrets.E2E_CLERK_ORG_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run authenticated E2E
+        run: pnpm --filter @workspace/muster run test:e2e:authenticated
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-authenticated-report
+          path: output/gauntlet/playwright
+          if-no-files-found: ignore
