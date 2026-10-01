@@ -39,3 +39,64 @@ jobs:
 
       - name: Build
         run: pnpm -r --if-present run build
+
+  integration:
+    name: PostgreSQL integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: muster
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres -d muster"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/muster
+      # Valores inertes: este teste importa a integração, mas não chama a OpenAI.
+      AI_INTEGRATIONS_OPENAI_BASE_URL: http://localhost:9/unused
+      AI_INTEGRATIONS_OPENAI_API_KEY: dummy-ci
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_TEST_SECRET_KEY }}
+      CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_TEST_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Clerk test secrets
+        run: |
+          missing=""
+          if [ -z "$CLERK_SECRET_KEY" ]; then missing="CLERK_TEST_SECRET_KEY"; fi
+          if [ -z "$CLERK_PUBLISHABLE_KEY" ]; then missing="${missing:+$missing, }CLERK_TEST_PUBLISHABLE_KEY"; fi
+          if [ -n "$missing" ]; then
+            echo "::error::Cadastre os secrets de teste ausentes no GitHub: $missing"
+            exit 1
+          fi
+
+      - name: Apply migrations from an empty database
+        run: pnpm --dir lib/db run migrate
+
+      - name: Verify migrations are idempotent
+        run: pnpm --dir lib/db run migrate
+
+      - name: Run PostgreSQL integration tests without skips
+        run: |
+          pnpm run test:integration --reporter=json --outputFile=/tmp/integration-results.json
+          node -e 'const r = require("/tmp/integration-results.json"); const expected = { numPendingTests: 0, numPassedTests: 18, numTotalTests: 18 }; for (const [key, value] of Object.entries(expected)) { if (r[key] !== value) { console.error(`Expected ${key}=${value}, got ${r[key]}`); process.exit(1); } } if (r.testResults.length !== 7) { console.error(`Expected 7 integration files, got ${r.testResults.length}`); process.exit(1); }'
