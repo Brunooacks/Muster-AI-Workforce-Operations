@@ -216,6 +216,15 @@
 }
 
 @layer components {
+  .landing-surface {
+    background-image:
+      radial-gradient(circle at 12% 4%, hsl(var(--primary) / 0.18), transparent 31rem),
+      radial-gradient(circle at 88% 16%, hsl(var(--chart-4) / 0.14), transparent 34rem),
+      linear-gradient(hsl(var(--foreground) / 0.032) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.024) 1px, transparent 1px);
+    background-size: auto, auto, 48px 48px, 48px 48px;
+  }
+
   .workspace-shell {
     background-image: radial-gradient(circle at 84% 0%, hsl(var(--primary) / 0.06), transparent 34rem);
   }
@@ -244,6 +253,37 @@
   .workspace-panel {
     background: linear-gradient(145deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.8));
     box-shadow: 0 18px 48px hsl(160 30% 2% / 0.14);
+  }
+}
+
+@layer clerk {
+  .cl-formFieldInput {
+    color: hsl(var(--foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    caret-color: hsl(var(--primary)) !important;
+    background-color: hsl(var(--secondary) / 0.55) !important;
+    opacity: 1 !important;
+  }
+
+  .cl-formFieldInput::placeholder {
+    color: hsl(var(--muted-foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--muted-foreground)) !important;
+    opacity: 1 !important;
+  }
+
+  .cl-formFieldInput:-webkit-autofill,
+  .cl-formFieldInput:-webkit-autofill:hover,
+  .cl-formFieldInput:-webkit-autofill:focus {
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    caret-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 1000px hsl(var(--secondary)) inset !important;
+    transition: background-color 9999s ease-out 0s;
+  }
+
+  .cl-formFieldInputShowPasswordButton,
+  .cl-formFieldInputShowPasswordIcon {
+    color: hsl(var(--muted-foreground)) !important;
+    opacity: 1 !important;
   }
 }
 

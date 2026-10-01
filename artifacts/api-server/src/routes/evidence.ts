@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "@workspace/db";
+import { db, agents, teams, purposes } from "@workspace/db";
 import { metricEvidence } from "@workspace/db/schema";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
@@ -85,6 +85,57 @@ function toMetricEvidence(row: typeof metricEvidence.$inferSelect): MetricEviden
   };
 }
 
+type EvidenceReferences = Pick<
+  ReturnType<typeof parseEvidenceBody>,
+  "agentId" | "teamId" | "purposeId"
+>;
+
+/**
+ * Confirma todas as referências opcionais dentro da mesma fronteira tenant.
+ * A FK garante que o id existe; esta checagem adicional garante que ele é da
+ * organização da requisição, algo que uma FK simples não consegue expressar.
+ */
+export async function invalidEvidenceReferences(
+  orgId: string,
+  references: EvidenceReferences,
+): Promise<string[]> {
+  const checks: Array<Promise<string | null>> = [];
+  if (references.agentId) {
+    checks.push(
+      db
+        .select({ id: agents.id })
+        .from(agents)
+        .where(and(eq(agents.id, references.agentId), eq(agents.orgId, orgId)))
+        .limit(1)
+        .then((rows) => (rows.length === 0 ? "agentId" : null)),
+    );
+  }
+  if (references.teamId) {
+    checks.push(
+      db
+        .select({ id: teams.id })
+        .from(teams)
+        .where(and(eq(teams.id, references.teamId), eq(teams.orgId, orgId)))
+        .limit(1)
+        .then((rows) => (rows.length === 0 ? "teamId" : null)),
+    );
+  }
+  if (references.purposeId) {
+    checks.push(
+      db
+        .select({ id: purposes.id })
+        .from(purposes)
+        .where(and(eq(purposes.id, references.purposeId), eq(purposes.orgId, orgId)))
+        .limit(1)
+        .then((rows) => (rows.length === 0 ? "purposeId" : null)),
+    );
+  }
+
+  return (await Promise.all(checks)).filter(
+    (field): field is string => field !== null,
+  );
+}
+
 router.get("/evidence", requireAuth, requireOrg, async (req, res) => {
   const filters = [
     typeof req.query.metricKey === "string"
@@ -105,7 +156,7 @@ router.get("/evidence", requireAuth, requireOrg, async (req, res) => {
     rows = await db
       .select()
       .from(metricEvidence)
-      .where(filters.length > 0 ? and(...filters) : undefined)
+      .where(and(eq(metricEvidence.orgId, req.orgId!), ...filters))
       .orderBy(desc(metricEvidence.capturedAt), desc(metricEvidence.createdAt))
       .limit(parseLimit(req.query.limit));
   } catch (error) {
@@ -130,9 +181,22 @@ router.post("/evidence", requireAuth, requireOrg, async (req, res) => {
     return;
   }
   const { evidence, agentId, teamId, purposeId } = parsed;
+  const invalidReferences = await invalidEvidenceReferences(req.orgId!, {
+    agentId,
+    teamId,
+    purposeId,
+  });
+  if (invalidReferences.length > 0) {
+    res.status(400).json({
+      error: "Referência não encontrada nesta organização.",
+      fields: invalidReferences,
+    });
+    return;
+  }
   const [created] = await db
     .insert(metricEvidence)
     .values({
+      orgId: req.orgId!,
       metricKey: evidence.metricKey,
       label: evidence.label,
       agentId,

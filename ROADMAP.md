@@ -9,7 +9,7 @@ Cohort é o **RH e a governança da força de trabalho de IA**: identidade, cart
 ## Estado atual (base já entregue)
 
 - ✅ **Fase 0 — Fundação** (PR #1): migrations versionadas, `.env.example`, Dockerfile, Vitest (20 testes), CI GitHub Actions e build independente da plataforma de hospedagem
-- ✅ **Modo dev local** (PR #2): auth bypass seguro p/ localhost, proxy `/api`, modelo de IA configurável
+- ✅ **Modo dev local** (PR #2): Clerk obrigatório, proxy `/api` e modelo de IA configurável
 - ✅ **Frota de teste real**: [cohort-test-agents](https://github.com/Brunooacks/cohort-test-agents) (LangChain, Claude, Copilot) admitidos na frota local
 - ✅ Pipeline real de fetch de código do GitHub (`POST /discovery/fetch`)
 - ✅ **R6 (núcleo) — Telemetria real**: SDK `@workspace/telemetry-reporter` (conector

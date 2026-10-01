@@ -1,4 +1,4 @@
-import { AppLayout } from "@/components/layout";
+import { OperationalPageFrame } from "@/components/layout";
 import { useGetFleetBenchmarks } from "@workspace/api-client-react";
 import {
   Card,
@@ -139,7 +139,7 @@ function RankRow({
   );
 }
 
-export default function BenchmarksPage() {
+export default function BenchmarksPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { data, isLoading, isError, refetch } = useGetFleetBenchmarks();
   const { lang } = useLang();
   const t = L[lang];
@@ -148,8 +148,8 @@ export default function BenchmarksPage() {
   const maxAcc = Math.max(1, ...(data?.byAccuracy.map((a) => a.accuracy) ?? [1]));
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.bcGov }, { label: t.bcBench }]}>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.bcGov }, { label: t.bcBench }]}>
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500" data-operational-source="api">
         <PageHeading
           eyebrow={t.eyebrow}
           title={t.title}
@@ -263,6 +263,6 @@ export default function BenchmarksPage() {
           </>
         )}
       </div>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }

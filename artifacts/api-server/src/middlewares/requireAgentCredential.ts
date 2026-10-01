@@ -6,7 +6,7 @@ import {
   bearerFrom,
   parseAgentApiKey,
 } from "../lib/agent-api-key";
-import { authDevBypass, requireAuth } from "./requireAuth";
+import { requireAuth } from "./requireAuth";
 import { requireOrg } from "./requireOrg";
 
 declare global {
@@ -27,12 +27,9 @@ declare global {
  * msk_live_<prefix>_<secret>`. The key is scoped to exactly one agent — a valid
  * key for agent A cannot report for agent B.
  *
- * Transition rule (deliberate, and tested): when AUTH_DEV_BYPASS is active —
- * which is impossible in production, see requireAuth — a request WITHOUT any
- * bearer token still falls back to session auth, so local tooling and the
- * demo keep working. A token that is *present but invalid or revoked* is always
- * rejected, in every environment: presenting a bad credential is never treated
- * as "no credential".
+ * A token that is present but invalid or revoked is always rejected. Requests
+ * without a credential fail closed; authenticated human sessions remain valid
+ * only when they explicitly present their Clerk bearer token.
  */
 export async function requireAgentCredential(
   req: Request,
@@ -46,7 +43,7 @@ export async function requireAgentCredential(
   if (!parsed) {
     // A bearer token that is not a Muster agent key may still be a Clerk
     // session JWT — let the human auth path decide.
-    if (authDevBypass || token) {
+    if (token) {
       // Encadeia a resolução de organização: sem ela, as consultas do ingest
       // filtrariam por um orgId indefinido e devolveriam 404 para agente que
       // existe. Quem entra por credencial já teve a organização definida acima.

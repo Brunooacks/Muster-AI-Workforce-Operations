@@ -1,9 +1,12 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   agents,
+  connectors,
+  agentConnectorLinks,
   agentIdentities,
   agentOwners,
+  catalogMetrics,
   evaluations,
   verdicts,
   verdictActions,
@@ -50,6 +53,27 @@ export class AlreadyAdmittedError extends Error {
   }
 }
 
+export class InvalidAdmissionConnectorError extends Error {
+  constructor(public connectorId: string) {
+    super(`Connector is not available in this organization: ${connectorId}`);
+    this.name = "InvalidAdmissionConnectorError";
+  }
+}
+
+export class MissingConnectorExternalIdError extends Error {
+  constructor() {
+    super("An externalId is required when admission is linked to a connector");
+    this.name = "MissingConnectorExternalIdError";
+  }
+}
+
+export class InvalidAdmissionCatalogMetricError extends Error {
+  constructor(public metricKey: string) {
+    super(`Catalog metric is not available in this organization: ${metricKey}`);
+    this.name = "InvalidAdmissionCatalogMetricError";
+  }
+}
+
 // Drizzle transaction executor type (same surface as `db` for our usage).
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -93,6 +117,8 @@ export interface AdmitAgentInput {
   // When provided, keep the platform-native id (e.g. from a connector/draft);
   // otherwise a unique manual id is generated. A clash throws AlreadyAdmitted.
   externalId?: string;
+  /** Origem autenticada escolhida na admissão para discovery e telemetria. */
+  connectorId?: string;
   initialEvaluationRationale?: string;
   initialVerdictRationale?: string;
   suggestedSponsor?: string;
@@ -120,6 +146,42 @@ export async function admitAgentTx(
 ): Promise<string> {
   const externalId =
     input.externalId ?? `manual_${slugify(input.name)}_${Date.now()}`;
+
+  if (input.connectorId) {
+    if (!input.externalId) throw new MissingConnectorExternalIdError();
+    const [connector] = await tx
+      .select({ id: connectors.id })
+      .from(connectors)
+      .where(and(eq(connectors.id, input.connectorId), eq(connectors.orgId, input.orgId)))
+      .limit(1);
+    if (!connector) throw new InvalidAdmissionConnectorError(input.connectorId);
+  }
+
+  const referencedMetricKeys = [
+    ...new Set(
+      (input.proposedMetrics ?? [])
+        .map((metric) => metric.catalogMetricKey)
+        .filter((key): key is string => Boolean(key)),
+    ),
+  ];
+  if (referencedMetricKeys.length > 0) {
+    const availableMetrics = await tx
+      .select({ key: catalogMetrics.key })
+      .from(catalogMetrics)
+      .where(
+        and(
+          eq(catalogMetrics.orgId, input.orgId),
+          inArray(catalogMetrics.key, referencedMetricKeys),
+        ),
+      );
+    const availableKeys = new Set(availableMetrics.map((metric) => metric.key));
+    const missingMetricKey = referencedMetricKeys.find(
+      (key) => !availableKeys.has(key),
+    );
+    if (missingMetricKey) {
+      throw new InvalidAdmissionCatalogMetricError(missingMetricKey);
+    }
+  }
 
   // As duas conferências abaixo são POR ORGANIZAÇÃO porque a unicidade também é
   // (índices compostos, migração 0009). Sem o filtro, admitir "Triagem" numa
@@ -190,6 +252,16 @@ export async function admitAgentTx(
         targetPayback: input.targetPayback ?? "",
         actualPayback: "—",
         description: input.businessCaseDescription ?? "",
+        metricContracts: (input.proposedMetrics ?? []).map((metric) => ({
+          ...(metric.catalogMetricKey
+            ? { catalogMetricKey: metric.catalogMetricKey }
+            : {}),
+          layer: metric.layer,
+          label: metric.label,
+          unit: metric.unit,
+          ...(metric.target ? { target: metric.target } : {}),
+          ...(metric.rationale ? { rationale: metric.rationale } : {}),
+        })),
       },
       version: 1,
     });
@@ -200,6 +272,16 @@ export async function admitAgentTx(
       technicalOwner: input.technicalOwner ?? "",
       governanceSponsor: input.governanceSponsor ?? "",
     });
+
+    if (input.connectorId) {
+      await tx.insert(agentConnectorLinks).values({
+        orgId: input.orgId,
+        agentId: agent.id,
+        connectorId: input.connectorId,
+        externalId,
+        role: "primary",
+      });
+    }
 
     await tx.insert(evaluations).values({
       agentId: agent.id,

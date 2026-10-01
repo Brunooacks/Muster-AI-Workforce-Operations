@@ -7,15 +7,29 @@ info:
 servers:
   - url: /api
     description: Base API path
+security:
+  - bearerAuth: []
 tags:
   - name: health
     description: Health operations
   - name: fleet
     description: Fleet-level overview and alerts
+  - name: performance
+    description: KPI contracts, taxonomy and operational insight rules
   - name: agents
     description: Agent registry, identity, evaluation and verdicts
   - name: connectors
     description: Platform connectors (plug and play)
+  - name: organizations
+    description: Authenticated organization discovery and tenant provisioning
+  - name: telemetry
+    description: Continuous telemetry activity, projections and supervision
+  - name: executive-reporting
+    description: Versioned monthly executive reporting and AI-assisted narratives
+  - name: access-control
+    description: Tenant-scoped access groups, members and contextual permissions
+  - name: realtime-governance
+    description: Continuous Direction, Protection, Proof, regression and grounding assessments
 paths:
   /healthz:
     get:
@@ -23,6 +37,7 @@ paths:
       tags: [health]
       summary: Health check
       description: Returns server health status
+      security: []
       responses:
         "200":
           description: Healthy
@@ -30,6 +45,132 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /healthz/worker:
+    get:
+      operationId: getContinuousTelemetryHealth
+      tags: [health, telemetry]
+      summary: Continuous telemetry worker and queue health
+      description: Returns aggregate queue diagnostics without tenant identifiers or payloads.
+      security: []
+      responses:
+        "200":
+          description: Worker and queue are within their operational targets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContinuousTelemetryHealth"
+        "503":
+          description: Worker, queue or database is degraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContinuousTelemetryHealth"
+
+  /telemetry/activity:
+    get:
+      operationId: listContinuousTelemetryActivity
+      tags: [telemetry]
+      summary: List durable telemetry and projection activity
+      description: Returns tenant-scoped outbox activity after an optional durable cursor.
+      parameters:
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Tenant-scoped continuous activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContinuousTelemetryActivityResponse"
+
+  /telemetry/activity/stream:
+    get:
+      operationId: streamContinuousTelemetryActivity
+      tags: [telemetry]
+      summary: Stream durable telemetry and projection activity
+      description: Resumes after Last-Event-ID or the after query cursor and emits SSE activity messages.
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Server-sent activity event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /organizations:
+    get:
+      operationId: listOrganizations
+      tags: [organizations]
+      summary: List organizations available to the authenticated user
+      description: Returns Clerk organization memberships enriched with their local provisioning status.
+      responses:
+        "200":
+          description: Organizations visible to the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationList"
+        "401":
+          description: Authentication is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /organizations/active/sync:
+    post:
+      operationId: syncActiveOrganization
+      tags: [organizations]
+      summary: Provision and synchronize the active organization
+      description: Uses the active Clerk organization claim and membership to provision the tenant and its default catalog. Request body values are intentionally ignored.
+      responses:
+        "200":
+          description: Active organization synchronized successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActiveOrganizationSyncResponse"
+        "401":
+          description: Authentication is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: The active organization is not a membership of the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationError"
+        "409":
+          description: No active organization was selected in Clerk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationError"
 
   /fleet/summary:
     get:
@@ -58,6 +199,137 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FleetKpis"
+
+  /fleet/insights:
+    get:
+      operationId: getFleetInsights
+      tags: [fleet]
+      summary: Prioritized operational insights
+      description: Deterministic operational score, freshness, confidence, trend and prioritized recommendations for the fleet.
+      responses:
+        "200":
+          description: Fleet operational insights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetInsights"
+
+  /executive-reports/monthly:
+    get:
+      operationId: listExecutiveReports
+      tags: [executive-reporting]
+      summary: List monthly executive report snapshots
+      description: Returns the latest version of each tenant-scoped monthly report.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 24
+            default: 12
+      responses:
+        "200":
+          description: Latest monthly report versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutiveReportList"
+
+  /executive-reports/monthly/generate:
+    post:
+      operationId: generateExecutiveReport
+      tags: [executive-reporting]
+      summary: Generate and persist a monthly executive report
+      description: Calculates immutable metrics first and optionally enriches only narrative fields with AI.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateExecutiveReportRequest"
+      responses:
+        "201":
+          description: Versioned report snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutiveReport"
+
+  /executive-reports/monthly/{period}:
+    get:
+      operationId: getExecutiveReport
+      tags: [executive-reporting]
+      summary: Get the latest executive report for a month
+      parameters:
+        - name: period
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+      responses:
+        "200":
+          description: Latest report version for the requested month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutiveReport"
+        "404":
+          description: No persisted report for the month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /performance/kpi-contracts:
+    get:
+      operationId: listKpiContracts
+      tags: [performance]
+      summary: List operational KPI contracts
+      description: Returns additive code-defined KPI contracts without requiring metric schema changes.
+      responses:
+        "200":
+          description: KPI contract catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KpiContractsResponse"
+
+  /performance/kpi-contracts/{domain}:
+    get:
+      operationId: listKpiContractsByDomain
+      tags: [performance]
+      summary: List KPI contracts by domain
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/KpiDomain"
+      responses:
+        "200":
+          description: KPI contracts for the selected domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KpiDomainContractsResponse"
+        "404":
+          description: KPI domain not found
+
+  /performance/kpi-taxonomy:
+    get:
+      operationId: getKpiTaxonomy
+      tags: [performance]
+      summary: Get KPI capability taxonomy and adoption rules
+      responses:
+        "200":
+          description: KPI taxonomy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KpiTaxonomy"
 
   /fleet/decisions:
     get:
@@ -868,7 +1140,7 @@ paths:
     post:
       operationId: connectPlatform
       tags: [connectors]
-      summary: Connect a platform (plug and play)
+      summary: Configure a universal or runtime connector and issue its ingestion key
       requestBody:
         required: true
         content:
@@ -877,7 +1149,7 @@ paths:
               $ref: "#/components/schemas/ConnectorInput"
       responses:
         "201":
-          description: Connector created
+          description: Connector configured; the ingestion key is returned only once
           content:
             application/json:
               schema:
@@ -904,6 +1176,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DiscoveryResult"
+
+  /connectors/{connectorId}/pre-assess:
+    post:
+      operationId: preAssessConnectorSource
+      tags: [connectors]
+      summary: Fast-assess source using the connector credential
+      description: >-
+        Reads an agent repository with the credential already stored for the
+        connector and returns the same static pre-qualification used by the
+        admission flow. This allows private repositories to be assessed without
+        asking the user for the token again.
+      parameters:
+        - name: connectorId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreAssessInput"
+      responses:
+        "200":
+          description: Pre-assessment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreAssessResult"
 
   /connectors/{connectorId}/import:
     post:
@@ -1166,6 +1468,85 @@ paths:
               schema:
                 $ref: "#/components/schemas/VerdictAction"
 
+  /professionals/{professionalRef}/development-plan/decisions:
+    get:
+      operationId: listProfessionalPlanDecisions
+      tags: [agents]
+      summary: Histórico auditável das decisões do plano de desenvolvimento
+      parameters:
+        - name: professionalRef
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Decisões mais recentes primeiro
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProfessionalPlanDecision"
+    post:
+      operationId: recordProfessionalPlanDecision
+      tags: [agents]
+      summary: Aprova, devolve para ajuste ou rejeita um plano de desenvolvimento
+      parameters:
+        - name: professionalRef
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfessionalPlanDecisionInput"
+      responses:
+        "201":
+          description: Decisão registrada com ações e SLA derivados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfessionalPlanDecision"
+
+  /professionals/{professionalRef}/development-plan/decisions/{decisionId}/actions/{sequence}:
+    patch:
+      operationId: updateProfessionalPlanAction
+      tags: [agents]
+      summary: Executa uma etapa do fluxo de um plano de desenvolvimento
+      parameters:
+        - name: professionalRef
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: decisionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sequence
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfessionalPlanActionUpdate"
+      responses:
+        "200":
+          description: Ação atualizada e fluxo devolvido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfessionalPlanDecision"
+
   /agents/{agentId}/api-keys:
     get:
       operationId: listAgentApiKeys
@@ -1273,7 +1654,9 @@ paths:
         Agentforce, OpenTelemetry gateways and proprietary runtimes. The
         envelope separates identity, execution telemetry, metric evidence and
         human feedback so the source adapter can evolve without changing the
-        Muster evaluation model.
+        Muster evaluation model. External runtimes authenticate with the
+        connector key issued during configuration; authenticated human calls
+        remain supported for diagnostics.
       requestBody:
         required: true
         content:
@@ -1376,7 +1759,134 @@ paths:
           schema:
             type: string
 
+  /access-control/overview:
+    get:
+      operationId: getAccessControlOverview
+      tags: [access-control]
+      summary: List access groups, scopes and effective permissions
+      responses:
+        "200":
+          description: Tenant-scoped access control overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessControlOverview"
+
+  /access-control/groups:
+    post:
+      operationId: createAccessGroup
+      tags: [access-control]
+      summary: Create a contextual access group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessGroupInput"
+      responses:
+        "201":
+          description: Access group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessGroup"
+
+  /access-control/groups/{groupId}:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateAccessGroup
+      tags: [access-control]
+      summary: Update a contextual access group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessGroupInput"
+      responses:
+        "200":
+          description: Access group updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessGroup"
+    delete:
+      operationId: deleteAccessGroup
+      tags: [access-control]
+      summary: Delete an access group
+      responses:
+        "204":
+          description: Access group deleted
+
+  /access-control/groups/{groupId}/members:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: addAccessGroupMember
+      tags: [access-control]
+      summary: Add an organization member to an access group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessGroupMemberInput"
+      responses:
+        "201":
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessGroupMember"
+
+  /access-control/groups/{groupId}/members/{userId}:
+    parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      operationId: removeAccessGroupMember
+      tags: [access-control]
+      summary: Remove a member from an access group
+      responses:
+        "204":
+          description: Member removed
+
+  /governance/realtime:
+    get:
+      operationId: getRealtimeGovernance
+      tags: [realtime-governance]
+      summary: List continuously projected agent governance assessments
+      responses:
+        "200":
+          description: Tenant-scoped real-time governance overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RealtimeGovernanceResponse"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Clerk session token for humans or a revocable Muster agent API key on machine-ingestion routes.
   schemas:
     HealthStatus:
       type: object
@@ -1386,12 +1896,191 @@ components:
       required:
         - status
 
+    ContinuousTelemetryWorkerDiagnostics:
+      type: object
+      required:
+        - enabled
+        - running
+        - startedAt
+        - lastPollAt
+        - lastSuccessAt
+        - lastErrorAt
+        - processed
+        - failed
+        - deadLettered
+        - reclaimed
+      properties:
+        enabled: { type: boolean }
+        running: { type: boolean }
+        startedAt: { type: [string, "null"], format: date-time }
+        lastPollAt: { type: [string, "null"], format: date-time }
+        lastSuccessAt: { type: [string, "null"], format: date-time }
+        lastErrorAt: { type: [string, "null"], format: date-time }
+        processed: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        deadLettered: { type: integer, minimum: 0 }
+        reclaimed: { type: integer, minimum: 0 }
+
+    ContinuousTelemetryQueueHealth:
+      type: object
+      required: [pending, processing, deadLetter, oldestPendingAgeSeconds]
+      properties:
+        pending: { type: integer, minimum: 0 }
+        processing: { type: integer, minimum: 0 }
+        deadLetter: { type: integer, minimum: 0 }
+        oldestPendingAgeSeconds: { type: [number, "null"], minimum: 0 }
+
+    ContinuousTelemetryHealth:
+      type: object
+      required: [status, worker, queue]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, unavailable]
+        worker:
+          $ref: "#/components/schemas/ContinuousTelemetryWorkerDiagnostics"
+        queue:
+          oneOf:
+            - $ref: "#/components/schemas/ContinuousTelemetryQueueHealth"
+            - type: "null"
+
+    ContinuousTelemetryActivity:
+      type: object
+      required:
+        - id
+        - aggregateType
+        - aggregateId
+        - eventType
+        - payload
+        - priority
+        - status
+        - attempts
+        - availableAt
+        - processedAt
+        - lastError
+        - createdAt
+      properties:
+        id: { type: string }
+        aggregateType: { type: string }
+        aggregateId: { type: string }
+        eventType: { type: string }
+        payload:
+          type: object
+          additionalProperties: true
+        priority:
+          type: string
+          enum: [critical, high, normal, low]
+        status:
+          type: string
+          enum: [pending, processing, completed, dead-letter]
+        attempts: { type: integer, minimum: 0 }
+        availableAt: { type: string, format: date-time }
+        processedAt: { type: [string, "null"], format: date-time }
+        lastError: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+
+    ContinuousTelemetryFreshness:
+      type: object
+      required: [serverTime, pollingRecommendedMs, projectionTargetSeconds]
+      properties:
+        serverTime: { type: string, format: date-time }
+        pollingRecommendedMs: { type: integer, minimum: 1 }
+        projectionTargetSeconds: { type: integer, minimum: 1 }
+
+    ContinuousTelemetryActivityResponse:
+      type: object
+      required: [items, nextCursor, freshness]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContinuousTelemetryActivity"
+        nextCursor: { type: [string, "null"] }
+        freshness:
+          $ref: "#/components/schemas/ContinuousTelemetryFreshness"
+
     Error:
       type: object
       required: [error]
       properties:
         error:
           type: string
+
+    OrganizationRole:
+      type: string
+      enum: [owner, admin, member]
+
+    OrganizationSummary:
+      type: object
+      required:
+        - id
+        - externalId
+        - name
+        - slug
+        - role
+        - providerRole
+        - active
+        - provisioned
+      properties:
+        id:
+          type: [string, "null"]
+        externalId:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        role:
+          $ref: "#/components/schemas/OrganizationRole"
+        providerRole:
+          type: string
+        active:
+          type: boolean
+        provisioned:
+          type: boolean
+
+    OrganizationList:
+      type: object
+      required: [organizations]
+      properties:
+        organizations:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrganizationSummary"
+
+    ProvisionedOrganization:
+      type: object
+      required: [id, externalId, name, slug, role]
+      properties:
+        id:
+          type: string
+        externalId:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        role:
+          $ref: "#/components/schemas/OrganizationRole"
+
+    ActiveOrganizationSyncResponse:
+      type: object
+      required: [organization]
+      properties:
+        organization:
+          $ref: "#/components/schemas/ProvisionedOrganization"
+
+    OrganizationError:
+      type: object
+      required: [error, code]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          enum:
+            - ACTIVE_ORGANIZATION_REQUIRED
+            - ORGANIZATION_MEMBERSHIP_REQUIRED
 
     PlatformCount:
       type: object
@@ -1482,6 +2171,287 @@ components:
           type: number
         connectedPlatforms:
           type: integer
+
+    GenerateExecutiveReportRequest:
+      type: object
+      properties:
+        period:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+        narrativeMode:
+          type: string
+          enum: [deterministic, ai-assisted]
+          default: deterministic
+        templateId:
+          type: string
+          enum: [board-brief, performance-review, risk-governance]
+          default: board-brief
+
+    ExecutiveMetricComparison:
+      type: object
+      required: [current, previous, delta, deltaPercent, unit, direction]
+      properties:
+        current:
+          type: [number, "null"]
+        previous:
+          type: [number, "null"]
+        delta:
+          type: [number, "null"]
+        deltaPercent:
+          type: [number, "null"]
+        unit:
+          type: string
+        direction:
+          type: string
+          enum: [higher-is-better, lower-is-better, informational]
+
+    ExecutiveReportMetrics:
+      type: object
+      required:
+        - operationalScore
+        - executionCount
+        - successRate
+        - averageDurationMs
+        - costPerExecutionCents
+        - escalationRate
+        - errorRate
+      properties:
+        operationalScore:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        executionCount:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        successRate:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        averageDurationMs:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        costPerExecutionCents:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        escalationRate:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        errorRate:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+
+    ExecutiveLayerComparison:
+      type: object
+      required: [efficacy, efficiency, adoption, governance, value]
+      properties:
+        efficacy:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        efficiency:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        adoption:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        governance:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+        value:
+          $ref: "#/components/schemas/ExecutiveMetricComparison"
+
+    ExecutiveReportPortfolio:
+      type: object
+      required:
+        - totalAgents
+        - activeAgents
+        - newAgents
+        - agentsWithExecution
+        - activeAlerts
+        - criticalAlerts
+        - verdicts
+      properties:
+        totalAgents:
+          type: integer
+        activeAgents:
+          type: integer
+        newAgents:
+          type: integer
+        agentsWithExecution:
+          type: integer
+        activeAlerts:
+          type: integer
+        criticalAlerts:
+          type: integer
+        verdicts:
+          $ref: "#/components/schemas/VerdictBreakdown"
+
+    ExecutiveReportQuality:
+      type: object
+      required: [score, dataCoverage, evaluationConfidence, decisionReady, limitations]
+      properties:
+        score:
+          type: number
+        dataCoverage:
+          type: number
+        evaluationConfidence:
+          type: number
+        decisionReady:
+          type: boolean
+        limitations:
+          type: array
+          items:
+            type: string
+
+    ExecutiveReportSection:
+      type: object
+      required: [key, title, summary, highlights, evidenceRefs]
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        evidenceRefs:
+          type: array
+          items:
+            type: string
+
+    ExecutiveReportInsight:
+      type: object
+      required:
+        - id
+        - category
+        - title
+        - narrative
+        - recommendation
+        - severity
+        - confidence
+        - evidenceRefs
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        narrative:
+          type: string
+        recommendation:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low, positive]
+        confidence:
+          type: number
+        evidenceRefs:
+          type: array
+          items:
+            type: string
+
+    ExecutiveReport:
+      type: object
+      required:
+        - id
+        - period
+        - previousPeriod
+        - version
+        - status
+        - title
+        - executiveSummary
+        - generatedAt
+        - narrativeSource
+        - metrics
+        - layerComparison
+        - portfolio
+        - quality
+        - sections
+        - insights
+      properties:
+        id:
+          type: string
+        period:
+          type: string
+        previousPeriod:
+          type: string
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published, superseded]
+        title:
+          type: string
+        executiveSummary:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        sourceWatermark:
+          type: [string, "null"]
+          format: date-time
+        narrativeSource:
+          type: string
+          enum: [deterministic, ai-assisted]
+        narrativeModel:
+          type: [string, "null"]
+        promptVersion:
+          type: [string, "null"]
+        templateId:
+          type: string
+        metrics:
+          $ref: "#/components/schemas/ExecutiveReportMetrics"
+        layerComparison:
+          $ref: "#/components/schemas/ExecutiveLayerComparison"
+        portfolio:
+          $ref: "#/components/schemas/ExecutiveReportPortfolio"
+        quality:
+          $ref: "#/components/schemas/ExecutiveReportQuality"
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutiveReportSection"
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutiveReportInsight"
+
+    ExecutiveReportSummary:
+      type: object
+      required:
+        - id
+        - period
+        - version
+        - status
+        - title
+        - executiveSummary
+        - generatedAt
+        - narrativeSource
+        - qualityScore
+        - decisionReady
+      properties:
+        id:
+          type: string
+        period:
+          type: string
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published, superseded]
+        title:
+          type: string
+        executiveSummary:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        narrativeSource:
+          type: string
+          enum: [deterministic, ai-assisted]
+        qualityScore:
+          type: number
+        decisionReady:
+          type: boolean
+
+    ExecutiveReportList:
+      type: object
+      required: [reports]
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutiveReportSummary"
 
     FleetKpis:
       type: object
@@ -1645,6 +2615,15 @@ components:
           type: string
           nullable: true
           description: Nome da área, desnormalizado para a lista não precisar de segunda chamada.
+        businessOwner:
+          type: string
+          description: Responsável humano pelo resultado de negócio do agente.
+        technicalOwner:
+          type: string
+          description: Responsável humano pela operação técnica do agente.
+        governanceSponsor:
+          type: string
+          description: Sponsor responsável pelos limites e pela governança.
         role:
           type: string
         platform:
@@ -1764,6 +2743,33 @@ components:
         actualPayback:
           type: string
         description:
+          type: string
+        metricContracts:
+          type: array
+          description: Métricas contratadas na admissão, preservadas independentemente da telemetria observada.
+          items:
+            $ref: "#/components/schemas/MetricContractDefinition"
+
+    MetricContractDefinition:
+      type: object
+      required:
+        - layer
+        - label
+        - unit
+      properties:
+        catalogMetricKey:
+          type: string
+          description: Identidade da métrica herdada do catálogo da organização.
+        layer:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+        unit:
+          type: string
+        target:
+          type: string
+        rationale:
           type: string
 
     AgentOwners:
@@ -2023,8 +3029,11 @@ components:
         - platform
         - name
         - status
+        - mode
+        - health
         - agentsDiscovered
         - category
+        - nextAction
       properties:
         id:
           type: string
@@ -2034,13 +3043,31 @@ components:
           type: string
         status:
           type: string
-          enum: [connected, available, syncing]
+          enum: [available, configured, connected, syncing, degraded, error]
+        mode:
+          type: string
+          enum: [native, universal, runtime]
+        health:
+          type: string
+          enum: [unverified, healthy, degraded, error]
         agentsDiscovered:
           type: integer
         category:
           type: string
         lastSyncAt:
           type: ["string", "null"]
+        lastTestedAt:
+          type: ["string", "null"]
+        lastEventAt:
+          type: ["string", "null"]
+        nextAction:
+          type: string
+        setupApiKey:
+          type: string
+          description: One-time connector ingestion key. Present only in the configuration response.
+        setupEndpoint:
+          type: string
+          description: Relative ingestion endpoint for the universal contract.
 
     ConnectorCapability:
       type: object
@@ -2055,7 +3082,15 @@ components:
           enum: [live, contract-ready, planned]
         capabilities:
           type: object
-          required: [testConnection, discoverAgents, collectTelemetry, collectMetrics, sendFeedback, exportDecisions]
+          required:
+            [
+              testConnection,
+              discoverAgents,
+              collectTelemetry,
+              collectMetrics,
+              sendFeedback,
+              exportDecisions,
+            ]
           properties:
             testConnection:
               type: boolean
@@ -2204,7 +3239,15 @@ components:
 
     ExternalAgentIngestionResult:
       type: object
-      required: [accepted, mapped, agentExternalId, eventsAccepted, observationsAccepted, nextAction]
+      required:
+        [
+          accepted,
+          mapped,
+          agentExternalId,
+          eventsAccepted,
+          observationsAccepted,
+          nextAction,
+        ]
       properties:
         accepted:
           type: boolean
@@ -2223,7 +3266,20 @@ components:
 
     Area:
       type: object
-      required: [id, name, slug, description, leader, costCenter, createdAt, updatedAt, agentes, emRisco, semEvidencia]
+      required:
+        [
+          id,
+          name,
+          slug,
+          description,
+          leader,
+          costCenter,
+          createdAt,
+          updatedAt,
+          agentes,
+          emRisco,
+          semEvidencia,
+        ]
       properties:
         id:
           type: string
@@ -2317,6 +3373,14 @@ components:
         - platform
         - bio
       properties:
+        externalId:
+          type: string
+          minLength: 1
+          description: Stable identifier emitted by the external runtime in telemetry envelopes.
+        connectorId:
+          type: string
+          minLength: 1
+          description: Connector selected as the authenticated source of discovery and telemetry for this agent.
         areaId:
           type: string
           nullable: true
@@ -2437,6 +3501,9 @@ components:
         - unit
         - target
       properties:
+        catalogMetricKey:
+          type: string
+          description: Identidade da métrica herdada do catálogo da organização.
         layer:
           type: string
           enum: [efficacy, efficiency, adoption, governance, value]
@@ -2893,6 +3960,9 @@ components:
           type: string
         platform:
           type: string
+        sourceUrl:
+          type: string
+          description: Repository or workload URL that can be sent to the fast assessment.
         signals:
           type: array
           items:
@@ -3145,6 +4215,444 @@ components:
         fleetAvgAccuracy:
           type: number
 
+    KpiDomain:
+      type: string
+      enum:
+        [
+          atendimento,
+          vendas-crm,
+          engenharia-it,
+          risco-financas-rh,
+          operacoes-backoffice,
+          workforce-hibrida,
+        ]
+
+    KpiCapability:
+      type: string
+      enum:
+        [
+          business-outcome,
+          quality-evaluation,
+          a2a-orchestration,
+          human-agent-collaboration,
+          discovery-observability,
+          runtime-resilience,
+          data-quality,
+        ]
+
+    KpiFreshnessPolicy:
+      type: object
+      required: [expectedWithinMinutes, staleAfterMinutes, expiresAfterMinutes]
+      properties:
+        expectedWithinMinutes:
+          type: integer
+        staleAfterMinutes:
+          type: integer
+        expiresAfterMinutes:
+          type: integer
+
+    KpiConfidencePolicy:
+      type: object
+      required: [minimum, decisionGrade]
+      properties:
+        minimum:
+          type: number
+        decisionGrade:
+          type: number
+
+    KpiEvidencePolicy:
+      type: object
+      required: [allowed, minConfidence, auditSampleRate]
+      properties:
+        allowed:
+          type: array
+          items:
+            type: string
+            enum: [observed, inferred, synthetic]
+        minConfidence:
+          type: number
+        auditSampleRate:
+          type: number
+
+    KpiOperationalMetadata:
+      type: object
+      required:
+        [
+          capability,
+          cadence,
+          freshness,
+          sourceSignals,
+          minSampleSize,
+          confidence,
+          baseline,
+          direction,
+          owner,
+          decisionImpact,
+          guardrail,
+        ]
+      properties:
+        capability:
+          $ref: "#/components/schemas/KpiCapability"
+        cadence:
+          type: string
+          enum: [per-run, daily, weekly, monthly, quarterly]
+        freshness:
+          $ref: "#/components/schemas/KpiFreshnessPolicy"
+        sourceSignals:
+          type: array
+          items:
+            type: string
+        minSampleSize:
+          type: integer
+        confidence:
+          $ref: "#/components/schemas/KpiConfidencePolicy"
+        baseline:
+          type: string
+          enum: [required, optional, not-applicable]
+        direction:
+          type: string
+          enum: [higher-is-better, lower-is-better, target-range, informational]
+        owner:
+          type: string
+        decisionImpact:
+          type: string
+          enum: [promote, mentor, retire, observation]
+        guardrail:
+          type: boolean
+
+    KpiContract:
+      type: object
+      required:
+        [
+          key,
+          domain,
+          capability,
+          area,
+          layer,
+          label,
+          purpose,
+          unit,
+          direction,
+          formula,
+          sourceSignals,
+          cadence,
+          freshness,
+          confidence,
+          baseline,
+          owner,
+          decisionImpact,
+          guardrail,
+          minSampleSize,
+          evidence,
+          rationale,
+        ]
+      properties:
+        key:
+          type: string
+        domain:
+          $ref: "#/components/schemas/KpiDomain"
+        capability:
+          $ref: "#/components/schemas/KpiCapability"
+        area:
+          type: string
+        layer:
+          type: string
+          enum: [efficacy, efficiency, adoption, governance, value]
+        label:
+          type: string
+        purpose:
+          type: string
+        unit:
+          type: string
+        direction:
+          type: string
+          enum: [higher-is-better, lower-is-better, target-range, informational]
+        formula:
+          type: string
+        sourceSignals:
+          type: array
+          items:
+            type: string
+        cadence:
+          type: string
+          enum: [per-run, daily, weekly, monthly, quarterly]
+        freshness:
+          $ref: "#/components/schemas/KpiFreshnessPolicy"
+        confidence:
+          $ref: "#/components/schemas/KpiConfidencePolicy"
+        baseline:
+          type: string
+          enum: [required, optional, not-applicable]
+        target:
+          type: string
+        owner:
+          type: string
+        decisionImpact:
+          type: string
+          enum: [promote, mentor, retire, observation]
+        guardrail:
+          type: boolean
+        minSampleSize:
+          type: integer
+        evidence:
+          $ref: "#/components/schemas/KpiEvidencePolicy"
+        rationale:
+          type: string
+
+    KpiDomainSummary:
+      type: object
+      required: [key, label, description, icon]
+      properties:
+        key:
+          $ref: "#/components/schemas/KpiDomain"
+        label:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+
+    KpiContractsResponse:
+      type: object
+      required: [domains, contracts, total]
+      properties:
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiDomainSummary"
+        contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiContract"
+        total:
+          type: integer
+
+    KpiDomainContractsResponse:
+      type: object
+      required: [domain, contracts]
+      properties:
+        domain:
+          $ref: "#/components/schemas/KpiDomain"
+        contracts:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiContract"
+
+    KpiCapabilitySummary:
+      type: object
+      required: [key, label]
+      properties:
+        key:
+          $ref: "#/components/schemas/KpiCapability"
+        label:
+          type: string
+
+    KpiAdoptionRule:
+      type: object
+      required: [stage, label, exitCriteria]
+      properties:
+        stage:
+          type: string
+          enum: [baseline, pilot, scale]
+        label:
+          type: string
+        exitCriteria:
+          type: array
+          items:
+            type: string
+
+    KpiTaxonomy:
+      type: object
+      required: [capabilities, adoptionRules]
+      properties:
+        capabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiCapabilitySummary"
+        adoptionRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/KpiAdoptionRule"
+
+    FleetInsightFreshness:
+      type: object
+      required: [status, ageMinutes, score, decisionEligible]
+      properties:
+        status:
+          type: string
+          enum: [fresh, aging, stale, expired, missing]
+        ageMinutes:
+          type: [number, "null"]
+        score:
+          type: number
+        decisionEligible:
+          type: boolean
+
+    FleetInsightConfidence:
+      type: object
+      required: [band, score, decisionEligible]
+      properties:
+        band:
+          type: string
+          enum: [insufficient, indicative, reliable, decision-grade]
+        score:
+          type: number
+        decisionEligible:
+          type: boolean
+
+    FleetInsightTrend:
+      type: object
+      required:
+        [trend, anomaly, relativeChangePercent, latestZScore, pointsAnalyzed]
+      properties:
+        trend:
+          type: string
+          enum: [improving, stable, degrading, insufficient-data]
+        anomaly:
+          type: string
+          enum: [spike, drop, none, insufficient-data]
+        relativeChangePercent:
+          type: [number, "null"]
+        latestZScore:
+          type: [number, "null"]
+        pointsAnalyzed:
+          type: integer
+
+    FleetInsightAgent:
+      type: object
+      required:
+        [
+          id,
+          name,
+          platform,
+          operationalScore,
+          band,
+          freshness,
+          confidence,
+          trend,
+          decisionEligible,
+        ]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        platform:
+          type: string
+        operationalScore:
+          type: number
+        band:
+          type: string
+          enum: [critical, at-risk, controlled, excellent]
+        freshness:
+          $ref: "#/components/schemas/FleetInsightFreshness"
+        confidence:
+          $ref: "#/components/schemas/FleetInsightConfidence"
+        trend:
+          $ref: "#/components/schemas/FleetInsightTrend"
+        decisionEligible:
+          type: boolean
+
+    FleetOperationalInsight:
+      type: object
+      required:
+        [
+          id,
+          entityId,
+          entityName,
+          category,
+          title,
+          explanation,
+          recommendation,
+          severity,
+          impact,
+          confidence,
+          freshness,
+          guardrail,
+          priorityScore,
+          priority,
+          dueWithinMinutes,
+        ]
+      properties:
+        id:
+          type: string
+        entityId:
+          type: string
+        entityName:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        explanation:
+          type: string
+        recommendation:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        impact:
+          type: number
+        confidence:
+          type: number
+        freshness:
+          type: string
+          enum: [fresh, aging, stale, expired, missing]
+        guardrail:
+          type: boolean
+        affectedExecutions:
+          type: integer
+        slaRisk:
+          type: boolean
+        priorityScore:
+          type: number
+        priority:
+          type: string
+          enum: [now, next, watch]
+        dueWithinMinutes:
+          type: integer
+
+    FleetInsightCoverage:
+      type: object
+      required:
+        [
+          totalAgents,
+          evaluatedAgents,
+          freshAgents,
+          staleAgents,
+          decisionGradeAgents,
+        ]
+      properties:
+        totalAgents:
+          type: integer
+        evaluatedAgents:
+          type: integer
+        freshAgents:
+          type: integer
+        staleAgents:
+          type: integer
+        decisionGradeAgents:
+          type: integer
+
+    FleetInsights:
+      type: object
+      required: [generatedAt, fleetOperationalScore, coverage, agents, insights]
+      properties:
+        generatedAt:
+          type: string
+        fleetOperationalScore:
+          type: number
+        coverage:
+          $ref: "#/components/schemas/FleetInsightCoverage"
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/FleetInsightAgent"
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/FleetOperationalInsight"
+
     CatalogMetric:
       type: object
       required:
@@ -3215,6 +4723,8 @@ components:
           type: string
         target:
           type: string
+        operationalMetadata:
+          $ref: "#/components/schemas/KpiOperationalMetadata"
 
     MetricStarterKit:
       type: object
@@ -3224,12 +4734,21 @@ components:
           type: string
         label:
           type: string
+        scenario:
+          type: string
+        adoptionStage:
+          type: string
+          enum: [baseline, pilot, scale]
         objective:
           type: string
         guidance:
           type: string
         vertical:
           type: string
+        requiredSignals:
+          type: array
+          items:
+            type: string
         metrics:
           type: array
           items:
@@ -3399,6 +4918,91 @@ components:
         owner:
           type: string
 
+    ProfessionalPlanAction:
+      type: object
+      required: [sequence, actorType, title, description, owner, status, dueAt]
+      properties:
+        sequence: { type: integer }
+        actorType:
+          type: string
+          enum: [muster, agent, human]
+        title: { type: string }
+        description: { type: string }
+        owner: { type: string }
+        status:
+          type: string
+          enum: [ready, in_progress, blocked, completed, cancelled]
+        dueAt:
+          type: ["string", "null"]
+          format: date-time
+        evidence:
+          type: string
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        updatedBy:
+          type: ["string", "null"]
+
+    ProfessionalPlanActionUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ready, in_progress, blocked, completed, cancelled]
+        evidence:
+          type: string
+
+    ProfessionalPlanDecisionInput:
+      type: object
+      required: [professionalName, recommendation, decision, reason, owner]
+      properties:
+        professionalName:
+          type: string
+          minLength: 1
+        recommendation:
+          type: string
+          minLength: 1
+        decision:
+          type: string
+          enum: [approved, adjustment_requested, rejected]
+        reason:
+          type: string
+          minLength: 3
+        owner:
+          type: string
+          minLength: 1
+
+    ProfessionalPlanDecision:
+      type: object
+      required: [id, agentId, professionalRef, professionalName, recommendation, decision, reason, owner, decidedBy, actions, nextReviewAt, decidedAt]
+      properties:
+        id: { type: string }
+        agentId:
+          type: ["string", "null"]
+        professionalRef: { type: string }
+        professionalName: { type: string }
+        recommendation: { type: string }
+        decision:
+          type: string
+          enum: [approved, adjustment_requested, rejected]
+        reason: { type: string }
+        owner: { type: string }
+        decidedBy: { type: string }
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfessionalPlanAction"
+        nextReviewAt:
+          type: ["string", "null"]
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+
     AgentApiKeyInput:
       type: object
       properties:
@@ -3503,7 +5107,8 @@ components:
 
     AgentSupervision:
       type: object
-      required: [agentId, status, isStale, intervalSeconds, ageSeconds, lastHeartbeatAt]
+      required:
+        [agentId, status, isStale, intervalSeconds, ageSeconds, lastHeartbeatAt]
       properties:
         agentId:
           type: string
@@ -3583,3 +5188,271 @@ components:
           type: array
           items:
             type: string
+
+    AccessPermission:
+      type: string
+      enum:
+        - agents:read
+        - agents:operate
+        - teams:read
+        - teams:manage
+        - journeys:read
+        - journeys:manage
+        - decisions:approve
+        - governance:read
+        - governance:manage
+        - reports:read
+        - connectors:manage
+        - members:manage
+
+    AccessScopeType:
+      type: string
+      enum: [organization, area, team]
+
+    AccessGroupMember:
+      type: object
+      required: [id, userId, userName, userEmail, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        userName:
+          type: string
+        userEmail:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    AccessGroupMemberInput:
+      type: object
+      required: [userId, userName]
+      properties:
+        userId:
+          type: string
+        userName:
+          type: string
+        userEmail:
+          type: [string, "null"]
+
+    AccessGroup:
+      type: object
+      required:
+        [id, name, description, scopeType, scopeId, scopeLabel, permissions, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        scopeType:
+          $ref: "#/components/schemas/AccessScopeType"
+        scopeId:
+          type: [string, "null"]
+        scopeLabel:
+          type: string
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessPermission"
+        memberCount:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessGroupMember"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AccessGroupInput:
+      type: object
+      required: [name, description, scopeType, permissions]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        scopeType:
+          $ref: "#/components/schemas/AccessScopeType"
+        scopeId:
+          type: [string, "null"]
+        permissions:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/AccessPermission"
+
+    AccessControlOverview:
+      type: object
+      required: [currentUser, presets, groups, scopes]
+      properties:
+        currentUser:
+          type: object
+          required: [userId, orgRole, permissions]
+          properties:
+            userId:
+              type: string
+            orgRole:
+              type: string
+              enum: [owner, admin, member]
+            permissions:
+              type: array
+              items:
+                $ref: "#/components/schemas/AccessPermission"
+        presets:
+          type: array
+          items:
+            type: object
+            required: [id, name, description, permissions]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              description:
+                type: string
+              permissions:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AccessPermission"
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessGroup"
+        scopes:
+          type: object
+          required: [areas, teams]
+          properties:
+            areas:
+              type: array
+              items:
+                $ref: "#/components/schemas/AccessScope"
+            teams:
+              type: array
+              items:
+                $ref: "#/components/schemas/AccessScope"
+
+    AccessScope:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    RealtimeGovernanceSummary:
+      type: object
+      required:
+        [totalAgents, assessedAgents, critical, attention, insufficientData, hallucinationRisk, regressions, latestAssessment]
+      properties:
+        totalAgents:
+          type: integer
+        assessedAgents:
+          type: integer
+        critical:
+          type: integer
+        attention:
+          type: integer
+        insufficientData:
+          type: integer
+        hallucinationRisk:
+          type: integer
+        regressions:
+          type: integer
+        latestAssessment:
+          type: [string, "null"]
+          format: date-time
+
+    RealtimeGovernanceAgent:
+      type: object
+      required:
+        [agentId, agentName, platform, version, agentStatus, healthScore, governanceStatus, hallucinationStatus, hallucinationFlags, auditedOutputs, regressionStatus, regressionAttributable, signals, recommendations, evidenceCount, sourceEventCount, assessedAt]
+      properties:
+        agentId:
+          type: string
+        agentName:
+          type: string
+        platform:
+          type: string
+        version:
+          type: string
+        agentStatus:
+          type: string
+        healthScore:
+          type: number
+        governanceStatus:
+          type: string
+          enum: [healthy, attention, critical, insufficient_data, not_assessed]
+        directionScore:
+          type: [number, "null"]
+        protectionScore:
+          type: [number, "null"]
+        proofScore:
+          type: [number, "null"]
+        contextHealthScore:
+          type: [number, "null"]
+        hallucinationStatus:
+          type: string
+          enum: [healthy, warning, critical, not_measured]
+        groundedOutputRate:
+          type: [number, "null"]
+        hallucinationFlags:
+          type: integer
+        auditedOutputs:
+          type: integer
+        regressionStatus:
+          type: string
+          enum: [insufficient_data, stable, drift, warning, regression]
+        regressionAttributable:
+          type: boolean
+        inputDrift:
+          type: [number, "null"]
+        baselineReleaseId:
+          type: [string, "null"]
+        currentReleaseId:
+          type: [string, "null"]
+        signals:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        recommendations:
+          type: array
+          items:
+            type: string
+        evidenceCount:
+          type: integer
+        sourceEventCount:
+          type: integer
+        assessedAt:
+          type: [string, "null"]
+          format: date-time
+
+    RealtimeGovernanceResponse:
+      type: object
+      required: [summary, freshness, items]
+      properties:
+        summary:
+          $ref: "#/components/schemas/RealtimeGovernanceSummary"
+        freshness:
+          type: object
+          required: [serverTime, pollingRecommendedMs, projectionTargetSeconds]
+          properties:
+            serverTime:
+              type: string
+              format: date-time
+            pollingRecommendedMs:
+              type: integer
+            projectionTargetSeconds:
+              type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RealtimeGovernanceAgent"

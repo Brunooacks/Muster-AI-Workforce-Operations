@@ -64,6 +64,38 @@ describe("generateJourneyRecommendation", () => {
     );
   });
 
+  it("não prescreve ajuste de autonomia com amostra insuficiente", () => {
+    const result = generateJourneyRecommendation(
+      monitoring({ totalRuns: 2, completedRuns: 2, failedRuns: 0, completionRate: 1, handoffSuccessRate: 1, illusoryVictory: false }),
+      steps,
+      { slaMinutes: 45 },
+    );
+    expect(result.title).toContain("Consolidar baseline");
+    expect(result.rationale).toContain("amostra suficiente");
+    expect(result.actions.some((action) => action.capability === "apply-agent-adjustment")).toBe(false);
+  });
+
+  it("preserva uma jornada estável sem transformar tempo relativo em gargalo", () => {
+    const result = generateJourneyRecommendation(
+      monitoring({ totalRuns: 10, completedRuns: 10, failedRuns: 0, completionRate: 1, handoffSuccessRate: 1, p95DurationMs: 25 * 60_000, illusoryVictory: false }),
+      steps,
+      { slaMinutes: 45 },
+    );
+    expect(result.title).toContain("Preservar desempenho");
+    expect(result.rationale).toContain("dentro do SLA");
+    expect(result.actions.map((action) => action.actorType)).toEqual(["muster", "human"]);
+  });
+
+  it("trata latência como desvio apenas quando o p95 supera o SLA", () => {
+    const result = generateJourneyRecommendation(
+      monitoring({ totalRuns: 10, completedRuns: 10, failedRuns: 0, completionRate: 1, handoffSuccessRate: 1, p95DurationMs: 50 * 60_000, illusoryVictory: false }),
+      steps,
+      { slaMinutes: 45 },
+    );
+    expect(result.title).toContain("Reduzir tempo");
+    expect(result.expectedImpact).toContain("p95");
+  });
+
   it("escalates critical completion loss to a one-hour review SLA", () => {
     const result = generateJourneyRecommendation(
       monitoring({ completionRate: 0.4, handoffSuccessRate: 0.5 }),

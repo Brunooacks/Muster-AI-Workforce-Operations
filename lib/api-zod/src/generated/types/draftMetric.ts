@@ -8,6 +8,8 @@
 import type { DraftMetricLayer } from './draftMetricLayer';
 
 export interface DraftMetric {
+  /** Identidade da métrica herdada do catálogo da organização. */
+  catalogMetricKey?: string;
   layer: DraftMetricLayer;
   label: string;
   unit: string;

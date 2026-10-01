@@ -19,12 +19,40 @@ A especificação canônica está em
 ```http
 POST /api/integrations/agent-events
 Content-Type: application/json
-Authorization: Bearer <sessão do Muster>
+Authorization: Bearer <mck_live_...>
 ```
 
-Em ambiente local, `AUTH_DEV_BYPASS=true` permite validar sem Clerk. Em
-produção, o endpoint deve receber uma credencial de integração própria, com
-rotação e escopo por tenant — não reutilize o PAT da plataforma.
+Crie a conexão em `POST /api/connectors` ou pela tela **Conectores**. A chave
+tenant-scoped é exibida uma única vez e somente seu hash é persistido. Sessões
+Clerk, PATs de fornecedores e chaves de agente não são aceitos como prova da
+integração. Reconfigurar a conexão revoga a chave anterior.
+
+O ciclo mínimo é:
+
+1. configurar a origem e guardar a chave `mck_live_...`;
+2. admitir o agente com um `externalId` estável;
+3. enviar um envelope com o mesmo `externalId`;
+4. confirmar o estado `connected`, `health=healthy` e `lastEventAt` preenchido.
+
+## Conector x admissão
+
+Os dois recursos agora formam um único funil, mas têm responsabilidades
+diferentes:
+
+| Recurso | Responsabilidade | Não faz |
+|---|---|---|
+| **Conector** | autentica a origem, descobre candidatos e transporta eventos/evidências | não autoriza um agente a operar nem define seu propósito |
+| **Admissão** | formaliza identidade, propósito, owners, autonomia, limites, KPIs e probation | não coleta telemetria diretamente |
+| **Primeiro evento** | prova que o agente admitido e o conector estão operando com o mesmo `externalId` | não substitui avaliação ou decisão humana |
+
+Ao selecionar uma origem na admissão, o Muster persiste a relação em
+`agent_connector_links`. O vínculo é tenant-scoped e contém o `externalId`
+usado pelo runtime. A ingestão procura primeiro essa relação; agentes legados
+sem vínculo explícito são associados ao primeiro evento autenticado para
+preservar compatibilidade.
+
+Discovery não envia mais um candidato diretamente para a frota na interface.
+O usuário revisa e admite o profissional antes de iniciar a supervisão.
 
 ## Envelope universal
 
@@ -34,6 +62,7 @@ rotação e escopo por tenant — não reutilize o PAT da plataforma.
   "eventId": "ticket-9001-attempt-1",
   "source": {
     "platform": "zendesk",
+    "connectorId": "connector_01",
     "tenant": "acme-support",
     "environment": "production",
     "reference": "cursor-42"
@@ -65,7 +94,7 @@ rotação e escopo por tenant — não reutilize o PAT da plataforma.
       "value": 100,
       "unit": "%",
       "kind": "observed",
-      "confidence": 0.96,
+      "confidence": 96,
       "sampleSize": 42,
       "capturedAt": "2026-08-12T04:00:01.000Z",
       "lineage": [
@@ -87,7 +116,22 @@ rotação e escopo por tenant — não reutilize o PAT da plataforma.
 
 `eventId` funciona como chave de idempotência para execução/feedback. O agente
 precisa estar previamente descoberto e admitido; caso contrário o Muster
-aceita o envelope sem materializar dados e responde `mapped: false`.
+aceita o envelope sem materializar dados e responde `mapped: false`. Nesse
+caso a conexão é comprovada, mas nenhuma métrica é atribuída até existir um
+agente do mesmo tenant com o `externalId` informado.
+
+## Estados operacionais
+
+| Estado | Evidência existente | Próxima ação |
+|---|---|---|
+| `configured` | chave emitida e endpoint preparado | enviar o primeiro evento real |
+| `connected` | teste nativo válido ou envelope autenticado recebido | acompanhar freshness e cobertura |
+| `syncing` | coleta em processamento | aguardar ou inspecionar atividade |
+| `degraded` | origem ativa com perda de qualidade/freshness | revisar eventos e credencial |
+| `error` | teste ou configuração inválida | corrigir e repetir o teste |
+
+Entradas do catálogo não persistidas aparecem como `available`; isso não
+significa que estejam conectadas.
 
 ## O que cada plataforma deve enviar
 
@@ -117,14 +161,17 @@ conectar → descobrir/admitir → ingerir → materializar evidência
        → reavaliar KPI → abrir/atualizar decisão → feedback/ajuste
 ```
 
-Após a ingestão, o próximo passo explícito é:
+Após a ingestão, o outbox agenda automaticamente a reavaliação. O endpoint
+manual permanece disponível para operação, diagnóstico e recomputação:
 
 ```http
 POST /api/agents/{agentId}/reevaluate
 ```
 
 O resultado informa `dataSource`, `healthScore`, `verdict`, `rulesFired` e a
-razão auditável. A decisão humana segue em:
+razão auditável. A atividade contínua pode ser acompanhada por
+`GET /api/telemetry/activity` ou
+`GET /api/telemetry/activity/stream`. A decisão humana segue em:
 
 ```http
 POST /api/agents/{agentId}/verdict/decision
@@ -174,11 +221,16 @@ O endpoint diferencia `live`, `contract-ready` e `planned`. No estado atual:
 
 ## Critérios de produção
 
-Antes de habilitar adapters nativos, faltam: credencial por tenant em KMS,
-assinatura HMAC ou mTLS, rate limit/retry com backoff, fila assíncrona,
-dead-letter queue, cursor persistente, deduplicação distribuída, redaction de
-PII, métricas do próprio conector e testes de contrato com sandbox de cada
-fornecedor.
+Credenciais persistidas já usam envelope AES-256-GCM versionado e redaction
+defensivo. A configuração, migração legada e procedimentos operacionais estão
+em [Segredos de conectores](./CONECTOR-SECRETS.md). KMS/Vault externo e chaves
+por tenant continuam como evolução para produção em escala.
+
+Antes de habilitar adapters nativos, ainda faltam: assinatura HMAC ou mTLS,
+rate limit, cursor persistente do fornecedor, redaction de PII, métricas do
+próprio conector e testes de contrato com sandbox de cada fornecedor. Retry,
+dead-letter, cursor de atividade e deduplicação tenant-aware já existem no
+núcleo de ingestão/projeção.
 
 ## Diretriz técnica
 

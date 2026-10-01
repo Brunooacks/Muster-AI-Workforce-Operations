@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import organizationsRouter from "./organizations";
 import fleetRouter from "./fleet";
 import agentsRouter from "./agents";
 import agentKeysRouter from "./agent-keys";
@@ -14,10 +15,16 @@ import performanceRouter from "./performance";
 import evidenceRouter from "./evidence";
 import journeysRouter from "./journeys";
 import journeyRecommendationsRouter from "./journey-recommendations";
+import continuousActivityRouter from "./continuous-activity";
+import executiveReportsRouter from "./executive-reports";
+import professionalPlansRouter from "./professional-plans";
+import accessControlRouter from "./access-control";
+import realtimeGovernanceRouter from "./realtime-governance";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(organizationsRouter);
 router.use(fleetRouter);
 router.use(agentsRouter);
 router.use(agentKeysRouter);
@@ -32,5 +39,10 @@ router.use(performanceRouter);
 router.use(evidenceRouter);
 router.use(journeysRouter);
 router.use(journeyRecommendationsRouter);
+router.use(continuousActivityRouter);
+router.use(executiveReportsRouter);
+router.use(professionalPlansRouter);
+router.use(accessControlRouter);
+router.use(realtimeGovernanceRouter);
 
 export default router;

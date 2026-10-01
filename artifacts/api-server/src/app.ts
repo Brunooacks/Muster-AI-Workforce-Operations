@@ -4,18 +4,20 @@ import express, {
   type Response,
   type NextFunction,
 } from "express";
+import path from "node:path";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
-import { authDevBypass } from "./middlewares/requireAuth";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { clerkRuntimeConfig } from "./lib/clerk-config";
+import { allowedCorsOrigins, isCorsOriginAllowed } from "./lib/cors-config";
+import { resolveStaticWebRoot, shouldServeSpaNavigation } from "./lib/static-web";
 
 const app: Express = express();
-
-app.get("/", (_req, res) => {
-  res.redirect(302, process.env.WEB_APP_URL ?? "http://localhost:5173");
-});
+const clerkConfig = clerkRuntimeConfig();
+const corsOrigins = allowedCorsOrigins();
+const staticWebRoot = resolveStaticWebRoot();
 
 app.use(
   pinoHttp({
@@ -37,22 +39,34 @@ app.use(
   }),
 );
 
-app.use(cors({ credentials: true, origin: true }));
+app.use(
+  cors({
+    credentials: true,
+    origin(origin, callback) {
+      callback(null, isCorsOriginAllowed(origin, corsOrigins));
+    },
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// With the local-dev auth bypass active, Clerk is skipped entirely (it needs
-// a publishable key and would reject every request). requireAuth stamps a
-// fixed dev user instead. Inert in production — see requireAuth.ts.
-if (authDevBypass) {
-  logger.warn(
-    "AUTH_DEV_BYPASS is active — all /api requests run as 'dev-user'. Never use this outside local development.",
-  );
-} else {
-  app.use(clerkMiddleware());
-}
+app.use("/api", clerkMiddleware(clerkConfig), router);
+app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 
-app.use("/api", router);
+if (staticWebRoot) {
+  app.use(express.static(staticWebRoot, { index: "index.html" }));
+  app.get("/{*path}", (req, res, next) => {
+    if (!shouldServeSpaNavigation(req.method, req.path, req.get("accept"))) {
+      next();
+      return;
+    }
+    res.sendFile(path.join(staticWebRoot, "index.html"));
+  });
+} else {
+  app.get("/", (_req, res) => {
+    res.redirect(302, process.env.WEB_APP_URL ?? "http://localhost:5173");
+  });
+}
 
 // Centralized error handler: normalize validation errors to 400 and
 // everything else to a stable 500 JSON shape.

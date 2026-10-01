@@ -1,3 +1,5 @@
+import { requireMusterSessionToken } from "./muster-session";
+
 /**
  * Integração de um agente isolado, passo a passo e ao vivo.
  *
@@ -44,13 +46,18 @@ const papel = arg("papel") ?? perfilSorteado.papel;
 const plataforma = arg("plataforma") ?? perfilSorteado.plataforma;
 const execucoes = Number(arg("execucoes") ?? 24);
 const intervalo = Number(arg("intervalo") ?? 700);
+const sessionToken = requireMusterSessionToken();
 
 const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${baseUrl}/api${path}`, {
     ...init,
-    headers: { ...(init?.body ? { "content-type": "application/json" } : {}), ...init?.headers },
+    headers: {
+      ...(init?.body ? { "content-type": "application/json" } : {}),
+      authorization: `Bearer ${sessionToken}`,
+      ...init?.headers,
+    },
   });
   const texto = await res.text();
   if (!res.ok) throw new Error(`${init?.method ?? "GET"} ${path} → ${res.status}: ${texto.slice(0, 300)}`);

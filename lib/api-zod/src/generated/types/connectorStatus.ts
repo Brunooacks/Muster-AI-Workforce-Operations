@@ -10,7 +10,10 @@ export type ConnectorStatus = typeof ConnectorStatus[keyof typeof ConnectorStatu
 
 
 export const ConnectorStatus = {
-  connected: 'connected',
   available: 'available',
+  configured: 'configured',
+  connected: 'connected',
   syncing: 'syncing',
+  degraded: 'degraded',
+  error: 'error',
 } as const;

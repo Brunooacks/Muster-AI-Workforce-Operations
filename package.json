@@ -8,7 +8,15 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "test": "pnpm -r --if-present run test",
-    "validate:mvp": "pnpm run typecheck && pnpm test"
+    "test:integration": "RUN_TENANT_DB_TESTS=true RUN_ACCESS_CONTROL_DB_TESTS=true RUN_CONTINUOUS_TELEMETRY_DB_TESTS=true RUN_CONNECTOR_INGESTION_DB_TESTS=true node --env-file-if-exists=.env artifacts/api-server/node_modules/vitest/vitest.mjs --root artifacts/api-server run src/lib/tenant-security.integration.test.ts src/lib/access-control.integration.test.ts src/lib/continuous-telemetry.integration.test.ts src/lib/connector-ingestion.integration.test.ts src/lib/executive-reporting.integration.test.ts src/lib/professional-plan-service.integration.test.ts src/lib/admission-catalog.integration.test.ts",
+    "test:e2e": "pnpm --filter @workspace/muster run test:e2e",
+    "validate:mvp": "pnpm run typecheck && pnpm test",
+    "validate:operational": "pnpm --filter @workspace/scripts run gauntlet:operational",
+    "stress:muster": "pnpm --filter @workspace/scripts run gauntlet:routine",
+    "validate:real-agents": "pnpm --filter @workspace/scripts run scenario:cenyra-real",
+    "evaluate:maturity": "pnpm --filter @workspace/scripts run maturity:evaluate",
+    "validate:gauntlet": "pnpm run build && pnpm test && pnpm run test:integration && pnpm run test:e2e",
+    "release:smoke": "bash scripts/release-smoke.sh"
   },
   "private": true,
   "devDependencies": {

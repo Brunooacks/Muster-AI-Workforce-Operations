@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AppLayout } from "@/components/layout";
+import { OperationalPageFrame } from "@/components/layout";
 import {
   useListCatalogMetrics,
   useListMetricStarterKits,
@@ -48,8 +48,14 @@ import {
   Trash2,
   Activity,
   Compass,
+  Search,
+  Target,
+  Wrench,
+  CheckCircle2,
+  AlertCircle,
   type LucideIcon,
 } from "lucide-react";
+import { metricContractReadiness } from "@/components/mission-control/presentation";
 
 /* Vertical icons come from the API as lucide names — resolve locally. */
 const VERTICAL_ICON: Record<string, LucideIcon> = {
@@ -121,6 +127,18 @@ const PT = {
   starterTitle: "Diretrizes prontas para adotar métricas sem começar do zero.",
   starterDesc: "Escolha o objetivo mais próximo da sua operação. O kit sugere uma combinação equilibrada de eficácia, eficiência, adoção e guardrails.",
   starterOpen: "Ver vertical",
+  searchLabel: "Buscar nesta vertical",
+  searchPlaceholder: "Busque por nome, definição ou racional",
+  readinessAll: "Todos os contratos",
+  readinessReady: "Prontos",
+  readinessReview: "Requerem revisão",
+  readySummary: "Contratos prontos",
+  reviewSummary: "Precisam completar",
+  targetLabel: "Meta declarada",
+  instrumentationLabel: "Orientação de instrumentação",
+  instrumentationDisclosure: "Ver como medir",
+  missingLabel: "Falta",
+  noMetrics: "Nenhuma métrica corresponde aos filtros atuais.",
 };
 
 type Dict = typeof PT;
@@ -182,6 +200,18 @@ const L: Record<Lang, Dict> = {
     starterTitle: "Ready-made guidance to adopt metrics without starting from scratch.",
     starterDesc: "Choose the objective closest to your operation. Each kit balances efficacy, efficiency, adoption and guardrails.",
     starterOpen: "View vertical",
+    searchLabel: "Search this vertical",
+    searchPlaceholder: "Search by name, definition or rationale",
+    readinessAll: "All contracts",
+    readinessReady: "Ready",
+    readinessReview: "Needs review",
+    readySummary: "Ready contracts",
+    reviewSummary: "Need completion",
+    targetLabel: "Declared target",
+    instrumentationLabel: "Instrumentation guidance",
+    instrumentationDisclosure: "See how to measure",
+    missingLabel: "Missing",
+    noMetrics: "No metrics match the current filters.",
   },
   es: {
     bcGov: "Gobernanza",
@@ -238,6 +268,42 @@ const L: Record<Lang, Dict> = {
     starterTitle: "Guías listas para adoptar métricas sin empezar de cero.",
     starterDesc: "Elige el objetivo más cercano a tu operación. Cada kit combina eficacia, eficiencia, adopción y guardrails.",
     starterOpen: "Ver vertical",
+    searchLabel: "Buscar en esta vertical",
+    searchPlaceholder: "Busca por nombre, definición o racional",
+    readinessAll: "Todos los contratos",
+    readinessReady: "Listos",
+    readinessReview: "Requieren revisión",
+    readySummary: "Contratos listos",
+    reviewSummary: "Necesitan completarse",
+    targetLabel: "Meta declarada",
+    instrumentationLabel: "Guía de instrumentación",
+    instrumentationDisclosure: "Ver cómo medir",
+    missingLabel: "Falta",
+    noMetrics: "Ninguna métrica coincide con los filtros actuales.",
+  },
+};
+
+const INSTRUMENTATION_GUIDANCE: Record<Lang, Record<string, string>> = {
+  pt: {
+    efficacy: "Capture outcome confirmado, correção humana e avaliação de qualidade vinculados ao trace da execução.",
+    efficiency: "Capture duração, tokens, custo, retries e latência de ferramentas por execução.",
+    adoption: "Capture volume elegível, uso efetivo, abandono, override humano e recorrência por público.",
+    governance: "Capture decisões, aprovações, violações de guardrail, escalonamentos e trilha de auditoria.",
+    value: "Relacione execução e outcome a baseline, economia, receita, risco evitado ou capacidade liberada.",
+  },
+  en: {
+    efficacy: "Capture confirmed outcomes, human correction and quality evaluation linked to the execution trace.",
+    efficiency: "Capture duration, tokens, cost, retries and tool latency per execution.",
+    adoption: "Capture eligible volume, effective use, abandonment, human override and recurrence by audience.",
+    governance: "Capture decisions, approvals, guardrail violations, escalations and the audit trail.",
+    value: "Link executions and outcomes to baseline, savings, revenue, avoided risk or released capacity.",
+  },
+  es: {
+    efficacy: "Captura outcomes confirmados, corrección humana y evaluación de calidad vinculados al trace de ejecución.",
+    efficiency: "Captura duración, tokens, coste, retries y latencia de herramientas por ejecución.",
+    adoption: "Captura volumen elegible, uso efectivo, abandono, override humano y recurrencia por público.",
+    governance: "Captura decisiones, aprobaciones, violaciones de guardrail, escalados y trazabilidad de auditoría.",
+    value: "Relaciona ejecución y outcome con baseline, ahorro, ingresos, riesgo evitado o capacidad liberada.",
   },
 };
 
@@ -264,7 +330,7 @@ const EMPTY_FORM = (vertical: string): MetricForm => ({
   rationale: "",
 });
 
-export default function MetricasPage() {
+export default function MetricasPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { toast } = useToast();
   const { lang } = useLang();
   const t = L[lang];
@@ -275,6 +341,8 @@ export default function MetricasPage() {
   const deleteMetric = useDeleteCatalogMetric();
 
   const [activeVertical, setActiveVertical] = useState<string>("negocios");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [readinessFilter, setReadinessFilter] = useState<"all" | "ready" | "review">("all");
   const [form, setForm] = useState<MetricForm | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<CatalogMetric | null>(null);
 
@@ -312,12 +380,27 @@ export default function MetricasPage() {
       createMetric.mutate(
         { data: { ...common, vertical: form.vertical } },
         {
-          onSuccess: () => {
+          onSuccess: (createdMetric) => {
+            queryClient.setQueryData<CatalogVertical[]>(
+              getListCatalogMetricsQueryKey(),
+              (cached) => cached?.map((vertical) =>
+                vertical.key === createdMetric.vertical
+                  ? { ...vertical, metrics: [...vertical.metrics, createdMetric] }
+                  : vertical,
+              ),
+            );
+            setActiveVertical(createdMetric.vertical);
+            setSearchQuery("");
+            setReadinessFilter("all");
             toast({ title: t.toastCreated });
             setForm(null);
             invalidate();
           },
-          onError: () => toast({ title: t.toastCreateErr, variant: "destructive" }),
+          onError: (error) => toast({
+            title: t.toastCreateErr,
+            description: error instanceof Error ? error.message : undefined,
+            variant: "destructive",
+          }),
         },
       );
     }
@@ -344,10 +427,32 @@ export default function MetricasPage() {
   };
 
   const totalMetrics = verticals?.reduce((n, v) => n + v.metrics.length, 0) ?? 0;
+  const readinessSummary = useMemo(() => {
+    const metrics = current?.metrics ?? [];
+    const ready = metrics.filter((metric) => metricContractReadiness(metric).missing.length === 0).length;
+    return { ready, review: metrics.length - ready };
+  }, [current]);
+  const visibleMetrics = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+    return (current?.metrics ?? []).filter((metric) => {
+      const readiness = metricContractReadiness(metric);
+      const matchesReadiness =
+        readinessFilter === "all" ||
+        (readinessFilter === "ready" && readiness.missing.length === 0) ||
+        (readinessFilter === "review" && readiness.missing.length > 0);
+      const matchesSearch =
+        !normalizedQuery ||
+        [metric.label, metric.description, metric.rationale, metric.target]
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(normalizedQuery);
+      return matchesReadiness && matchesSearch;
+    });
+  }, [current, readinessFilter, searchQuery]);
 
   return (
-    <AppLayout breadcrumbs={[{ label: t.bcGov }, { label: t.bcMetrics }]}>
-      <div className="space-y-7 animate-in fade-in duration-500">
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.bcGov }, { label: t.bcMetrics }]}>
+      <div className="space-y-7 animate-in fade-in duration-500" data-operational-source="api">
         <PageHeading
           eyebrow={t.eyebrow}
           title={t.title}
@@ -442,41 +547,81 @@ export default function MetricasPage() {
                   </div>
                 </div>
 
+                <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="relative">
+                    <Label htmlFor="metric-search" className="sr-only">{t.searchLabel}</Label>
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="metric-search"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder={t.searchPlaceholder}
+                      className="pl-9"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2" aria-label={t.searchLabel}>
+                    <FilterChip active={readinessFilter === "all"} onClick={() => setReadinessFilter("all")} count={current.metrics.length}>
+                      {t.readinessAll}
+                    </FilterChip>
+                    <FilterChip active={readinessFilter === "ready"} onClick={() => setReadinessFilter("ready")} count={readinessSummary.ready}>
+                      {t.readinessReady}
+                    </FilterChip>
+                    <FilterChip active={readinessFilter === "review"} onClick={() => setReadinessFilter("review")} count={readinessSummary.review}>
+                      {t.readinessReview}
+                    </FilterChip>
+                  </div>
+                </div>
+
+                <div className="mb-5 grid gap-3 sm:grid-cols-2">
+                  <div className="flex items-center gap-3 rounded-xl border border-chart-1/25 bg-chart-1/[0.05] p-4">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-chart-1" />
+                    <div>
+                      <p className="font-serif text-2xl font-medium leading-none text-foreground">{readinessSummary.ready}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t.readySummary}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-xl border border-chart-2/30 bg-chart-2/[0.05] p-4">
+                    <AlertCircle className="h-5 w-5 shrink-0 text-chart-2" />
+                    <div>
+                      <p className="font-serif text-2xl font-medium leading-none text-foreground">{readinessSummary.review}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t.reviewSummary}</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* One card per layer, Trincheira metric rows */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {LAYER_ORDER.map((layerKey) => {
-                    const metrics = current.metrics.filter((m) => m.layer === layerKey);
+                {visibleMetrics.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                    {LAYER_ORDER.map((layerKey) => {
+                    const metrics = visibleMetrics.filter((m) => m.layer === layerKey);
                     if (metrics.length === 0) return null;
                     const Icon = LAYER_ICON[layerKey] ?? Activity;
                     return (
-                      <div key={layerKey} className="rounded-xl border border-card-border bg-card p-5">
+                      <div key={layerKey} className="min-w-0 rounded-xl border border-card-border bg-card p-5">
                         <div className="mb-3 flex items-center gap-2.5">
                           <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
                           <h3 className="font-serif text-lg font-medium leading-none tracking-tight">
                             {t.layers[layerKey]}
                           </h3>
+                          <span className="ml-auto font-mono text-[10px] text-muted-foreground">{metrics.length} KPIs</span>
                         </div>
                         <div>
-                          {metrics.map((m) => (
-                            <div
-                              key={m.key}
-                              className="group border-b border-card-border/60 py-2.5 last:border-0"
-                              title={m.description}
-                            >
+                          {metrics.map((m) => {
+                            const readiness = metricContractReadiness(m);
+                            const readinessTone = readiness.tone === "stable" ? "sage" : readiness.tone === "attention" ? "ochre" : "terracotta";
+                            return (
+                            <article key={m.key} className="group border-b border-card-border/60 py-3.5 last:border-0">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[13px] leading-tight text-foreground/90">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-[13px] font-medium leading-tight text-foreground/90">
                                       {m.label}
                                     </span>
                                     {m.isCustom && <Pill tone="blue">{t.customPill}</Pill>}
-                                  </div>
-                                  <div className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">
-                                    {m.target}
-                                    {m.unit ? ` · ${m.unit}` : ""}
+                                    <Pill tone={readinessTone}>{readiness.label}</Pill>
                                   </div>
                                 </div>
-                                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                                <div className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                                   <button
                                     type="button"
                                     aria-label={t.editAria}
@@ -509,18 +654,36 @@ export default function MetricasPage() {
                                   )}
                                 </div>
                               </div>
-                              {m.rationale && (
-                                <p className="mt-1 text-[11px] italic leading-snug text-muted-foreground">
-                                  {m.rationale}
-                                </p>
+                              {m.description && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{m.description}</p>}
+                              <div className="mt-2 flex items-center gap-2 rounded-md bg-secondary/35 px-2.5 py-2">
+                                <Target className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{t.targetLabel}</span>
+                                <span className="ml-auto font-mono text-xs font-medium text-foreground">{m.target || "—"}{m.unit ? ` · ${m.unit}` : ""}</span>
+                              </div>
+                              {readiness.missing.length > 0 && (
+                                <p className="mt-2 text-[11px] text-chart-2">{t.missingLabel}: {readiness.missing.join(", ")}</p>
                               )}
-                            </div>
-                          ))}
+                              <details className="mt-2 rounded-md border border-card-border/60 bg-background/30 px-2.5 py-2 open:bg-secondary/20">
+                                <summary className="cursor-pointer list-none text-[11px] font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                  <span className="inline-flex items-center gap-1.5"><Wrench className="h-3.5 w-3.5" />{t.instrumentationDisclosure}</span>
+                                </summary>
+                                <div className="mt-2 space-y-2 border-t border-card-border/60 pt-2 text-[11px] leading-relaxed text-muted-foreground">
+                                  <p><strong className="font-medium text-foreground">{t.instrumentationLabel}:</strong> {INSTRUMENTATION_GUIDANCE[lang][layerKey]}</p>
+                                  {m.rationale && <p><strong className="font-medium text-foreground">Racional:</strong> {m.rationale}</p>}
+                                </div>
+                              </details>
+                            </article>
+                          );})}
                         </div>
                       </div>
                     );
                   })}
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-card-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
+                    {t.noMetrics}
+                  </div>
+                )}
               </section>
             )}
           </>
@@ -663,6 +826,6 @@ export default function MetricasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }

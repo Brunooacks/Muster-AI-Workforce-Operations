@@ -7,7 +7,7 @@ import {
   useGetAgentTelemetry,
   getGetAgentTelemetryQueryKey,
 } from "@workspace/api-client-react";
-import { AppLayout } from "@/components/layout";
+import { OperationalPageFrame } from "@/components/layout";
 import { PageHeading, Eyebrow } from "@/components/cohort";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -280,7 +280,7 @@ function Passo({ n, icone, titulo, ajuda }: { n: number; icone: React.ReactNode;
   );
 }
 
-export default function ConectarPage() {
+export default function ConectarPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [, params] = useRoute("/agentes/:id/conectar");
   const [, setLocation] = useLocation();
   const agentId = params?.id ?? "";
@@ -319,17 +319,17 @@ export default function ConectarPage() {
 
   if (isLoading) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Agentes" }, { label: t.breadcrumb }]}>
+      <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: "Agentes" }, { label: t.breadcrumb }]}>
         <div className="space-y-4">
           <Skeleton className="h-10 w-80" />
           <Skeleton className="h-40 w-full" />
         </div>
-      </AppLayout>
+      </OperationalPageFrame>
     );
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: "Agentes" }, { label: nome }, { label: t.breadcrumb }]}>
+    <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: "Agentes" }, { label: nome }, { label: t.breadcrumb }]}>
       <div className="mx-auto max-w-4xl space-y-6 animate-in fade-in duration-500">
         <PageHeading eyebrow={t.eyebrow} title={t.title(nome)} subtitle={t.subtitle} />
 
@@ -446,6 +446,6 @@ export default function ConectarPage() {
           </Link>
         </div>
       </div>
-    </AppLayout>
+    </OperationalPageFrame>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useClerk, useUser } from "@clerk/react";
+import { OrganizationSwitcher, useClerk, useUser } from "@clerk/react";
 import {
   LayoutGrid,
   Users,
@@ -10,6 +10,7 @@ import {
   Scale,
   Gauge,
   BarChart3,
+  Building2,
   Compass,
   LogOut,
   Menu,
@@ -42,21 +43,28 @@ interface LayoutProps {
   breadcrumbs?: { label: string; href?: string }[];
 }
 
+interface OperationalPageFrameProps extends LayoutProps {
+  embedded?: boolean;
+}
+
 type NavItem = { name: string; href: string; icon: typeof Users };
 type NavGroup = { label: string; items: NavItem[] };
 
 // Rotas e ícones são fixos; só os rótulos variam por idioma.
-const NAV_LABELS: Record<Lang, {
-  groups: [string, string, string];
-  items: Record<string, string>;
-  signOut: string;
-  search: string;
-  notifications: string;
-  help: string;
-  connectors: string;
-}> = {
+const NAV_LABELS: Record<
+  Lang,
+  {
+    groups: [string, string, string, string];
+    items: Record<string, string>;
+    signOut: string;
+    search: string;
+    notifications: string;
+    help: string;
+    connectors: string;
+  }
+> = {
   pt: {
-    groups: ["Operação", "Governança", "Conta"],
+    groups: ["Operação", "Governança", "Conta", "Administração"],
     items: {
       "/comando": "Comando",
       "/agentes": "Agentes",
@@ -71,6 +79,7 @@ const NAV_LABELS: Record<Lang, {
       "/conectores": "Conectores",
       "/configuracoes": "Configurações",
       "/perfil": "Perfil",
+      "/admin": "Admin Console",
     },
     signOut: "Sair",
     search: "Buscar agente, papel, plataforma…",
@@ -79,7 +88,7 @@ const NAV_LABELS: Record<Lang, {
     connectors: "Conectores",
   },
   en: {
-    groups: ["Operations", "Governance", "Account"],
+    groups: ["Operations", "Governance", "Account", "Administration"],
     items: {
       "/comando": "Command",
       "/agentes": "Agents",
@@ -94,6 +103,7 @@ const NAV_LABELS: Record<Lang, {
       "/conectores": "Connectors",
       "/configuracoes": "Settings",
       "/perfil": "Profile",
+      "/admin": "Admin Console",
     },
     signOut: "Sign out",
     search: "Search agent, role, platform…",
@@ -102,7 +112,7 @@ const NAV_LABELS: Record<Lang, {
     connectors: "Connectors",
   },
   es: {
-    groups: ["Operación", "Gobernanza", "Cuenta"],
+    groups: ["Operación", "Gobernanza", "Cuenta", "Administración"],
     items: {
       "/comando": "Mando",
       "/agentes": "Agentes",
@@ -117,6 +127,7 @@ const NAV_LABELS: Record<Lang, {
       "/conectores": "Conectores",
       "/configuracoes": "Configuración",
       "/perfil": "Perfil",
+      "/admin": "Admin Console",
     },
     signOut: "Cerrar sesión",
     search: "Buscar agente, rol, plataforma…",
@@ -141,7 +152,12 @@ function navGroups(lang: Lang): NavGroup[] {
   return [
     {
       label: l.groups[0],
-      items: [item("/comando", Compass), item("/agentes", Users), item("/frota", LayoutGrid), item("/jornadas", RouteIcon)],
+      items: [
+        item("/comando", Compass),
+        item("/agentes", Users),
+        item("/frota", LayoutGrid),
+        item("/jornadas", RouteIcon),
+      ],
     },
     {
       label: l.groups[1],
@@ -161,6 +177,10 @@ function navGroups(lang: Lang): NavGroup[] {
         item("/configuracoes", Settings),
         item("/perfil", UserCircle),
       ],
+    },
+    {
+      label: l.groups[3],
+      items: [item("/admin", Building2)],
     },
   ];
 }
@@ -203,14 +223,19 @@ function DetectorStatusCard({ onNavigate }: { onNavigate?: () => void }) {
     <div className="rounded-xl border border-card-border bg-card p-3">
       <div className="mb-2 flex items-center gap-2">
         <ShieldAlert className="h-4 w-4 text-chart-1" strokeWidth={1.75} />
-        <span className="text-sm font-medium text-foreground">Detector operacional</span>
+        <span className="text-sm font-medium text-foreground">
+          Detector operacional
+        </span>
         <Pill tone="sage">Ativo</Pill>
       </div>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-        2 regras ativas nas jornadas: sucesso local × outcome e qualidade dos handoffs.
+        2 regras ativas nas jornadas: sucesso local × outcome e qualidade dos
+        handoffs.
       </p>
       <Button asChild variant="outline" size="sm" className="w-full">
-        <Link href="/jornadas#journey-performance" onClick={onNavigate}>Ver detector em ação</Link>
+        <Link href="/jornadas#journey-performance" onClick={onNavigate}>
+          Ver detector em ação
+        </Link>
       </Button>
     </div>
   );
@@ -221,7 +246,9 @@ function PlanCard({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="rounded-xl border border-card-border bg-card p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-foreground">{trial.planName}</span>
+        <span className="text-sm font-medium text-foreground">
+          {trial.planName}
+        </span>
         <Pill tone="ochre">Trial</Pill>
       </div>
       <div className="mb-1 flex items-baseline gap-1.5">
@@ -273,7 +300,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                         : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                     )}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2 : 1.75} />
+                    <item.icon
+                      className="h-4 w-4 shrink-0"
+                      strokeWidth={active ? 2 : 1.75}
+                    />
                     <span className="truncate">{item.name}</span>
                   </Link>
                 );
@@ -304,10 +334,21 @@ function Wordmark() {
   );
 }
 
-function UserCard({ onSignOut, onNavigate }: { onSignOut: () => void; onNavigate?: () => void }) {
+function UserCard({
+  onSignOut,
+  onNavigate,
+}: {
+  onSignOut: () => void;
+  onNavigate?: () => void;
+}) {
   const { user } = useUser();
   return (
     <div className="rounded-xl border border-card-border bg-card p-3">
+      {onNavigate ? (
+        <div className="mb-3 border-b border-card-border pb-3">
+          <OrganizationSwitcher hidePersonal skipInvitationScreen />
+        </div>
+      ) : null}
       <Link
         href="/perfil"
         onClick={onNavigate}
@@ -315,10 +356,14 @@ function UserCard({ onSignOut, onNavigate }: { onSignOut: () => void; onNavigate
       >
         <Avatar className="h-9 w-9 border border-border">
           <AvatarImage src={user?.imageUrl} />
-          <AvatarFallback className="text-xs">{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
+          <AvatarFallback className="text-xs">
+            {user?.firstName?.charAt(0) || "U"}
+          </AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium">{user?.fullName || "Usuário"}</span>
+          <span className="truncate text-sm font-medium">
+            {user?.fullName || "Usuário"}
+          </span>
           <span className="truncate text-xs text-muted-foreground">
             {user?.primaryEmailAddress?.emailAddress}
           </span>
@@ -374,7 +419,9 @@ function TopbarAvatar() {
     >
       <Avatar className="h-8 w-8 border border-border">
         <AvatarImage src={user?.imageUrl} />
-        <AvatarFallback className="text-xs">{user?.firstName?.charAt(0) || "U"}</AvatarFallback>
+        <AvatarFallback className="text-xs">
+          {user?.firstName?.charAt(0) || "U"}
+        </AvatarFallback>
       </Avatar>
     </Link>
   );
@@ -448,7 +495,10 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
                 </div>
                 <div className="space-y-3 p-3">
                   <PlanCard onNavigate={() => setMobileOpen(false)} />
-                  <UserCard onSignOut={handleSignOut} onNavigate={() => setMobileOpen(false)} />
+                  <UserCard
+                    onSignOut={handleSignOut}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
                 </div>
               </SheetContent>
             </Sheet>
@@ -458,32 +508,51 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
               <div className="flex min-w-0 items-center text-sm text-muted-foreground">
                 {breadcrumbs.map((crumb, index) => (
                   <div key={crumb.label} className="flex min-w-0 items-center">
-                    {index > 0 && <ChevronRight className="mx-1 h-4 w-4 shrink-0" />}
+                    {index > 0 && (
+                      <ChevronRight className="mx-1 h-4 w-4 shrink-0" />
+                    )}
                     {crumb.href ? (
-                      <Link href={crumb.href} className="truncate transition-colors hover:text-foreground">
+                      <Link
+                        href={crumb.href}
+                        className="truncate transition-colors hover:text-foreground"
+                      >
                         {crumb.label}
                       </Link>
                     ) : (
-                      <span className="truncate font-medium text-foreground">{crumb.label}</span>
+                      <span className="truncate font-medium text-foreground">
+                        {crumb.label}
+                      </span>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <h1 className="truncate text-sm font-medium text-foreground">{title}</h1>
+              <h1 className="truncate text-sm font-medium text-foreground">
+                {title}
+              </h1>
             )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <GlobalSearch />
             <PerspectiveToggle />
+            <div className="hidden max-w-56 lg:block">
+              <OrganizationSwitcher hidePersonal skipInvitationScreen />
+            </div>
             <ProfileSwitcher />
             <LangSwitcher />
-            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={NAV_LABELS[useLangValue()].notifications}>
-              <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            <Button asChild variant="ghost" size="icon" className="text-muted-foreground">
+              <Link href="/alertas" aria-label={NAV_LABELS[useLangValue()].notifications}>
+                <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </Link>
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={NAV_LABELS[useLangValue()].help}>
-              <HelpCircle className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            <Button asChild variant="ghost" size="icon" className="text-muted-foreground">
+              <Link
+                href="/prototipos/workforce-os?screen=onboarding"
+                aria-label={NAV_LABELS[useLangValue()].help}
+              >
+                <HelpCircle className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </Link>
             </Button>
             <TopbarAvatar />
           </div>
@@ -494,5 +563,26 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
         </div>
       </main>
     </div>
+  );
+}
+
+export function OperationalPageFrame({
+  children,
+  title,
+  breadcrumbs,
+  embedded = false,
+}: OperationalPageFrameProps) {
+  if (embedded) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8" data-workforce-embedded-page="true">
+        <div className="workspace-content">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <AppLayout title={title} breadcrumbs={breadcrumbs}>
+      {children}
+    </AppLayout>
   );
 }

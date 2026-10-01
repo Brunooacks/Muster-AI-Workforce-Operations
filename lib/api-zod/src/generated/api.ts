@@ -18,6 +18,141 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * Returns aggregate queue diagnostics without tenant identifiers or payloads.
+ * @summary Continuous telemetry worker and queue health
+ */
+export const getContinuousTelemetryHealthResponseWorkerProcessedMin = 0;
+
+export const getContinuousTelemetryHealthResponseWorkerFailedMin = 0;
+
+export const getContinuousTelemetryHealthResponseWorkerDeadLetteredMin = 0;
+
+export const getContinuousTelemetryHealthResponseWorkerReclaimedMin = 0;
+
+export const getContinuousTelemetryHealthResponseQueueOnePendingMin = 0;
+
+export const getContinuousTelemetryHealthResponseQueueOneProcessingMin = 0;
+
+export const getContinuousTelemetryHealthResponseQueueOneDeadLetterMin = 0;
+
+export const getContinuousTelemetryHealthResponseQueueOneOldestPendingAgeSecondsMin = 0;
+
+
+
+export const GetContinuousTelemetryHealthResponse = zod.object({
+  "status": zod.enum(['ok', 'degraded', 'unavailable']),
+  "worker": zod.object({
+  "enabled": zod.boolean(),
+  "running": zod.boolean(),
+  "startedAt": zod.coerce.date().nullable(),
+  "lastPollAt": zod.coerce.date().nullable(),
+  "lastSuccessAt": zod.coerce.date().nullable(),
+  "lastErrorAt": zod.coerce.date().nullable(),
+  "processed": zod.number().min(getContinuousTelemetryHealthResponseWorkerProcessedMin),
+  "failed": zod.number().min(getContinuousTelemetryHealthResponseWorkerFailedMin),
+  "deadLettered": zod.number().min(getContinuousTelemetryHealthResponseWorkerDeadLetteredMin),
+  "reclaimed": zod.number().min(getContinuousTelemetryHealthResponseWorkerReclaimedMin)
+}),
+  "queue": zod.union([zod.object({
+  "pending": zod.number().min(getContinuousTelemetryHealthResponseQueueOnePendingMin),
+  "processing": zod.number().min(getContinuousTelemetryHealthResponseQueueOneProcessingMin),
+  "deadLetter": zod.number().min(getContinuousTelemetryHealthResponseQueueOneDeadLetterMin),
+  "oldestPendingAgeSeconds": zod.number().min(getContinuousTelemetryHealthResponseQueueOneOldestPendingAgeSecondsMin).nullable()
+}),zod.null()])
+})
+
+
+/**
+ * Returns tenant-scoped outbox activity after an optional durable cursor.
+ * @summary List durable telemetry and projection activity
+ */
+export const listContinuousTelemetryActivityQueryLimitDefault = 50;
+export const listContinuousTelemetryActivityQueryLimitMax = 200;
+
+
+
+export const ListContinuousTelemetryActivityQueryParams = zod.object({
+  "after": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().min(1).max(listContinuousTelemetryActivityQueryLimitMax).default(listContinuousTelemetryActivityQueryLimitDefault)
+})
+
+export const listContinuousTelemetryActivityResponseItemsItemAttemptsMin = 0;
+
+
+
+
+
+export const ListContinuousTelemetryActivityResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "aggregateType": zod.string(),
+  "aggregateId": zod.string(),
+  "eventType": zod.string(),
+  "payload": zod.record(zod.string(), zod.unknown()),
+  "priority": zod.enum(['critical', 'high', 'normal', 'low']),
+  "status": zod.enum(['pending', 'processing', 'completed', 'dead-letter']),
+  "attempts": zod.number().min(listContinuousTelemetryActivityResponseItemsItemAttemptsMin),
+  "availableAt": zod.coerce.date(),
+  "processedAt": zod.coerce.date().nullable(),
+  "lastError": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})),
+  "nextCursor": zod.string().nullable(),
+  "freshness": zod.object({
+  "serverTime": zod.coerce.date(),
+  "pollingRecommendedMs": zod.number().min(1),
+  "projectionTargetSeconds": zod.number().min(1)
+})
+})
+
+
+/**
+ * Resumes after Last-Event-ID or the after query cursor and emits SSE activity messages.
+ * @summary Stream durable telemetry and projection activity
+ */
+export const StreamContinuousTelemetryActivityQueryParams = zod.object({
+  "after": zod.coerce.string().optional()
+})
+
+export const StreamContinuousTelemetryActivityHeader = zod.object({
+  "Last-Event-ID": zod.string().optional()
+})
+
+
+/**
+ * Returns Clerk organization memberships enriched with their local provisioning status.
+ * @summary List organizations available to the authenticated user
+ */
+export const ListOrganizationsResponse = zod.object({
+  "organizations": zod.array(zod.object({
+  "id": zod.string().nullable(),
+  "externalId": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'member']),
+  "providerRole": zod.string(),
+  "active": zod.boolean(),
+  "provisioned": zod.boolean()
+}))
+})
+
+
+/**
+ * Uses the active Clerk organization claim and membership to provision the tenant and its default catalog. Request body values are intentionally ignored.
+ * @summary Provision and synchronize the active organization
+ */
+export const SyncActiveOrganizationResponse = zod.object({
+  "organization": zod.object({
+  "id": zod.string(),
+  "externalId": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'member'])
+})
+})
+
+
+/**
  * Consolidated cohort overview for the home dashboard
  * @summary Fleet summary
  */
@@ -103,6 +238,390 @@ export const GetFleetKpisResponse = zod.object({
   "severity": zod.enum(['critical', 'high', 'medium', 'stable'])
 })),
   "totalEvaluations": zod.number()
+})
+
+
+/**
+ * Deterministic operational score, freshness, confidence, trend and prioritized recommendations for the fleet.
+ * @summary Prioritized operational insights
+ */
+export const GetFleetInsightsResponse = zod.object({
+  "generatedAt": zod.string(),
+  "fleetOperationalScore": zod.number(),
+  "coverage": zod.object({
+  "totalAgents": zod.number(),
+  "evaluatedAgents": zod.number(),
+  "freshAgents": zod.number(),
+  "staleAgents": zod.number(),
+  "decisionGradeAgents": zod.number()
+}),
+  "agents": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "platform": zod.string(),
+  "operationalScore": zod.number(),
+  "band": zod.enum(['critical', 'at-risk', 'controlled', 'excellent']),
+  "freshness": zod.object({
+  "status": zod.enum(['fresh', 'aging', 'stale', 'expired', 'missing']),
+  "ageMinutes": zod.number().nullable(),
+  "score": zod.number(),
+  "decisionEligible": zod.boolean()
+}),
+  "confidence": zod.object({
+  "band": zod.enum(['insufficient', 'indicative', 'reliable', 'decision-grade']),
+  "score": zod.number(),
+  "decisionEligible": zod.boolean()
+}),
+  "trend": zod.object({
+  "trend": zod.enum(['improving', 'stable', 'degrading', 'insufficient-data']),
+  "anomaly": zod.enum(['spike', 'drop', 'none', 'insufficient-data']),
+  "relativeChangePercent": zod.number().nullable(),
+  "latestZScore": zod.number().nullable(),
+  "pointsAnalyzed": zod.number()
+}),
+  "decisionEligible": zod.boolean()
+})),
+  "insights": zod.array(zod.object({
+  "id": zod.string(),
+  "entityId": zod.string(),
+  "entityName": zod.string(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "explanation": zod.string(),
+  "recommendation": zod.string(),
+  "severity": zod.enum(['critical', 'high', 'medium', 'low']),
+  "impact": zod.number(),
+  "confidence": zod.number(),
+  "freshness": zod.enum(['fresh', 'aging', 'stale', 'expired', 'missing']),
+  "guardrail": zod.boolean(),
+  "affectedExecutions": zod.number().optional(),
+  "slaRisk": zod.boolean().optional(),
+  "priorityScore": zod.number(),
+  "priority": zod.enum(['now', 'next', 'watch']),
+  "dueWithinMinutes": zod.number()
+}))
+})
+
+
+/**
+ * Returns the latest version of each tenant-scoped monthly report.
+ * @summary List monthly executive report snapshots
+ */
+export const listExecutiveReportsQueryLimitDefault = 12;
+export const listExecutiveReportsQueryLimitMax = 24;
+
+
+
+export const ListExecutiveReportsQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listExecutiveReportsQueryLimitMax).default(listExecutiveReportsQueryLimitDefault)
+})
+
+export const ListExecutiveReportsResponse = zod.object({
+  "reports": zod.array(zod.object({
+  "id": zod.string(),
+  "period": zod.string(),
+  "version": zod.number(),
+  "status": zod.enum(['draft', 'published', 'superseded']),
+  "title": zod.string(),
+  "executiveSummary": zod.string(),
+  "generatedAt": zod.coerce.date(),
+  "narrativeSource": zod.enum(['deterministic', 'ai-assisted']),
+  "qualityScore": zod.number(),
+  "decisionReady": zod.boolean()
+}))
+})
+
+
+/**
+ * Calculates immutable metrics first and optionally enriches only narrative fields with AI.
+ * @summary Generate and persist a monthly executive report
+ */
+export const generateExecutiveReportBodyPeriodRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+export const generateExecutiveReportBodyNarrativeModeDefault = `deterministic`;
+export const generateExecutiveReportBodyTemplateIdDefault = `board-brief`;
+
+export const GenerateExecutiveReportBody = zod.object({
+  "period": zod.string().regex(generateExecutiveReportBodyPeriodRegExp).optional(),
+  "narrativeMode": zod.enum(['deterministic', 'ai-assisted']).default(generateExecutiveReportBodyNarrativeModeDefault),
+  "templateId": zod.enum(['board-brief', 'performance-review', 'risk-governance']).default(generateExecutiveReportBodyTemplateIdDefault)
+})
+
+
+/**
+ * @summary Get the latest executive report for a month
+ */
+export const getExecutiveReportPathPeriodRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+
+
+export const GetExecutiveReportParams = zod.object({
+  "period": zod.coerce.string().regex(getExecutiveReportPathPeriodRegExp)
+})
+
+export const GetExecutiveReportResponse = zod.object({
+  "id": zod.string(),
+  "period": zod.string(),
+  "previousPeriod": zod.string(),
+  "version": zod.number(),
+  "status": zod.enum(['draft', 'published', 'superseded']),
+  "title": zod.string(),
+  "executiveSummary": zod.string(),
+  "generatedAt": zod.coerce.date(),
+  "sourceWatermark": zod.coerce.date().nullish(),
+  "narrativeSource": zod.enum(['deterministic', 'ai-assisted']),
+  "narrativeModel": zod.string().nullish(),
+  "promptVersion": zod.string().nullish(),
+  "templateId": zod.string().optional(),
+  "metrics": zod.object({
+  "operationalScore": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "executionCount": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "successRate": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "averageDurationMs": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "costPerExecutionCents": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "escalationRate": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "errorRate": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+})
+}),
+  "layerComparison": zod.object({
+  "efficacy": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "efficiency": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "adoption": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "governance": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+}),
+  "value": zod.object({
+  "current": zod.number().nullable(),
+  "previous": zod.number().nullable(),
+  "delta": zod.number().nullable(),
+  "deltaPercent": zod.number().nullable(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'informational'])
+})
+}),
+  "portfolio": zod.object({
+  "totalAgents": zod.number(),
+  "activeAgents": zod.number(),
+  "newAgents": zod.number(),
+  "agentsWithExecution": zod.number(),
+  "activeAlerts": zod.number(),
+  "criticalAlerts": zod.number(),
+  "verdicts": zod.object({
+  "promote": zod.number(),
+  "mentor": zod.number(),
+  "retire": zod.number(),
+  "observation": zod.number()
+})
+}),
+  "quality": zod.object({
+  "score": zod.number(),
+  "dataCoverage": zod.number(),
+  "evaluationConfidence": zod.number(),
+  "decisionReady": zod.boolean(),
+  "limitations": zod.array(zod.string())
+}),
+  "sections": zod.array(zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "highlights": zod.array(zod.string()),
+  "evidenceRefs": zod.array(zod.string())
+})),
+  "insights": zod.array(zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "narrative": zod.string(),
+  "recommendation": zod.string(),
+  "severity": zod.enum(['critical', 'high', 'medium', 'low', 'positive']),
+  "confidence": zod.number(),
+  "evidenceRefs": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * Returns additive code-defined KPI contracts without requiring metric schema changes.
+ * @summary List operational KPI contracts
+ */
+export const ListKpiContractsResponse = zod.object({
+  "domains": zod.array(zod.object({
+  "key": zod.enum(['atendimento', 'vendas-crm', 'engenharia-it', 'risco-financas-rh', 'operacoes-backoffice', 'workforce-hibrida']),
+  "label": zod.string(),
+  "description": zod.string(),
+  "icon": zod.string()
+})),
+  "contracts": zod.array(zod.object({
+  "key": zod.string(),
+  "domain": zod.enum(['atendimento', 'vendas-crm', 'engenharia-it', 'risco-financas-rh', 'operacoes-backoffice', 'workforce-hibrida']),
+  "capability": zod.enum(['business-outcome', 'quality-evaluation', 'a2a-orchestration', 'human-agent-collaboration', 'discovery-observability', 'runtime-resilience', 'data-quality']),
+  "area": zod.string(),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "purpose": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'target-range', 'informational']),
+  "formula": zod.string(),
+  "sourceSignals": zod.array(zod.string()),
+  "cadence": zod.enum(['per-run', 'daily', 'weekly', 'monthly', 'quarterly']),
+  "freshness": zod.object({
+  "expectedWithinMinutes": zod.number(),
+  "staleAfterMinutes": zod.number(),
+  "expiresAfterMinutes": zod.number()
+}),
+  "confidence": zod.object({
+  "minimum": zod.number(),
+  "decisionGrade": zod.number()
+}),
+  "baseline": zod.enum(['required', 'optional', 'not-applicable']),
+  "target": zod.string().optional(),
+  "owner": zod.string(),
+  "decisionImpact": zod.enum(['promote', 'mentor', 'retire', 'observation']),
+  "guardrail": zod.boolean(),
+  "minSampleSize": zod.number(),
+  "evidence": zod.object({
+  "allowed": zod.array(zod.enum(['observed', 'inferred', 'synthetic'])),
+  "minConfidence": zod.number(),
+  "auditSampleRate": zod.number()
+}),
+  "rationale": zod.string()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary List KPI contracts by domain
+ */
+export const ListKpiContractsByDomainParams = zod.object({
+  "domain": zod.enum(['atendimento', 'vendas-crm', 'engenharia-it', 'risco-financas-rh', 'operacoes-backoffice', 'workforce-hibrida'])
+})
+
+export const ListKpiContractsByDomainResponse = zod.object({
+  "domain": zod.enum(['atendimento', 'vendas-crm', 'engenharia-it', 'risco-financas-rh', 'operacoes-backoffice', 'workforce-hibrida']),
+  "contracts": zod.array(zod.object({
+  "key": zod.string(),
+  "domain": zod.enum(['atendimento', 'vendas-crm', 'engenharia-it', 'risco-financas-rh', 'operacoes-backoffice', 'workforce-hibrida']),
+  "capability": zod.enum(['business-outcome', 'quality-evaluation', 'a2a-orchestration', 'human-agent-collaboration', 'discovery-observability', 'runtime-resilience', 'data-quality']),
+  "area": zod.string(),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "purpose": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'target-range', 'informational']),
+  "formula": zod.string(),
+  "sourceSignals": zod.array(zod.string()),
+  "cadence": zod.enum(['per-run', 'daily', 'weekly', 'monthly', 'quarterly']),
+  "freshness": zod.object({
+  "expectedWithinMinutes": zod.number(),
+  "staleAfterMinutes": zod.number(),
+  "expiresAfterMinutes": zod.number()
+}),
+  "confidence": zod.object({
+  "minimum": zod.number(),
+  "decisionGrade": zod.number()
+}),
+  "baseline": zod.enum(['required', 'optional', 'not-applicable']),
+  "target": zod.string().optional(),
+  "owner": zod.string(),
+  "decisionImpact": zod.enum(['promote', 'mentor', 'retire', 'observation']),
+  "guardrail": zod.boolean(),
+  "minSampleSize": zod.number(),
+  "evidence": zod.object({
+  "allowed": zod.array(zod.enum(['observed', 'inferred', 'synthetic'])),
+  "minConfidence": zod.number(),
+  "auditSampleRate": zod.number()
+}),
+  "rationale": zod.string()
+}))
+})
+
+
+/**
+ * @summary Get KPI capability taxonomy and adoption rules
+ */
+export const GetKpiTaxonomyResponse = zod.object({
+  "capabilities": zod.array(zod.object({
+  "key": zod.enum(['business-outcome', 'quality-evaluation', 'a2a-orchestration', 'human-agent-collaboration', 'discovery-observability', 'runtime-resilience', 'data-quality']),
+  "label": zod.string()
+})),
+  "adoptionRules": zod.array(zod.object({
+  "stage": zod.enum(['baseline', 'pilot', 'scale']),
+  "label": zod.string(),
+  "exitCriteria": zod.array(zod.string())
+}))
 })
 
 
@@ -277,6 +796,9 @@ export const ListAgentsResponseItem = zod.object({
   "slug": zod.string(),
   "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
   "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
+  "businessOwner": zod.string().optional().describe('Responsável humano pelo resultado de negócio do agente.'),
+  "technicalOwner": zod.string().optional().describe('Responsável humano pela operação técnica do agente.'),
+  "governanceSponsor": zod.string().optional().describe('Sponsor responsável pelos limites e pela governança.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -323,7 +845,11 @@ export const ListAgentsResponse = zod.array(ListAgentsResponseItem)
 
 
 
+
+
 export const CreateAgentBody = zod.object({
+  "externalId": zod.string().min(1).optional().describe('Stable identifier emitted by the external runtime in telemetry envelopes.'),
+  "connectorId": zod.string().min(1).optional().describe('Connector selected as the authenticated source of discovery and telemetry for this agent.'),
   "areaId": zod.string().nullish().describe('Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como \"sem área\" e a atribuição fica pendente.'),
   "name": zod.string().min(1),
   "role": zod.string().min(1),
@@ -343,6 +869,7 @@ export const CreateAgentBody = zod.object({
   "targetPayback": zod.string().optional(),
   "businessCaseDescription": zod.string().optional(),
   "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "label": zod.string(),
   "unit": zod.string(),
@@ -482,6 +1009,7 @@ export const AnalyzeAgentSourceResponse = zod.object({
   "description": zod.string()
 }),
   "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "label": zod.string(),
   "unit": zod.string(),
@@ -602,6 +1130,7 @@ export const ListAgentDraftsResponseItem = zod.object({
   "description": zod.string()
 }),
   "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "label": zod.string(),
   "unit": zod.string(),
@@ -679,6 +1208,7 @@ export const UpdateAgentDraftBody = zod.object({
   "description": zod.string()
 }).optional(),
   "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "label": zod.string(),
   "unit": zod.string(),
@@ -711,6 +1241,7 @@ export const UpdateAgentDraftResponse = zod.object({
   "description": zod.string()
 }),
   "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "label": zod.string(),
   "unit": zod.string(),
@@ -770,6 +1301,7 @@ export const RejectAgentDraftResponse = zod.object({
   "description": zod.string()
 }),
   "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "label": zod.string(),
   "unit": zod.string(),
@@ -802,6 +1334,9 @@ export const GetAgentResponse = zod.object({
   "slug": zod.string(),
   "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
   "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
+  "businessOwner": zod.string().optional().describe('Responsável humano pelo resultado de negócio do agente.'),
+  "technicalOwner": zod.string().optional().describe('Responsável humano pela operação técnica do agente.'),
+  "governanceSponsor": zod.string().optional().describe('Sponsor responsável pelos limites e pela governança.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -849,7 +1384,15 @@ export const GetAgentResponse = zod.object({
   "baseline": zod.string(),
   "targetPayback": zod.string(),
   "actualPayback": zod.string(),
-  "description": zod.string()
+  "description": zod.string(),
+  "metricContracts": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Métricas contratadas na admissão, preservadas independentemente da telemetria observada.')
 }),
   "version": zod.number()
 }),
@@ -925,6 +1468,9 @@ export const UpdateAgentResponse = zod.object({
   "slug": zod.string(),
   "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
   "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
+  "businessOwner": zod.string().optional().describe('Responsável humano pelo resultado de negócio do agente.'),
+  "technicalOwner": zod.string().optional().describe('Responsável humano pela operação técnica do agente.'),
+  "governanceSponsor": zod.string().optional().describe('Sponsor responsável pelos limites e pela governança.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -972,7 +1518,15 @@ export const UpdateAgentResponse = zod.object({
   "baseline": zod.string(),
   "targetPayback": zod.string(),
   "actualPayback": zod.string(),
-  "description": zod.string()
+  "description": zod.string(),
+  "metricContracts": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Métricas contratadas na admissão, preservadas independentemente da telemetria observada.')
 }),
   "version": zod.number()
 }),
@@ -1060,6 +1614,9 @@ export const UpdateAgentIdentityResponse = zod.object({
   "slug": zod.string(),
   "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
   "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
+  "businessOwner": zod.string().optional().describe('Responsável humano pelo resultado de negócio do agente.'),
+  "technicalOwner": zod.string().optional().describe('Responsável humano pela operação técnica do agente.'),
+  "governanceSponsor": zod.string().optional().describe('Sponsor responsável pelos limites e pela governança.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -1107,7 +1664,15 @@ export const UpdateAgentIdentityResponse = zod.object({
   "baseline": zod.string(),
   "targetPayback": zod.string(),
   "actualPayback": zod.string(),
-  "description": zod.string()
+  "description": zod.string(),
+  "metricContracts": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Métricas contratadas na admissão, preservadas independentemente da telemetria observada.')
 }),
   "version": zod.number()
 }),
@@ -1296,6 +1861,9 @@ export const UpdateEvaluationMetricResponse = zod.object({
   "slug": zod.string(),
   "areaId": zod.string().nullish().describe('Área responsável dentro da organização; nulo quando ainda não atribuída.'),
   "areaName": zod.string().nullish().describe('Nome da área, desnormalizado para a lista não precisar de segunda chamada.'),
+  "businessOwner": zod.string().optional().describe('Responsável humano pelo resultado de negócio do agente.'),
+  "technicalOwner": zod.string().optional().describe('Responsável humano pela operação técnica do agente.'),
+  "governanceSponsor": zod.string().optional().describe('Sponsor responsável pelos limites e pela governança.'),
   "role": zod.string(),
   "platform": zod.string(),
   "version": zod.string(),
@@ -1343,7 +1911,15 @@ export const UpdateEvaluationMetricResponse = zod.object({
   "baseline": zod.string(),
   "targetPayback": zod.string(),
   "actualPayback": zod.string(),
-  "description": zod.string()
+  "description": zod.string(),
+  "metricContracts": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string().optional(),
+  "rationale": zod.string().optional()
+})).optional().describe('Métricas contratadas na admissão, preservadas independentemente da telemetria observada.')
 }),
   "version": zod.number()
 }),
@@ -1404,16 +1980,23 @@ export const ListConnectorsResponseItem = zod.object({
   "id": zod.string(),
   "platform": zod.string(),
   "name": zod.string(),
-  "status": zod.enum(['connected', 'available', 'syncing']),
+  "status": zod.enum(['available', 'configured', 'connected', 'syncing', 'degraded', 'error']),
+  "mode": zod.enum(['native', 'universal', 'runtime']),
+  "health": zod.enum(['unverified', 'healthy', 'degraded', 'error']),
   "agentsDiscovered": zod.number(),
   "category": zod.string(),
-  "lastSyncAt": zod.string().nullish()
+  "lastSyncAt": zod.string().nullish(),
+  "lastTestedAt": zod.string().nullish(),
+  "lastEventAt": zod.string().nullish(),
+  "nextAction": zod.string(),
+  "setupApiKey": zod.string().optional().describe('One-time connector ingestion key. Present only in the configuration response.'),
+  "setupEndpoint": zod.string().optional().describe('Relative ingestion endpoint for the universal contract.')
 })
 export const ListConnectorsResponse = zod.array(ListConnectorsResponseItem)
 
 
 /**
- * @summary Connect a platform (plug and play)
+ * @summary Configure a universal or runtime connector and issue its ingestion key
  */
 export const ConnectPlatformBody = zod.object({
   "platform": zod.string(),
@@ -1439,6 +2022,7 @@ export const DiscoverAgentsResponse = zod.object({
   "name": zod.string(),
   "role": zod.string(),
   "platform": zod.string(),
+  "sourceUrl": zod.string().optional().describe('Repository or workload URL that can be sent to the fast assessment.'),
   "signals": zod.array(zod.string()),
   "proposedMetrics": zod.array(zod.object({
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
@@ -1453,6 +2037,57 @@ export const DiscoverAgentsResponse = zod.object({
   "alreadyImported": zod.boolean()
 })),
   "coverageNote": zod.string()
+})
+
+
+/**
+ * Reads an agent repository with the credential already stored for the connector and returns the same static pre-qualification used by the admission flow. This allows private repositories to be assessed without asking the user for the token again.
+ * @summary Fast-assess source using the connector credential
+ */
+export const PreAssessConnectorSourceParams = zod.object({
+  "connectorId": zod.coerce.string()
+})
+
+export const preAssessConnectorSourceBodyUrlMin = 8;
+
+
+
+export const PreAssessConnectorSourceBody = zod.object({
+  "url": zod.string().min(preAssessConnectorSourceBodyUrlMin),
+  "nameHint": zod.string().optional()
+})
+
+export const PreAssessConnectorSourceResponse = zod.object({
+  "draft": zod.object({
+  "name": zod.string(),
+  "role": zod.string(),
+  "tagline": zod.string(),
+  "bio": zod.string(),
+  "shouldDo": zod.array(zod.string()),
+  "shouldNotDo": zod.array(zod.string()),
+  "autonomyLevel": zod.enum(['autonomous', 'escalates', 'restricted']),
+  "autonomyNotes": zod.string().optional(),
+  "limits": zod.array(zod.string()),
+  "businessCase": zod.object({
+  "baseline": zod.string(),
+  "targetPayback": zod.string(),
+  "description": zod.string()
+}),
+  "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
+  "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
+  "label": zod.string(),
+  "unit": zod.string(),
+  "target": zod.string(),
+  "value": zod.number().optional().describe('Optional reviewer-set starting\/current value for the metric. When provided during admission it overrides the deterministically seeded value so goal-vs-actual reflects reality.'),
+  "rationale": zod.string().optional()
+})),
+  "summary": zod.string(),
+  "confidence": zod.number()
+}),
+  "fieldConfidence": zod.record(zod.string(), zod.number()),
+  "platform": zod.string().nullable(),
+  "signals": zod.array(zod.string())
 })
 
 
@@ -1514,15 +2149,38 @@ export const CreateCatalogMetricBody = zod.object({
 export const ListMetricStarterKitsResponseItem = zod.object({
   "key": zod.string(),
   "label": zod.string(),
+  "scenario": zod.string().optional(),
+  "adoptionStage": zod.enum(['baseline', 'pilot', 'scale']).optional(),
   "objective": zod.string(),
   "guidance": zod.string(),
   "vertical": zod.string(),
+  "requiredSignals": zod.array(zod.string()).optional(),
   "metrics": zod.array(zod.object({
   "key": zod.string(),
   "label": zod.string(),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "unit": zod.string(),
-  "target": zod.string()
+  "target": zod.string(),
+  "operationalMetadata": zod.object({
+  "capability": zod.enum(['business-outcome', 'quality-evaluation', 'a2a-orchestration', 'human-agent-collaboration', 'discovery-observability', 'runtime-resilience', 'data-quality']),
+  "cadence": zod.enum(['per-run', 'daily', 'weekly', 'monthly', 'quarterly']),
+  "freshness": zod.object({
+  "expectedWithinMinutes": zod.number(),
+  "staleAfterMinutes": zod.number(),
+  "expiresAfterMinutes": zod.number()
+}),
+  "sourceSignals": zod.array(zod.string()),
+  "minSampleSize": zod.number(),
+  "confidence": zod.object({
+  "minimum": zod.number(),
+  "decisionGrade": zod.number()
+}),
+  "baseline": zod.enum(['required', 'optional', 'not-applicable']),
+  "direction": zod.enum(['higher-is-better', 'lower-is-better', 'target-range', 'informational']),
+  "owner": zod.string(),
+  "decisionImpact": zod.enum(['promote', 'mentor', 'retire', 'observation']),
+  "guardrail": zod.boolean()
+}).optional()
 }))
 })
 export const ListMetricStarterKitsResponse = zod.array(ListMetricStarterKitsResponseItem)
@@ -1645,6 +2303,7 @@ export const PreAssessAgentSourceResponse = zod.object({
   "description": zod.string()
 }),
   "proposedMetrics": zod.array(zod.object({
+  "catalogMetricKey": zod.string().optional().describe('Identidade da métrica herdada do catálogo da organização.'),
   "layer": zod.enum(['efficacy', 'efficiency', 'adoption', 'governance', 'value']),
   "label": zod.string(),
   "unit": zod.string(),
@@ -1738,6 +2397,107 @@ export const UpdateVerdictActionResponse = zod.object({
 
 
 /**
+ * @summary Histórico auditável das decisões do plano de desenvolvimento
+ */
+export const ListProfessionalPlanDecisionsParams = zod.object({
+  "professionalRef": zod.coerce.string()
+})
+
+export const ListProfessionalPlanDecisionsResponseItem = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string().nullable(),
+  "professionalRef": zod.string(),
+  "professionalName": zod.string(),
+  "recommendation": zod.string(),
+  "decision": zod.enum(['approved', 'adjustment_requested', 'rejected']),
+  "reason": zod.string(),
+  "owner": zod.string(),
+  "decidedBy": zod.string(),
+  "actions": zod.array(zod.object({
+  "sequence": zod.number(),
+  "actorType": zod.enum(['muster', 'agent', 'human']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "owner": zod.string(),
+  "status": zod.enum(['ready', 'in_progress', 'blocked', 'completed', 'cancelled']),
+  "dueAt": zod.coerce.date().nullable(),
+  "evidence": zod.string().optional(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "updatedBy": zod.string().nullish()
+})),
+  "nextReviewAt": zod.coerce.date().nullable(),
+  "decidedAt": zod.coerce.date()
+})
+export const ListProfessionalPlanDecisionsResponse = zod.array(ListProfessionalPlanDecisionsResponseItem)
+
+
+/**
+ * @summary Aprova, devolve para ajuste ou rejeita um plano de desenvolvimento
+ */
+export const RecordProfessionalPlanDecisionParams = zod.object({
+  "professionalRef": zod.coerce.string()
+})
+
+
+
+export const recordProfessionalPlanDecisionBodyReasonMin = 3;
+
+
+
+
+export const RecordProfessionalPlanDecisionBody = zod.object({
+  "professionalName": zod.string().min(1),
+  "recommendation": zod.string().min(1),
+  "decision": zod.enum(['approved', 'adjustment_requested', 'rejected']),
+  "reason": zod.string().min(recordProfessionalPlanDecisionBodyReasonMin),
+  "owner": zod.string().min(1)
+})
+
+
+/**
+ * @summary Executa uma etapa do fluxo de um plano de desenvolvimento
+ */
+export const UpdateProfessionalPlanActionParams = zod.object({
+  "professionalRef": zod.coerce.string(),
+  "decisionId": zod.coerce.string(),
+  "sequence": zod.coerce.number()
+})
+
+export const UpdateProfessionalPlanActionBody = zod.object({
+  "status": zod.enum(['ready', 'in_progress', 'blocked', 'completed', 'cancelled']),
+  "evidence": zod.string().optional()
+})
+
+export const UpdateProfessionalPlanActionResponse = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string().nullable(),
+  "professionalRef": zod.string(),
+  "professionalName": zod.string(),
+  "recommendation": zod.string(),
+  "decision": zod.enum(['approved', 'adjustment_requested', 'rejected']),
+  "reason": zod.string(),
+  "owner": zod.string(),
+  "decidedBy": zod.string(),
+  "actions": zod.array(zod.object({
+  "sequence": zod.number(),
+  "actorType": zod.enum(['muster', 'agent', 'human']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "owner": zod.string(),
+  "status": zod.enum(['ready', 'in_progress', 'blocked', 'completed', 'cancelled']),
+  "dueAt": zod.coerce.date().nullable(),
+  "evidence": zod.string().optional(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "updatedBy": zod.string().nullish()
+})),
+  "nextReviewAt": zod.coerce.date().nullable(),
+  "decidedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Lista as credenciais do agente (nunca devolve o segredo)
  */
 export const ListAgentApiKeysParams = zod.object({
@@ -1811,7 +2571,7 @@ export const IngestAgentEventBody = zod.object({
 
 
 /**
- * Universal ingestion contract for platforms such as Zendesk, Agentforce, OpenTelemetry gateways and proprietary runtimes. The envelope separates identity, execution telemetry, metric evidence and human feedback so the source adapter can evolve without changing the Muster evaluation model.
+ * Universal ingestion contract for platforms such as Zendesk, Agentforce, OpenTelemetry gateways and proprietary runtimes. The envelope separates identity, execution telemetry, metric evidence and human feedback so the source adapter can evolve without changing the Muster evaluation model. External runtimes authenticate with the connector key issued during configuration; authenticated human calls remain supported for diagnostics.
  * @summary Ingest a normalized external agent envelope
  */
 export const IngestExternalAgentEnvelopeBody = zod.object({
@@ -1943,6 +2703,187 @@ export const ReevaluateAgentResponse = zod.object({
   "dataSource": zod.enum(['telemetry', 'seeded', 'mixed', 'none']),
   "rationale": zod.string(),
   "rulesFired": zod.array(zod.string()).optional()
+})
+
+
+/**
+ * @summary List access groups, scopes and effective permissions
+ */
+export const GetAccessControlOverviewResponse = zod.object({
+  "currentUser": zod.object({
+  "userId": zod.string(),
+  "orgRole": zod.enum(['owner', 'admin', 'member']),
+  "permissions": zod.array(zod.enum(['agents:read', 'agents:operate', 'teams:read', 'teams:manage', 'journeys:read', 'journeys:manage', 'decisions:approve', 'governance:read', 'governance:manage', 'reports:read', 'connectors:manage', 'members:manage']))
+}),
+  "presets": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "permissions": zod.array(zod.enum(['agents:read', 'agents:operate', 'teams:read', 'teams:manage', 'journeys:read', 'journeys:manage', 'decisions:approve', 'governance:read', 'governance:manage', 'reports:read', 'connectors:manage', 'members:manage']))
+})),
+  "groups": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "scopeType": zod.enum(['organization', 'area', 'team']),
+  "scopeId": zod.string().nullable(),
+  "scopeLabel": zod.string(),
+  "permissions": zod.array(zod.enum(['agents:read', 'agents:operate', 'teams:read', 'teams:manage', 'journeys:read', 'journeys:manage', 'decisions:approve', 'governance:read', 'governance:manage', 'reports:read', 'connectors:manage', 'members:manage'])),
+  "memberCount": zod.number().optional(),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userName": zod.string(),
+  "userEmail": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "scopes": zod.object({
+  "areas": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+})),
+  "teams": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}))
+})
+})
+
+
+/**
+ * @summary Create a contextual access group
+ */
+
+
+
+export const CreateAccessGroupBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "scopeType": zod.enum(['organization', 'area', 'team']),
+  "scopeId": zod.string().nullish(),
+  "permissions": zod.array(zod.enum(['agents:read', 'agents:operate', 'teams:read', 'teams:manage', 'journeys:read', 'journeys:manage', 'decisions:approve', 'governance:read', 'governance:manage', 'reports:read', 'connectors:manage', 'members:manage'])).min(1)
+})
+
+
+/**
+ * @summary Update a contextual access group
+ */
+export const UpdateAccessGroupParams = zod.object({
+  "groupId": zod.coerce.string()
+})
+
+
+
+
+export const UpdateAccessGroupBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "scopeType": zod.enum(['organization', 'area', 'team']),
+  "scopeId": zod.string().nullish(),
+  "permissions": zod.array(zod.enum(['agents:read', 'agents:operate', 'teams:read', 'teams:manage', 'journeys:read', 'journeys:manage', 'decisions:approve', 'governance:read', 'governance:manage', 'reports:read', 'connectors:manage', 'members:manage'])).min(1)
+})
+
+export const UpdateAccessGroupResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "scopeType": zod.enum(['organization', 'area', 'team']),
+  "scopeId": zod.string().nullable(),
+  "scopeLabel": zod.string(),
+  "permissions": zod.array(zod.enum(['agents:read', 'agents:operate', 'teams:read', 'teams:manage', 'journeys:read', 'journeys:manage', 'decisions:approve', 'governance:read', 'governance:manage', 'reports:read', 'connectors:manage', 'members:manage'])),
+  "memberCount": zod.number().optional(),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userName": zod.string(),
+  "userEmail": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an access group
+ */
+export const DeleteAccessGroupParams = zod.object({
+  "groupId": zod.coerce.string()
+})
+
+
+/**
+ * @summary Add an organization member to an access group
+ */
+export const AddAccessGroupMemberParams = zod.object({
+  "groupId": zod.coerce.string()
+})
+
+export const AddAccessGroupMemberBody = zod.object({
+  "userId": zod.string(),
+  "userName": zod.string(),
+  "userEmail": zod.string().nullish()
+})
+
+
+/**
+ * @summary Remove a member from an access group
+ */
+export const RemoveAccessGroupMemberParams = zod.object({
+  "groupId": zod.coerce.string(),
+  "userId": zod.coerce.string()
+})
+
+
+/**
+ * @summary List continuously projected agent governance assessments
+ */
+export const GetRealtimeGovernanceResponse = zod.object({
+  "summary": zod.object({
+  "totalAgents": zod.number(),
+  "assessedAgents": zod.number(),
+  "critical": zod.number(),
+  "attention": zod.number(),
+  "insufficientData": zod.number(),
+  "hallucinationRisk": zod.number(),
+  "regressions": zod.number(),
+  "latestAssessment": zod.coerce.date().nullable()
+}),
+  "freshness": zod.object({
+  "serverTime": zod.coerce.date(),
+  "pollingRecommendedMs": zod.number(),
+  "projectionTargetSeconds": zod.number()
+}),
+  "items": zod.array(zod.object({
+  "agentId": zod.string(),
+  "agentName": zod.string(),
+  "platform": zod.string(),
+  "version": zod.string(),
+  "agentStatus": zod.string(),
+  "healthScore": zod.number(),
+  "governanceStatus": zod.enum(['healthy', 'attention', 'critical', 'insufficient_data', 'not_assessed']),
+  "directionScore": zod.number().nullish(),
+  "protectionScore": zod.number().nullish(),
+  "proofScore": zod.number().nullish(),
+  "contextHealthScore": zod.number().nullish(),
+  "hallucinationStatus": zod.enum(['healthy', 'warning', 'critical', 'not_measured']),
+  "groundedOutputRate": zod.number().nullish(),
+  "hallucinationFlags": zod.number(),
+  "auditedOutputs": zod.number(),
+  "regressionStatus": zod.enum(['insufficient_data', 'stable', 'drift', 'warning', 'regression']),
+  "regressionAttributable": zod.boolean(),
+  "inputDrift": zod.number().nullish(),
+  "baselineReleaseId": zod.string().nullish(),
+  "currentReleaseId": zod.string().nullish(),
+  "signals": zod.array(zod.record(zod.string(), zod.unknown())),
+  "recommendations": zod.array(zod.string()),
+  "evidenceCount": zod.number(),
+  "sourceEventCount": zod.number(),
+  "assessedAt": zod.coerce.date().nullable()
+}))
 })
 
 

@@ -422,8 +422,11 @@ function stripTopDir(path: string): string {
 // (GITHUB_TOKEN or a compatible environment variable) we use the authenticated
 // REST tarball endpoint, which works for both public and private repos. Without
 // a credential we fall back to the unauthenticated codeload path (public only).
-async function downloadGitHubArchive(ref: GitHubRef): Promise<Response> {
-  const token = await getGitHubAccessToken();
+async function downloadGitHubArchive(
+  ref: GitHubRef,
+  tokenOverride?: string | null,
+): Promise<Response> {
+  const token = tokenOverride?.trim() || await getGitHubAccessToken();
 
   if (token) {
     const refSegment = ref.branch ? `/${encodeURIComponent(ref.branch)}` : "";
@@ -602,8 +605,11 @@ async function fetchRepoArchive(
   return extractArchive(res, subPath);
 }
 
-async function fetchFromGitHub(ref: GitHubRef): Promise<FetchSourceResult> {
-  const res = await downloadGitHubArchive(ref);
+async function fetchFromGitHub(
+  ref: GitHubRef,
+  tokenOverride?: string | null,
+): Promise<FetchSourceResult> {
+  const res = await downloadGitHubArchive(ref, tokenOverride);
   return extractArchive(res, ref.subPath);
 }
 
@@ -702,10 +708,11 @@ async function fetchFromUrl(url: URL): Promise<FetchSourceResult> {
 
 export async function fetchAgentSourceFromUrl(
   raw: string,
+  options?: { githubToken?: string | null },
 ): Promise<FetchSourceResult> {
   const url = assertSafeUrl(raw);
   const gitHubRef = parseGitHubUrl(url);
-  if (gitHubRef) return fetchFromGitHub(gitHubRef);
+  if (gitHubRef) return fetchFromGitHub(gitHubRef, options?.githubToken);
   const gitLabRef = parseGitLabUrl(url);
   if (gitLabRef) return fetchFromGitLab(gitLabRef);
   const bitbucketRef = parseBitbucketUrl(url);

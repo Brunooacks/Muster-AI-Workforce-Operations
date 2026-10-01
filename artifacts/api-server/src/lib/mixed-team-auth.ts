@@ -1,4 +1,4 @@
-import type { TeamMemberRole } from "@workspace/db";
+import type { OrgMemberRole, TeamMemberRole } from "@workspace/db";
 import { isRoleAllowed, parseTeamMemberRole } from "./mixed-team";
 
 export type MixedTeamAuthorization =
@@ -12,15 +12,22 @@ export type MixedTeamAuthorization =
 export function authorizeMixedTeamRole(
   role: unknown,
   allowedRoles: readonly TeamMemberRole[],
-  bypass = false,
 ): MixedTeamAuthorization {
-  if (bypass) {
-    return { authorized: true, role: "owner" };
-  }
-
   const parsedRole = parseTeamMemberRole(role);
   if (!parsedRole || !isRoleAllowed(parsedRole, allowedRoles)) {
     return { authorized: false, status: 403, reason: "forbidden" };
   }
   return { authorized: true, role: parsedRole };
+}
+
+export function authorizeMixedTeamManagement(
+  organizationRole: OrgMemberRole | null,
+  teamRole: unknown,
+  allowedTeamRoles: readonly TeamMemberRole[],
+): MixedTeamAuthorization {
+  if (organizationRole === "owner" || organizationRole === "admin") {
+    return { authorized: true, role: "owner" };
+  }
+
+  return authorizeMixedTeamRole(teamRole, allowedTeamRoles);
 }

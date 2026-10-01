@@ -27,6 +27,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireOrgAdmin } from "../middlewares/orgRole";
 import { ofOrg } from "../lib/tenant-scope";
 import { requireMixedTeamManager } from "../middlewares/mixedTeamRole";
 import { normalizeDecisionRights, slugifyTeamName } from "../lib/mixed-team";
@@ -146,7 +147,7 @@ router.get("/purposes", requireAuth, requireOrg, async (req, res) => {
 router.post(
   "/purposes",
   requireAuth, requireOrg,
-  requireMixedTeamManager,
+  requireOrgAdmin,
   async (req, res) => {
     const body = PurposeInput.parse(req.body);
     try {
@@ -181,7 +182,7 @@ router.get("/purposes/:purposeId", requireAuth, requireOrg, async (req, res) => 
 router.delete(
   "/purposes/:purposeId",
   requireAuth, requireOrg,
-  requireMixedTeamManager,
+  requireOrgAdmin,
   async (req, res) => {
     const { purposeId } = PurposeIdParams.parse(req.params);
     const deleted = await db
@@ -231,7 +232,7 @@ router.get("/teams", requireAuth, requireOrg, async (req, res) => {
 router.post(
   "/teams",
   requireAuth, requireOrg,
-  requireMixedTeamManager,
+  requireOrgAdmin,
   async (req, res) => {
     const body = CreateTeamInput.parse(req.body);
     const [purpose] = await db

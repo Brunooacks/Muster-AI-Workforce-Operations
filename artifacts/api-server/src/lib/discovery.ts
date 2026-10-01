@@ -654,6 +654,7 @@ export function buildProposedMetrics(
 }
 
 export interface DraftMetricInput {
+  catalogMetricKey?: string;
   layer: LayerKey;
   label: string;
   unit: string;
@@ -716,6 +717,7 @@ export function proposedMetricsFromDraft(
       confidence: Math.round((70 + rand() * 28) * 10) / 10,
       target: d.target,
       rationale: d.rationale,
+      contractKey: d.catalogMetricKey,
     };
   });
 }

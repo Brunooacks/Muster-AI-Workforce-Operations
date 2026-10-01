@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import {
   Activity,
   ArrowRight,
   Bot,
+  BriefcaseBusiness,
   Check,
   ChevronRight,
   CircleAlert,
@@ -146,6 +148,22 @@ export default function DesignLabPage() {
   return (
     <AppLayout title="Laboratório de jornadas" breadcrumbs={[{ label: "Protótipos" }]}>
       <div className="mx-auto max-w-[1480px] space-y-8">
+        <Link
+          href="/prototipos/workforce-os"
+          className="group flex flex-col gap-4 rounded-2xl border border-chart-2/35 bg-chart-2/5 p-5 transition-colors hover:border-chart-2/65 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-2/15 text-chart-2">
+              <BriefcaseBusiness className="h-5 w-5" />
+            </span>
+            <div>
+              <Eyebrow className="text-chart-2">Novo protótipo navegável · Workforce OS</Eyebrow>
+              <h2 className="mt-2 font-serif text-2xl tracking-tight text-foreground">Gerencie agentes como profissionais com propósito, deveres e responsabilidades.</h2>
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">Explore início diário, portfólio propósito × saúde e prontuário profissional em três direções visuais.</p>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-chart-2">Abrir experiência <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
+        </Link>
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-chart-2"><Sparkles className="h-4 w-4" /><Eyebrow className="text-chart-2">Design lab · jornada completa · não produtivo</Eyebrow></div>

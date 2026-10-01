@@ -13,30 +13,19 @@ if (Number.isNaN(port) || port <= 0) {
 
 const basePath = process.env.BASE_PATH ?? "/";
 
-// Local dev auth bypass: swap @clerk/react for a signed-in mock so the app
-// runs on localhost without a Clerk project. Pair with AUTH_DEV_BYPASS=true
-// on the API server. Never active in a production build — the flag must be
-// set explicitly in the dev environment.
-const authDevBypass = process.env.VITE_AUTH_DEV_BYPASS === "true";
-const clerkMockPath = path.resolve(import.meta.dirname, "src/dev/clerk-mock.tsx");
-
 // Where the local API server listens; the dev server proxies /api to it so the
 // SPA can use same-origin requests exactly like in production.
-const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8080";
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8087";
 
 export default defineConfig({
   base: basePath,
+  envDir: path.resolve(import.meta.dirname, "..", ".."),
   plugins: [
     react(),
     tailwindcss({ optimize: false }),
   ],
   resolve: {
     alias: {
-      ...(authDevBypass
-        ? {
-            "@clerk/react": clerkMockPath,
-          }
-        : {}),
       "@": path.resolve(import.meta.dirname, "src"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },

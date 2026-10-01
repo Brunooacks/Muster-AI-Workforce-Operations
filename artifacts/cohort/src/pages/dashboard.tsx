@@ -3,6 +3,9 @@ import {
   useGetFleetSummary,
   useGetFleetKpis,
   useListFleetAlerts,
+  getGetFleetSummaryQueryKey,
+  getGetFleetKpisQueryKey,
+  getListFleetAlertsQueryKey,
 } from "@workspace/api-client-react";
 import {
   Card,
@@ -31,6 +34,7 @@ import { Link } from "wouter";
 import { ErrorState } from "@/components/query-state";
 import { PageHeading, StatCard, VerdictBadge, SeverityBadge } from "@/components/cohort";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
+import { RefreshStatusBar } from "@/components/mission-control/operational-status";
 import {
   RadarChart,
   PolarGrid,
@@ -87,8 +91,10 @@ interface FrotaDict {
   noTrend: string;
   topTitle: string;
   topDesc: string;
+  topEmpty: string;
   attentionTitle: string;
   attentionDesc: string;
+  attentionEmpty: string;
   verdictsTitle: string;
   verdictsDesc: string;
   verdictLabels: Record<string, string>;
@@ -141,8 +147,10 @@ const L: Record<Lang, FrotaDict> = {
     noTrend: "Sem histórico suficiente para exibir tendências.",
     topTitle: "Destaques",
     topDesc: "Maior saúde consolidada",
+    topEmpty: "Nenhum agente elegível para destaque.",
     attentionTitle: "Em Atenção",
     attentionDesc: "Menor saúde — candidatos a mentoria",
+    attentionEmpty: "Nenhum agente requer atenção nesta avaliação.",
     verdictsTitle: "Vereditos do Comitê",
     verdictsDesc: "Distribuição da última avaliação",
     verdictLabels: {
@@ -198,8 +206,10 @@ const L: Record<Lang, FrotaDict> = {
     noTrend: "Not enough history to display trends.",
     topTitle: "Top Performers",
     topDesc: "Highest consolidated health",
+    topEmpty: "No agent is eligible for this ranking.",
     attentionTitle: "Needs Attention",
     attentionDesc: "Lowest health — mentoring candidates",
+    attentionEmpty: "No agent needs attention in this evaluation.",
     verdictsTitle: "Committee Verdicts",
     verdictsDesc: "Distribution of the latest evaluation",
     verdictLabels: {
@@ -255,8 +265,10 @@ const L: Record<Lang, FrotaDict> = {
     noTrend: "Sin historial suficiente para mostrar tendencias.",
     topTitle: "Destacados",
     topDesc: "Mayor salud consolidada",
+    topEmpty: "Ningún agente es elegible para este ranking.",
     attentionTitle: "En Atención",
     attentionDesc: "Menor salud — candidatos a mentoría",
+    attentionEmpty: "Ningún agente requiere atención en esta evaluación.",
     verdictsTitle: "Veredictos del Comité",
     verdictsDesc: "Distribución de la última evaluación",
     verdictLabels: {
@@ -317,7 +329,7 @@ function TrendPill({ value }: { value: number }) {
 
 const cardTitleSerif = "font-serif text-xl font-medium tracking-tight";
 
-export default function DashboardPage() {
+export default function DashboardPage({ embedded = false }: { embedded?: boolean }) {
   const { lang } = useLang();
   const t = L[lang];
   const locale = localeOf(lang);
@@ -327,31 +339,57 @@ export default function DashboardPage() {
     data: summary,
     isLoading: loadingSummary,
     isError: errorSummary,
+    isFetching: fetchingSummary,
+    dataUpdatedAt: summaryUpdatedAt,
     refetch: refetchSummary,
-  } = useGetFleetSummary();
+  } = useGetFleetSummary({
+    query: { queryKey: getGetFleetSummaryQueryKey(), refetchInterval: 60_000 },
+  });
   const {
     data: kpis,
     isLoading: loadingKpis,
     isError: errorKpis,
+    isFetching: fetchingKpis,
+    dataUpdatedAt: kpisUpdatedAt,
     refetch: refetchKpis,
-  } = useGetFleetKpis();
+  } = useGetFleetKpis({
+    query: { queryKey: getGetFleetKpisQueryKey(), refetchInterval: 60_000 },
+  });
   const {
     data: alerts,
     isLoading: loadingAlerts,
     isError: errorAlerts,
+    isFetching: fetchingAlerts,
+    dataUpdatedAt: alertsUpdatedAt,
     refetch: refetchAlerts,
-  } = useListFleetAlerts();
+  } = useListFleetAlerts(undefined, {
+    query: { queryKey: getListFleetAlertsQueryKey(), refetchInterval: 60_000 },
+  });
 
   const hasError = errorSummary || errorKpis || errorAlerts;
   const radarData = kpis?.layers.map((l) => ({ layer: l.label, score: l.score })) ?? [];
+  const controlUpdatedAt = Math.min(
+    ...[summaryUpdatedAt, kpisUpdatedAt, alertsUpdatedAt].filter((timestamp) => timestamp > 0),
+  );
 
-  return (
-    <AppLayout breadcrumbs={[{ label: t.breadcrumbSection }, { label: t.breadcrumbPage }]}>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+  const content = (
+      <div
+        className={`space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 ${embedded ? "p-5 md:p-6" : ""}`}
+        data-workforce-embedded-page={embedded ? "true" : undefined}
+        data-operational-source="api"
+      >
         <PageHeading
           eyebrow={t.eyebrow}
           title={t.title}
           subtitle={t.subtitle}
+        />
+
+        <RefreshStatusBar
+          updatedAt={Number.isFinite(controlUpdatedAt) ? controlUpdatedAt : undefined}
+          isRefreshing={fetchingSummary || fetchingKpis || fetchingAlerts}
+          cadence="60s"
+          onRefresh={() => void Promise.all([refetchSummary(), refetchKpis(), refetchAlerts()])}
+          sourceLabel="Resumo, avaliações e alertas da frota"
         />
 
         {hasError && (
@@ -567,7 +605,7 @@ export default function DashboardPage() {
             <CardContent className="space-y-3">
               {loadingKpis
                 ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)
-                : kpis?.topPerformers.map((a) => (
+                : kpis && kpis.topPerformers.length > 0 ? kpis.topPerformers.map((a) => (
                     <Link
                       key={a.id}
                       href={`/agentes/${a.id}`}
@@ -582,7 +620,7 @@ export default function DashboardPage() {
                         <VerdictBadge verdict={a.currentVerdict} />
                       </div>
                     </Link>
-                  ))}
+                  )) : <p className="rounded-lg border border-dashed border-card-border p-5 text-center text-sm text-muted-foreground">{t.topEmpty}</p>}
             </CardContent>
           </Card>
 
@@ -596,7 +634,7 @@ export default function DashboardPage() {
             <CardContent className="space-y-3">
               {loadingKpis
                 ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)
-                : kpis?.atRisk.map((a) => (
+                : kpis && kpis.atRisk.length > 0 ? kpis.atRisk.map((a) => (
                     <Link
                       key={a.id}
                       href={`/agentes/${a.id}`}
@@ -611,7 +649,7 @@ export default function DashboardPage() {
                         <VerdictBadge verdict={a.currentVerdict} />
                       </div>
                     </Link>
-                  ))}
+                  )) : <p className="rounded-lg border border-dashed border-card-border p-5 text-center text-sm text-muted-foreground">{t.attentionEmpty}</p>}
             </CardContent>
           </Card>
 
@@ -708,6 +746,13 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+  );
+
+  return embedded ? (
+    content
+  ) : (
+    <AppLayout breadcrumbs={[{ label: t.breadcrumbSection }, { label: t.breadcrumbPage }]}>
+      {content}
     </AppLayout>
   );
 }

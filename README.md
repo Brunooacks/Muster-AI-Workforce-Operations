@@ -19,10 +19,11 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Drizzle-4169E1?logo=postgresql&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-workspaces-F69220?logo=pnpm&logoColor=white)
 <br/>
-![testes](https://img.shields.io/badge/testes-210_verdes-2e7d52)
-![e2e](https://img.shields.io/badge/portão_e2e-401ms-2e7d52)
+![testes](https://img.shields.io/badge/testes_auditados-392_aprovados-2e7d52)
+![e2e](https://img.shields.io/badge/E2E-91_aprovados-2e7d52)
 ![multi-tenant](https://img.shields.io/badge/multi--tenant-org_+_área-2e7d52)
-![status](https://img.shields.io/badge/status-MVP_operável-D8B26B)
+![maturidade](https://img.shields.io/badge/maturidade-64%2F100_design_partner-6C63FF)
+![status](https://img.shields.io/badge/piloto_pago-NO--GO-C05640)
 
 **🌐 [Português](#-português) · [English](#-english)**
 
@@ -52,6 +53,27 @@ Todo painel de IA que você já viu calcula uma média sobre qualquer coisa que 
 | `none` | Sem evidência. **A plataforma se recusa a pontuar.** |
 
 É ruim para a demonstração e ótimo para a auditoria — e é a razão de o agente recém-cadastrado nascer sem nota.
+
+### 🧭 Maturidade comercial auditada
+
+O próprio repositório inclui a **Mara**, agente avaliador `L1` que executa os
+gates técnicos, rejeita documentação como prova operacional e separa software
+funcionando de produto pronto para assumir SLA.
+
+| Decisão em 07/09/2026 | Resultado |
+| :--- | :--- |
+| Score de maturidade | **64/100** |
+| Estágio seguro | **Design partners** |
+| Piloto pago | **NO-GO** até concluir os gates críticos |
+| Prazo estimado para piloto | **14–23 pessoa-dias** ou **6–10 dias úteis** com cinco frentes paralelas |
+| Disponibilidade geral | **15–24 dias úteis**, incluindo estabilização e aceite externo |
+
+```bash
+pnpm run evaluate:maturity -- --mode=full --base-url=http://127.0.0.1:5173
+```
+
+A metodologia, evidências e bloqueadores ficam em
+[`docs/MATURITY-EVALUATOR.md`](docs/MATURITY-EVALUATOR.md).
 
 ### 🔌 Como um agente entra
 
@@ -111,7 +133,11 @@ Nenhuma camada sozinha acusa um agente que está enganando o painel. O detector 
 - **🔗 Jornadas A2A** — cinco sub-agentes encadeados: etapas, contratos de handoff e telemetria por passo, para achar o elo que derruba o conjunto. → [`docs/JORNADAS-A2A.md`](docs/JORNADAS-A2A.md)
 - **📚 Catálogo de 86 métricas** — cada uma com instrução de instrumentação pronta para colar.
 - **✅ Plano de ação rastreável** — o veredito vira ações com status, e concluir exige evidência.
+- **🏢 Administração enterprise** — organizações, membros, grupos, presets e permissões por escopo para agentes, equipes, jornadas, decisões, relatórios e conectores.
+- **🛰️ Supervisão contínua** — outbox, worker, atividade em tempo real, freshness e sinais de regressão, alucinação e saúde de contexto.
+- **📑 Relatórios executivos** — snapshots persistidos, comparação entre períodos, narrativa e rastreabilidade da evidência usada.
 - **🔑 Credencial por agente** — `msk_live_…`, SHA-256 em repouso. A do agente A não reporta pelo agente B.
+- **🔐 Segredos de conectores** — AES-256-GCM em repouso, integridade autenticada e migração controlada de legado.
 - **🌐 Trilíngue** — pt-BR (canônico), inglês e espanhol.
 
 <details>
@@ -159,7 +185,7 @@ flowchart LR
 | Web | React · Vite · wouter · TanStack Query · shadcn/ui · Clerk |
 | Banco | PostgreSQL · Drizzle ORM · migrações versionadas com reversão |
 | Contrato | OpenAPI → Orval (spec primeiro, código depois) |
-| Testes | Vitest · 210 testes · portão e2e em 401 ms |
+| Testes | Vitest · PostgreSQL real · Playwright com Clerk real |
 
 ### 🚀 Rodar localmente
 
@@ -191,6 +217,7 @@ Abra **http://localhost:5173**. Guia passo a passo em [`docs/DEMO-LOCAL.md`](doc
 pnpm --filter @workspace/scripts run demo:integrar   # integra um agente ao vivo, narrado
 pnpm --filter @workspace/scripts run demo:fluxo      # jornada com sub-agentes
 pnpm --filter @workspace/scripts run bridge:vllm -- --fixture --dry-run   # coleta local, sem GPU
+pnpm run evaluate:maturity                           # gate de maturidade comercial
 ```
 
 ### 📁 Estrutura
@@ -215,6 +242,12 @@ pnpm --filter @workspace/scripts run bridge:vllm -- --fixture --dry-run   # cole
 
 | Documento | Assunto |
 | :--- | :--- |
+| [`PRD-MUSTER-WORKFORCE-OS.md`](docs/PRD-MUSTER-WORKFORCE-OS.md) | Drivers, requisitos, SLOs e gates de produto |
+| [`MVP-GO-LIVE-2026-09-05.md`](docs/MVP-GO-LIVE-2026-09-05.md) | Corte comprovado, go/no-go e promoção do piloto de sábado |
+| [`ESTRATEGIA-REGRESSAO-E-CONTEXTO.md`](docs/ESTRATEGIA-REGRESSAO-E-CONTEXTO.md) | Contrato incremental de runs, inputs, contexto e detecção de regressão |
+| [`MATURITY-EVALUATOR.md`](docs/MATURITY-EVALUATOR.md) | Score reproduzível, evidências e decisão comercial |
+| [`TENANCY-SECURITY.md`](docs/TENANCY-SECURITY.md) | Organizações, acesso, criptografia e isolamento |
+| [`TELEMETRIA-CONTINUA.md`](docs/TELEMETRIA-CONTINUA.md) | Outbox, worker, freshness e supervisão contínua |
 | [`DEMO-LOCAL.md`](docs/DEMO-LOCAL.md) | Subir tudo do zero, passo a passo |
 | [`COLETA-LOCAL-VLLM.md`](docs/COLETA-LOCAL-VLLM.md) | Monitorar agente on-premise via vLLM |
 | [`INTEGRACAO-PLATAFORMAS-EXTERNAS.md`](docs/INTEGRACAO-PLATAFORMAS-EXTERNAS.md) | Pontes de nuvem |
@@ -225,11 +258,12 @@ pnpm --filter @workspace/scripts run bridge:vllm -- --fixture --dry-run   # cole
 
 Coerente com o produto: dizer o que não se sabe, em vez de omitir.
 
-- **Nenhuma frota real passou pela plataforma.** A telemetria existente é de teste e demonstração.
-- **As pontes de nuvem nunca rodaram contra uma conta real** — estão validadas contra amostras de resposta dos três provedores.
-- **Credenciais de conector ficam em texto puro** no banco. Antes de qualquer piloto real, precisam ser cifradas.
-- **Não há política de retenção** configurável — lacuna de LGPD assumida.
-- **Não há escopo de permissão por perfil**: quem entra na organização pode aprovar veredito.
+- **Nenhuma frota de cliente externo recebeu aceite formal.** Há workloads locais e cenários reais controlados, mas não validação de outcome por design partner.
+- **As pontes de nuvem ainda não foram homologadas end-to-end contra uma conta enterprise real.**
+- **A telemetria contínua ainda não passou por soak test de 24 horas** com zero perda, backlog e alertas medidos.
+- **Backup, restore e rollback ainda não têm ensaio aprovado** com RTO/RPO registrados.
+- **Retenção, exportação/exclusão e threat model permanecem incompletos** para um piloto com dados de cliente.
+- **A oferta comercial ainda não está versionada** com ICP, preço, limites, SLA, suporte e responsabilidades.
 
 ---
 
@@ -255,6 +289,24 @@ Every AI dashboard you've seen averages whatever it receives. Muster checks prov
 | `none` | No evidence. **The platform refuses to score.** |
 
 Bad for the demo, excellent for the audit — and the reason a freshly registered agent starts with no score.
+
+### 🧭 Audited commercial maturity
+
+The repository includes **Mara**, an `L1` readiness auditor that runs technical
+gates, refuses to treat documentation as operational proof, and separates
+working software from a product ready to carry an SLA.
+
+| Decision on 2026-09-07 | Result |
+| :--- | :--- |
+| Maturity score | **64/100** |
+| Safe stage | **Design partners** |
+| Paid pilot | **NO-GO** until critical gates are proven |
+| Estimated path to pilot | **14–23 person-days**, or **6–10 business days** across five parallel workstreams |
+| General availability | **15–24 business days**, including stabilization and external acceptance |
+
+Run `pnpm run evaluate:maturity -- --mode=full` and read
+[`docs/MATURITY-EVALUATOR.md`](docs/MATURITY-EVALUATOR.md) for the evidence and
+blocking gates.
 
 ### 🔌 How an agent gets in
 
@@ -289,7 +341,11 @@ An agent can be highly productive with no purpose at all: fast, cheap and excell
 - **🔗 A2A journeys** — chained sub-agents with handoff contracts and per-step telemetry → [`docs/JORNADAS-A2A.md`](docs/JORNADAS-A2A.md)
 - **📚 86-metric catalog** — each with ready-to-paste instrumentation guidance
 - **✅ Traceable action plan** — verdicts become tracked actions; closing one requires evidence
+- **🏢 Enterprise administration** — organizations, members, groups, presets and scoped permissions
+- **🛰️ Continuous supervision** — outbox, worker, freshness, regression, hallucination and context-health signals
+- **📑 Executive reports** — persisted snapshots, period comparisons, narratives and evidence traceability
 - **🔑 Per-agent credentials** — `msk_live_…`, SHA-256 at rest
+- **🔐 Connector secrets** — AES-256-GCM at rest with authenticated integrity
 - **🌐 Trilingual** — pt-BR (canonical), English, Spanish
 
 ### 🚀 Running locally
@@ -309,11 +365,12 @@ Step-by-step guide in [`docs/DEMO-LOCAL.md`](docs/DEMO-LOCAL.md).
 
 ### ⚖️ Current state — what does not exist yet
 
-- **No real fleet has run through the platform.** Existing telemetry is test and demo data.
-- **The cloud bridges have never touched a real account.**
-- **Connector credentials are stored in plaintext** — must be encrypted before any real pilot.
-- **No configurable retention policy** — an acknowledged privacy gap.
-- **No per-role permission scopes**: anyone in the organization can approve a verdict.
+- **No external customer fleet has formal acceptance yet.** Local workloads and controlled real scenarios exist, but no design-partner outcome has been signed off.
+- **Cloud bridges have not been certified end-to-end against a real enterprise account.**
+- **Continuous telemetry has not completed a 24-hour soak test** with measured loss, backlog and alerts.
+- **Backup, restore and rollback lack an approved rehearsal** with recorded RTO/RPO.
+- **Retention, export/delete and the threat model remain incomplete** for customer data.
+- **The commercial package is not versioned yet** with ICP, pricing, limits, SLA, support and responsibilities.
 
 ---
 

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import {
   db,
   agents,
@@ -8,6 +8,7 @@ import {
   evaluations,
   verdicts,
   metricPoints,
+  agentEvents,
   type KpiLayer,
   type LayerKey,
   type Severity,
@@ -15,6 +16,7 @@ import {
 import {
   GetFleetSummaryResponse,
   GetFleetKpisResponse,
+  GetFleetInsightsResponse,
   ListFleetAlertsQueryParams,
   ListFleetAlertsResponse,
   UpdateFleetAlertParams,
@@ -26,8 +28,10 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
-import { ofOrg } from "../lib/tenant-scope";
+import { requireOrgOperator } from "../middlewares/orgRole";
+import { byAgentsOf, ofOrg } from "../lib/tenant-scope";
 import { applyAlertUpdate } from "../lib/alert-workflow";
+import { buildFleetInsights } from "../lib/fleet-insights";
 
 const router: IRouter = Router();
 
@@ -58,7 +62,10 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 
 router.get("/fleet/summary", requireAuth, requireOrg, async (req, res) => {
   const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
-  const allAlerts = await db.select().from(alerts);
+  const agentIds = allAgents.map((agent) => agent.id);
+  const allAlerts = agentIds.length > 0
+    ? await db.select().from(alerts).where(byAgentsOf(alerts.agentId, agentIds)!)
+    : [];
 
   const byVerdict = { promote: 0, mentor: 0, retire: 0, observation: 0 };
   const bySeverity = { critical: 0, high: 0, medium: 0, stable: 0 };
@@ -86,10 +93,17 @@ router.get("/fleet/summary", requireAuth, requireOrg, async (req, res) => {
 
   const activeAlerts = allAlerts.filter((a) => a.status === "active").length;
 
-  const pendingVerdicts = await db
-    .select({ agentId: verdicts.agentId })
-    .from(verdicts)
-    .where(eq(verdicts.decision, "pending"));
+  const pendingVerdicts = agentIds.length > 0
+    ? await db
+        .select({ agentId: verdicts.agentId })
+        .from(verdicts)
+        .where(
+          and(
+            eq(verdicts.decision, "pending"),
+            byAgentsOf(verdicts.agentId, agentIds)!,
+          ),
+        )
+    : [];
   const pendingDecisions = new Set(pendingVerdicts.map((v) => v.agentId)).size;
 
   const data = GetFleetSummaryResponse.parse({
@@ -116,11 +130,31 @@ router.get("/fleet/summary", requireAuth, requireOrg, async (req, res) => {
 
 router.get("/fleet/kpis", requireAuth, requireOrg, async (req, res) => {
   const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
-  const allEvaluations = await db
-    .select()
-    .from(evaluations)
-    .orderBy(desc(evaluations.evaluatedAt));
-  const allPoints = await db.select().from(metricPoints);
+  const agentIds = allAgents.map((agent) => agent.id);
+  const allEvaluations = agentIds.length > 0
+    ? await db
+        .select()
+        .from(evaluations)
+        .where(byAgentsOf(evaluations.agentId, agentIds)!)
+        .orderBy(desc(evaluations.evaluatedAt))
+    : [];
+  const allPoints = agentIds.length > 0
+    ? await db
+        .select()
+        .from(metricPoints)
+        .where(byAgentsOf(metricPoints.agentId, agentIds)!)
+    : [];
+  const recentCostEvents = agentIds.length > 0
+    ? await db
+        .select({ costCents: agentEvents.costCents })
+        .from(agentEvents)
+        .where(
+          and(
+            byAgentsOf(agentEvents.agentId, agentIds)!,
+            gte(agentEvents.ts, new Date(Date.now() - 30 * 86_400_000)),
+          ),
+        )
+    : [];
 
   // Latest evaluation per agent.
   const latestByAgent = new Map<string, typeof allEvaluations[number]>();
@@ -204,13 +238,22 @@ router.get("/fleet/kpis", requireAuth, requireOrg, async (req, res) => {
   });
 
   let monthlyValue = 0;
-  let monthlyCost = 0;
+  let declaredMonthlyCost = 0;
   let profitableAgents = 0;
   for (const a of allAgents) {
     monthlyValue += a.monthlyValue;
-    monthlyCost += a.monthlyCost;
+    declaredMonthlyCost += a.monthlyCost;
     if (a.monthlyValue > a.monthlyCost) profitableAgents += 1;
   }
+  const observedMonthlyCost = round1(
+    recentCostEvents.reduce(
+      (total, event) => total + Math.max(0, event.costCents ?? 0),
+      0,
+    ) / 100,
+  );
+  const monthlyCost = observedMonthlyCost > 0
+    ? observedMonthlyCost
+    : declaredMonthlyCost;
   const netValue = monthlyValue - monthlyCost;
   const roiPercent = monthlyCost > 0 ? round1((netValue / monthlyCost) * 100) : 0;
 
@@ -239,6 +282,36 @@ router.get("/fleet/kpis", requireAuth, requireOrg, async (req, res) => {
   res.json(data);
 });
 
+router.get("/fleet/insights", requireAuth, requireOrg, async (req, res) => {
+  const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
+  const agentIds = allAgents.map((agent) => agent.id);
+  const allEvaluations = agentIds.length > 0
+    ? await db
+        .select()
+        .from(evaluations)
+        .where(byAgentsOf(evaluations.agentId, agentIds)!)
+        .orderBy(desc(evaluations.evaluatedAt))
+    : [];
+  const allPoints = agentIds.length > 0
+    ? await db
+        .select()
+        .from(metricPoints)
+        .where(byAgentsOf(metricPoints.agentId, agentIds)!)
+    : [];
+  const data = buildFleetInsights({
+    agents: allAgents,
+    evaluations: allEvaluations.map((evaluation) => ({
+      agentId: evaluation.agentId,
+      evaluatedAt: evaluation.evaluatedAt,
+      layers: evaluation.layers,
+      verdictConfidence: evaluation.verdictConfidence,
+    })),
+    points: allPoints,
+    now: new Date(),
+  });
+  res.json(GetFleetInsightsResponse.parse(data));
+});
+
 router.get("/fleet/alerts", requireAuth, requireOrg, async (req, res) => {
   const query = ListFleetAlertsQueryParams.parse(req.query);
 
@@ -261,6 +334,7 @@ router.get("/fleet/alerts", requireAuth, requireOrg, async (req, res) => {
     })
     .from(alerts)
     .innerJoin(agents, eq(alerts.agentId, agents.id))
+    .where(ofOrg(agents, req.orgId!))
     .orderBy(desc(alerts.detectedAt));
 
   const filtered = rows.filter(
@@ -279,14 +353,15 @@ router.get("/fleet/alerts", requireAuth, requireOrg, async (req, res) => {
   res.json(data);
 });
 
-router.patch("/fleet/alerts/:alertId", requireAuth, requireOrg, async (req, res) => {
+router.patch("/fleet/alerts/:alertId", requireAuth, requireOrg, requireOrgOperator, async (req, res) => {
   const { alertId } = UpdateFleetAlertParams.parse(req.params);
   const body = UpdateFleetAlertBody.parse(req.body);
 
   const [current] = await db
-    .select()
+    .select({ alert: alerts, agentName: agents.name })
     .from(alerts)
-    .where(eq(alerts.id, alertId))
+    .innerJoin(agents, eq(alerts.agentId, agents.id))
+    .where(and(eq(alerts.id, alertId), ofOrg(agents, req.orgId!)))
     .limit(1);
   if (!current) {
     res.status(404).json({ error: "Alerta não encontrado." });
@@ -294,7 +369,7 @@ router.patch("/fleet/alerts/:alertId", requireAuth, requireOrg, async (req, res)
   }
 
   const nextState = applyAlertUpdate(
-    current,
+    current.alert,
     {
       status: body.status,
       assignedTo: body.assignedTo,
@@ -311,17 +386,17 @@ router.patch("/fleet/alerts/:alertId", requireAuth, requireOrg, async (req, res)
       acknowledgedAt: nextState.acknowledgedAt,
       resolvedAt: nextState.resolvedAt,
     })
-    .where(eq(alerts.id, alertId))
+    .where(
+      and(
+        eq(alerts.id, alertId),
+        eq(alerts.agentId, current.alert.agentId),
+      ),
+    )
     .returning();
 
-  const [agent] = await db
-    .select({ name: agents.name })
-    .from(agents)
-    .where(and(eq(agents.id, updated!.agentId), ofOrg(agents, req.orgId!)))
-    .limit(1);
   const data = UpdateFleetAlertResponse.parse({
     ...updated,
-    agentName: agent?.name ?? "Agente",
+    agentName: current.agentName,
     detectedAt: updated!.detectedAt.toISOString(),
   });
   res.json(data);
@@ -345,6 +420,7 @@ router.get("/fleet/decisions", requireAuth, requireOrg, async (req, res) => {
     })
     .from(verdicts)
     .innerJoin(agents, eq(verdicts.agentId, agents.id))
+    .where(ofOrg(agents, req.orgId!))
     .orderBy(desc(verdicts.createdAt));
 
   const data = ListFleetDecisionsResponse.parse(
@@ -361,11 +437,20 @@ router.get("/fleet/decisions", requireAuth, requireOrg, async (req, res) => {
 
 router.get("/fleet/governance", requireAuth, requireOrg, async (req, res) => {
   const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
-  const allOwners = await db.select().from(agentOwners);
-  const allEvaluations = await db
-    .select()
-    .from(evaluations)
-    .orderBy(desc(evaluations.evaluatedAt));
+  const agentIds = allAgents.map((agent) => agent.id);
+  const allOwners = agentIds.length > 0
+    ? await db
+        .select()
+        .from(agentOwners)
+        .where(byAgentsOf(agentOwners.agentId, agentIds)!)
+    : [];
+  const allEvaluations = agentIds.length > 0
+    ? await db
+        .select()
+        .from(evaluations)
+        .where(byAgentsOf(evaluations.agentId, agentIds)!)
+        .orderBy(desc(evaluations.evaluatedAt))
+    : [];
 
   const ownersByAgent = new Map(allOwners.map((o) => [o.agentId, o]));
 
@@ -399,7 +484,9 @@ router.get("/fleet/governance", requireAuth, requireOrg, async (req, res) => {
     }
   }
 
-  const allAlerts = await db.select().from(alerts);
+  const allAlerts = agentIds.length > 0
+    ? await db.select().from(alerts).where(byAgentsOf(alerts.agentId, agentIds)!)
+    : [];
   const openAlerts = allAlerts.filter((a) => a.status === "active").length;
 
   const groups = new Map<string, ReturnType<typeof buildGovRef>[]>();
@@ -449,6 +536,7 @@ router.get("/fleet/governance", requireAuth, requireOrg, async (req, res) => {
     })
     .from(verdicts)
     .innerJoin(agents, eq(verdicts.agentId, agents.id))
+    .where(ofOrg(agents, req.orgId!))
     .orderBy(desc(verdicts.createdAt));
 
   const auditTrail = decided
@@ -481,10 +569,14 @@ router.get("/fleet/governance", requireAuth, requireOrg, async (req, res) => {
 
 router.get("/fleet/benchmarks", requireAuth, requireOrg, async (req, res) => {
   const allAgents = await db.select().from(agents).where(ofOrg(agents, req.orgId!));
-  const allEvaluations = await db
-    .select()
-    .from(evaluations)
-    .orderBy(desc(evaluations.evaluatedAt));
+  const agentIds = allAgents.map((agent) => agent.id);
+  const allEvaluations = agentIds.length > 0
+    ? await db
+        .select()
+        .from(evaluations)
+        .where(byAgentsOf(evaluations.agentId, agentIds)!)
+        .orderBy(desc(evaluations.evaluatedAt))
+    : [];
 
   const latestByAgent = new Map<string, typeof allEvaluations[number]>();
   for (const e of allEvaluations) {

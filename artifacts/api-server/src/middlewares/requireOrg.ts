@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
+import { getAuth } from "@clerk/express";
 import { and, eq } from "drizzle-orm";
 import { db, organizations, organizationMembers } from "@workspace/db";
-import { authDevBypass } from "./requireAuth";
+import { resolveActiveOrganizationId } from "../lib/active-organization";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -23,9 +24,6 @@ export const DEFAULT_ORG_ID = "org_default";
  *  1. Organização ativa na sessão do provedor de identidade (Clerk `org_id`),
  *     casada por `organizations.external_id`.
  *  2. Vínculo do usuário: se ele pertence a exatamente uma organização, é ela.
- *  3. Apenas com AUTH_DEV_BYPASS (impossível em produção): organização padrão,
- *     para que o ambiente local e a demo continuem funcionando.
- *
  * Falha fechada: sem organização resolvida, a requisição para em 403. É
  * preferível recusar uma leitura legítima a servir dado de outro cliente.
  */
@@ -95,38 +93,10 @@ export async function requireOrg(
     return;
   }
 
-  if (authDevBypass) {
-    req.orgId = await ensureDevOrgMembership(userId);
-    next();
-    return;
-  }
-
   res.status(403).json({ error: "Usuário sem organização." });
 }
 
 function readSessionOrgId(req: Request): string | null {
-  const auth = (req as unknown as { auth?: { orgId?: string; sessionClaims?: Record<string, unknown> } }).auth;
-  const fromClaims = auth?.sessionClaims?.["org_id"];
-  return (auth?.orgId as string | undefined) ?? (typeof fromClaims === "string" ? fromClaims : null);
-}
-
-/** Local dev: garante que o usuário de bypass pertence à organização padrão. */
-async function ensureDevOrgMembership(userId: string): Promise<string> {
-  const [existing] = await db
-    .select({ id: organizationMembers.id })
-    .from(organizationMembers)
-    .where(
-      and(
-        eq(organizationMembers.orgId, DEFAULT_ORG_ID),
-        eq(organizationMembers.userId, userId),
-      ),
-    )
-    .limit(1);
-  if (!existing) {
-    await db
-      .insert(organizationMembers)
-      .values({ orgId: DEFAULT_ORG_ID, userId, role: "owner" })
-      .onConflictDoNothing();
-  }
-  return DEFAULT_ORG_ID;
+  const auth = getAuth(req);
+  return resolveActiveOrganizationId(auth?.orgId, auth?.sessionClaims);
 }

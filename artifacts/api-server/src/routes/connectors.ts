@@ -1,5 +1,5 @@
-import { Router, type IRouter } from "express";
-import { and, eq, inArray } from "drizzle-orm";
+import { Router, type IRouter, type Response } from "express";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import {
   db,
   agents,
@@ -9,8 +9,10 @@ import {
   verdicts,
   connectors,
   connectorCredentials,
+  connectorApiKeys,
   metricPoints,
 } from "@workspace/db";
+import type { ConnectorMode } from "@workspace/db";
 import {
   ListConnectorsResponse,
   ConnectPlatformBody,
@@ -20,9 +22,12 @@ import {
   ImportDiscoveredAgentsBody,
   RegisterConnectorBody,
   TestConnectorResponse,
+  PreAssessAgentSourceBody,
+  PreAssessAgentSourceResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireOrgAdmin } from "../middlewares/orgRole";
 import { ofOrg } from "../lib/tenant-scope";
 import { toAgentSummary } from "../lib/serializers";
 import {
@@ -36,12 +41,25 @@ import { connectorCapabilities } from "../lib/connectors/registry";
 import { resolveImportSource } from "../lib/connectors/import-source";
 import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
 import { preAssess } from "../lib/pre-assessment";
+import {
+  ConnectorCredentialError,
+  connectorCredentialEncryptionKey,
+  encryptConnectorCredential,
+  materializeConnectorCredentialForAdapter,
+} from "../lib/connectors/credential-crypto";
+import { redactConnectorMetadata } from "../lib/connectors/redaction";
+import { generateConnectorApiKey } from "../lib/connector-api-key";
 
 const router: IRouter = Router();
 
-router.get("/connectors/capabilities", requireAuth, requireOrg, async (_req, res) => {
-  res.json(connectorCapabilities());
-});
+router.get(
+  "/connectors/capabilities",
+  requireAuth,
+  requireOrg,
+  async (_req, res) => {
+    res.json(connectorCapabilities());
+  },
+);
 
 function slugify(name: string): string {
   return name
@@ -52,8 +70,56 @@ function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+type ConnectorRow = typeof connectors.$inferSelect;
+
+function nextConnectorAction(row: ConnectorRow): string {
+  if (row.status === "error") return "Corrigir a configuração e repetir o teste.";
+  if (row.status === "degraded") return "Revisar eventos recentes e a credencial da integração.";
+  if (row.mode === "native" && row.status === "connected") return "Executar discovery e selecionar os agentes para admissão.";
+  if (row.status === "configured") return "Enviar o primeiro evento real para comprovar a conexão.";
+  if (row.status === "connected") return "Acompanhar freshness, cobertura e qualidade dos eventos.";
+  return "Escolher um método de conexão e concluir a configuração.";
+}
+
+function serializeConnector(
+  row: ConnectorRow,
+  setup?: { apiKey: string; endpoint: string },
+) {
+  return {
+    id: row.id,
+    platform: row.platform,
+    name: row.name,
+    status: row.status,
+    mode: row.mode,
+    health: row.health,
+    agentsDiscovered: row.agentsDiscovered,
+    category: row.category,
+    lastSyncAt: row.lastSyncAt?.toISOString() ?? null,
+    lastTestedAt: row.lastTestedAt?.toISOString() ?? null,
+    lastEventAt: row.lastEventAt?.toISOString() ?? null,
+    nextAction: nextConnectorAction(row),
+    ...(setup
+      ? { setupApiKey: setup.apiKey, setupEndpoint: setup.endpoint }
+      : {}),
+  };
+}
+
+function modeForPlatform(platform: string): ConnectorMode {
+  return platform === "kubernetes-otel" ? "runtime" : "universal";
+}
+
+const CAPABILITY_ALIASES: Record<string, string> = {
+  "zendesk-ai": "zendesk",
+  "salesforce-agentforce": "agentforce",
+  "openai-assistants": "openai-agents",
+  "github-copilot": "openai-agents",
+};
+
 router.get("/connectors", requireAuth, requireOrg, async (req, res) => {
-  const rows = await db.select().from(connectors).where(ofOrg(connectors, req.orgId!));
+  const rows = await db
+    .select()
+    .from(connectors)
+    .where(ofOrg(connectors, req.orgId!));
 
   const existingPlatforms = new Set(rows.map((r) => r.platform));
   const catalogExtras = PLATFORM_CATALOG.filter(
@@ -63,191 +129,413 @@ router.get("/connectors", requireAuth, requireOrg, async (req, res) => {
     platform: p.platform,
     name: p.name,
     status: "available" as const,
+    mode: "universal" as const,
+    health: "unverified" as const,
     agentsDiscovered: 0,
     category: p.category,
     lastSyncAt: null,
+    lastTestedAt: null,
+    lastEventAt: null,
+    nextAction: "Configurar uma integração real antes de coletar dados.",
   }));
 
   const data = ListConnectorsResponse.parse([
-    ...rows.map((r) => ({
-      id: r.id,
-      platform: r.platform,
-      name: r.name,
-      status: r.status,
-      agentsDiscovered: r.agentsDiscovered,
-      category: r.category,
-      lastSyncAt: r.lastSyncAt ? r.lastSyncAt.toISOString() : null,
-    })),
+    ...rows.map((row) => serializeConnector(row)),
     ...catalogExtras,
   ]);
 
   res.json(data);
 });
 
-router.post("/connectors", requireAuth, requireOrg, async (req, res) => {
-  const body = ConnectPlatformBody.parse(req.body);
+router.post(
+  "/connectors",
+  requireAuth,
+  requireOrg,
+  requireOrgAdmin,
+  async (req, res) => {
+    const body = ConnectPlatformBody.parse(req.body);
+    const capabilityKey = CAPABILITY_ALIASES[body.platform] ?? body.platform;
+    const capability = connectorCapabilities().find(
+      (entry) => entry.platform === capabilityKey,
+    );
+    if (!capability || capability.mode === "planned") {
+      res.status(422).json({
+        error: "Esta plataforma ainda não possui um caminho operacional de integração.",
+      });
+      return;
+    }
+    if (body.platform === "github") {
+      res.status(422).json({
+        error: "GitHub usa adapter nativo. Configure a credencial no fluxo GitHub.",
+      });
+      return;
+    }
+    if (!capability.capabilities.collectTelemetry && !capability.capabilities.collectMetrics) {
+      res.status(422).json({
+        error: "Esta plataforma ainda não pode enviar telemetria ou métricas ao Muster.",
+      });
+      return;
+    }
 
-  const catalog = PLATFORM_CATALOG.find((p) => p.platform === body.platform);
+    const [existing] = await db
+      .select()
+      .from(connectors)
+      .where(
+        and(
+          eq(connectors.platform, body.platform),
+          ofOrg(connectors, req.orgId!),
+        ),
+      );
 
-  const [existing] = await db
-    .select()
-    .from(connectors)
-    .where(and(eq(connectors.platform, body.platform), ofOrg(connectors, req.orgId!)));
+    const generated = generateConnectorApiKey();
+    const configured = await db.transaction(async (transaction) => {
+      let row: ConnectorRow;
+      if (existing) {
+        const [updated] = await transaction
+          .update(connectors)
+          .set({
+            name: body.name?.trim() || existing.name,
+            status: "configured",
+            mode: modeForPlatform(body.platform),
+            health: "unverified",
+            category: capability.mode === "live" ? "Ingestão operacional" : "Contrato universal",
+            lastTestedAt: null,
+            lastEventAt: null,
+          })
+          .where(
+            and(eq(connectors.id, existing.id), ofOrg(connectors, req.orgId!)),
+          )
+          .returning();
+        row = updated!;
+        await transaction
+          .update(connectorApiKeys)
+          .set({ revokedAt: new Date() })
+          .where(eq(connectorApiKeys.connectorId, existing.id));
+      } else {
+        const [created] = await transaction
+          .insert(connectors)
+          .values({
+            orgId: req.orgId!,
+            platform: body.platform,
+            name: body.name?.trim() || capability.label,
+            category: capability.mode === "live" ? "Ingestão operacional" : "Contrato universal",
+            status: "configured",
+            mode: modeForPlatform(body.platform),
+            health: "unverified",
+          })
+          .returning();
+        row = created!;
+      }
 
-  if (existing) {
-    const [updated] = await db
-      .update(connectors)
-      .set({ status: "connected", lastSyncAt: new Date() })
-      .where(and(eq(connectors.id, existing.id), ofOrg(connectors, req.orgId!)))
-      .returning();
-    res.status(201).json({
-      id: updated!.id,
-      platform: updated!.platform,
-      name: updated!.name,
-      status: updated!.status,
-      agentsDiscovered: updated!.agentsDiscovered,
-      category: updated!.category,
-      lastSyncAt: updated!.lastSyncAt ? updated!.lastSyncAt.toISOString() : null,
+      await transaction.insert(connectorApiKeys).values({
+        orgId: req.orgId!,
+        connectorId: row.id,
+        label: "Ingestão principal",
+        prefix: generated.prefix,
+        keyHash: generated.keyHash,
+        createdBy: req.userId ?? null,
+      });
+      return row;
     });
-    return;
-  }
 
-  const [created] = await db
-    .insert(connectors)
-    .values({
-      orgId: req.orgId!,
-      platform: body.platform,
-      name: body.name ?? catalog?.name ?? body.platform,
-      category: catalog?.category ?? "Plataforma de Agentes",
-      status: "connected",
-      agentsDiscovered: catalog?.discovered.length ?? 0,
-      lastSyncAt: new Date(),
-    })
-    .returning();
-
-  res.status(201).json({
-    id: created!.id,
-    platform: created!.platform,
-    name: created!.name,
-    status: created!.status,
-    agentsDiscovered: created!.agentsDiscovered,
-    category: created!.category,
-    lastSyncAt: created!.lastSyncAt ? created!.lastSyncAt.toISOString() : null,
-  });
-});
+    res.status(201).json(
+      serializeConnector(configured, {
+        apiKey: generated.plaintext,
+        endpoint: "/api/integrations/agent-events",
+      }),
+    );
+  },
+);
 
 // ── R3: real connector registration ─────────────────────────────────────────
 
-async function loadCredential(connectorId: string): Promise<{ token: string | null }> {
+async function loadCredential(
+  connectorId: string,
+  onLegacyMigrated?: () => void,
+): Promise<{ token: string | null }> {
   const [row] = await db
     .select()
     .from(connectorCredentials)
     .where(eq(connectorCredentials.connectorId, connectorId))
     .limit(1);
-  return { token: row?.credential ?? null };
+  if (!row) return { token: null };
+
+  const token = await materializeConnectorCredentialForAdapter({
+    storedCredential: row.credential,
+    connectorId,
+    migrateLegacy: row.credential
+      ? async (encryptedCredential) => {
+          const updated = await db
+            .update(connectorCredentials)
+            .set({
+              credential: encryptedCredential,
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(connectorCredentials.id, row.id),
+                eq(connectorCredentials.credential, row.credential!),
+              ),
+            )
+            .returning({ id: connectorCredentials.id });
+          if (updated.length === 1) onLegacyMigrated?.();
+          return updated.length === 1;
+        }
+      : undefined,
+  });
+  return { token };
 }
 
-router.post("/connectors/register", requireAuth, requireOrg, async (req, res) => {
-  const body = RegisterConnectorBody.parse(req.body);
+function sendCredentialError(res: Response, error: unknown): boolean {
+  if (!(error instanceof ConnectorCredentialError)) return false;
+  const status =
+    error.code === "connector_legacy_credential_blocked" ||
+    error.code === "connector_credential_corrupted"
+      ? 409
+      : 503;
+  res.status(status).json({ error: error.message, code: error.code });
+  return true;
+}
 
-  const impl = getConnectorImpl(body.platform);
-  if (!impl) {
-    res.status(422).json({
-      error: `Plataforma "${body.platform}" ainda não tem conector real. Disponível: github.`,
+router.post(
+  "/connectors/:connectorId/pre-assess",
+  requireAuth,
+  requireOrg,
+  requireOrgAdmin,
+  async (req, res) => {
+    const { connectorId } = DiscoverAgentsParams.parse(req.params);
+    const body = PreAssessAgentSourceBody.parse(req.body);
+    const [connector] = await db
+      .select()
+      .from(connectors)
+      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)))
+      .limit(1);
+    if (!connector) {
+      res.status(404).json({ error: "Conector não encontrado." });
+      return;
+    }
+
+    try {
+      const credential = await loadCredential(connector.id);
+      const fetched = await fetchAgentSourceFromUrl(body.url, {
+        githubToken: connector.platform === "github" ? credential.token : null,
+      });
+      const result = preAssess(fetched.content, body.nameHint);
+      res.json(PreAssessAgentSourceResponse.parse(result));
+    } catch (error) {
+      if (sendCredentialError(res, error)) return;
+      if (error instanceof FetchSourceError) {
+        res.status(error.status).json({ error: error.message });
+        return;
+      }
+      req.log.error(
+        redactConnectorMetadata({ err: error, connectorId, platform: connector.platform }),
+        "Connector pre-assessment failed",
+      );
+      res.status(502).json({ error: "Não foi possível pré-avaliar o repositório." });
+    }
+  },
+);
+
+router.post(
+  "/connectors/register",
+  requireAuth,
+  requireOrg,
+  requireOrgAdmin,
+  async (req, res) => {
+    const body = RegisterConnectorBody.parse(req.body);
+
+    const impl = getConnectorImpl(body.platform);
+    if (!impl) {
+      res.status(422).json({
+        error: `Plataforma "${body.platform}" ainda não tem conector real. Disponível: github.`,
+      });
+      return;
+    }
+
+    const token = body.token?.trim() || null;
+    let encryptionKey: Buffer | null = null;
+    if (token) {
+      try {
+        encryptionKey = connectorCredentialEncryptionKey();
+      } catch (error) {
+        if (sendCredentialError(res, error)) return;
+        throw error;
+      }
+    }
+
+    const test = await impl.testConnection({ token });
+    const connector = await db.transaction(async (transaction) => {
+      const [created] = await transaction
+        .insert(connectors)
+        .values({
+          orgId: req.orgId!,
+          platform: body.platform,
+          name: body.name,
+          status: test.ok ? "connected" : "error",
+          mode: "native",
+          health: test.ok ? "healthy" : "error",
+          category: "Adapter nativo",
+          agentsDiscovered: 0,
+          lastTestedAt: new Date(),
+        })
+        .returning();
+
+      await transaction.insert(connectorCredentials).values({
+        connectorId: created!.id,
+        authMethod: token ? "token" : "env",
+        credential:
+          token && encryptionKey
+            ? encryptConnectorCredential(token, created!.id, encryptionKey)
+            : null,
+      });
+      return created!;
     });
-    return;
-  }
 
-  const test = await impl.testConnection({ token: body.token ?? null });
-
-  const [connector] = await db
-    .insert(connectors)
-    .values({
-      orgId: req.orgId!,
-      platform: body.platform,
-      name: body.name,
-      status: test.ok ? "connected" : "available",
-      category: "Conector real",
-      agentsDiscovered: 0,
-      lastSyncAt: test.ok ? new Date() : null,
-    })
-    .returning();
-
-  if (body.token && body.token.trim()) {
-    await db.insert(connectorCredentials).values({
-      connectorId: connector!.id,
-      authMethod: "token",
-      credential: body.token.trim(),
+    res.status(201).json({
+      connector: serializeConnector(connector),
+      test,
     });
-  } else {
-    await db.insert(connectorCredentials).values({
-      connectorId: connector!.id,
-      authMethod: "env",
-      credential: null,
-    });
-  }
+  },
+);
 
-  res.status(201).json({
-    connector: {
-      id: connector!.id,
-      platform: connector!.platform,
-      name: connector!.name,
-      status: connector!.status,
-      agentsDiscovered: connector!.agentsDiscovered,
-      category: connector!.category,
-      lastSyncAt: connector!.lastSyncAt?.toISOString() ?? null,
-    },
-    test,
-  });
-});
-
-router.post("/connectors/:connectorId/test", requireAuth, requireOrg, async (req, res) => {
-  const connectorId = req.params.connectorId as string;
-  const [connector] = await db
-    .select()
-    .from(connectors)
-    .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)))
-    .limit(1);
-  if (!connector) {
-    res.status(404).json({ error: "Conector não encontrado." });
-    return;
-  }
-  const impl = getConnectorImpl(connector.platform);
-  if (!impl) {
-    res.json(TestConnectorResponse.parse({
-      ok: false,
-      message: "Conector de demonstração — sem credencial para testar.",
-    }));
-    return;
-  }
-  const cred = await loadCredential(connectorId);
-  const result = await impl.testConnection(cred);
-  res.json(TestConnectorResponse.parse(result));
-});
+router.post(
+  "/connectors/:connectorId/test",
+  requireAuth,
+  requireOrg,
+  requireOrgAdmin,
+  async (req, res) => {
+    const connectorId = req.params.connectorId as string;
+    const [connector] = await db
+      .select()
+      .from(connectors)
+      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)))
+      .limit(1);
+    if (!connector) {
+      res.status(404).json({ error: "Conector não encontrado." });
+      return;
+    }
+    const impl = getConnectorImpl(connector.platform);
+    if (!impl) {
+      const testedAt = new Date();
+      const [activeKey] = await db
+        .select({ id: connectorApiKeys.id })
+        .from(connectorApiKeys)
+        .where(
+          and(
+            eq(connectorApiKeys.connectorId, connectorId),
+            isNull(connectorApiKeys.revokedAt),
+          ),
+        )
+        .limit(1);
+      if (!activeKey) {
+        await db
+          .update(connectors)
+          .set({ lastTestedAt: testedAt, status: "error", health: "error" })
+          .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)));
+        res.json(
+          TestConnectorResponse.parse({
+            ok: false,
+            message: "A configuração não possui chave de ingestão ativa. Gere uma nova chave para continuar.",
+          }),
+        );
+        return;
+      }
+      const hasEvents = connector.lastEventAt !== null;
+      await db
+        .update(connectors)
+        .set({
+          lastTestedAt: testedAt,
+          status: hasEvents ? "connected" : "configured",
+          health: hasEvents ? "healthy" : "unverified",
+        })
+        .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)));
+      res.json(
+        TestConnectorResponse.parse({
+          ok: true,
+          message: hasEvents
+            ? "Credencial de ingestão válida e eventos reais recebidos pelo Muster."
+            : "Endpoint e credencial preparados. Aguardando o primeiro evento real para confirmar a conexão.",
+        }),
+      );
+      return;
+    }
+    let cred: Awaited<ReturnType<typeof loadCredential>>;
+    try {
+      cred = await loadCredential(connectorId, () => {
+        req.log.info(
+          redactConnectorMetadata({
+            connectorId,
+            platform: connector.platform,
+          }),
+          "Legacy connector credential migrated",
+        );
+      });
+    } catch (error) {
+      if (sendCredentialError(res, error)) return;
+      throw error;
+    }
+    const result = await impl.testConnection(cred);
+    await db
+      .update(connectors)
+      .set({
+        status: result.ok ? "connected" : "error",
+        health: result.ok ? "healthy" : "error",
+        lastTestedAt: new Date(),
+      })
+      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)));
+    res.json(TestConnectorResponse.parse(result));
+  },
+);
 
 router.post(
   "/connectors/:connectorId/discover",
-  requireAuth, requireOrg,
+  requireAuth,
+  requireOrg,
+  requireOrgAdmin,
   async (req, res) => {
     const { connectorId } = DiscoverAgentsParams.parse(req.params);
 
     const [connector] = await db
       .select()
       .from(connectors)
-      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)));
+      .where(
+        and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)),
+      );
 
-    const platformKey = connector
-      ? connector.platform
-      : connectorId.replace(/^catalog_/, "");
+    if (!connector) {
+      res.status(404).json({ error: "Conector não encontrado." });
+      return;
+    }
+    const platformKey = connector.platform;
 
     // Real implementation first: live discovery on the platform.
-    const impl = connector ? getConnectorImpl(platformKey) : undefined;
-    if (connector && impl) {
-      const cred = await loadCredential(connector.id);
+    const impl = getConnectorImpl(platformKey);
+    if (impl) {
+      let cred: Awaited<ReturnType<typeof loadCredential>>;
+      try {
+        cred = await loadCredential(connector.id, () => {
+          req.log.info(
+            redactConnectorMetadata({
+              connectorId: connector.id,
+              platform: connector.platform,
+            }),
+            "Legacy connector credential migrated",
+          );
+        });
+      } catch (error) {
+        if (sendCredentialError(res, error)) return;
+        throw error;
+      }
       const candidates = await impl.discoverAgents(cred);
 
       const importedExternalIds = new Set(
-        (await db.select({ externalId: agents.externalId }).from(agents).where(ofOrg(agents, req.orgId!)))
+        (
+          await db
+            .select({ externalId: agents.externalId })
+            .from(agents)
+            .where(ofOrg(agents, req.orgId!))
+        )
           .map((r) => r.externalId)
           .filter((x): x is string => Boolean(x)),
       );
@@ -262,6 +550,7 @@ router.post(
           name: c.name,
           role: c.description || c.stack || "Agente descoberto",
           platform: platformKey,
+          sourceUrl: c.url,
           signals: c.signals,
           proposedMetrics,
           proposedVerdict: scored.verdict,
@@ -277,7 +566,9 @@ router.post(
           agentsDiscovered: discoveredAgents.length,
           lastSyncAt: new Date(),
         })
-        .where(and(eq(connectors.id, connector.id), ofOrg(connectors, req.orgId!)));
+        .where(
+          and(eq(connectors.id, connector.id), ofOrg(connectors, req.orgId!)),
+        );
 
       res.json(
         DiscoverAgentsResponse.parse({
@@ -291,67 +582,17 @@ router.post(
       );
       return;
     }
-
-    const catalog = PLATFORM_CATALOG.find((p) => p.platform === platformKey);
-    if (!catalog) {
-      res.status(404).json({ error: "Connector not found" });
-      return;
-    }
-
-    const importedExternalIds = new Set(
-      (
-        await db
-          .select({ externalId: agents.externalId })
-          .from(agents)
-          .where(ofOrg(agents, req.orgId!))
-      )
-        .map((r) => r.externalId)
-        .filter((x): x is string => Boolean(x)),
-    );
-
-    const discoveredAgents = catalog.discovered.map((d) => {
-      const proposedMetrics = buildProposedMetrics(d.externalId, d.signals);
-      const scored = scoreEvaluation(d.externalId, proposedMetrics);
-      return {
-        externalId: d.externalId,
-        name: d.name,
-        role: d.role,
-        platform: catalog.platform,
-        signals: d.signals,
-        proposedMetrics,
-        proposedVerdict: scored.verdict,
-        confidence: scored.verdictConfidence,
-        alreadyImported: importedExternalIds.has(d.externalId),
-      };
+    res.status(422).json({
+      error: "Este conector recebe telemetria, mas não implementa discovery nativo. Admita o agente com o mesmo externalId usado no envelope.",
     });
-
-    if (connector) {
-      await db
-        .update(connectors)
-        .set({
-          status: "connected",
-          agentsDiscovered: discoveredAgents.length,
-          lastSyncAt: new Date(),
-        })
-        .where(and(eq(connectors.id, connector.id), ofOrg(connectors, req.orgId!)));
-    }
-
-    const data = DiscoverAgentsResponse.parse({
-      connectorId,
-      platform: catalog.platform,
-      discoveredAt: new Date().toISOString(),
-      agentsFound: discoveredAgents.length,
-      agents: discoveredAgents,
-      coverageNote: `Mapeamos ${discoveredAgents.length} agente(s) na plataforma ${catalog.name}, com metas das 5 camadas propostas a partir dos sinais detectados.`,
-    });
-
-    res.json(data);
   },
 );
 
 router.post(
   "/connectors/:connectorId/import",
-  requireAuth, requireOrg,
+  requireAuth,
+  requireOrg,
+  requireOrgAdmin,
   async (req, res) => {
     const { connectorId } = ImportDiscoveredAgentsParams.parse(req.params);
     const body = ImportDiscoveredAgentsBody.parse(req.body);
@@ -359,29 +600,56 @@ router.post(
     const [connector] = await db
       .select()
       .from(connectors)
-      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)));
-    const platformKey = connector
-      ? connector.platform
-      : connectorId.replace(/^catalog_/, "");
+      .where(
+        and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)),
+      );
+    if (!connector) {
+      res.status(404).json({ error: "Conector não encontrado." });
+      return;
+    }
+    const platformKey = connector.platform;
     const catalog = PLATFORM_CATALOG.find((p) => p.platform === platformKey);
-    const impl = connector ? getConnectorImpl(platformKey) : undefined;
-    const realCandidates =
-      connector && impl
-        ? await impl.discoverAgents(await loadCredential(connector.id))
-        : [];
+    const impl = getConnectorImpl(platformKey);
+    if (!impl) {
+      res.status(422).json({
+        error: "Este conector não possui importação automática. Admita o agente e use o mesmo externalId do envelope de telemetria.",
+      });
+      return;
+    }
+    let realCandidates: Awaited<
+      ReturnType<NonNullable<typeof impl>["discoverAgents"]>
+    > = [];
+    if (connector) {
+      let credential: Awaited<ReturnType<typeof loadCredential>>;
+      try {
+        credential = await loadCredential(connector.id, () => {
+          req.log.info(
+            redactConnectorMetadata({
+              connectorId: connector.id,
+              platform: connector.platform,
+            }),
+            "Legacy connector credential migrated",
+          );
+        });
+      } catch (error) {
+        if (sendCredentialError(res, error)) return;
+        throw error;
+      }
+      realCandidates = await impl.discoverAgents(credential);
+    }
     const realCandidatesById = new Map(
       realCandidates.map((candidate) => [candidate.externalId, candidate]),
     );
 
-    if (!catalog && !impl) {
-      res.status(404).json({ error: "Connector not found" });
-      return;
-    }
-
     const existing = await db
       .select({ externalId: agents.externalId })
       .from(agents)
-      .where(and(inArray(agents.externalId, body.externalIds), ofOrg(agents, req.orgId!)));
+      .where(
+        and(
+          inArray(agents.externalId, body.externalIds),
+          ofOrg(agents, req.orgId!),
+        ),
+      );
     const alreadyImported = new Set(
       existing.map((r) => r.externalId).filter((x): x is string => Boolean(x)),
     );
@@ -408,12 +676,18 @@ router.post(
           // private or rate-limited between discovery and import. The fallback
           // still creates an observable agent and the user can pre-assess it later.
           if (!(err instanceof FetchSourceError)) {
-            req.log.warn({ err, externalId }, "Source enrichment failed during import");
+            req.log.warn(
+              redactConnectorMetadata({ err, externalId }),
+              "Source enrichment failed during import",
+            );
           }
         }
       }
       const proposed = discoveredDraft
-        ? proposedMetricsFromDraft(source.externalId, discoveredDraft.proposedMetrics)
+        ? proposedMetricsFromDraft(
+            source.externalId,
+            discoveredDraft.proposedMetrics,
+          )
         : source.isReal
           ? proposedMetricsFromDraft(source.externalId, [])
           : buildProposedMetrics(source.externalId, source.signals);
@@ -441,7 +715,8 @@ router.post(
             platform: platformKey,
             version: "1.0.0",
             status: "observation",
-            bio: discoveredDraft?.bio || `Importado via conector ${platformName}.`,
+            bio:
+              discoveredDraft?.bio || `Importado via conector ${platformName}.`,
             currentVerdict: "observation",
             verdictConfidence: scored.verdictConfidence,
             severity: scored.severity,
@@ -455,7 +730,8 @@ router.post(
 
         await tx.insert(agentIdentities).values({
           agentId: inserted.id,
-          bio: discoveredDraft?.bio || `Importado via conector ${platformName}.`,
+          bio:
+            discoveredDraft?.bio || `Importado via conector ${platformName}.`,
           shouldDo: discoveredDraft?.shouldDo ?? [],
           shouldNotDo: discoveredDraft?.shouldNotDo ?? [],
           autonomyLevel: discoveredDraft?.autonomyLevel ?? "escalates",

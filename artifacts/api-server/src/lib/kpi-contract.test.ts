@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { METRIC_CATALOG } from "./metric-catalog";
+import { METRIC_CATALOG, METRIC_STARTER_KITS } from "./metric-catalog";
 import { KPI_DOMAIN_CATALOG, KPI_DOMAIN_VERTICALS } from "./kpi-domain-catalog";
 import {
   evaluateKpi,
@@ -13,7 +13,7 @@ const sampleContract: KpiContract = KPI_DOMAIN_CATALOG[0]!;
 
 describe("KPI contract", () => {
   it("validates the domain catalog entries", () => {
-    expect(KPI_DOMAIN_CATALOG).toHaveLength(20);
+    expect(KPI_DOMAIN_CATALOG).toHaveLength(38);
     for (const contract of KPI_DOMAIN_CATALOG) {
       expect(validateKpiContract(contract)).toMatchObject({ success: true, issues: [] });
       expect(parseKpiContract(contract)).toEqual(contract);
@@ -64,12 +64,14 @@ describe("KPI contract", () => {
 });
 
 describe("domain KPI catalog", () => {
-  it("exposes the four first-slice domains and seeds the legacy catalog", () => {
+  it("exposes the six scenario domains and seeds the legacy catalog", () => {
     expect(KPI_DOMAIN_VERTICALS.map((vertical) => vertical.key)).toEqual([
       "atendimento",
       "vendas-crm",
       "engenharia-it",
       "risco-financas-rh",
+      "operacoes-backoffice",
+      "workforce-hibrida",
     ]);
     for (const vertical of KPI_DOMAIN_VERTICALS) {
       expect(vertical.metrics.length).toBeGreaterThanOrEqual(5);
@@ -83,13 +85,62 @@ describe("domain KPI catalog", () => {
       "escaped_defect_rate",
       "exposicao_dado_sensivel",
       "employee_experience",
+      "fallback_success_rate",
+      "a2a_context_integrity",
+      "trace_completeness",
     ]);
     expect(metrics.map((metric) => metric.sourceSignal)).toEqual([
       "speed_to_lead",
       "escaped_defect_rate",
       "exposicao_dado_sensivel",
       "employee_experience",
+      "fallback_success_rate",
+      "a2a_context_integrity",
+      "trace_completeness",
     ]);
   });
-});
 
+  it("provides six scenario kits plus an instrumentation baseline", () => {
+    expect(METRIC_STARTER_KITS.map((kit) => kit.scenario)).toEqual([
+      "Instrumentação inicial",
+      "Suporte",
+      "Vendas",
+      "Engenharia",
+      "Risco",
+      "Operações e backoffice",
+      "Workforce híbrida",
+    ]);
+    const contractKeys = new Set(KPI_DOMAIN_CATALOG.map((contract) => contract.key));
+    for (const kit of METRIC_STARTER_KITS) {
+      expect(kit.requiredSignals.length).toBeGreaterThan(0);
+      expect(kit.metricKeys.every((key) => contractKeys.has(key))).toBe(true);
+    }
+  });
+
+  it("covers the operational gaps without duplicate contract keys", () => {
+    expect(new Set(KPI_DOMAIN_CATALOG.map((contract) => contract.key)).size).toBe(
+      KPI_DOMAIN_CATALOG.length,
+    );
+    expect(new Set(KPI_DOMAIN_CATALOG.map((contract) => contract.capability))).toEqual(
+      new Set([
+        "business-outcome",
+        "quality-evaluation",
+        "a2a-orchestration",
+        "human-agent-collaboration",
+        "discovery-observability",
+        "runtime-resilience",
+        "data-quality",
+      ]),
+    );
+  });
+
+  it("requires coherent freshness and confidence policies", () => {
+    expect(
+      validateKpiContract({
+        ...sampleContract,
+        freshness: { expectedWithinMinutes: 60, staleAfterMinutes: 30, expiresAfterMinutes: 90 },
+        confidence: { minimum: 95, decisionGrade: 80 },
+      }).issues.map((issue) => issue.path),
+    ).toEqual(expect.arrayContaining(["freshness", "confidence"]));
+  });
+});

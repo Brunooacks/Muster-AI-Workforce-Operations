@@ -16,6 +16,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireMusterSessionToken } from "./muster-session";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCENARIO_DIR = resolve(HERE, "..", "scenarios");
@@ -67,6 +68,7 @@ function arg(nome: string): string | undefined {
 }
 
 const baseUrl = (arg("base-url") ?? process.env.MUSTER_BASE_URL ?? "http://localhost:8087").replace(/\/+$/, "");
+const sessionToken = requireMusterSessionToken();
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -89,7 +91,11 @@ const faixa = (lo: number, hi: number) => lo + rng() * (hi - lo);
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${baseUrl}/api${path}`, {
     ...init,
-    headers: { ...(init?.body ? { "content-type": "application/json" } : {}), ...init?.headers },
+    headers: {
+      ...(init?.body ? { "content-type": "application/json" } : {}),
+      authorization: `Bearer ${sessionToken}`,
+      ...init?.headers,
+    },
   });
   const texto = await res.text();
   if (!res.ok) throw new Error(`${init?.method ?? "GET"} ${path} → ${res.status}: ${texto.slice(0, 400)}`);

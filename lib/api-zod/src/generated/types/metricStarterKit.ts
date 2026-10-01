@@ -5,13 +5,17 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { MetricStarterKitAdoptionStage } from './metricStarterKitAdoptionStage';
 import type { MetricStarterKitMetric } from './metricStarterKitMetric';
 
 export interface MetricStarterKit {
   key: string;
   label: string;
+  scenario?: string;
+  adoptionStage?: MetricStarterKitAdoptionStage;
   objective: string;
   guidance: string;
   vertical: string;
+  requiredSignals?: string[];
   metrics: MetricStarterKitMetric[];
 }

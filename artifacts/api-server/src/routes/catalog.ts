@@ -3,14 +3,20 @@ import { and, eq } from "drizzle-orm";
 import { db, catalogMetrics } from "@workspace/db";
 import {
   ListCatalogMetricsResponse,
+  ListMetricStarterKitsResponse,
   CreateCatalogMetricBody,
   UpdateCatalogMetricBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireOrgAdmin } from "../middlewares/orgRole";
 import { ofOrg } from "../lib/tenant-scope";
 import { instrumentacaoPara } from "../lib/metric-instrumentation";
-import { METRIC_CATALOG, METRIC_STARTER_KITS } from "../lib/metric-catalog";
+import {
+  METRIC_CATALOG,
+  METRIC_STARTER_KITS,
+  kpiContractByMetricKey,
+} from "../lib/metric-catalog";
 
 const router: IRouter = Router();
 
@@ -100,20 +106,44 @@ router.get("/catalog/metrics", requireAuth, requireOrg, async (req, res) => {
 router.get("/catalog/metric-kits", requireAuth, requireOrg, async (req, res) => {
   const rows = await db.select().from(catalogMetrics).where(ofOrg(catalogMetrics, req.orgId!));
   const byKey = new Map(rows.map((row) => [row.key, row]));
-  res.json(METRIC_STARTER_KITS.map((kit) => ({
+  const data = METRIC_STARTER_KITS.map((kit) => ({
     key: kit.key,
     label: kit.label,
+    scenario: kit.scenario,
+    adoptionStage: kit.adoptionStage,
     objective: kit.objective,
     guidance: kit.guidance,
     vertical: kit.vertical,
+    requiredSignals: kit.requiredSignals,
     metrics: kit.metricKeys.flatMap((key) => {
       const metric = byKey.get(key);
-      return metric ? [{ key: metric.key, label: metric.label, layer: metric.layer, unit: metric.unit, target: metric.target }] : [];
+      const contract = kpiContractByMetricKey(key);
+      return metric ? [{
+        key: metric.key,
+        label: metric.label,
+        layer: metric.layer,
+        unit: metric.unit,
+        target: metric.target,
+        operationalMetadata: contract ? {
+          capability: contract.capability,
+          cadence: contract.cadence,
+          freshness: contract.freshness,
+          sourceSignals: contract.sourceSignals,
+          minSampleSize: contract.minSampleSize,
+          confidence: contract.confidence,
+          baseline: contract.baseline,
+          direction: contract.direction,
+          owner: contract.owner,
+          decisionImpact: contract.decisionImpact,
+          guardrail: contract.guardrail,
+        } : undefined,
+      }] : [];
     }),
-  })));
+  }));
+  res.json(ListMetricStarterKitsResponse.parse(data));
 });
 
-router.post("/catalog/metrics", requireAuth, requireOrg, async (req, res) => {
+router.post("/catalog/metrics", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const body = CreateCatalogMetricBody.parse(req.body);
 
   // Derive a unique key from the label; suffix on collision.
@@ -158,7 +188,7 @@ router.post("/catalog/metrics", requireAuth, requireOrg, async (req, res) => {
   });
 });
 
-router.patch("/catalog/metrics/:metricKey", requireAuth, requireOrg, async (req, res) => {
+router.patch("/catalog/metrics/:metricKey", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const body = UpdateCatalogMetricBody.parse(req.body);
   const metricKey = req.params.metricKey as string;
 
@@ -204,7 +234,7 @@ router.patch("/catalog/metrics/:metricKey", requireAuth, requireOrg, async (req,
   });
 });
 
-router.delete("/catalog/metrics/:metricKey", requireAuth, requireOrg, async (req, res) => {
+router.delete("/catalog/metrics/:metricKey", requireAuth, requireOrg, requireOrgAdmin, async (req, res) => {
   const metricKey = req.params.metricKey as string;
   const [existing] = await db
     .select()
