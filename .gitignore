@@ -59,10 +59,3 @@ Thumbs.db
 # Artefatos de verificação do gauntlet (screenshots, logs)
 output/
 artifacts/cohort/playwright/.clerk/
-
-# Projeto do editor de vídeo (local, não é fonte)
-*.wfp
-videos/**/.thumbnails/
-videos/**/renders/
-videos/**/snapshots/
-videos/**/snapshots-*/
