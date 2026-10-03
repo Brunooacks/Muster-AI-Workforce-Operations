@@ -2391,6 +2391,9 @@ components:
         narrativeSource:
           type: string
           enum: [deterministic, ai-assisted]
+        aiInsight:
+          type: string
+          enum: [available, unavailable]
         narrativeModel:
           type: [string, "null"]
         promptVersion:
@@ -3660,6 +3663,9 @@ components:
           type: string
         confidence:
           type: number
+        aiInsight:
+          type: string
+          enum: [available, unavailable]
 
     StartDiscoveryRunInput:
       type: object

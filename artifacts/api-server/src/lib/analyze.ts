@@ -1,6 +1,7 @@
-import { openai } from "@workspace/integrations-openai-ai-server";
 import type { LayerKey, AutonomyLevel } from "@workspace/db";
 import { DEFAULT_LAYER_METRIC } from "./discovery";
+import { preAssess } from "./pre-assessment";
+import { withAiBudget, type AiInsightAvailability } from "./ai-budget";
 
 // Max accepted size for pasted/uploaded source so a single analysis request
 // stays well within model + request limits. Kept in sync with the frontend.
@@ -150,10 +151,11 @@ function ensureLayerCoverage(metrics: DraftMetric[]): DraftMetric[] {
 }
 
 export async function analyzeAgentSource(input: {
+  orgId: string;
   content: string;
   platform?: string;
   nameHint?: string;
-}): Promise<AgentDraft> {
+}): Promise<AgentDraft & { aiInsight: AiInsightAvailability }> {
   const userParts: string[] = [];
   if (input.nameHint) userParts.push(`Nome sugerido: ${input.nameHint}`);
   if (input.platform) userParts.push(`Plataforma base: ${input.platform}`);
@@ -161,30 +163,34 @@ export async function analyzeAgentSource(input: {
     "Código e/ou definições de skills do agente a analisar:\n\n" + input.content,
   );
 
-  // Model is env-configurable so self-hosted setups can point the OpenAI
-  // client at any OpenAI-compatible endpoint (e.g. Anthropic's compat API
-  // with a claude-* model, or an internal gateway).
-  const model = process.env.AI_INTEGRATIONS_OPENAI_MODEL ?? "gpt-5.4";
-
-  let completion;
-  try {
-    completion = await openai.chat.completions.create({
-      model,
-      max_completion_tokens: 8192,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userParts.join("\n\n") },
-      ],
-    });
-  } catch (err) {
-    const status = (err as { status?: number; code?: string }).status;
-    const code = (err as { status?: number; code?: string }).code;
-    if (status === 429 || code === "insufficient_quota" || code === "rate_limit_exceeded") {
-      throw new RateLimitError();
+  const model = process.env.AI_INTEGRATIONS_OPENAI_MODEL;
+  const budget = await withAiBudget(input.orgId, "agent-analysis", async (limits) => {
+    const { openai } = await import("@workspace/integrations-openai-ai-server");
+    if (!model) throw new Error("Modelo de IA não configurado.");
+    try {
+      return await openai.chat.completions.create({
+        model,
+        max_completion_tokens: limits.maxOutputTokens,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userParts.join("\n\n") },
+        ],
+      });
+    } catch (err) {
+      const status = (err as { status?: number; code?: string }).status;
+      const code = (err as { status?: number; code?: string }).code;
+      if (status === 429 || code === "insufficient_quota" || code === "rate_limit_exceeded") {
+        throw new RateLimitError();
+      }
+      throw err;
     }
-    throw err;
+  });
+  if (!budget.value) {
+    return { ...preAssess(input.content, input.nameHint).draft, aiInsight: "unavailable" };
   }
+
+  const completion = budget.value;
 
   const text = completion.choices[0]?.message?.content ?? "";
   if (!text.trim()) {
@@ -232,5 +238,6 @@ export async function analyzeAgentSource(input: {
     proposedMetrics: ensureLayerCoverage(normalizeMetrics(parsed.proposedMetrics)),
     summary: typeof parsed.summary === "string" ? parsed.summary.trim() : "",
     confidence: clampConfidence(parsed.confidence),
+    aiInsight: budget.aiInsight,
   };
 }
