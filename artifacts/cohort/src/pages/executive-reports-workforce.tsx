@@ -128,7 +128,7 @@ export function ExecutiveReportsScreen() {
       { data: { period: selectedPeriod, narrativeMode, templateId } },
       {
         onSuccess: (created) => {
-          setGenerationMessage(created.narrativeSource === "ai-assisted" ? "Snapshot criado com narrativa assistida por IA." : narrativeMode === "ai-assisted" ? "Snapshot criado; a IA estava indisponível e o texto determinístico foi preservado." : "Snapshot mensal criado com fatos determinísticos.");
+          setGenerationMessage(created.narrativeSource === "ai-assisted" ? "Snapshot criado com narrativa assistida por IA." : created.aiInsight === "unavailable" ? "Sem insight de IA; o texto determinístico foi preservado." : "Snapshot mensal criado com fatos determinísticos.");
           queryClient.setQueryData(getGetExecutiveReportQueryKey(created.period), created);
           queryClient.invalidateQueries({ queryKey: getListExecutiveReportsQueryKey() });
         },

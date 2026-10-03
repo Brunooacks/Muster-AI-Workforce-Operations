@@ -1244,7 +1244,17 @@ export default function AdmissionPage({ embedded = false }: { embedded?: boolean
           nameHint: data.name || undefined,
         },
       },
-      { onSuccess: applyDraft },
+      {
+        onSuccess: (draft) => {
+          applyDraft(draft);
+          if (draft.aiInsight === "unavailable") {
+            toast({
+              title: "Sem insight de IA",
+              description: "O rascunho determinístico foi aplicado para você revisar.",
+            });
+          }
+        },
+      },
     );
   }
 

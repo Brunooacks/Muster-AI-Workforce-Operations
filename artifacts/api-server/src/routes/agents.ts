@@ -213,6 +213,7 @@ router.post("/discovery/analyze", requireAuth, requireOrg, async (req, res) => {
 
   try {
     const draft = await analyzeAgentSource({
+      orgId: req.orgId!,
       content: body.content,
       platform: body.platform,
       nameHint: body.nameHint,

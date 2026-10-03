@@ -338,6 +338,14 @@ export const ExecutiveReportNarrativeSource = {
   'ai-assisted': 'ai-assisted',
 } as const;
 
+export type ExecutiveReportAiInsight = typeof ExecutiveReportAiInsight[keyof typeof ExecutiveReportAiInsight];
+
+
+export const ExecutiveReportAiInsight = {
+  available: 'available',
+  unavailable: 'unavailable',
+} as const;
+
 export interface ExecutiveReport {
   id: string;
   period: string;
@@ -350,6 +358,7 @@ export interface ExecutiveReport {
   /** @nullable */
   sourceWatermark?: string | null;
   narrativeSource: ExecutiveReportNarrativeSource;
+  aiInsight?: ExecutiveReportAiInsight;
   /** @nullable */
   narrativeModel?: string | null;
   /** @nullable */
@@ -1239,6 +1248,14 @@ export const AgentDraftAutonomyLevel = {
   restricted: 'restricted',
 } as const;
 
+export type AgentDraftAiInsight = typeof AgentDraftAiInsight[keyof typeof AgentDraftAiInsight];
+
+
+export const AgentDraftAiInsight = {
+  available: 'available',
+  unavailable: 'unavailable',
+} as const;
+
 export interface AgentDraft {
   name: string;
   role: string;
@@ -1253,6 +1270,7 @@ export interface AgentDraft {
   proposedMetrics: DraftMetric[];
   summary: string;
   confidence: number;
+  aiInsight?: AgentDraftAiInsight;
 }
 
 export interface StartDiscoveryRunInput {

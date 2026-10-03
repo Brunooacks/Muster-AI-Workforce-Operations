@@ -368,6 +368,7 @@ export const GetExecutiveReportResponse = zod.object({
   "generatedAt": zod.coerce.date(),
   "sourceWatermark": zod.coerce.date().nullish(),
   "narrativeSource": zod.enum(['deterministic', 'ai-assisted']),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional(),
   "narrativeModel": zod.string().nullish(),
   "promptVersion": zod.string().nullish(),
   "templateId": zod.string().optional(),
@@ -1018,7 +1019,8 @@ export const AnalyzeAgentSourceResponse = zod.object({
   "rationale": zod.string().optional()
 })),
   "summary": zod.string(),
-  "confidence": zod.number()
+  "confidence": zod.number(),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional()
 })
 
 
@@ -2083,7 +2085,8 @@ export const PreAssessConnectorSourceResponse = zod.object({
   "rationale": zod.string().optional()
 })),
   "summary": zod.string(),
-  "confidence": zod.number()
+  "confidence": zod.number(),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional()
 }),
   "fieldConfidence": zod.record(zod.string(), zod.number()),
   "platform": zod.string().nullable(),
@@ -2312,7 +2315,8 @@ export const PreAssessAgentSourceResponse = zod.object({
   "rationale": zod.string().optional()
 })),
   "summary": zod.string(),
-  "confidence": zod.number()
+  "confidence": zod.number(),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional()
 }),
   "fieldConfidence": zod.record(zod.string(), zod.number()),
   "platform": zod.string().nullable(),
