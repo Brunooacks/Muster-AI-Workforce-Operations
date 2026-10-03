@@ -8,4 +8,6 @@
 
 export type IngestAgentEvent202 = {
   accepted: boolean;
+  /** True when this idempotency key was already accepted for this agent. */
+  duplicate?: boolean;
 };
