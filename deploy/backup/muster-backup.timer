@@ -1,0 +1,10 @@
+[Unit]
+Description=Agenda o backup diário do Muster às 03:30 UTC
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+Persistent=true
+Unit=muster-backup.service
+
+[Install]
+WantedBy=timers.target
