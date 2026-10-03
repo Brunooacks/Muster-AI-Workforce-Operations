@@ -52,7 +52,7 @@ Alternativamente, para inspecionar a chamada HTTP sem executar o modo interativo
 gh api --method PUT "repos/Brunooacks/Muster-AI-Workforce-Operations/branches/main/protection" --input <(scripts/branch-protection.sh --payload)
 ```
 
-O payload exige checks estritos (branch atualizada), PR obrigatório, resolução de conversas, sem push direto, force push ou deleção. `dismissal_restrictions` não é enviado, pois a API do GitHub o aceita somente em repositórios de organização e devolve 422 para este repositório de usuário.
+O payload exige checks estritos (branch atualizada), PR obrigatório, resolução de conversas, sem push direto, force push ou deleção. `dismissal_restrictions` e `bypass_pull_request_allowances` não são enviados, pois a API do GitHub os aceita somente em repositórios de organização e devolve 422 para este repositório de usuário. O `--check` continua tolerante ao campo de bypass caso uma resposta da API o inclua.
 
 ## Validação após aplicar
 
