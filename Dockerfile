@@ -45,6 +45,8 @@ FROM node:24-slim AS runner
 
 ARG GIT_SHA
 ENV NODE_ENV=production
+# The deployment workflow supplies the immutable source revision. Keep it in
+# the runtime image so health/version reporting can identify the release.
 ENV GIT_SHA=${GIT_SHA}
 # PORT is required by the server; override at run time as needed.
 ENV PORT=8080
