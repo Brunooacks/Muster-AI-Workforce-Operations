@@ -35,6 +35,12 @@ switch bloqueia inclusive o build e o push da imagem para o GHCR.
 3. Somente depois defina a variável do environment
    `MUSTER_DEPLOY_ENABLED=true`.
 
+O build da imagem é fail closed para cadastro: o workflow passa
+`VITE_MUSTER_INVITE_ONLY` (GitHub Variable; ausente ou diferente de `false`
+vira `true`) e `VITE_MUSTER_CONTACT_URL` (opcional) como build args. Para abrir
+cadastro público é preciso definir `VITE_MUSTER_INVITE_ONLY=false` de forma
+explícita. Detalhes em `docs/SEGREDOS.md`.
+
 A execução remota faz backup local do Postgres, mantém somente os sete dumps
 mais recentes, espera o healthcheck, exige que `/api/healthz` informe o SHA e
 roda o smoke local. Em qualquer falha após uma versão anterior conhecida, ela
