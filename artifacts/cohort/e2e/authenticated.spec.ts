@@ -60,7 +60,7 @@ test.describe("smoke autenticado", () => {
     });
   }
 
-  test("central de adoção usa rotas próprias, mídia real e não ocupa o menu operacional", async ({ page }) => {
+  test("central de adoção usa rotas próprias, guias visuais e não ocupa o menu operacional", async ({ page }) => {
     await page.goto("/guia");
     if (new URL(page.url()).pathname === "/onboarding") {
       await page.getByRole("button", { name: /pular configuração|skip setup|omitir configuración/i }).click();
@@ -72,10 +72,9 @@ test.describe("smoke autenticado", () => {
     await expect(page.getByTestId("adoption-onboarding-link")).toBeVisible();
     await expect(page.getByTestId("adoption-updates-link")).toBeVisible();
 
-    const video = page.locator("video");
-    await expect(video).toHaveAttribute("poster", "/onboarding/build.png");
-    await expect(video.locator("source")).toHaveAttribute("src", "/onboarding/build.mp4");
-    await expect.poll(() => video.evaluate((element) => (element as HTMLVideoElement).duration)).toBe(18);
+    await expect(page.getByRole("img", { name: "Guia visual: Construir o contrato profissional" })).toBeVisible();
+    await expect(page.getByAltText("Tela de referência para Construir o contrato profissional")).toHaveAttribute("src", "/onboarding/build.png");
+    await expect(page.getByRole("button", { name: "Marcar como concluído" })).toBeVisible();
 
     await page.getByRole("tab", { name: "Novidades do Muster", exact: true }).click();
     await expect(page).toHaveURL(/\/guia\/novidades$/);
