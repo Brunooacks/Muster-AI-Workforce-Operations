@@ -1893,8 +1893,16 @@ components:
       properties:
         status:
           type: string
+        version:
+          type: string
+          description: Version declared by the API server package.
+        sha:
+          type: string
+          description: Git SHA embedded in the production image build.
       required:
         - status
+        - version
+        - sha
 
     ContinuousTelemetryWorkerDiagnostics:
       type: object
