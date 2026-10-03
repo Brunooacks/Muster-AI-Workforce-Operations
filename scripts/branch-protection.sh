@@ -11,6 +11,7 @@ readonly DEFAULT_CHECKS="typecheck · test · build,actionlint"
 mode="print"
 checks_source="${REQUIRED_CHECKS:-$DEFAULT_CHECKS}"
 enforce_admins="${ENFORCE_ADMINS:-true}"
+required_approvals="${REQUIRED_APPROVALS:-0}"
 
 usage() {
   cat <<'EOF'
@@ -21,6 +22,7 @@ Gera a proteção de main para Brunooacks/Muster-AI-Workforce-Operations.
 Opções:
   --checks <lista>          Checks separados por vírgula (ou REQUIRED_CHECKS).
   --enforce-admins <bool>   true ou false (ou ENFORCE_ADMINS; padrão: true).
+  --required-approvals <n>  Aprovações exigidas (ou REQUIRED_APPROVALS; padrão: 0).
   --print                   Imprime o payload e o comando gh api (padrão).
   --payload                 Imprime somente o payload JSON.
   --check                   Faz somente GET e compara a proteção remota.
@@ -53,6 +55,11 @@ while (($# > 0)); do
       enforce_admins="$2"
       shift 2
       ;;
+    --required-approvals)
+      (($# >= 2)) || fail '--required-approvals exige um número inteiro não negativo.'
+      required_approvals="$2"
+      shift 2
+      ;;
     --print|--payload|--check|--apply)
       mode="${1#--}"
       shift
@@ -72,6 +79,8 @@ case "$enforce_admins" in
   *) fail 'ENFORCE_ADMINS/--enforce-admins deve ser true ou false.' ;;
 esac
 
+[[ "$required_approvals" =~ ^[0-9]+$ ]] || fail 'REQUIRED_APPROVALS/--required-approvals deve ser um número inteiro não negativo.'
+
 IFS=',' read -r -a raw_checks <<< "$checks_source"
 checks=()
 for raw_check in "${raw_checks[@]}"; do
@@ -83,15 +92,14 @@ done
 
 payload="$({
   node -e '
-    const [enforceAdmins, ...contexts] = process.argv.slice(1);
+    const [enforceAdmins, requiredApprovals, ...contexts] = process.argv.slice(1);
     const payload = {
       required_status_checks: { strict: true, contexts },
       enforce_admins: enforceAdmins === "true",
       required_pull_request_reviews: {
-        dismissal_restrictions: { users: [], teams: [], apps: [] },
         dismiss_stale_reviews: true,
         require_code_owner_reviews: false,
-        required_approving_review_count: 1,
+        required_approving_review_count: Number(requiredApprovals),
         require_last_push_approval: false,
         bypass_pull_request_allowances: { users: [], teams: [], apps: [] },
       },
@@ -105,7 +113,7 @@ payload="$({
       allow_fork_syncing: false,
     };
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
-  ' "$enforce_admins" "${checks[@]}"
+  ' "$enforce_admins" "$required_approvals" "${checks[@]}"
 } )"
 
 print_payload() {
@@ -134,7 +142,6 @@ compare_remote_protection() {
         },
         enforce_admins: enabled(value.enforce_admins),
         required_pull_request_reviews: reviews === null ? null : {
-          dismissal_restrictions: allowances(reviews?.dismissal_restrictions),
           dismiss_stale_reviews: reviews?.dismiss_stale_reviews === true,
           require_code_owner_reviews: reviews?.require_code_owner_reviews === true,
           required_approving_review_count: reviews?.required_approving_review_count ?? 0,

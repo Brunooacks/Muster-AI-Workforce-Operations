@@ -38,13 +38,21 @@ scripts/branch-protection.sh --apply
 
 Para aplicar a lista completa, use o mesmo argumento `--checks` do comando de revisão. O modo `--apply` recusa execução sem terminal interativo e não chama o GitHub se a confirmação não for exatamente `APLICAR`.
 
+O padrão é `REQUIRED_APPROVALS=0`: o PR continua obrigatório, mas não exige uma aprovação. Esse é o ajuste necessário enquanto o repositório pertence à conta `Brunooacks`, possui um único colaborador e os PRs são abertos pela própria conta do Bruno — o autor não pode aprovar o próprio PR. O trade-off é que a proteção bloqueia push direto e exige CI verde, mas não cria revisão por pares. Quando houver um colaborador que possa revisar, eleve o requisito, por exemplo:
+
+```bash
+REQUIRED_APPROVALS=1 scripts/branch-protection.sh --print
+```
+
+Por padrão, administradores também seguem essas regras; altere somente com decisão explícita usando `ENFORCE_ADMINS=false` ou `--enforce-admins false`.
+
 Alternativamente, para inspecionar a chamada HTTP sem executar o modo interativo:
 
 ```bash
 gh api --method PUT "repos/Brunooacks/Muster-AI-Workforce-Operations/branches/main/protection" --input <(scripts/branch-protection.sh --payload)
 ```
 
-O payload exige checks estritos (branch atualizada), pelo menos uma aprovação em PR, resolução de conversas, sem push direto, force push ou deleção. Por padrão, administradores também seguem essas regras; altere somente com decisão explícita usando `ENFORCE_ADMINS=false` ou `--enforce-admins false`.
+O payload exige checks estritos (branch atualizada), PR obrigatório, resolução de conversas, sem push direto, force push ou deleção. `dismissal_restrictions` não é enviado, pois a API do GitHub o aceita somente em repositórios de organização e devolve 422 para este repositório de usuário.
 
 ## Validação após aplicar
 

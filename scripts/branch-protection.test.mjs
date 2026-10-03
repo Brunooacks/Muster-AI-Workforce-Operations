@@ -42,7 +42,8 @@ describe("branch-protection.sh", () => {
       contexts: ["typecheck · test · build", "actionlint"],
     });
     expect(payload.enforce_admins).toBe(true);
-    expect(payload.required_pull_request_reviews.required_approving_review_count).toBe(1);
+    expect(payload.required_pull_request_reviews.required_approving_review_count).toBe(0);
+    expect(payload.required_pull_request_reviews).not.toHaveProperty("dismissal_restrictions");
     expect(payload.allow_force_pushes).toBe(false);
     expect(payload.allow_deletions).toBe(false);
   });
@@ -50,7 +51,11 @@ describe("branch-protection.sh", () => {
   it("aceita lista customizada por parâmetro e enforce_admins por ambiente", () => {
     const payload = printedPayload(
       ["--checks", "PostgreSQL integration,E2E público"],
-      { ENFORCE_ADMINS: "false", REQUIRED_CHECKS: "ignorado" },
+      {
+        ENFORCE_ADMINS: "false",
+        REQUIRED_APPROVALS: "2",
+        REQUIRED_CHECKS: "ignorado",
+      },
     );
 
     expect(payload.required_status_checks.contexts).toEqual([
@@ -58,6 +63,7 @@ describe("branch-protection.sh", () => {
       "E2E público",
     ]);
     expect(payload.enforce_admins).toBe(false);
+    expect(payload.required_pull_request_reviews.required_approving_review_count).toBe(2);
   });
 
   it("aceita a lista customizada por REQUIRED_CHECKS", () => {
