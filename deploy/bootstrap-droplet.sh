@@ -128,27 +128,43 @@ ensure_deploy_user() {
   fi
 }
 
+docker_group_guidance() {
+  plan "ação manual após revisar o acesso: usermod -aG docker $deploy_user"
+  printf 'Docker: o grupo docker equivale a acesso root; o script não altera grupos. Execute o comando acima manualmente e inicie uma nova sessão SSH.\n'
+}
+
 ensure_layout() {
-  local env_file="$bootstrap_root/.env.production"
-  run install -d -m 750 "$bootstrap_root" "$bootstrap_root/backups" "$bootstrap_root/scripts"
+  local env_file="$bootstrap_root/.env.production" owner="$deploy_user:$deploy_user"
+  run install -d -m 750 -o "$deploy_user" -g "$deploy_user" \
+    "$bootstrap_root" "$bootstrap_root/backups" "$bootstrap_root/scripts"
+  # O install configura diretórios novos; o chown também corrige instalações
+  # anteriores que tenham sido criadas pelo root.
+  run chown "$owner" "$bootstrap_root" "$bootstrap_root/backups" "$bootstrap_root/scripts"
   if [[ -e "$env_file" ]]; then
     printf 'Arquivo de ambiente existente preservado: %s.\n' "$env_file"
   elif "$apply"; then
-    umask 077
-    cat > "$env_file" <<'EOF'
+    (
+      umask 077
+      cat > "$env_file" <<'EOF'
 POSTGRES_PASSWORD=
 DATABASE_URL=
 CLERK_SECRET_KEY=
 CLERK_PUBLISHABLE_KEY=
+# Guarde uma cópia offline obrigatória desta chave antes de gravar credenciais.
+MUSTER_CREDENTIAL_ENCRYPTION_KEY=
+MUSTER_INVITE_ONLY=true
+LOG_LEVEL=
 WEB_APP_URL=
 CORS_ALLOWED_ORIGINS=
 MUSTER_IMAGE_TAG=
 EOF
-    chmod 600 "$env_file"
-    printf 'Template vazio criado com permissão 600: %s.\n' "$env_file"
+    )
+    printf 'Template criado com permissão restrita: %s.\n' "$env_file"
   else
     plan "criar template vazio com permissão 600 em $env_file (sem sobrescrever)"
   fi
+  run chown "$owner" "$env_file"
+  run chmod 600 "$env_file"
 }
 
 main() {
@@ -157,6 +173,7 @@ main() {
   check_veltrix antes
   check_docker
   ensure_deploy_user
+  docker_group_guidance
   ensure_layout
   capacity_report
   printf 'GHCR: execute manualmente docker login ghcr.io com um token read-only; este script não lê nem grava tokens.\n'

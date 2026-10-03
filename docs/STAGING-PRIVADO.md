@@ -30,7 +30,21 @@ cd /opt/muster
 
 Revise o plano, a RAM, CPU, disco e o resultado do healthz. Se estiver correto,
 repita com `--apply`. O script não sobrescreve `.env.production`; quando o cria,
-o arquivo contém somente chaves vazias e fica em modo `600`.
+o arquivo fica em modo `600` e `/opt/muster`, `backups/`, `scripts/` e o
+ambiente pertencem a `<usuario-deploy>:<usuario-deploy>`. O arquivo inclui
+`MUSTER_INVITE_ONLY=true`; preencha `LOG_LEVEL` e as chaves vazias conforme o
+ambiente.
+
+O usuário de deploy precisa de acesso ao Docker para os comandos do compose,
+mas o bootstrap não o adiciona a grupo algum. Após revisar essa concessão,
+execute manualmente e abra uma nova sessão SSH:
+
+```sh
+sudo usermod -aG docker <usuario-deploy>
+```
+
+O grupo `docker` equivale a acesso root no host. Conceda-o somente ao usuário
+dedicado do Muster e nunca como atalho para permissões do Veltrix.
 
 Faça o login no registro de forma interativa, com token read-only. Não coloque o
 token em argumentos de shell ou arquivos versionados:
@@ -41,8 +55,11 @@ docker login ghcr.io
 
 Preencha `/opt/muster/.env.production` localmente com os valores de staging,
 incluindo `POSTGRES_PASSWORD`, `DATABASE_URL`, chaves Clerk de desenvolvimento,
-origens de CORS e `MUSTER_IMAGE_TAG=sha-<SHA>`. Confirme a permissão sem exibir
-o conteúdo: `stat -c '%a %n' /opt/muster/.env.production`.
+origens de CORS e `MUSTER_IMAGE_TAG=sha-<SHA>`. Defina também
+`MUSTER_CREDENTIAL_ENCRYPTION_KEY` como chave de 32 bytes (base64) ou 64
+caracteres hexadecimais e guarde uma cópia offline obrigatória antes de gravar
+credenciais de conectores. Confirme a permissão sem exibir o conteúdo:
+`stat -c '%a %n' /opt/muster/.env.production`.
 
 ## Subida manual e verificação
 
