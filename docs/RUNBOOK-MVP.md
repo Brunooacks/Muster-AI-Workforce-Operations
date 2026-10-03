@@ -74,10 +74,29 @@ MUSTER_IMAGE_TAG=sha-<SHA-anterior> \
   --env-file /opt/muster/.env.production \
   -f /opt/muster/deploy/docker-compose.prod.yml up -d
 
+# Persiste a tag restaurada sem imprimir o restante do arquivo de ambiente.
+env_file=/opt/muster/.env.production
+target_tag=sha-<SHA-anterior>
+temporary_env="$(mktemp "${env_file}.tmp.XXXXXX")"
+if ! awk -v tag="$target_tag" '
+  /^MUSTER_IMAGE_TAG=/ { print "MUSTER_IMAGE_TAG=" tag; found = 1; next }
+  { print }
+  END { if (!found) print "MUSTER_IMAGE_TAG=" tag }
+' "$env_file" > "$temporary_env"; then
+  rm -f -- "$temporary_env"
+  exit 1
+fi
+chmod --reference="$env_file" "$temporary_env" 2>/dev/null || chmod 600 "$temporary_env"
+mv -f -- "$temporary_env" "$env_file"
+
 curl -s 127.0.0.1:8081/api/healthz | jq .sha
 ```
 
-O valor retornado deve ser `<SHA-anterior>`. Em seguida, rode o smoke local:
+O bloco de persistência é o mesmo padrão atômico de `persist_current_tag` em
+`remote-deploy.sh`: ele atualiza ou inclui somente `MUSTER_IMAGE_TAG`, conserva
+as permissões e não envia o restante do arquivo ao terminal. Assim, um restart
+posterior continua na tag restaurada. O valor retornado pelo health deve ser
+`<SHA-anterior>`. Em seguida, rode o smoke local:
 
 ```sh
 MUSTER_BASE_URL=http://127.0.0.1:8081 bash scripts/release-smoke.sh
@@ -97,10 +116,12 @@ recentes. Confirme a presença e o timestamp sem abrir o conteúdo:
 ls -lht /opt/muster/backups/postgres-*.sql.gz
 ```
 
-O backup diário no R2 e os procedimentos de restore são entregues pela
-MUS-161, nos caminhos `deploy/backup/*` e
-[`docs/BACKUP-RESTORE.md`](BACKUP-RESTORE.md). Quando essa entrega estiver
-disponível, siga-a nesta ordem:
+O backup diário no R2 e os procedimentos de restore estão na
+[PR #33](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/33):
+`deploy/backup/muster-backup.sh`, `deploy/backup/muster-restore-test.sh`, o
+timer systemd `muster-backup.timer` e `docs/BACKUP-RESTORE.md`. Consulte esses
+caminhos quando a PR for integrada, sem duplicar aqui o conteúdo operacional.
+Siga a ordem abaixo:
 
 1. Escolha o dump e valide o restore em um banco descartável.
 2. Registre a integridade funcional do banco descartável e o tempo:
@@ -110,8 +131,12 @@ disponível, siga-a nesta ordem:
    `/api/healthz` e o smoke release.
 5. Registre o tempo total de produção: `<preencher no ensaio>`.
 
-O ensaio depende da MUS-161 e do staging da MUS-163; não foi executado neste
-documento nem deve ser marcado como concluído antes desse acesso.
+O staging privado está na
+[PR #31](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/31),
+com `docs/STAGING-PRIVADO.md`, `deploy/bootstrap-droplet.sh` e
+`deploy/docker-compose.staging.yml`. O ensaio depende dessas entregas e da
+PR #33; não foi executado neste documento nem deve ser marcado como concluído
+antes desse acesso.
 
 ## 5. Rotação de segredos
 
@@ -216,7 +241,8 @@ registre segredos, tokens, URLs privadas nem conteúdo de dumps.
 | Rollback automático  | induzir falha controlada aprovada no ensaio             | retorno à tag anterior e health com SHA anterior                     | `<preencher no ensaio>` |
 | Rollback manual      | comandos da seção 3                                     | `curl -s 127.0.0.1:8081/api/healthz \| jq .sha` retorna SHA anterior | `<preencher no ensaio>` |
 | Backup pré-deploy    | `ls -lht /opt/muster/backups/postgres-*.sql.gz`         | dump novo e retenção de até sete arquivos                            | `<preencher no ensaio>` |
-| Restore descartável  | procedimento de `deploy/backup/*`                       | banco restaurado e validação funcional                               | `<preencher no ensaio>` |
+| Restore descartável  | `deploy/backup/muster-restore-test.sh` da PR #33        | banco restaurado e validação funcional                               | `<preencher no ensaio>` |
+| Staging privado      | artefatos da PR #31                                     | ambiente e acesso privado preparados conforme o guia                 | `<preencher no ensaio>` |
 | Pausa do worker      | `CONTINUOUS_TELEMETRY_WORKER_ENABLED=false` + restart   | `worker.enabled: false` em `/api/healthz/worker`                     | `<preencher no ensaio>` |
 | IA desligada         | `AI_MONTHLY_BUDGET_USD=0` + restart                     | resultado determinístico, sem 5xx e sem insight de IA                | `<preencher no ensaio>` |
 | Uptime               | disparo manual do workflow **Uptime**                   | issue `uptime` criada/atualizada ou encerrada                        | `<preencher no ensaio>` |
