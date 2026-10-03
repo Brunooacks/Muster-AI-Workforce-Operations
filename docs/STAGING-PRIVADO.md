@@ -1,9 +1,9 @@
 # Staging privado do Muster
 
 Este roteiro prepara um staging privado no droplet compartilhado sem domínio e
-sem alterar o Veltrix. A aplicação fica limitada a `127.0.0.1:8081`; o acesso
-humano é feito por túnel SSH. Não execute este roteiro até o Bruno fornecer o
-acesso ao host.
+sem alterar o Veltrix. A aplicação fica limitada a `127.0.0.1:8081` no
+droplet; o navegador a acessa em `http://localhost:18081` por túnel SSH. Não
+execute este roteiro até o Bruno fornecer o acesso ao host.
 
 ## Pré-requisitos do Bruno
 
@@ -14,7 +14,9 @@ acesso ao host.
 - Token do GHCR de leitura, usado manualmente em `docker login ghcr.io` e nunca
   salvo no repositório, em logs ou na issue.
 - Chaves de desenvolvimento do Clerk configuradas exclusivamente no arquivo
-  `/opt/muster/.env.production`, com URLs permitidas em `http://localhost:8081`.
+  `/opt/muster/.env.production`, com `http://localhost:18081` nas origens e
+  URLs permitidas. Esta é a origem vista pelo navegador após o túnel e precisa
+  estar cadastrada no Clerk dev.
 
 ## Preparação inicial
 
@@ -33,8 +35,8 @@ repita com `--apply`. O script não sobrescreve `.env.production`; quando o cria
 o arquivo fica em modo `600` e `/opt/muster`, `backups/`, `scripts/` e o
 ambiente pertencem a `<usuario-deploy>:<usuario-deploy>`. O arquivo inclui
 `MUSTER_INVITE_ONLY=true`, `LOG_LEVEL=info` e
-`WEB_APP_URL=http://localhost:8081`; preencha apenas as chaves vazias conforme
-o ambiente.
+`WEB_APP_URL=http://localhost:18081`; `CORS_ALLOWED_ORIGINS` também aponta para
+`http://localhost:18081`. Preencha apenas as chaves vazias conforme o ambiente.
 
 O usuário de deploy precisa de acesso ao Docker para os comandos do compose,
 mas o bootstrap não o adiciona a grupo algum. Após revisar essa concessão,
@@ -82,15 +84,17 @@ pnpm release:smoke -- http://127.0.0.1:8081
 
 Espere `postgres` e `muster` ficarem `healthy`. Confira `/api/healthz` e salve
 somente a saída sem segredos. Em seguida abra o túnel a partir da máquina do
-Bruno:
+Bruno. A porta local `18081` evita o conflito com o Veltrix; a porta remota
+permanece `8081`:
 
 ```sh
-ssh -N -L 8081:127.0.0.1:8081 <usuario>@<host>
+ssh -N -L 18081:127.0.0.1:8081 <usuario>@<host>
 ```
 
-Com Clerk de desenvolvimento configurado para `localhost`, valide pelo túnel o
-login e o fluxo mínimo: organização → agente → evento. Ao final, consulte de
-novo o healthz do Veltrix e registre RAM/CPU para comparar com a medição inicial.
+Abra `http://localhost:18081` e, com Clerk de desenvolvimento configurado para
+essa origem, valide pelo túnel o login e o fluxo mínimo: organização → agente →
+evento. Ao final, consulte de novo o healthz do Veltrix e registre RAM/CPU para
+comparar com a medição inicial.
 
 ## Validação local do Compose
 
@@ -111,7 +115,9 @@ rm -f "$staging_env"
 ```
 
 O override preserva os `mem_limit` e o bind `127.0.0.1:8081` do compose base.
-Ele define `WEB_APP_URL=http://localhost:8081`, `LOG_LEVEL=info`,
+Ele define `WEB_APP_URL` e `CORS_ALLOWED_ORIGINS` como
+`http://localhost:18081` — a origem vista pelo navegador e que deve estar nas
+origens permitidas do Clerk dev — além de `LOG_LEVEL=info`,
 `MUSTER_INVITE_ONLY=true` e o worker de telemetria contínua ativo, salvo
 variáveis explicitamente fornecidas.
 

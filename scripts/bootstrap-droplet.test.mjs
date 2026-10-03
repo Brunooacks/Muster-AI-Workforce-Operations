@@ -90,7 +90,7 @@ describe("bootstrap-droplet", () => {
 
     await runBootstrap(["--apply", "--deploy-user", user], root, fake);
     const envFile = join(root, ".env.production");
-    expect(await readFile(envFile, "utf8")).toMatch(/MUSTER_CREDENTIAL_ENCRYPTION_KEY=\nMUSTER_INVITE_ONLY=true\nLOG_LEVEL=info\nWEB_APP_URL=http:\/\/localhost:8081\n/);
+    expect(await readFile(envFile, "utf8")).toMatch(/MUSTER_CREDENTIAL_ENCRYPTION_KEY=\nMUSTER_INVITE_ONLY=true\nLOG_LEVEL=info\nWEB_APP_URL=http:\/\/localhost:18081\nCORS_ALLOWED_ORIGINS=http:\/\/localhost:18081\n/);
     expect((await stat(envFile)).mode & 0o777).toBe(0o600);
     expect((await stat(envFile)).uid).toBe(process.getuid?.());
     for (const path of [root, join(root, "backups"), join(root, "scripts")]) {
