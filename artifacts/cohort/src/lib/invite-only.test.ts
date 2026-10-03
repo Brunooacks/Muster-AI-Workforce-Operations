@@ -2,10 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { inviteContactUrl, inviteOnlyEnabled } from "./invite-only";
 
-test("modo convite só é ativado explicitamente", () => {
-  assert.equal(inviteOnlyEnabled(" true "), true);
+test("modo convite fica ativo quando a variável não está definida", () => {
+  assert.equal(inviteOnlyEnabled(undefined), true);
+});
+
+test("modo convite só é desativado com o valor explícito false", () => {
   assert.equal(inviteOnlyEnabled("false"), false);
-  assert.equal(inviteOnlyEnabled(undefined), false);
+  assert.equal(inviteOnlyEnabled(" FALSE "), false);
+  assert.equal(inviteOnlyEnabled(" true "), true);
+  assert.equal(inviteOnlyEnabled(""), true);
+  assert.equal(inviteOnlyEnabled("0"), true);
 });
 
 test("contato de convite não possui URL padrão", () => {

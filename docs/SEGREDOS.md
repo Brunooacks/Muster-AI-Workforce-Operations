@@ -24,7 +24,18 @@ precisam estar disponíveis antes de `docker compose build`.
 as flags controlam comportamento; mantenha-as como GitHub Variables ou no
 `.env` do droplet e reconstrua a SPA quando uma variável `VITE_` mudar.
 
-### 1.2 Build da imagem pelo workflow de deploy (fail closed)
+### 1.2 Modo convite: fail closed em todas as camadas
+
+`MUSTER_INVITE_ONLY` (API, runtime) e `VITE_MUSTER_INVITE_ONLY` (SPA, build)
+seguem a mesma regra: o modo convite fica **ativo** a menos que o valor seja
+explicitamente `false` (maiúsculas e espaços são ignorados). Variável ausente,
+vazia ou malformada mantém o cadastro público fechado. Os padrões também são
+`true` no `Dockerfile`, no `docker-compose.release.yml`, no `.env.example`, no
+`.env.production.example` e no workflow de deploy. Ferramentas locais ou de
+desenvolvimento que precisem de cadastro aberto devem definir as duas variáveis
+como `false` de forma explícita.
+
+### 1.3 Build da imagem pelo workflow de deploy
 
 O `deploy.yml` passa ao build da imagem os build args
 `VITE_MUSTER_INVITE_ONLY` e `VITE_MUSTER_CONTACT_URL`, lidos das GitHub
@@ -40,7 +51,7 @@ Variables de mesmo nome no repositório:
 
 Como são variáveis `VITE_`, entram no bundle no momento do build: mudar o valor
 exige novo build e deploy. A flag de runtime da API, `MUSTER_INVITE_ONLY`,
-continua vindo do `.env.production` do droplet e deve ficar coerente com a SPA.
+continua vindo do `.env.production` do droplet; ausente, ela também vale `true`.
 
 ## 2. Rotação e resposta
 
