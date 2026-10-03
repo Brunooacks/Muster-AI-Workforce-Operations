@@ -50,3 +50,6 @@ restaura a tag anterior.
 Nesta preparação não foi feito SSH, deploy nem execução real do workflow. Para
 o staging privado, mantenha o bind em `127.0.0.1:8081` e acesse apenas por túnel
 SSH até a configuração posterior do vhost público.
+
+O procedimento completo e o checklist de evidências do staging privado estão em
+[STAGING-PRIVADO.md](../docs/STAGING-PRIVADO.md).

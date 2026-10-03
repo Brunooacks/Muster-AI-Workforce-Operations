@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-deploy_dir="/opt/muster"
+deploy_dir="${MUSTER_DEPLOY_DIR:-/opt/muster}"
 compose_file="$deploy_dir/deploy/docker-compose.prod.yml"
 env_file="$deploy_dir/.env.production"
 backup_dir="$deploy_dir/backups"
+backup_script="${MUSTER_BACKUP_SCRIPT:-$deploy_dir/deploy/backup/muster-backup.sh}"
+backup_env_file="${MUSTER_BACKUP_ENV_FILE:-$deploy_dir/.env.backup}"
 target_sha="${1:?Usage: remote-deploy.sh <40-character git SHA>}"
 
 if [[ ! "$target_sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -70,6 +72,15 @@ backup_database() {
   fi
 }
 
+backup_to_r2_when_configured() {
+  # Não mostramos nem avaliamos o valor da variável: a presença no ambiente ou
+  # no arquivo opcional basta para tornar o envio uma etapa obrigatória.
+  if [[ -n "${MUSTER_BACKUP_S3_BUCKET:-}" ]] || \
+    { [[ -f "$backup_env_file" ]] && grep -qE '^MUSTER_BACKUP_S3_BUCKET=[^[:space:]]+' "$backup_env_file"; }; then
+    MUSTER_BACKUP_ENV_FILE="$backup_env_file" "$backup_script"
+  fi
+}
+
 persist_current_tag() {
   local temporary_env
 
@@ -108,9 +119,12 @@ rollback() {
   exit "$deployment_status"
 }
 
-trap rollback ERR
-
 backup_database
+backup_to_r2_when_configured
+
+# O backup é uma pré-condição: se falhar, interrompemos antes de qualquer
+# pull/up e sem acionar rollback, pois nenhuma imagem foi trocada.
+trap rollback ERR
 MUSTER_IMAGE_TAG="$target_tag" "${compose[@]}" pull
 MUSTER_IMAGE_TAG="$target_tag" "${compose[@]}" up -d
 wait_for_healthy
