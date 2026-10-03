@@ -6,26 +6,54 @@ import {
 
 test.describe.configure({ mode: "serial" });
 
-test("landing permanece pública e oferece autenticação explícita", async ({ page }) => {
+test("landing permanece pública e oferece autenticação explícita", async ({
+  page,
+}) => {
   await page.goto("/");
 
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator("a[href*='sign-in']").first()).toBeVisible();
 });
 
-test("landing usa as novas paletas e não retorna ao verde-musgo", async ({ page }) => {
+test("modo convite oculta cadastro público e informa o acesso restrito", async ({
+  page,
+}) => {
+  test.skip(
+    process.env.VITE_MUSTER_INVITE_ONLY !== "true",
+    "exige build no modo convite",
+  );
+  await page.goto("/");
+
+  await expect(page.getByText("Acesso por convite").first()).toBeVisible();
+  await expect(page.locator("a[href*='sign-up']")).toHaveCount(0);
+  await page.goto("/sign-up");
+  await expect(page.getByText("Acesso por convite")).toHaveCount(0);
+});
+
+test("landing usa as novas paletas e não retorna ao verde-musgo", async ({
+  page,
+}) => {
   await page.goto("/");
 
   const landing = page.locator("[data-landing-theme]");
   await expect(landing).toHaveAttribute("data-landing-theme", "graphite");
-  await expect(page.locator("button[aria-label^='Usar paleta']")).toHaveCount(3);
-  expect(await landing.evaluate((element) => getComputedStyle(element).getPropertyValue("--primary").trim())).toBe("211 100% 68%");
+  await expect(page.locator("button[aria-label^='Usar paleta']")).toHaveCount(
+    3,
+  );
+  expect(
+    await landing.evaluate((element) =>
+      getComputedStyle(element).getPropertyValue("--primary").trim(),
+    ),
+  ).toBe("211 100% 68%");
 
   if ((page.viewportSize()?.width ?? 0) >= 768) {
     await page.getByRole("button", { name: "Usar paleta Dracula" }).click();
     await expect(landing).toHaveAttribute("data-landing-theme", "dracula");
     await page.reload();
-    await expect(page.locator("[data-landing-theme]")).toHaveAttribute("data-landing-theme", "dracula");
+    await expect(page.locator("[data-landing-theme]")).toHaveAttribute(
+      "data-landing-theme",
+      "dracula",
+    );
   }
 });
 
@@ -48,41 +76,70 @@ for (const path of protectedPaths) {
   });
 }
 
-test("todos os links internos da landing apontam para rotas registradas", async ({ page }) => {
+test("todos os links internos da landing apontam para rotas registradas", async ({
+  page,
+}) => {
   await page.goto("/");
-  const hrefs = await page.locator("a[href^='/']").evaluateAll((links) =>
-    [...new Set(links.map((link) => link.getAttribute("href")).filter((href): href is string => Boolean(href)))],
-  );
+  const hrefs = await page
+    .locator("a[href^='/']")
+    .evaluateAll((links) => [
+      ...new Set(
+        links
+          .map((link) => link.getAttribute("href"))
+          .filter((href): href is string => Boolean(href)),
+      ),
+    ]);
 
   for (const href of hrefs) expect(isKnownAppPath(href), href).toBe(true);
 });
 
 test("âncoras da landing possuem seção correspondente", async ({ page }) => {
   await page.goto("/");
-  const hashes = await page.locator("a[href^='#']").evaluateAll((links) =>
-    [...new Set(links.map((link) => link.getAttribute("href")).filter((href): href is string => Boolean(href)))],
-  );
+  const hashes = await page
+    .locator("a[href^='#']")
+    .evaluateAll((links) => [
+      ...new Set(
+        links
+          .map((link) => link.getAttribute("href"))
+          .filter((href): href is string => Boolean(href)),
+      ),
+    ]);
 
-  for (const hash of hashes) await expect(page.locator(hash), hash).toHaveCount(1);
+  for (const hash of hashes)
+    await expect(page.locator(hash), hash).toHaveCount(1);
 });
 
-test("rota inexistente oferece retorno funcional ao Muster", async ({ page }) => {
+test("rota inexistente oferece retorno funcional ao Muster", async ({
+  page,
+}) => {
   await page.goto("/rota-inexistente");
-  await expect(page.getByRole("heading", { name: "Este destino não faz parte da operação atual." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Voltar ao Muster" })).toHaveAttribute("href", "/");
+  await expect(
+    page.getByRole("heading", {
+      name: "Este destino não faz parte da operação atual.",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Voltar ao Muster" }),
+  ).toHaveAttribute("href", "/");
 });
 
 test("fluxo de entrada abre a autenticação real", async ({ page }) => {
   await page.goto("/sign-in");
 
   await expect(page.locator("body")).toBeVisible();
-  await expect(page.locator("body")).not.toContainText("modo de desenvolvimento");
+  await expect(page.locator("body")).not.toContainText(
+    "modo de desenvolvimento",
+  );
 });
 
-test("login preserva identidade Muster e contraste dos campos", async ({ page }) => {
+test("login preserva identidade Muster e contraste dos campos", async ({
+  page,
+}) => {
   await page.goto("/sign-in");
 
-  await expect(page.locator("header").getByText("Muster", { exact: true })).toBeVisible();
+  await expect(
+    page.locator("header").getByText("Muster", { exact: true }),
+  ).toBeVisible();
   const email = page.getByLabel("E-mail corporativo", { exact: true });
   const password = page.getByLabel("Senha", { exact: true });
   await email.fill("gestor@muster.local");
@@ -92,11 +149,19 @@ test("login preserva identidade Muster e contraste dos campos", async ({ page })
   await expect(password).toHaveValue("Senha-de-validacao-123");
   await expect(email).toHaveCSS("opacity", "1");
   await expect(password).toHaveCSS("opacity", "1");
-  expect(await email.evaluate((field) => getComputedStyle(field).color)).not.toBe("rgba(0, 0, 0, 0)");
-  expect(await password.evaluate((field) => getComputedStyle(field).color)).not.toBe("rgba(0, 0, 0, 0)");
+  expect(
+    await email.evaluate((field) => getComputedStyle(field).color),
+  ).not.toBe("rgba(0, 0, 0, 0)");
+  expect(
+    await password.evaluate((field) => getComputedStyle(field).color),
+  ).not.toBe("rgba(0, 0, 0, 0)");
 });
 
 test("cadastro orienta contas existentes para o login", async ({ page }) => {
+  test.skip(
+    process.env.VITE_MUSTER_INVITE_ONLY === "true",
+    "cadastro público não existe no modo convite",
+  );
   await page.goto("/sign-up?redirect_url=%2Fjornadas");
 
   const existingAccountLink = page.getByRole("link", {
@@ -106,6 +171,10 @@ test("cadastro orienta contas existentes para o login", async ({ page }) => {
   await existingAccountLink.click();
 
   await expect(page).toHaveURL(/\/sign-in\?/, { timeout: 15_000 });
-  expect(new URL(page.url()).searchParams.get("redirect_url")).toBe("/jornadas");
-  await expect(page.getByRole("heading", { name: "Bem-vindo de volta" })).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("redirect_url")).toBe(
+    "/jornadas",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Bem-vindo de volta" }),
+  ).toBeVisible();
 });
