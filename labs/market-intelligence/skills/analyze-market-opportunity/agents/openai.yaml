@@ -1,4 +1,0 @@
-interface:
-  display_name: "Análise de Oportunidades"
-  short_description: "Avalia sinais com evidência e hipóteses claras"
-  default_prompt: "Use $analyze-market-opportunity para transformar sinais coletados em uma tese comparável, rastreável e acionável."
