@@ -109,6 +109,7 @@ export interface ExecutiveMonthlyReport {
   generatedAt: string;
   sourceWatermark: string | null;
   narrativeSource: "deterministic" | "ai-assisted";
+  aiInsight?: "available" | "unavailable";
   narrativeModel?: string | null;
   promptVersion?: string | null;
   metrics: Record<string, ExecutiveMetricComparison>;

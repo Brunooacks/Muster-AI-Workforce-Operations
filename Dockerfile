@@ -12,10 +12,13 @@
 # ============================================================================
 
 # ---- Stage 1: build -------------------------------------------------------
+ARG GIT_SHA=unknown
 FROM node:24-slim AS builder
 
 ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG GIT_SHA
 ENV VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+ENV GIT_SHA=${GIT_SHA}
 
 # pnpm via corepack (pinned to match the lockfile toolchain)
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate

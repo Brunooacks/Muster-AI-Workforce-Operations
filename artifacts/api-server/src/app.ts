@@ -12,29 +12,35 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { clerkRuntimeConfig } from "./lib/clerk-config";
 import { allowedCorsOrigins, isCorsOriginAllowed } from "./lib/cors-config";
-import { resolveStaticWebRoot, shouldServeSpaNavigation } from "./lib/static-web";
+import {
+  auditMutations,
+  requestId,
+  requestLogProperties,
+  requestSerializer,
+  responseSerializer,
+} from "./lib/observability";
+import {
+  resolveStaticWebRoot,
+  shouldServeSpaNavigation,
+} from "./lib/static-web";
 
 const app: Express = express();
 const clerkConfig = clerkRuntimeConfig();
 const corsOrigins = allowedCorsOrigins();
 const staticWebRoot = resolveStaticWebRoot();
 
+app.use("/api", clerkMiddleware(clerkConfig));
+
 app.use(
   pinoHttp({
     logger,
+    genReqId: requestId,
+    customProps(req) {
+      return requestLogProperties(req as Request);
+    },
     serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
+      req: requestSerializer,
+      res: responseSerializer,
     },
   }),
 );
@@ -50,7 +56,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", clerkMiddleware(clerkConfig), router);
+app.use("/api", auditMutations, router);
 app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 
 if (staticWebRoot) {
@@ -89,7 +95,8 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   }
   // Honor client errors raised by middleware (e.g. body-parser's 400 on
   // malformed JSON) instead of masking them as 500.
-  const status = (err as { status?: number; statusCode?: number })?.status ??
+  const status =
+    (err as { status?: number; statusCode?: number })?.status ??
     (err as { statusCode?: number })?.statusCode;
   if (typeof status === "number" && status >= 400 && status < 500) {
     req.log.warn({ err }, "Client error");

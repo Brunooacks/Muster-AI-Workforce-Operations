@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import {
   pgTable,
   text,
+  date,
   integer,
   doublePrecision,
   timestamp,
@@ -1209,6 +1210,25 @@ export const insightRecords = pgTable("insight_records", {
     table.entityType,
     table.entityId,
   ),
+}));
+
+// Daily, tenant-scoped usage ledger for the AI features. This table contains
+// aggregates only: prompts and generated content are never persisted here.
+export const aiUsageDaily = pgTable("ai_usage_daily", {
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+  feature: text("feature").notNull(),
+  calls: integer("calls").notNull().default(0),
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  estCostUsd: doublePrecision("est_cost_usd").notNull().default(0),
+}, (table) => ({
+  aiUsageDailyOrgDayFeatureIdx: uniqueIndex("ai_usage_daily_org_day_feature_idx").on(
+    table.orgId,
+    table.day,
+    table.feature,
+  ),
+  aiUsageDailyOrgDayIdx: index("ai_usage_daily_org_day_idx").on(table.orgId, table.day),
 }));
 
 // --- Agent credentials (R7 · gauntlet rodada 3) -------------------------------

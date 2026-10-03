@@ -5,6 +5,7 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentDraftAiInsight } from './agentDraftAiInsight';
 import type { AgentDraftAutonomyLevel } from './agentDraftAutonomyLevel';
 import type { DraftBusinessCase } from './draftBusinessCase';
 import type { DraftMetric } from './draftMetric';
@@ -23,4 +24,5 @@ export interface AgentDraft {
   proposedMetrics: DraftMetric[];
   summary: string;
   confidence: number;
+  aiInsight?: AgentDraftAiInsight;
 }

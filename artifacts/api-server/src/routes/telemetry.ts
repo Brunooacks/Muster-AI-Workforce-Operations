@@ -46,6 +46,7 @@ import { supervisionDispatchFor } from "../lib/continuous-supervision";
 const router: IRouter = Router();
 
 const WINDOW_DAYS: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
+const DIRECT_AGENT_EVENT_PLATFORM = "muster-direct-agent-v1";
 
 function telemetryOutboxEntry(input: {
   orgId: string;
@@ -100,7 +101,32 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
   }
 
   const kind = (body.kind ?? "execution") as AgentEventRow["kind"];
-  await db.transaction(async (transaction) => {
+  const result = await db.transaction(async (transaction) => {
+    // Agent credentials are expected to retry after transport failures. Claim
+    // the key in the same transaction as the event so a replay cannot create
+    // a second event or outbox entry.
+    if (body.idempotencyKey) {
+      const claimed = await transaction
+        .insert(externalEventReceipts)
+        .values({
+          orgId: req.orgId!,
+          agentId,
+          platform: DIRECT_AGENT_EVENT_PLATFORM,
+          // The receipt index is organization-scoped; include the agent so a
+          // caller can use a local sequence safely for separate agents.
+          eventId: `${agentId}:${body.idempotencyKey}`,
+        })
+        .onConflictDoNothing({
+          target: [
+            externalEventReceipts.orgId,
+            externalEventReceipts.platform,
+            externalEventReceipts.eventId,
+          ],
+        })
+        .returning({ id: externalEventReceipts.id });
+      if (claimed.length === 0) return { duplicate: true };
+    }
+
     const [event] = await transaction
       .insert(agentEvents)
       .values({
@@ -126,9 +152,10 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
       occurredAt: event.ts,
     });
     if (outbox) await transaction.insert(eventOutbox).values(outbox);
+    return { duplicate: false };
   });
 
-  res.status(202).json({ accepted: true });
+  res.status(202).json({ accepted: true, duplicate: result.duplicate });
 });
 
 router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, res) => {
