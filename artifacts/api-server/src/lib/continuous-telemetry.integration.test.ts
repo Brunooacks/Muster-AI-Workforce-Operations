@@ -1,13 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import type { Server } from "node:http";
+import { and, count, eq } from "drizzle-orm";
+import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  agentApiKeys,
   agentGovernanceAssessments,
   agentEvents,
   agents,
   eventOutbox,
   organizations,
 } from "@workspace/db/schema";
+import { generateAgentApiKey } from "./agent-api-key";
 
 const runIntegration =
   process.env.RUN_CONTINUOUS_TELEMETRY_DB_TESTS === "true";
@@ -33,7 +37,49 @@ const suffix = randomUUID().slice(0, 8);
 const orgA = `org_outbox_a_${suffix}`;
 const orgB = `org_outbox_b_${suffix}`;
 const agentA = `agent_outbox_a_${suffix}`;
+const agentB = `agent_outbox_b_${suffix}`;
 const eventId = `outbox_event_${suffix}`;
+const agentAKey = generateAgentApiKey();
+const agentBKey = generateAgentApiKey();
+let server: Server;
+let baseUrl = "";
+
+async function countEvents(agentId: string): Promise<number> {
+  const [row] = await workspaceDb.db
+    .select({ total: count() })
+    .from(agentEvents)
+    .where(eq(agentEvents.agentId, agentId));
+  return Number(row?.total ?? 0);
+}
+
+async function countOutbox(agentId: string): Promise<number> {
+  const [row] = await workspaceDb.db
+    .select({ total: count() })
+    .from(eventOutbox)
+    .where(
+      and(
+        eq(eventOutbox.orgId, orgA),
+        eq(eventOutbox.aggregateType, "agent"),
+        eq(eventOutbox.aggregateId, agentId),
+      ),
+    );
+  return Number(row?.total ?? 0);
+}
+
+async function ingestDirectEvent(
+  agentId: string,
+  token: string,
+  body: Record<string, unknown>,
+) {
+  return fetch(`${baseUrl}/api/agents/${agentId}/events`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
 
 describe.skipIf(!runIntegration)("continuous telemetry PostgreSQL", () => {
   beforeAll(async () => {
@@ -45,14 +91,52 @@ describe.skipIf(!runIntegration)("continuous telemetry PostgreSQL", () => {
     await workspaceDb.db.insert(agents).values({
       id: agentA,
       orgId: orgA,
-      name: "Outbox Agent",
-      slug: "outbox-agent",
+      name: "Outbox Agent A",
+      slug: "outbox-agent-a",
       role: "support",
       platform: "test",
     });
+    await workspaceDb.db.insert(agents).values({
+      id: agentB,
+      orgId: orgA,
+      name: "Outbox Agent B",
+      slug: "outbox-agent-b",
+      role: "support",
+      platform: "test",
+    });
+    await workspaceDb.db.insert(agentApiKeys).values([
+      {
+        orgId: orgA,
+        agentId: agentA,
+        prefix: agentAKey.prefix,
+        keyHash: agentAKey.keyHash,
+      },
+      {
+        orgId: orgA,
+        agentId: agentB,
+        prefix: agentBKey.prefix,
+        keyHash: agentBKey.keyHash,
+      },
+    ]);
+
+    // The route's credential middleware is under test here. Mounting it
+    // directly avoids unrelated Clerk/OpenAI startup configuration while still
+    // exercising HTTP, middleware and PostgreSQL together.
+    const { default: telemetryRouter } = await import("../routes/telemetry");
+    const app = express();
+    app.use(express.json());
+    app.use("/api", telemetryRouter);
+    server = app.listen(0);
+    await new Promise<void>((resolve) => server.once("listening", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("Test server unavailable");
+    }
+    baseUrl = `http://127.0.0.1:${address.port}`;
   });
 
   afterAll(async () => {
+    if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
     if (!workspaceDb) return;
     await workspaceDb.db
       .delete(organizations)
@@ -98,6 +182,63 @@ describe.skipIf(!runIntegration)("continuous telemetry PostgreSQL", () => {
     expect(outboxRows).toEqual([{ orgId: orgA }]);
   });
 
+  it("deduplicates the same direct-event key into one event and one outbox item", async () => {
+    const beforeEvents = await countEvents(agentA);
+    const beforeOutbox = await countOutbox(agentA);
+    const payload = {
+      idempotencyKey: `direct-retry-${suffix}`,
+      kind: "execution",
+      success: true,
+      durationMs: 12,
+    };
+
+    const first = await ingestDirectEvent(agentA, agentAKey.plaintext, payload);
+    const second = await ingestDirectEvent(agentA, agentAKey.plaintext, payload);
+
+    expect(first.status).toBe(202);
+    expect(await first.json()).toMatchObject({ accepted: true, duplicate: false });
+    expect(second.status).toBe(202);
+    expect(await second.json()).toMatchObject({ accepted: true, duplicate: true });
+    expect(await countEvents(agentA)).toBe(beforeEvents + 1);
+    expect(await countOutbox(agentA)).toBe(beforeOutbox + 1);
+  });
+
+  it("scopes the same direct-event key to each agent", async () => {
+    const beforeEventsA = await countEvents(agentA);
+    const beforeEventsB = await countEvents(agentB);
+    const beforeOutboxA = await countOutbox(agentA);
+    const beforeOutboxB = await countOutbox(agentB);
+    const payload = {
+      idempotencyKey: `shared-key-${suffix}`,
+      kind: "execution",
+      success: true,
+    };
+
+    const responseA = await ingestDirectEvent(agentA, agentAKey.plaintext, payload);
+    const responseB = await ingestDirectEvent(agentB, agentBKey.plaintext, payload);
+
+    expect(await responseA.json()).toMatchObject({ accepted: true, duplicate: false });
+    expect(await responseB.json()).toMatchObject({ accepted: true, duplicate: false });
+    expect(await countEvents(agentA)).toBe(beforeEventsA + 1);
+    expect(await countEvents(agentB)).toBe(beforeEventsB + 1);
+    expect(await countOutbox(agentA)).toBe(beforeOutboxA + 1);
+    expect(await countOutbox(agentB)).toBe(beforeOutboxB + 1);
+  });
+
+  it("preserves the current behavior when the direct event has no key", async () => {
+    const beforeEvents = await countEvents(agentA);
+    const beforeOutbox = await countOutbox(agentA);
+    const payload = { kind: "execution", success: true, durationMs: 7 };
+
+    const first = await ingestDirectEvent(agentA, agentAKey.plaintext, payload);
+    const second = await ingestDirectEvent(agentA, agentAKey.plaintext, payload);
+
+    expect(await first.json()).toMatchObject({ accepted: true, duplicate: false });
+    expect(await second.json()).toMatchObject({ accepted: true, duplicate: false });
+    expect(await countEvents(agentA)).toBe(beforeEvents + 2);
+    expect(await countOutbox(agentA)).toBe(beforeOutbox + 2);
+  });
+
   it("never evaluates or streams activity outside the organization", async () => {
     const { reevaluateAgentFromTelemetry } = await import("./agent-telemetry-reevaluation");
     const { listOutboxActivity, readOutboxHealthSnapshot } = await import(
@@ -110,6 +251,7 @@ describe.skipIf(!runIntegration)("continuous telemetry PostgreSQL", () => {
     expect(
       await reevaluateAgentFromTelemetry({ agentId: agentA, orgId: orgB }),
     ).toBeNull();
+    const expectedMonthlyVolume = await countEvents(agentA);
 
     await runContinuousTelemetryCycle({
       enabled: true,
@@ -162,7 +304,10 @@ describe.skipIf(!runIntegration)("continuous telemetry PostgreSQL", () => {
       })
       .from(agents)
       .where(eq(agents.id, agentA));
-    expect(projection).toEqual({ monthlyVolume: 1, monthlyCost: 0.14 });
+    expect(projection).toEqual({
+      monthlyVolume: expectedMonthlyVolume,
+      monthlyCost: 0.14,
+    });
     const [governance] = await workspaceDb.db
       .select({
         orgId: agentGovernanceAssessments.orgId,

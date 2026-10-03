@@ -2564,7 +2564,12 @@ export const IngestAgentEventParams = zod.object({
   "agentId": zod.coerce.string()
 })
 
+export const ingestAgentEventBodyIdempotencyKeyMax = 200;
+
+
+
 export const IngestAgentEventBody = zod.object({
+  "idempotencyKey": zod.string().min(1).max(ingestAgentEventBodyIdempotencyKeyMax).optional().describe('Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.'),
   "kind": zod.enum(['execution', 'error', 'escalation', 'feedback', 'heartbeat']).optional(),
   "ts": zod.coerce.date().optional(),
   "durationMs": zod.number().optional(),
