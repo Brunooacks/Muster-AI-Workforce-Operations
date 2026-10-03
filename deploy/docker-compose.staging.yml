@@ -1,0 +1,9 @@
+# Staging privado: use junto ao compose de produção. O bind e os limites de
+# memória continuam definidos no arquivo base.
+services:
+  muster:
+    environment:
+      WEB_APP_URL: ${WEB_APP_URL:-http://localhost:8081}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MUSTER_INVITE_ONLY: ${MUSTER_INVITE_ONLY:-true}
+      CONTINUOUS_TELEMETRY_WORKER_ENABLED: ${CONTINUOUS_TELEMETRY_WORKER_ENABLED:-true}
