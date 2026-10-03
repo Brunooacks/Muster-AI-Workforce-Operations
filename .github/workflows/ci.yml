@@ -108,4 +108,5 @@ jobs:
       - name: Run PostgreSQL integration tests without skips
         run: |
           pnpm run test:integration --reporter=json --outputFile=/tmp/integration-results.json
+          # shellcheck disable=SC2016 # backticks belong to the inline Node script
           node -e 'const r = require("/tmp/integration-results.json"); const expected = { numPendingTests: 0, numPassedTests: 18, numTotalTests: 18 }; for (const [key, value] of Object.entries(expected)) { if (r[key] !== value) { console.error(`Expected ${key}=${value}, got ${r[key]}`); process.exit(1); } } if (r.testResults.length !== 7) { console.error(`Expected 7 integration files, got ${r.testResults.length}`); process.exit(1); }'
