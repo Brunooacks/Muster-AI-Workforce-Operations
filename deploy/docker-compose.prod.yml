@@ -3,7 +3,7 @@ name: muster
 services:
   postgres:
     image: postgres:16-alpine
-    env_file: /opt/muster/.env.production
+    env_file: ${MUSTER_ENV_FILE:-/opt/muster/.env.production}
     environment:
       POSTGRES_DB: muster
       POSTGRES_USER: muster
@@ -26,7 +26,7 @@ services:
 
   muster:
     image: ghcr.io/brunooacks/muster:${MUSTER_IMAGE_TAG:?MUSTER_IMAGE_TAG is required}
-    env_file: /opt/muster/.env.production
+    env_file: ${MUSTER_ENV_FILE:-/opt/muster/.env.production}
     ports:
       - "127.0.0.1:${MUSTER_PUBLIC_PORT:-8081}:8080"
     environment:
