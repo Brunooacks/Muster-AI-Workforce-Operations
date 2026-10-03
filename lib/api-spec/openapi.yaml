@@ -1896,8 +1896,16 @@ components:
       properties:
         status:
           type: string
+        version:
+          type: string
+          description: Version declared by the API server package.
+        sha:
+          type: string
+          description: Git SHA embedded in the production image build.
       required:
         - status
+        - version
+        - sha
 
     ContinuousTelemetryWorkerDiagnostics:
       type: object
@@ -2386,6 +2394,9 @@ components:
         narrativeSource:
           type: string
           enum: [deterministic, ai-assisted]
+        aiInsight:
+          type: string
+          enum: [available, unavailable]
         narrativeModel:
           type: [string, "null"]
         promptVersion:
@@ -3655,6 +3666,9 @@ components:
           type: string
         confidence:
           type: number
+        aiInsight:
+          type: string
+          enum: [available, unavailable]
 
     StartDiscoveryRunInput:
       type: object
