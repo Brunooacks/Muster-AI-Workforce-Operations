@@ -1643,6 +1643,9 @@ paths:
                 properties:
                   accepted:
                     type: boolean
+                  duplicate:
+                    type: boolean
+                    description: True when this idempotency key was already accepted for this agent.
 
   /integrations/agent-events:
     post:
@@ -1893,8 +1896,16 @@ components:
       properties:
         status:
           type: string
+        version:
+          type: string
+          description: Version declared by the API server package.
+        sha:
+          type: string
+          description: Git SHA embedded in the production image build.
       required:
         - status
+        - version
+        - sha
 
     ContinuousTelemetryWorkerDiagnostics:
       type: object
@@ -2383,6 +2394,9 @@ components:
         narrativeSource:
           type: string
           enum: [deterministic, ai-assisted]
+        aiInsight:
+          type: string
+          enum: [available, unavailable]
         narrativeModel:
           type: [string, "null"]
         promptVersion:
@@ -3652,6 +3666,9 @@ components:
           type: string
         confidence:
           type: number
+        aiInsight:
+          type: string
+          enum: [available, unavailable]
 
     StartDiscoveryRunInput:
       type: object
@@ -5056,6 +5073,13 @@ components:
     AgentEventInput:
       type: object
       properties:
+        idempotencyKey:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: >-
+            Chave estável por evento. Reenvie a mesma chave após uma falha de
+            rede para evitar materializar o evento duas vezes.
         kind:
           type: string
           enum: [execution, error, escalation, feedback, heartbeat]

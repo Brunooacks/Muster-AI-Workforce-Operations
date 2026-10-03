@@ -7,6 +7,10 @@
  */
 export interface HealthStatus {
   status: string;
+  /** Version declared by the API server package. */
+  version: string;
+  /** Git SHA embedded in the production image build. */
+  sha: string;
 }
 
 export interface ContinuousTelemetryWorkerDiagnostics {
@@ -338,6 +342,14 @@ export const ExecutiveReportNarrativeSource = {
   'ai-assisted': 'ai-assisted',
 } as const;
 
+export type ExecutiveReportAiInsight = typeof ExecutiveReportAiInsight[keyof typeof ExecutiveReportAiInsight];
+
+
+export const ExecutiveReportAiInsight = {
+  available: 'available',
+  unavailable: 'unavailable',
+} as const;
+
 export interface ExecutiveReport {
   id: string;
   period: string;
@@ -350,6 +362,7 @@ export interface ExecutiveReport {
   /** @nullable */
   sourceWatermark?: string | null;
   narrativeSource: ExecutiveReportNarrativeSource;
+  aiInsight?: ExecutiveReportAiInsight;
   /** @nullable */
   narrativeModel?: string | null;
   /** @nullable */
@@ -1239,6 +1252,14 @@ export const AgentDraftAutonomyLevel = {
   restricted: 'restricted',
 } as const;
 
+export type AgentDraftAiInsight = typeof AgentDraftAiInsight[keyof typeof AgentDraftAiInsight];
+
+
+export const AgentDraftAiInsight = {
+  available: 'available',
+  unavailable: 'unavailable',
+} as const;
+
 export interface AgentDraft {
   name: string;
   role: string;
@@ -1253,6 +1274,7 @@ export interface AgentDraft {
   proposedMetrics: DraftMetric[];
   summary: string;
   confidence: number;
+  aiInsight?: AgentDraftAiInsight;
 }
 
 export interface StartDiscoveryRunInput {
@@ -2320,6 +2342,12 @@ export const AgentEventInputKind = {
 export type AgentEventInputMetadata = { [key: string]: unknown };
 
 export interface AgentEventInput {
+  /**
+     * Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.
+     * @minLength 1
+     * @maxLength 200
+     */
+  idempotencyKey?: string;
   kind?: AgentEventInputKind;
   ts?: string;
   durationMs?: number;
@@ -2760,5 +2788,7 @@ export const ListAgentDraftsEnrichmentStatus = {
 
 export type IngestAgentEvent202 = {
   accepted: boolean;
+  /** True when this idempotency key was already accepted for this agent. */
+  duplicate?: boolean;
 };
 

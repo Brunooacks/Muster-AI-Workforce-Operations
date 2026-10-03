@@ -89,6 +89,27 @@ Os três modelos compartilham o mesmo snapshot factual. Muda a hierarquia narrat
 - Registra modelo e versão do prompt no snapshot.
 - Deve permanecer em rascunho até revisão humana para comunicação externa.
 
+## Teto de custo de IA
+
+Os recursos de IA usam um ledger diário por organização (`ai_usage_daily`) e
+degradam para o resultado determinístico quando não podem ser executados. A UI
+exibe **"Sem insight de IA"** nesse caso; a operação não retorna 5xx nem
+apresenta conteúdo sintético como factual.
+
+| Variável | MVP | Finalidade |
+| --- | --- | --- |
+| `AI_MONTHLY_BUDGET_USD` | `20` | Teto global mensal em USD. O padrão é `0`: IA desligada. |
+| `AI_DAILY_CALLS_PER_ORG` | `50` | Máximo diário de chamadas por organização. |
+| `AI_MAX_OUTPUT_TOKENS` | `800` | Limite por resposta do provedor. |
+| `AI_PRICE_INPUT_PER_MTOK` | conforme o modelo | Preço de entrada por um milhão de tokens, para estimar custo. |
+| `AI_PRICE_OUTPUT_PER_MTOK` | conforme o modelo | Preço de saída por um milhão de tokens, para estimar custo. |
+| `AI_INTEGRATIONS_OPENAI_MODEL` | conforme o provedor | Modelo permitido; não há fallback embutido. |
+
+Também são necessários `AI_INTEGRATIONS_OPENAI_API_KEY` e
+`AI_INTEGRATIONS_OPENAI_BASE_URL`. Sem modelo, chave, endpoint, preços ou teto
+positivo, a IA permanece desligada. Para executar a integração de concorrência
+localmente, use `RUN_AI_BUDGET_DB_TESTS=true` junto de uma base migrada.
+
 ## Ciclo operacional recomendado
 
 1. Telemetria contínua alimenta eventos e evidências durante o mês.
