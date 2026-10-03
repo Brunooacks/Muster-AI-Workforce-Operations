@@ -53,6 +53,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Fail closed: the SPA is built invite-only unless the repository
+      # variable VITE_MUSTER_INVITE_ONLY is explicitly "false". Unset or
+      # malformed values never open public sign-up.
+      - name: Resolve SPA access flags
+        id: spa
+        env:
+          INVITE_ONLY: ${{ vars.VITE_MUSTER_INVITE_ONLY }}
+        run: |
+          value="$(printf '%s' "$INVITE_ONLY" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+          if [ "$value" = "false" ]; then
+            echo "invite_only=false" >> "$GITHUB_OUTPUT"
+          else
+            if [ -n "$value" ] && [ "$value" != "true" ]; then
+              echo "::warning::VITE_MUSTER_INVITE_ONLY is neither true nor false; building invite-only."
+            fi
+            echo "invite_only=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -61,6 +79,8 @@ jobs:
           build-args: |
             GIT_SHA=${{ steps.target.outputs.sha }}
             VITE_CLERK_PUBLISHABLE_KEY=${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+            VITE_MUSTER_INVITE_ONLY=${{ steps.spa.outputs.invite_only }}
+            VITE_MUSTER_CONTACT_URL=${{ vars.VITE_MUSTER_CONTACT_URL }}
 
   deploy:
     needs: build

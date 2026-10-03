@@ -23,7 +23,8 @@ export const DEFAULT_ORG_ID = "org_default";
  * Precedência:
  *  1. Organização ativa na sessão do provedor de identidade (Clerk `org_id`),
  *     casada por `organizations.external_id`.
- *  2. Vínculo do usuário: se ele pertence a exatamente uma organização, é ela.
+ *  2. Não há fallback para o único vínculo: a organização ativa precisa estar
+ *     selecionada na sessão do Clerk.
  * Falha fechada: sem organização resolvida, a requisição para em 403. É
  * preferível recusar uma leitura legítima a servir dado de outro cliente.
  */
@@ -73,27 +74,10 @@ export async function requireOrg(
     }
   }
 
-  const memberships = await db
-    .select({ orgId: organizationMembers.orgId })
-    .from(organizationMembers)
-    .where(eq(organizationMembers.userId, userId))
-    .limit(2);
-
-  if (memberships.length === 1) {
-    req.orgId = memberships[0]!.orgId;
-    next();
-    return;
-  }
-  if (memberships.length > 1) {
-    // Ambíguo de propósito: com mais de um vínculo, o cliente precisa dizer
-    // qual organização está operando, em vez de o servidor adivinhar.
-    res.status(409).json({
-      error: "Usuário pertence a mais de uma organização; selecione uma.",
-    });
-    return;
-  }
-
-  res.status(403).json({ error: "Usuário sem organização." });
+  res.status(403).json({
+    error: "Selecione uma organização ativa antes de acessar dados do tenant.",
+    code: "ACTIVE_ORGANIZATION_REQUIRED",
+  });
 }
 
 function readSessionOrgId(req: Request): string | null {

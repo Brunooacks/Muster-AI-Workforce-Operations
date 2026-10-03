@@ -4,7 +4,7 @@
 # Builds the Express API and the Vite SPA, then serves both from one Node 24
 # runtime. Clerk protects API routes; the SPA handles public and protected UI.
 #
-# Build:  docker build --build-arg VITE_CLERK_PUBLISHABLE_KEY=pk_live_... -t muster .
+# Build:  docker build --build-arg VITE_CLERK_PUBLISHABLE_KEY=... -t muster .
 # Run:    docker run -p 8080:8080 --env-file .env.production muster
 #
 # Set MIGRATE_ON_START=true only when the deployment topology guarantees a
@@ -17,8 +17,12 @@ FROM node:24-slim AS builder
 
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG GIT_SHA
+ARG VITE_MUSTER_INVITE_ONLY=true
+ARG VITE_MUSTER_CONTACT_URL
 ENV VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
 ENV GIT_SHA=${GIT_SHA}
+ENV VITE_MUSTER_INVITE_ONLY=${VITE_MUSTER_INVITE_ONLY}
+ENV VITE_MUSTER_CONTACT_URL=${VITE_MUSTER_CONTACT_URL}
 
 # pnpm via corepack (pinned to match the lockfile toolchain)
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate

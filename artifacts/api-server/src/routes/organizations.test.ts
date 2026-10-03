@@ -47,6 +47,7 @@ describe("organization lifecycle routes", () => {
         },
       ]),
       provisionOrganization: vi.fn(),
+      inviteOnly: () => false,
     });
 
     const request = { userId: "user_1" } as Request;
@@ -109,6 +110,7 @@ describe("organization lifecycle routes", () => {
       ]),
       listLocalOrganizations: vi.fn(),
       provisionOrganization,
+      inviteOnly: () => false,
     });
 
     const request = {
@@ -140,6 +142,7 @@ describe("organization lifecycle routes", () => {
       listMemberships: vi.fn().mockResolvedValue([]),
       listLocalOrganizations: vi.fn(),
       provisionOrganization,
+      inviteOnly: () => false,
     });
 
     const request = { userId: "user_1" } as Request;
@@ -147,6 +150,32 @@ describe("organization lifecycle routes", () => {
     await handlers.syncActive(request, response, vi.fn());
 
     expect(response.status).toHaveBeenCalledWith(403);
+    expect(provisionOrganization).not.toHaveBeenCalled();
+  });
+
+  it("no modo convite não cria tenant para usuário sem organização ativa", async () => {
+    const provisionOrganization = vi.fn();
+    const handlers = createOrganizationRouteHandlers({
+      requireAuth: authenticatedAs("user_1"),
+      readAuth: () => ({ userId: "user_1", activeOrganizationId: null }),
+      listMemberships: vi.fn(),
+      listLocalOrganizations: vi.fn(),
+      provisionOrganization,
+      inviteOnly: () => true,
+    });
+
+    const response = responseMock();
+    await handlers.syncActive(
+      { userId: "user_1" } as Request,
+      response,
+      vi.fn(),
+    );
+
+    expect(response.status).toHaveBeenCalledWith(403);
+    expect(response.json).toHaveBeenCalledWith({
+      error: "Acesso por convite exige uma organização ativa no Clerk.",
+      code: "INVITATION_REQUIRED",
+    });
     expect(provisionOrganization).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,10 @@ import {
   WORKFORCE_STATIC_PATHS,
   isKnownAppPath,
 } from "../src/lib/workforce-routing";
+import { inviteOnlyEnabled } from "../src/lib/invite-only";
+
+// Mesma regra fail closed da SPA: só há cadastro público com o valor explícito false.
+const inviteOnly = inviteOnlyEnabled(process.env.VITE_MUSTER_INVITE_ONLY);
 
 test.describe.configure({ mode: "serial" });
 
@@ -11,6 +15,16 @@ test("landing permanece pública e oferece autenticação explícita", async ({ 
 
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator("a[href*='sign-in']").first()).toBeVisible();
+});
+
+test("modo convite oculta cadastro público e informa o acesso restrito", async ({ page }) => {
+  test.skip(!inviteOnly, "exige build no modo convite");
+  await page.goto("/");
+
+  await expect(page.getByText("Acesso por convite").first()).toBeVisible();
+  await expect(page.locator("a[href*='sign-up']")).toHaveCount(0);
+  await page.goto("/sign-up");
+  await expect(page.getByText("Acesso por convite")).toHaveCount(0);
 });
 
 test("landing usa as novas paletas e não retorna ao verde-musgo", async ({ page }) => {
@@ -97,6 +111,7 @@ test("login preserva identidade Muster e contraste dos campos", async ({ page })
 });
 
 test("cadastro orienta contas existentes para o login", async ({ page }) => {
+  test.skip(inviteOnly, "cadastro público não existe no modo convite");
   await page.goto("/sign-up?redirect_url=%2Fjornadas");
 
   const existingAccountLink = page.getByRole("link", {
