@@ -13,7 +13,9 @@ import * as zod from 'zod';
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
-  "status": zod.string()
+  "status": zod.string(),
+  "version": zod.string().describe('Version declared by the API server package.'),
+  "sha": zod.string().describe('Git SHA embedded in the production image build.')
 })
 
 

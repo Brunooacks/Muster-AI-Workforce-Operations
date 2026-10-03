@@ -8,4 +8,8 @@
 
 export interface HealthStatus {
   status: string;
+  /** Version declared by the API server package. */
+  version: string;
+  /** Git SHA embedded in the production image build. */
+  sha: string;
 }
