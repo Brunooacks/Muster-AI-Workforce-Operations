@@ -32,8 +32,9 @@ Revise o plano, a RAM, CPU, disco e o resultado do healthz. Se estiver correto,
 repita com `--apply`. O script não sobrescreve `.env.production`; quando o cria,
 o arquivo fica em modo `600` e `/opt/muster`, `backups/`, `scripts/` e o
 ambiente pertencem a `<usuario-deploy>:<usuario-deploy>`. O arquivo inclui
-`MUSTER_INVITE_ONLY=true`; preencha `LOG_LEVEL` e as chaves vazias conforme o
-ambiente.
+`MUSTER_INVITE_ONLY=true`, `LOG_LEVEL=info` e
+`WEB_APP_URL=http://localhost:8081`; preencha apenas as chaves vazias conforme
+o ambiente.
 
 O usuário de deploy precisa de acesso ao Docker para os comandos do compose,
 mas o bootstrap não o adiciona a grupo algum. Após revisar essa concessão,

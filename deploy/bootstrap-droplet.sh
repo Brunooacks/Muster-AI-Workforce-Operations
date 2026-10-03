@@ -153,8 +153,8 @@ CLERK_PUBLISHABLE_KEY=
 # Guarde uma cópia offline obrigatória desta chave antes de gravar credenciais.
 MUSTER_CREDENTIAL_ENCRYPTION_KEY=
 MUSTER_INVITE_ONLY=true
-LOG_LEVEL=
-WEB_APP_URL=
+LOG_LEVEL=info
+WEB_APP_URL=http://localhost:8081
 CORS_ALLOWED_ORIGINS=
 MUSTER_IMAGE_TAG=
 EOF
