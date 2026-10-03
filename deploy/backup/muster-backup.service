@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup diário do Postgres do Muster para armazenamento S3 compatível
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/muster/deploy/backup/muster-backup.sh
+User=root
+Group=root
