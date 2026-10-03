@@ -2320,6 +2320,12 @@ export const AgentEventInputKind = {
 export type AgentEventInputMetadata = { [key: string]: unknown };
 
 export interface AgentEventInput {
+  /**
+     * Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.
+     * @minLength 1
+     * @maxLength 200
+     */
+  idempotencyKey?: string;
   kind?: AgentEventInputKind;
   ts?: string;
   durationMs?: number;
@@ -2760,5 +2766,7 @@ export const ListAgentDraftsEnrichmentStatus = {
 
 export type IngestAgentEvent202 = {
   accepted: boolean;
+  /** True when this idempotency key was already accepted for this agent. */
+  duplicate?: boolean;
 };
 
