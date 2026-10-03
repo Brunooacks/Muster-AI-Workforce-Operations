@@ -119,10 +119,12 @@ rollback() {
   exit "$deployment_status"
 }
 
-trap rollback ERR
-
 backup_database
 backup_to_r2_when_configured
+
+# O backup é uma pré-condição: se falhar, interrompemos antes de qualquer
+# pull/up e sem acionar rollback, pois nenhuma imagem foi trocada.
+trap rollback ERR
 MUSTER_IMAGE_TAG="$target_tag" "${compose[@]}" pull
 MUSTER_IMAGE_TAG="$target_tag" "${compose[@]}" up -d
 wait_for_healthy

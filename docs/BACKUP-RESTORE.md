@@ -1,6 +1,6 @@
 # Backup e restore do Postgres
 
-O backup diário usa `deploy/backup/muster-backup.sh`: ele executa `pg_dump -Fc` no Postgres do projeto `muster`, gera o SHA-256 e envia os dois arquivos para um bucket S3 compatível (por exemplo, Cloudflare R2). A AWS CLI roda em uma imagem `amazon/aws-cli` fixada por digest; não é preciso instalá-la no host.
+O backup diário usa `deploy/backup/muster-backup.sh`: ele localiza o Postgres em execução pelas labels do Compose (`muster`/`postgres`), executa `pg_dump -Fc` por `docker exec`, valida o dump com `pg_restore --list`, gera o SHA-256 e envia os dois arquivos para um bucket S3 compatível (por exemplo, Cloudflare R2). A AWS CLI roda em uma imagem `amazon/aws-cli` fixada por digest; não é preciso instalar ferramentas no host nem fornecer `MUSTER_IMAGE_TAG` ao timer.
 
 ## Configuração
 
@@ -14,6 +14,7 @@ AWS_ACCESS_KEY_ID=<chave-de-acesso>
 AWS_SECRET_ACCESS_KEY=<segredo-de-acesso>
 AWS_DEFAULT_REGION=auto
 MUSTER_BACKUP_RETENTION_DAYS=14
+MUSTER_BACKUP_LOCAL_RETENTION_COUNT=3
 ```
 
 Instale o agendamento somente no servidor do Muster:
@@ -30,17 +31,17 @@ Para uma primeira execução controlada, rode `sudo systemctl start muster-backu
 
 ## Retenção
 
-O script mantém os três backups mais recentes independentemente da idade e, depois de um upload bem-sucedido, remove pares de dump e checksum com mais de `MUSTER_BACKUP_RETENTION_DAYS` dias. Configure no bucket uma regra de lifecycle como segunda barreira: expirar objetos em `muster/postgres/` após 14 dias. A lifecycle não substitui a retenção do script, porque esta preserva o mínimo de três backups.
+Depois de um upload e checksum bem-sucedidos, o script mantém localmente apenas `MUSTER_BACKUP_LOCAL_RETENTION_COUNT` pares de dump e checksum (padrão: 3), evitando acúmulo no disco do droplet. No bucket, ele mantém os três backups remotos mais recentes independentemente da idade e remove pares com mais de `MUSTER_BACKUP_RETENTION_DAYS` dias. Configure no bucket uma regra de lifecycle como segunda barreira: expirar objetos em `muster/postgres/` após 14 dias. A lifecycle não substitui a retenção do script, porque esta preserva o mínimo de três backups.
 
 ## Ensaio de restore
 
-Use o ambiente de backup configurado e uma porta livre de ensaio:
+Use o ambiente de backup configurado:
 
 ```bash
-MUSTER_RESTORE_PORT=5451 deploy/backup/muster-restore-test.sh
+deploy/backup/muster-restore-test.sh
 ```
 
-O script baixa o dump mais recente (ou `MUSTER_RESTORE_S3_KEY=<chave-do-dump>`), verifica o SHA-256, restaura em um container Postgres descartável, valida tabelas, `__drizzle_migrations` e leitura de `organizations`, imprime os tempos e remove o container ao sair. Para um MinIO local acessível pelo Docker, informe um endpoint como `http://host.docker.internal:9311`.
+O script baixa o dump mais recente (ou `MUSTER_RESTORE_S3_KEY=<chave-do-dump>`), verifica o SHA-256, restaura em um container Postgres descartável, valida tabelas, `__drizzle_migrations` e leitura de `organizations`, imprime os tempos e remove o container ao sair. O container não publica porta e recebe uma senha aleatória em memória. Para um MinIO local acessível pelo Docker, informe um endpoint como `http://host.docker.internal:9311`.
 
 ## Restore em produção
 

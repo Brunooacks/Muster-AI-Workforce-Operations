@@ -2,13 +2,11 @@
 set -euo pipefail
 
 # Restaura um dump remoto em um Postgres descartável. Nunca aponta para a base
-# de produção; a porta e o nome do container podem ser ajustados para ensaios.
+# de produção; não há publicação de porta, pois toda validação usa docker exec.
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 env_file="${MUSTER_BACKUP_ENV_FILE:-/opt/muster/.env.backup}"
 prefix="${MUSTER_BACKUP_S3_PREFIX:-muster/postgres/}"
 work_dir="${MUSTER_RESTORE_WORK_DIR:-$(mktemp -d)}"
-restore_port="${MUSTER_RESTORE_PORT:-5451}"
 restore_container="${MUSTER_RESTORE_CONTAINER:-muster-mus161-restore}"
 postgres_image="${MUSTER_RESTORE_POSTGRES_IMAGE:-postgres:16-alpine}"
 aws_cli_image="amazon/aws-cli@sha256:603e86d34bbbba57bb1dfe1cc2ac5ef6eef0df1e0d0b953ee9b83a0f6cac3d59"
@@ -20,6 +18,7 @@ fi
 started_at="$(date +%s)"
 restore_started_at=0
 restore_seconds=0
+restore_password=""
 
 fail() {
   printf 'Ensaio de restore do Muster falhou: %s\n' "$1" >&2
@@ -78,6 +77,7 @@ require_env MUSTER_BACKUP_S3_BUCKET
 require_env AWS_ACCESS_KEY_ID
 require_env AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
+restore_password="$(openssl rand -hex 24)" || fail "não foi possível gerar a senha descartável do restore."
 
 remote_key="${MUSTER_RESTORE_S3_KEY:-$(latest_remote_key)}"
 [[ "$remote_key" == "$prefix"muster-*.dump ]] || fail "a chave de restore deve ser um dump do prefixo configurado."
@@ -94,8 +94,8 @@ actual_hash="$(sha256_file "$backup_path")"
 [[ -n "$expected_hash" && "$expected_hash" == "$actual_hash" ]] || fail "a verificação SHA-256 do dump falhou."
 
 docker rm -f "$restore_container" >/dev/null 2>&1 || true
-docker run --detach --rm --name "$restore_container" --publish "${restore_port}:5432" \
-  --env POSTGRES_DB=muster --env POSTGRES_USER=muster --env POSTGRES_PASSWORD=restore-test \
+docker run --detach --rm --name "$restore_container" \
+  --env POSTGRES_DB=muster --env POSTGRES_USER=muster --env POSTGRES_PASSWORD="$restore_password" \
   "$postgres_image" >/dev/null
 
 for attempt in $(seq 1 30); do

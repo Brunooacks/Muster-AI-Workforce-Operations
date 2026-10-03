@@ -5,8 +5,6 @@ set -euo pipefail
 # A imagem da AWS CLI é deliberadamente fixada por digest para que o host não
 # precise instalar ferramentas nem receba atualizações implícitas da CLI.
 
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-compose_file="${MUSTER_BACKUP_COMPOSE_FILE:-$script_dir/../docker-compose.prod.yml}"
 project="${MUSTER_BACKUP_COMPOSE_PROJECT:-muster}"
 postgres_service="${MUSTER_BACKUP_POSTGRES_SERVICE:-postgres}"
 postgres_user="${MUSTER_BACKUP_POSTGRES_USER:-muster}"
@@ -16,6 +14,7 @@ backup_dir="${MUSTER_BACKUP_DIR:-/var/backups/muster}"
 env_file="${MUSTER_BACKUP_ENV_FILE:-/opt/muster/.env.backup}"
 prefix="${MUSTER_BACKUP_S3_PREFIX:-muster/postgres/}"
 retention_days="${MUSTER_BACKUP_RETENTION_DAYS:-14}"
+local_retention_count="${MUSTER_BACKUP_LOCAL_RETENTION_COUNT:-3}"
 aws_cli_image="amazon/aws-cli@sha256:603e86d34bbbba57bb1dfe1cc2ac5ef6eef0df1e0d0b953ee9b83a0f6cac3d59"
 
 if [[ "$prefix" != */ ]]; then
@@ -83,13 +82,34 @@ cutoff_utc() {
     fail "não foi possível calcular a data de retenção."
 }
 
+resolve_postgres_container() {
+  [[ -n "$postgres_container" ]] && return 0
+
+  postgres_container="$(docker ps -q \
+    --filter "label=com.docker.compose.project=$project" \
+    --filter "label=com.docker.compose.service=$postgres_service" | sed -n '1p')"
+  [[ -n "$postgres_container" ]] || fail "não foi encontrado um Postgres em execução para o projeto $project."
+}
+
 dump_database() {
-  if [[ -n "$postgres_container" ]]; then
-    docker exec -i "$postgres_container" pg_dump -U "$postgres_user" -d "$postgres_database" -Fc
-  else
-    docker compose -p "$project" -f "$compose_file" exec -T "$postgres_service" \
-      pg_dump -U "$postgres_user" -d "$postgres_database" -Fc
-  fi
+  docker exec -i "$postgres_container" pg_dump -U "$postgres_user" -d "$postgres_database" -Fc
+}
+
+validate_dump() {
+  [[ -s "$dump_path" ]] || fail "o pg_dump gerou um arquivo vazio."
+  docker exec -i "$postgres_container" pg_restore --list < "$dump_path" >/dev/null ||
+    fail "o dump não passou na validação do pg_restore."
+}
+
+prune_local_backups() {
+  local local_dump kept=0
+
+  while IFS= read -r local_dump; do
+    ((kept += 1))
+    if (( kept > local_retention_count )); then
+      rm -f -- "$local_dump" "${local_dump}.sha256"
+    fi
+  done < <(find "$backup_dir" -maxdepth 1 -type f -name 'muster-*.dump' -print | LC_ALL=C sort -r)
 }
 
 prune_remote_backups() {
@@ -118,6 +138,7 @@ prune_remote_backups() {
 load_env_file
 prefix="${MUSTER_BACKUP_S3_PREFIX:-$prefix}"
 retention_days="${MUSTER_BACKUP_RETENTION_DAYS:-$retention_days}"
+local_retention_count="${MUSTER_BACKUP_LOCAL_RETENTION_COUNT:-$local_retention_count}"
 [[ "$prefix" == */ ]] || prefix="$prefix/"
 require_env MUSTER_BACKUP_S3_ENDPOINT
 require_env MUSTER_BACKUP_S3_BUCKET
@@ -126,6 +147,7 @@ require_env AWS_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
 
 [[ "$retention_days" =~ ^[1-9][0-9]*$ ]] || fail "MUSTER_BACKUP_RETENTION_DAYS deve ser um inteiro positivo."
+[[ "$local_retention_count" =~ ^[1-9][0-9]*$ ]] || fail "MUSTER_BACKUP_LOCAL_RETENTION_COUNT deve ser um inteiro positivo."
 mkdir -p "$backup_dir"
 chmod 700 "$backup_dir"
 
@@ -136,12 +158,15 @@ checksum_path="$dump_path.sha256"
 remote_dump_key="$prefix$dump_name"
 
 umask 077
+resolve_postgres_container
 dump_database > "$dump_path"
+validate_dump
 dump_hash="$(sha256_file "$dump_path")"
 printf '%s  %s\n' "$dump_hash" "$dump_name" > "$checksum_path"
 
 aws_cli s3 cp "/work/$dump_name" "s3://$MUSTER_BACKUP_S3_BUCKET/$remote_dump_key" >/dev/null
 aws_cli s3 cp "/work/${dump_name}.sha256" "s3://$MUSTER_BACKUP_S3_BUCKET/${remote_dump_key}.sha256" >/dev/null
+prune_local_backups
 prune_remote_backups
 
 printf 'Backup enviado com sucesso: %s (SHA-256 verificado localmente).\n' "$remote_dump_key"
