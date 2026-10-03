@@ -13,7 +13,9 @@ import * as zod from 'zod';
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
-  "status": zod.string()
+  "status": zod.string(),
+  "version": zod.string().describe('Version declared by the API server package.'),
+  "sha": zod.string().describe('Git SHA embedded in the production image build.')
 })
 
 
@@ -368,6 +370,7 @@ export const GetExecutiveReportResponse = zod.object({
   "generatedAt": zod.coerce.date(),
   "sourceWatermark": zod.coerce.date().nullish(),
   "narrativeSource": zod.enum(['deterministic', 'ai-assisted']),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional(),
   "narrativeModel": zod.string().nullish(),
   "promptVersion": zod.string().nullish(),
   "templateId": zod.string().optional(),
@@ -1018,7 +1021,8 @@ export const AnalyzeAgentSourceResponse = zod.object({
   "rationale": zod.string().optional()
 })),
   "summary": zod.string(),
-  "confidence": zod.number()
+  "confidence": zod.number(),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional()
 })
 
 
@@ -2083,7 +2087,8 @@ export const PreAssessConnectorSourceResponse = zod.object({
   "rationale": zod.string().optional()
 })),
   "summary": zod.string(),
-  "confidence": zod.number()
+  "confidence": zod.number(),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional()
 }),
   "fieldConfidence": zod.record(zod.string(), zod.number()),
   "platform": zod.string().nullable(),
@@ -2312,7 +2317,8 @@ export const PreAssessAgentSourceResponse = zod.object({
   "rationale": zod.string().optional()
 })),
   "summary": zod.string(),
-  "confidence": zod.number()
+  "confidence": zod.number(),
+  "aiInsight": zod.enum(['available', 'unavailable']).optional()
 }),
   "fieldConfidence": zod.record(zod.string(), zod.number()),
   "platform": zod.string().nullable(),
@@ -2558,7 +2564,12 @@ export const IngestAgentEventParams = zod.object({
   "agentId": zod.coerce.string()
 })
 
+export const ingestAgentEventBodyIdempotencyKeyMax = 200;
+
+
+
 export const IngestAgentEventBody = zod.object({
+  "idempotencyKey": zod.string().min(1).max(ingestAgentEventBodyIdempotencyKeyMax).optional().describe('Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.'),
   "kind": zod.enum(['execution', 'error', 'escalation', 'feedback', 'heartbeat']).optional(),
   "ts": zod.coerce.date().optional(),
   "durationMs": zod.number().optional(),
