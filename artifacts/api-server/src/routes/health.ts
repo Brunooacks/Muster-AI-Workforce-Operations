@@ -1,13 +1,21 @@
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
+import apiServerPackage from "../../package.json";
 import { getContinuousTelemetryWorkerDiagnostics } from "../lib/continuous-telemetry-worker";
 import { readOutboxHealthSnapshot } from "../lib/event-outbox";
 
 const router: IRouter = Router();
 
+export function healthCheckPayload() {
+  return HealthCheckResponse.parse({
+    status: "ok",
+    version: apiServerPackage.version || "unknown",
+    sha: process.env.GIT_SHA?.trim() || "unknown",
+  });
+}
+
 router.get("/healthz", (_req, res) => {
-  const data = HealthCheckResponse.parse({ status: "ok" });
-  res.json(data);
+  res.json(healthCheckPayload());
 });
 
 router.get("/healthz/worker", async (_req, res) => {

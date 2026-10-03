@@ -37,7 +37,11 @@ const router: IRouter = Router();
 type ReportRow = typeof executiveReportSnapshots.$inferSelect;
 type InsightRow = typeof insightRecords.$inferSelect;
 
-function serializeReport(row: ReportRow, reportInsights: InsightRow[]) {
+function serializeReport(
+  row: ReportRow,
+  reportInsights: InsightRow[],
+  aiInsight?: "available" | "unavailable",
+) {
   const bounds = executivePeriodBounds(row.period);
   return GetExecutiveReportResponse.parse({
     id: row.id,
@@ -50,6 +54,7 @@ function serializeReport(row: ReportRow, reportInsights: InsightRow[]) {
     generatedAt: row.generatedAt,
     sourceWatermark: row.sourceWatermark,
     narrativeSource: row.narrativeSource,
+    aiInsight,
     narrativeModel: row.narrativeModel,
     promptVersion: row.promptVersion,
     templateId: row.templateId,
@@ -157,9 +162,10 @@ router.post(
       let report = await buildTenantReport(req.orgId!, body.period);
       if (body.narrativeMode === "ai-assisted") {
         try {
-          report = await enrichExecutiveNarrative(report, body.templateId);
+          report = await enrichExecutiveNarrative(req.orgId!, report, body.templateId);
         } catch (error) {
           logger.warn({ error, orgId: req.orgId, period: report.period }, "AI executive narrative fell back to deterministic copy");
+          report = { ...report, aiInsight: "unavailable" };
         }
       }
 
@@ -225,7 +231,7 @@ router.post(
           : [];
         return { created, createdInsights };
       });
-      res.status(201).json(serializeReport(result.created, result.createdInsights));
+      res.status(201).json(serializeReport(result.created, result.createdInsights, report.aiInsight));
     } catch (error) {
       next(error);
     }

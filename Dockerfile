@@ -12,10 +12,13 @@
 # ============================================================================
 
 # ---- Stage 1: build -------------------------------------------------------
+ARG GIT_SHA=unknown
 FROM node:24-slim AS builder
 
 ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG GIT_SHA
 ENV VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+ENV GIT_SHA=${GIT_SHA}
 
 # pnpm via corepack (pinned to match the lockfile toolchain)
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
@@ -40,7 +43,11 @@ RUN pnpm --filter @workspace/muster run build
 # ---- Stage 2: runtime -----------------------------------------------------
 FROM node:24-slim AS runner
 
+ARG GIT_SHA
 ENV NODE_ENV=production
+# The deployment workflow supplies the immutable source revision. Keep it in
+# the runtime image so health/version reporting can identify the release.
+ENV GIT_SHA=${GIT_SHA}
 # PORT is required by the server; override at run time as needed.
 ENV PORT=8080
 ENV WEB_STATIC_DIR=/app/public

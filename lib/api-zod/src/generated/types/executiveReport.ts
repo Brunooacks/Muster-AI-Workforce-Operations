@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ExecutiveLayerComparison } from './executiveLayerComparison';
+import type { ExecutiveReportAiInsight } from './executiveReportAiInsight';
 import type { ExecutiveReportInsight } from './executiveReportInsight';
 import type { ExecutiveReportMetrics } from './executiveReportMetrics';
 import type { ExecutiveReportNarrativeSource } from './executiveReportNarrativeSource';
@@ -26,6 +27,7 @@ export interface ExecutiveReport {
   /** @nullable */
   sourceWatermark?: Date | null;
   narrativeSource: ExecutiveReportNarrativeSource;
+  aiInsight?: ExecutiveReportAiInsight;
   /** @nullable */
   narrativeModel?: string | null;
   /** @nullable */
