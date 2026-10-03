@@ -75,6 +75,8 @@ pnpm run evaluate:maturity -- --mode=full --base-url=http://127.0.0.1:5173
 A metodologia, evidências e bloqueadores ficam em
 [`docs/MATURITY-EVALUATOR.md`](docs/MATURITY-EVALUATOR.md).
 
+Operação de deploy, rollback e incidentes do MVP: [`docs/RUNBOOK-MVP.md`](docs/RUNBOOK-MVP.md).
+
 ### 🔌 Como um agente entra
 
 São **duas etapas**, e confundi-las é o erro mais comum: cadastrar cria a ficha; ligar a telemetria é o que produz a avaliação.
