@@ -68,7 +68,7 @@ const NEXT_ACTIONS = [
   { action: "Revisar prompt", owner: "tech_lead", due: "2026-03-01" },
 ];
 
-// Colunas ausentes ficam de fora do fixture de propósito: o valor arrival é
+// Colunas ausentes ficam de fora do fixture de propósito: o valor recebido é
 // `undefined`, e o fallback `?? null` precisa virar `null` mesmo assim.
 function draftRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -300,20 +300,15 @@ describe("toAgentSummary", () => {
     expect(summary.areaName).toBe("Operações");
   });
 
-  it("defaults owner fields to empty strings when owners is null", () => {
-    const summary = toAgentSummary(agentRow(), [], null, null);
-
-    expect(summary.businessOwner).toBe("");
-    expect(summary.technicalOwner).toBe("");
-    expect(summary.governanceSponsor).toBe("");
-  });
-
-  it("defaults owner fields to empty strings when owners is omitted", () => {
-    const summary = toAgentSummary(agentRow());
-
-    expect(summary.businessOwner).toBe("");
-    expect(summary.technicalOwner).toBe("");
-    expect(summary.governanceSponsor).toBe("");
+  it("defaults owner fields to empty strings when owners is null or omitted", () => {
+    for (const summary of [
+      toAgentSummary(agentRow(), [], null, null),
+      toAgentSummary(agentRow()),
+    ]) {
+      expect(summary.businessOwner).toBe("");
+      expect(summary.technicalOwner).toBe("");
+      expect(summary.governanceSponsor).toBe("");
+    }
   });
 
   it("copies the owner fields when owners is provided", () => {
