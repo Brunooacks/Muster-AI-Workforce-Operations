@@ -116,12 +116,14 @@ recentes. Confirme a presença e o timestamp sem abrir o conteúdo:
 ls -lht /opt/muster/backups/postgres-*.sql.gz
 ```
 
-O backup diário no R2 e os procedimentos de restore estão na
-[PR #33](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/33):
-`deploy/backup/muster-backup.sh`, `deploy/backup/muster-restore-test.sh`, o
-timer systemd `muster-backup.timer` e `docs/BACKUP-RESTORE.md`. Consulte esses
-caminhos quando a PR for integrada, sem duplicar aqui o conteúdo operacional.
-Siga a ordem abaixo:
+O backup diário no R2 e os procedimentos de restore já estão em `main`,
+vindos da PR #33: [`docs/BACKUP-RESTORE.md`](BACKUP-RESTORE.md),
+[`deploy/backup/muster-backup.sh`](../deploy/backup/muster-backup.sh),
+[`deploy/backup/muster-restore-test.sh`](../deploy/backup/muster-restore-test.sh)
+e o par systemd [`deploy/backup/muster-backup.timer`](../deploy/backup/muster-backup.timer)
+com [`deploy/backup/muster-backup.service`](../deploy/backup/muster-backup.service).
+Consulte esses arquivos, sem duplicar aqui o conteúdo operacional. Siga a
+ordem abaixo:
 
 1. Escolha o dump e valide o restore em um banco descartável.
 2. Registre a integridade funcional do banco descartável e o tempo:
@@ -131,18 +133,17 @@ Siga a ordem abaixo:
    `/api/healthz` e o smoke release.
 5. Registre o tempo total de produção: `<preencher no ensaio>`.
 
-O staging privado está na
-[PR #31](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/31),
-com `docs/STAGING-PRIVADO.md`, `deploy/bootstrap-droplet.sh` e
-`deploy/docker-compose.staging.yml`. O ensaio depende dessas entregas e da
-PR #33; não foi executado neste documento nem deve ser marcado como concluído
-antes desse acesso.
+O staging privado também já está em `main`, vindo da PR #31:
+[`docs/STAGING-PRIVADO.md`](STAGING-PRIVADO.md),
+[`deploy/bootstrap-droplet.sh`](../deploy/bootstrap-droplet.sh) e
+[`deploy/docker-compose.staging.yml`](../deploy/docker-compose.staging.yml). O
+ensaio ainda não foi executado e não deve ser marcado como concluído antes do
+acesso autorizado.
 
 ## 5. Rotação de segredos
 
-As regras específicas e o inventário de segredos ficam em
-[`docs/SEGREDOS.md`](SEGREDOS.md), entrega paralela da PR #27. Até ela estar
-disponível, use este procedimento genérico:
+As regras específicas e o inventário de segredos ficam em `docs/SEGREDOS.md`
+(pendente #27). Até ela estar disponível, use este procedimento genérico:
 
 1. Abra uma mudança com owner, escopo, janela e plano de reversão; nunca inclua
    o valor do segredo nela.
@@ -241,8 +242,8 @@ registre segredos, tokens, URLs privadas nem conteúdo de dumps.
 | Rollback automático  | induzir falha controlada aprovada no ensaio             | retorno à tag anterior e health com SHA anterior                     | `<preencher no ensaio>` |
 | Rollback manual      | comandos da seção 3                                     | `curl -s 127.0.0.1:8081/api/healthz \| jq .sha` retorna SHA anterior | `<preencher no ensaio>` |
 | Backup pré-deploy    | `ls -lht /opt/muster/backups/postgres-*.sql.gz`         | dump novo e retenção de até sete arquivos                            | `<preencher no ensaio>` |
-| Restore descartável  | `deploy/backup/muster-restore-test.sh` da PR #33        | banco restaurado e validação funcional                               | `<preencher no ensaio>` |
-| Staging privado      | artefatos da PR #31                                     | ambiente e acesso privado preparados conforme o guia                 | `<preencher no ensaio>` |
+| Restore descartável  | `deploy/backup/muster-restore-test.sh`                  | banco restaurado e validação funcional                               | `<preencher no ensaio>` |
+| Staging privado      | `docs/STAGING-PRIVADO.md`                               | ambiente e acesso privado preparados conforme o guia                 | `<preencher no ensaio>` |
 | Pausa do worker      | `CONTINUOUS_TELEMETRY_WORKER_ENABLED=false` + restart   | `worker.enabled: false` em `/api/healthz/worker`                     | `<preencher no ensaio>` |
 | IA desligada         | `AI_MONTHLY_BUDGET_USD=0` + restart                     | resultado determinístico, sem 5xx e sem insight de IA                | `<preencher no ensaio>` |
 | Uptime               | disparo manual do workflow **Uptime**                   | issue `uptime` criada/atualizada ou encerrada                        | `<preencher no ensaio>` |
