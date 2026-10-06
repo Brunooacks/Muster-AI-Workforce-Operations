@@ -96,5 +96,77 @@ describe("baseline before/after", () => {
     expect(result.status).toBe("insufficient_evidence");
     expect(result.delta).toBeNull();
   });
+
+  it("não inventa percentual relativo quando a média antes é zero", () => {
+    const result = compareBeforeAfter(
+      [evidence(0, "2026-08-01T00:00:00Z")],
+      [evidence(40, "2026-08-11T00:00:00Z")],
+    );
+
+    expect(result).toMatchObject({
+      status: "insufficient_evidence",
+      reason: "zero_baseline",
+      delta: 40,
+      deltaPercent: null,
+    });
+  });
+
+  it("declara stable quando antes e depois são zero", () => {
+    const result = compareBeforeAfter(
+      [evidence(0, "2026-08-01T00:00:00Z")],
+      [evidence(0, "2026-08-11T00:00:00Z")],
+    );
+
+    expect(result).toMatchObject({
+      status: "stable",
+      delta: 0,
+      deltaPercent: 0,
+    });
+    expect(result.reason).toBeUndefined();
+  });
+
+  it("mantém zero_baseline em lower_is_better porque a direção não muda o denominador", () => {
+    const result = compareBeforeAfter(
+      [evidence(0, "2026-08-01T00:00:00Z")],
+      [evidence(40, "2026-08-11T00:00:00Z")],
+      { direction: "lower_is_better" },
+    );
+
+    expect(result).toMatchObject({
+      status: "insufficient_evidence",
+      reason: "zero_baseline",
+      delta: 40,
+      deltaPercent: null,
+    });
+  });
+
+  it("calcula percentual normal quando a média antes é negativa", () => {
+    const result = compareBeforeAfter(
+      [evidence(-10, "2026-08-01T00:00:00Z")],
+      [evidence(0, "2026-08-11T00:00:00Z")],
+      { direction: "higher_is_better" },
+    );
+
+    expect(result).toMatchObject({
+      status: "improved",
+      delta: 10,
+      deltaPercent: 100,
+    });
+    expect(result.reason).toBeUndefined();
+  });
+
+  it("prioriza a amostra vazia sobre o zero na média antes", () => {
+    const result = compareBeforeAfter(
+      [
+        evidence(0, "2026-08-01T00:00:00Z"),
+        evidence(0, "2026-08-02T00:00:00Z"),
+      ],
+      [],
+    );
+
+    expect(result.status).toBe("insufficient_evidence");
+    expect(result.delta).toBeNull();
+    expect(result.reason).toBeUndefined();
+  });
 });
 
