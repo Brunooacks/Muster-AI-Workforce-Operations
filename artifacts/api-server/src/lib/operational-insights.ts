@@ -157,6 +157,8 @@ export interface TrendAssessment {
   relativeChangePercent: number | null;
   latestZScore: number | null;
   pointsAnalyzed: number;
+  reason?: "zero_baseline";
+  absoluteChange?: number;
 }
 
 export function analyzeTrendAndAnomaly(
@@ -209,6 +211,27 @@ export function analyzeTrendAndAnomaly(
           ? 10
           : -10;
   const anomaly = latestZScore >= 2.5 ? "spike" : latestZScore <= -2.5 ? "drop" : "none";
+
+  if (earlyAverage === 0) {
+    // Base inicial zero: não existe variação relativa honesta. Séries sem direção
+    // (informational/target-range) continuam "stable", como no caminho normal.
+    const alsoZero = recentAverage === 0;
+    const directionless =
+      direction === "informational" || direction === "target-range";
+    return {
+      trend: alsoZero || directionless ? "stable" : "insufficient-data",
+      anomaly,
+      relativeChangePercent: alsoZero ? 0 : null,
+      latestZScore: Math.round(latestZScore * 10) / 10,
+      pointsAnalyzed: ordered.length,
+      ...(alsoZero
+        ? {}
+        : {
+            reason: "zero_baseline" as const,
+            absoluteChange: round1(recentAverage - earlyAverage),
+          }),
+    };
+  }
 
   return {
     trend,
