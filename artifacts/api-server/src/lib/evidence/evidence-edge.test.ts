@@ -237,18 +237,33 @@ describe("compareBeforeAfter aplica o limiar de estabilidade", () => {
 });
 
 describe("compareBeforeAfter com bordas numéricas", () => {
-  it("mantém deltaPercent nulo e status stable quando a média antes é zero", () => {
+  it("devolve insufficient_evidence com reason zero_baseline quando a média antes é zero", () => {
     const result = compareBeforeAfter(
       [evidence(0, "2026-08-01T00:00:00Z")],
       [evidence(10, "2026-08-11T00:00:00Z")],
     );
 
     expect(result).toMatchObject({
-      status: "stable",
+      status: "insufficient_evidence",
+      reason: "zero_baseline",
       delta: 10,
       deltaPercent: null,
     });
     expect(result.before.mean).toBe(0);
+  });
+
+  it("mantém stable quando antes e depois são zero", () => {
+    const result = compareBeforeAfter(
+      [evidence(0, "2026-08-01T00:00:00Z")],
+      [evidence(0, "2026-08-11T00:00:00Z")],
+    );
+
+    expect(result).toMatchObject({
+      status: "stable",
+      delta: 0,
+      deltaPercent: 0,
+    });
+    expect(result.reason).toBeUndefined();
   });
 
   it("devolve insufficient_evidence sem métrica quando ambas as listas estão vazias", () => {
@@ -262,6 +277,7 @@ describe("compareBeforeAfter com bordas numéricas", () => {
       deltaPercent: null,
       confidence: 0,
     });
+    expect(result.reason).toBeUndefined();
     expect(result.before).toEqual({
       sampleSize: 0,
       mean: null,

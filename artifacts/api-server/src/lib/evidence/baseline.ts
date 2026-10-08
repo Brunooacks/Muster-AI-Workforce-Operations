@@ -9,6 +9,8 @@ export type BaselineComparisonStatus =
   | "insufficient_evidence"
   | "not_comparable";
 
+export type BaselineComparisonReason = "zero_baseline";
+
 export interface BaselineWindowPlan {
   kind: BaselineWindowKind;
   from: string;
@@ -41,6 +43,7 @@ export interface BeforeAfterComparison {
   delta: number | null;
   deltaPercent: number | null;
   confidence: number;
+  reason?: BaselineComparisonReason;
 }
 
 export interface BaselineComparisonOptions {
@@ -173,6 +176,35 @@ export function compareBeforeAfter(
       delta,
       deltaPercent,
       confidence,
+    };
+  }
+
+  if (beforeSummary.mean === 0) {
+    if (afterSummary.mean === 0) {
+      return {
+        metricKey: first.metricKey,
+        unit: first.unit,
+        direction,
+        status: "stable",
+        before: beforeSummary,
+        after: afterSummary,
+        delta: 0,
+        deltaPercent: 0,
+        confidence,
+      };
+    }
+
+    return {
+      metricKey: first.metricKey,
+      unit: first.unit,
+      direction,
+      status: "insufficient_evidence",
+      before: beforeSummary,
+      after: afterSummary,
+      delta,
+      deltaPercent: null,
+      confidence,
+      reason: "zero_baseline",
     };
   }
 
