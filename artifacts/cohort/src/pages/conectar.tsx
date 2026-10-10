@@ -166,7 +166,7 @@ const L: Record<Lang, Dict> = { pt: PT, en: EN, es: ES };
 /**
  * Endereço que o AGENTE vai chamar — não o da tela.
  *
- * A tela roda no Vite (5173) e fala com a API por proxy, mas o agente do
+ * A tela roda no Vite (5273) e fala com a API por proxy, mas o agente do
  * cliente chama a API diretamente. Colar aqui a origem do navegador geraria um
  * trecho que falha silenciosamente na máquina de quem integra.
  */
@@ -174,8 +174,8 @@ function apiBaseParaAgente(): string {
   const declarado = import.meta.env.VITE_PUBLIC_API_URL as string | undefined;
   if (declarado) return declarado.replace(/\/+$/, "");
   const { protocol, hostname, port } = window.location;
-  // Em desenvolvimento a tela é 5173 e a API 8087; fora disso, mesma origem.
-  if (port === "5173") return `${protocol}//${hostname}:8087`;
+  // Em desenvolvimento a tela é 5273 e a API 8187; fora disso, mesma origem.
+  if (port === "5273") return `${protocol}//${hostname}:8187`;
   return `${protocol}//${window.location.host}`;
 }
 
