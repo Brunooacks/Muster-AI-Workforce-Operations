@@ -28,7 +28,11 @@ describe("calculateCostPerValidatedTask", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [
         task({ correctionCostCents: 20, escalatedMinutes: 30 }),
-        task({ taskRunId: "run-2", modelCostCents: 200, validation: { status: "validated", source: "connector" } }),
+        task({
+          taskRunId: "run-2",
+          modelCostCents: 200,
+          validation: { status: "validated", source: "connector" },
+        }),
       ],
       humanReference,
       outputCurrency: "BRL",
@@ -53,7 +57,11 @@ describe("calculateCostPerValidatedTask", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [
         task({ modelCostCents: 100 }),
-        task({ taskRunId: "rejected", modelCostCents: 300, validation: { status: "rejected", source: "human_review" } }),
+        task({
+          taskRunId: "rejected",
+          modelCostCents: 300,
+          validation: { status: "rejected", source: "human_review" },
+        }),
       ],
       outputCurrency: "BRL",
     });
@@ -66,39 +74,61 @@ describe("calculateCostPerValidatedTask", () => {
   });
 
   it("retorna evidencia insuficiente sem validacao observada", () => {
-    expect(calculateCostPerValidatedTask({
-      tasks: [task({ validation: null })],
-      outputCurrency: "BRL",
-    })).toEqual({ status: "insufficient_evidence", reason: "no_observed_validations" });
+    expect(
+      calculateCostPerValidatedTask({
+        tasks: [task({ validation: null })],
+        outputCurrency: "BRL",
+      }),
+    ).toEqual({
+      status: "insufficient_evidence",
+      reason: "no_observed_validations",
+    });
   });
 
   it("nao usa auto relato como denominador", () => {
-    expect(calculateCostPerValidatedTask({
-      tasks: [task({ validation: { status: "validated", source: "self_reported" } })],
-      outputCurrency: "BRL",
-    })).toEqual({ status: "insufficient_evidence", reason: "no_observed_validations" });
+    expect(
+      calculateCostPerValidatedTask({
+        tasks: [
+          task({
+            validation: { status: "validated", source: "self_reported" },
+          }),
+        ],
+        outputCurrency: "BRL",
+      }),
+    ).toEqual({
+      status: "insufficient_evidence",
+      reason: "no_observed_validations",
+    });
   });
 
   it("retorna taxa de cambio ausente antes de calcular valores em USD", () => {
-    expect(calculateCostPerValidatedTask({
-      tasks: [task({ currency: "USD" })],
-      outputCurrency: "BRL",
-    })).toEqual({ status: "insufficient_evidence", reason: "missing_fx_rate" });
+    expect(
+      calculateCostPerValidatedTask({
+        tasks: [task({ currency: "USD" })],
+        outputCurrency: "BRL",
+      }),
+    ).toEqual({ status: "insufficient_evidence", reason: "missing_fx_rate" });
   });
 
   it("exige taxa de cambio quando a referencia humana esta em USD", () => {
-    expect(calculateCostPerValidatedTask({
-      tasks: [task()],
-      humanReference: { ...humanReference, currency: "USD" },
-      outputCurrency: "BRL",
-    })).toEqual({ status: "insufficient_evidence", reason: "missing_fx_rate" });
+    expect(
+      calculateCostPerValidatedTask({
+        tasks: [task()],
+        humanReference: { ...humanReference, currency: "USD" },
+        outputCurrency: "BRL",
+      }),
+    ).toEqual({ status: "insufficient_evidence", reason: "missing_fx_rate" });
   });
 
   it("converte custos USD, preserva BRL e carrega a procedencia cambial", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [
         task({ modelCostCents: 100, correctionCostCents: 10, currency: "USD" }),
-        task({ taskRunId: "brl", modelCostCents: 50, validation: { status: "validated", source: "connector" } }),
+        task({
+          taskRunId: "brl",
+          modelCostCents: 50,
+          validation: { status: "validated", source: "connector" },
+        }),
       ],
       fx: { usdToBrl: 5, rateDate: "2026-10-10", source: "bcb" },
       outputCurrency: "BRL",
@@ -126,10 +156,15 @@ describe("calculateCostPerValidatedTask", () => {
   });
 
   it("recusa calcular o custo quando ha escalonamento sem referencia humana", () => {
-    expect(calculateCostPerValidatedTask({
-      tasks: [task({ escalatedMinutes: 10 })],
-      outputCurrency: "BRL",
-    })).toEqual({ status: "insufficient_evidence", reason: "missing_human_reference" });
+    expect(
+      calculateCostPerValidatedTask({
+        tasks: [task({ escalatedMinutes: 10 })],
+        outputCurrency: "BRL",
+      }),
+    ).toEqual({
+      status: "insufficient_evidence",
+      reason: "missing_human_reference",
+    });
   });
 
   it("arredonda conversao monetaria ao centavo mais proximo", () => {
@@ -139,40 +174,65 @@ describe("calculateCostPerValidatedTask", () => {
       outputCurrency: "BRL",
     });
 
-    expect(result).toMatchObject({ status: "available", totalCost: { cents: 517 } });
+    expect(result).toMatchObject({
+      status: "available",
+      totalCost: { cents: 517 },
+    });
   });
 
   it("arredonda custo por tarefa ao centavo mais proximo", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [
         task({ modelCostCents: 50 }),
-        task({ taskRunId: "run-2", modelCostCents: 51, validation: { status: "validated", source: "connector" } }),
+        task({
+          taskRunId: "run-2",
+          modelCostCents: 51,
+          validation: { status: "validated", source: "connector" },
+        }),
       ],
       outputCurrency: "BRL",
     });
 
-    expect(result).toMatchObject({ status: "available", costPerValidatedTask: { cents: 51 } });
+    expect(result).toMatchObject({
+      status: "available",
+      costPerValidatedTask: { cents: 51 },
+    });
   });
 
   it("arredonda o custo humano declarado ao centavo mais proximo", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [task()],
-      humanReference: { ...humanReference, hourlyRateCents: 101, minutesPerTask: 1 },
+      humanReference: {
+        ...humanReference,
+        hourlyRateCents: 101,
+        minutesPerTask: 1,
+      },
       outputCurrency: "BRL",
     });
 
-    expect(result).toMatchObject({ status: "available", humanCostPerTask: { cents: 2 } });
+    expect(result).toMatchObject({
+      status: "available",
+      humanCostPerTask: { cents: 2 },
+    });
   });
 
   it("converte custo humano em USD antes de arredondar o centavo em BRL", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [task()],
-      humanReference: { ...humanReference, hourlyRateCents: 101, minutesPerTask: 1, currency: "USD" },
+      humanReference: {
+        ...humanReference,
+        hourlyRateCents: 101,
+        minutesPerTask: 1,
+        currency: "USD",
+      },
       fx: { usdToBrl: 5, rateDate: "2026-10-10", source: "bcb" },
       outputCurrency: "BRL",
     });
 
-    expect(result).toMatchObject({ status: "available", humanCostPerTask: { cents: 8 } });
+    expect(result).toMatchObject({
+      status: "available",
+      humanCostPerTask: { cents: 8 },
+    });
   });
 
   it("separa contagem e percentual de cada fonte de validacao", () => {
@@ -180,8 +240,14 @@ describe("calculateCostPerValidatedTask", () => {
       tasks: [
         task({ taskRunId: "human-1" }),
         task({ taskRunId: "human-2" }),
-        task({ taskRunId: "connector", validation: { status: "validated", source: "connector" } }),
-        task({ taskRunId: "self", validation: { status: "validated", source: "self_reported" } }),
+        task({
+          taskRunId: "connector",
+          validation: { status: "validated", source: "connector" },
+        }),
+        task({
+          taskRunId: "self",
+          validation: { status: "validated", source: "self_reported" },
+        }),
       ],
       outputCurrency: "BRL",
     });
@@ -196,11 +262,41 @@ describe("calculateCostPerValidatedTask", () => {
     });
   });
 
+  it("calcula o percentual por fonte sobre todas as tarefas, inclusive rejeitadas e sem validacao", () => {
+    const result = calculateCostPerValidatedTask({
+      tasks: [
+        task({ taskRunId: "human-1" }),
+        task({
+          taskRunId: "rejected",
+          validation: { status: "rejected", source: "human_review" },
+        }),
+        task({
+          taskRunId: "pending",
+          validation: { status: "unvalidated", source: "connector" },
+        }),
+        task({ taskRunId: "sem-feedback", validation: null }),
+      ],
+      outputCurrency: "BRL",
+    });
+
+    expect(result).toMatchObject({
+      status: "available",
+      validationBySource: {
+        human_review: { count: 1, percent: 25 },
+        connector: { count: 0, percent: 0 },
+        self_reported: { count: 0, percent: 0 },
+      },
+    });
+  });
+
   it("nao conta rejeicao auto relatada como validacao auto relatada", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [
         task(),
-        task({ taskRunId: "self-rejected", validation: { status: "rejected", source: "self_reported" } }),
+        task({
+          taskRunId: "self-rejected",
+          validation: { status: "rejected", source: "self_reported" },
+        }),
       ],
       outputCurrency: "BRL",
     });
@@ -219,8 +315,14 @@ describe("calculateCostPerValidatedTask", () => {
 
     expect(result).toMatchObject({
       status: "available",
-      costPerValidatedTask: { provenance: { kind: "derived", sources: ["task_input", "validation"] } },
-      validationBySource: { human_review: { provenance: { kind: "observed", sources: ["validation"] } } },
+      costPerValidatedTask: {
+        provenance: { kind: "derived", sources: ["task_input", "validation"] },
+      },
+      validationBySource: {
+        human_review: {
+          provenance: { kind: "observed", sources: ["validation"] },
+        },
+      },
     });
   });
 
@@ -228,14 +330,19 @@ describe("calculateCostPerValidatedTask", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [
         task(),
-        task({ taskRunId: "self", validation: { status: "validated", source: "self_reported" } }),
+        task({
+          taskRunId: "self",
+          validation: { status: "validated", source: "self_reported" },
+        }),
       ],
       outputCurrency: "BRL",
     });
 
     expect(result).toMatchObject({
       status: "available",
-      validationBySource: { self_reported: { provenance: { kind: "declared" } } },
+      validationBySource: {
+        self_reported: { provenance: { kind: "declared" } },
+      },
     });
   });
 });

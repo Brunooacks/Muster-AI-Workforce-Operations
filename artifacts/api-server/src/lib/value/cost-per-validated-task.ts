@@ -1,6 +1,6 @@
 export type CostCurrency = "BRL" | "USD";
 
-export type ValidationStatus = "validated" | "rejected";
+export type ValidationStatus = "validated" | "rejected" | "unvalidated";
 export type ValidationSource = "human_review" | "connector" | "self_reported";
 
 export interface TaskCostInput {
@@ -108,11 +108,17 @@ function roundPercent(value: number): number {
 }
 
 function needsFx(input: CostPerValidatedTaskInput): boolean {
-  return input.tasks.some((task) => task.currency === "USD")
-    || input.humanReference?.currency === "USD";
+  return (
+    input.tasks.some((task) => task.currency === "USD") ||
+    input.humanReference?.currency === "USD"
+  );
 }
 
-function toBrlCents(cents: number, currency: CostCurrency, fx?: ExchangeRate): number {
+function toBrlCents(
+  cents: number,
+  currency: CostCurrency,
+  fx?: ExchangeRate,
+): number {
   return roundCents(currency === "BRL" ? cents : cents * fx!.usdToBrl);
 }
 
@@ -147,7 +153,10 @@ export function calculateCostPerValidatedTask(
     0,
   );
   if (totalEscalatedMinutes > 0 && !input.humanReference) {
-    return { status: "insufficient_evidence", reason: "missing_human_reference" };
+    return {
+      status: "insufficient_evidence",
+      reason: "missing_human_reference",
+    };
   }
 
   const validatedBySource: Record<ValidationSource, TaskCostInput[]> = {
@@ -166,37 +175,46 @@ export function calculateCostPerValidatedTask(
     ...validatedBySource.connector,
   ];
   if (observedValidatedTasks.length === 0) {
-    return { status: "insufficient_evidence", reason: "no_observed_validations" };
+    return {
+      status: "insufficient_evidence",
+      reason: "no_observed_validations",
+    };
   }
 
-  const automatedAndCorrectionCost = input.tasks.reduce((sum, task) => (
-    sum
-      + toBrlCents(task.modelCostCents, task.currency, input.fx)
-      + toBrlCents(task.correctionCostCents ?? 0, task.currency, input.fx)
-  ), 0);
+  const automatedAndCorrectionCost = input.tasks.reduce(
+    (sum, task) =>
+      sum +
+      toBrlCents(task.modelCostCents, task.currency, input.fx) +
+      toBrlCents(task.correctionCostCents ?? 0, task.currency, input.fx),
+    0,
+  );
   const escalatedCost = input.humanReference
     ? toBrlCents(
-      (input.humanReference.hourlyRateCents * totalEscalatedMinutes) / 60,
-      input.humanReference.currency,
-      input.fx,
-    )
+        (input.humanReference.hourlyRateCents * totalEscalatedMinutes) / 60,
+        input.humanReference.currency,
+        input.fx,
+      )
     : 0;
   const totalCostCents = automatedAndCorrectionCost + escalatedCost;
 
-  const totalValidatedTasks = Object.values(validatedBySource)
-    .reduce((sum, tasks) => sum + tasks.length, 0);
   const validationBySource = Object.fromEntries(
-    (Object.entries(validatedBySource) as [ValidationSource, TaskCostInput[]][]).map(
-      ([source, tasks]) => [source, {
+    (
+      Object.entries(validatedBySource) as [ValidationSource, TaskCostInput[]][]
+    ).map(([source, tasks]) => [
+      source,
+      {
         count: tasks.length,
-        percent: roundPercent((tasks.length / totalValidatedTasks) * 100),
+        // % sobre todas as tarefas do período (o painel mostra "% validada").
+        percent: roundPercent((tasks.length / input.tasks.length) * 100),
         provenance: provenance(
           source === "self_reported" ? "declared" : "observed",
-          source === "self_reported" ? ["validation", "self_reported"] : ["validation"],
+          source === "self_reported"
+            ? ["validation", "self_reported"]
+            : ["validation"],
           tasks.map((task) => task.taskRunId),
         ),
-      }],
-    ),
+      },
+    ]),
   ) as Record<ValidationSource, ValidationSourceMetric>;
 
   const allTaskRunIds = input.tasks.map((task) => task.taskRunId);
@@ -223,50 +241,54 @@ export function calculateCostPerValidatedTask(
 
   const humanCostPerTask = input.humanReference
     ? {
-      cents: toBrlCents(
-        (input.humanReference.hourlyRateCents * input.humanReference.minutesPerTask) / 60,
-        input.humanReference.currency,
-        input.fx,
-      ),
-      currency: "BRL" as const,
-      declared: "manual_entry" as const,
-      declaredBy: input.humanReference.declaredBy,
-      declaredAt: input.humanReference.declaredAt,
-      source: "manual_entry" as const,
-      provenance: provenance(
-        "declared",
-        ["manual_entry"],
-        undefined,
-        "valor-hora declarado × minutos por tarefa ÷ 60",
-      ),
-    }
+        cents: toBrlCents(
+          (input.humanReference.hourlyRateCents *
+            input.humanReference.minutesPerTask) /
+            60,
+          input.humanReference.currency,
+          input.fx,
+        ),
+        currency: "BRL" as const,
+        declared: "manual_entry" as const,
+        declaredBy: input.humanReference.declaredBy,
+        declaredAt: input.humanReference.declaredAt,
+        source: "manual_entry" as const,
+        provenance: provenance(
+          "declared",
+          ["manual_entry"],
+          undefined,
+          "valor-hora declarado × minutos por tarefa ÷ 60",
+        ),
+      }
     : null;
 
   const breakEven = humanCostPerTask
     ? (() => {
-      const savingsCents = humanCostPerTask.cents - costPerValidatedTask.cents;
-      return {
-        savingsPerTask: {
-          cents: savingsCents,
-          currency: "BRL" as const,
+        const savingsCents =
+          humanCostPerTask.cents - costPerValidatedTask.cents;
+        return {
+          savingsPerTask: {
+            cents: savingsCents,
+            currency: "BRL" as const,
+            provenance: provenance(
+              "derived",
+              ["manual_entry", "task_input", "validation"],
+              observedValidatedTasks.map((task) => task.taskRunId),
+              "custo humano por tarefa − custo por tarefa validada",
+            ),
+          },
+          savingsPercent:
+            humanCostPerTask.cents === 0
+              ? null
+              : roundPercent((savingsCents / humanCostPerTask.cents) * 100),
           provenance: provenance(
             "derived",
             ["manual_entry", "task_input", "validation"],
             observedValidatedTasks.map((task) => task.taskRunId),
-            "custo humano por tarefa − custo por tarefa validada",
+            "economia por tarefa ÷ custo humano por tarefa × 100",
           ),
-        },
-        savingsPercent: humanCostPerTask.cents === 0
-          ? null
-          : roundPercent((savingsCents / humanCostPerTask.cents) * 100),
-        provenance: provenance(
-          "derived",
-          ["manual_entry", "task_input", "validation"],
-          observedValidatedTasks.map((task) => task.taskRunId),
-          "economia por tarefa ÷ custo humano por tarefa × 100",
-        ),
-      };
-    })()
+        };
+      })()
     : null;
 
   return {
@@ -277,12 +299,14 @@ export function calculateCostPerValidatedTask(
     humanCostPerTask,
     breakEven,
     validationBySource,
-    ...(input.fx ? {
-      fx: {
-        rate: input.fx.usdToBrl,
-        date: input.fx.rateDate,
-        source: input.fx.source,
-      },
-    } : {}),
+    ...(input.fx
+      ? {
+          fx: {
+            rate: input.fx.usdToBrl,
+            date: input.fx.rateDate,
+            source: input.fx.source,
+          },
+        }
+      : {}),
   };
 }
