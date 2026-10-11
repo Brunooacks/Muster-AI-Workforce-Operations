@@ -121,9 +121,11 @@ describe("GET /agents/:agentId/value", () => {
   });
 
   it.each([
-    ["ausente", { to: "2026-10-11T23:59:59.999Z" }],
-    ["inválida", { from: "não-é-data", to: "2026-10-11T23:59:59.999Z" }],
-  ])("rejeita data inicial %s", async (_caseName, query) => {
+    ["from", "ausente", { to: "2026-10-11T23:59:59.999Z" }],
+    ["from", "inválida", { from: "não-é-data", to: "2026-10-11T23:59:59.999Z" }],
+    ["to", "ausente", { from: "2026-10-11T00:00:00.000Z" }],
+    ["to", "inválida", { from: "2026-10-11T00:00:00.000Z", to: "não-é-data" }],
+  ])("rejeita data %s %s", async (_parameter, _caseName, query) => {
     const response = responseMock();
 
     await valueHandler()(request(query), response);
@@ -133,6 +135,23 @@ describe("GET /agents/:agentId/value", () => {
       error: "Informe datas from e to válidas.",
     });
     expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("rejeita data de calendário impossível", async () => {
+    db.select
+      .mockReturnValueOnce(queryResult([{ id: "agent-1" }]))
+      .mockReturnValueOnce(queryResult([]));
+    const response = responseMock();
+
+    await valueHandler()(
+      request({ from: "2026-02-30T00:00:00.000Z", to: "2026-03-01T00:00:00.000Z" }),
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith({
+      error: "Informe datas from e to válidas.",
+    });
   });
 
   it("rejeita janela cujo início é posterior ao fim", async () => {
@@ -163,6 +182,20 @@ describe("GET /agents/:agentId/value", () => {
       error: "A janela máxima é de 92 dias.",
     });
     expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("aceita janela de exatamente 92 dias", async () => {
+    db.select
+      .mockReturnValueOnce(queryResult([{ id: "agent-1" }]))
+      .mockReturnValueOnce(queryResult([]));
+    const response = responseMock();
+
+    await valueHandler()(
+      request({ from: "2026-07-12T00:00:00.000Z", to: "2026-10-12T00:00:00.000Z" }),
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(200);
   });
 });
 

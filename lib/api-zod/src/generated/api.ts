@@ -1593,7 +1593,7 @@ export const DeleteAgentParams = zod.object({
 
 
 /**
- * Returns observed task value for the requested inclusive time window without currency conversion.
+ * Returns observed task value for the requested inclusive RFC 3339 time window without currency conversion. The window must not exceed 92 days and from must be before or equal to to.
  * @summary Cost per validated task, separated by currency
  */
 export const GetAgentValueQueryParams = zod.object({
