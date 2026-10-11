@@ -1,0 +1,11 @@
+{
+  "traceId": "trace-multi",
+  "observations": [
+    { "id": "obs-multi", "traceId": "trace-multi", "startTime": "2026-10-10T16:00:00.000Z", "endTime": "2026-10-10T16:00:01.000Z", "type": "AGENT", "isRootObservation": true, "name": "review-agent", "traceName": "Review trace" }
+  ],
+  "scores": [
+    { "id": "older-pass", "name": "quality", "source": "ANNOTATION", "dataType": "BOOLEAN", "value": true, "timestamp": "2026-10-10T16:00:02.000Z", "subject": { "kind": "trace", "id": "trace-multi" } },
+    { "id": "newer-pass", "name": "quality", "source": "ANNOTATION", "dataType": "BOOLEAN", "value": true, "timestamp": "2026-10-10T16:00:04.000Z", "subject": { "kind": "trace", "id": "trace-multi" } },
+    { "id": "newer-reject", "name": "quality", "source": "ANNOTATION", "dataType": "BOOLEAN", "value": false, "timestamp": "2026-10-10T16:00:04.000Z", "subject": { "kind": "trace", "id": "trace-multi" } }
+  ]
+}
