@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import {
   db,
   agents,
@@ -45,11 +45,13 @@ import {
   reevaluateAgentFromTelemetry,
 } from "../lib/agent-telemetry-reevaluation";
 import { supervisionDispatchFor } from "../lib/continuous-supervision";
+import { detectRepeatedSteps } from "../lib/repeated-step-detector";
 
 const router: IRouter = Router();
 
 const WINDOW_DAYS: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
 const DIRECT_AGENT_EVENT_PLATFORM = "muster-direct-agent-v1";
+const REPEATED_STEP_WINDOW_DAYS = 90;
 
 function stepVersionFromKey(stepKey: string): string | null {
   const version = stepKey.split(".").at(-1);
@@ -507,6 +509,29 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
       "A reavaliação foi enfileirada; acompanhe a atividade contínua para métricas e decisão atualizadas.",
   };
   res.status(202).json(accepted);
+});
+
+router.get("/telemetry/repeated-steps", requireAuth, requireOrg, async (req, res) => {
+  const windowStart = new Date(
+    Date.now() - REPEATED_STEP_WINDOW_DAYS * 24 * 60 * 60 * 1_000,
+  );
+  const observations = await db
+    .select({
+      stepKey: agentEventSteps.stepKey,
+      inputFingerprint: agentEventSteps.inputFingerprint,
+      outputHash: agentEventSteps.outputHash,
+      path: agentEventSteps.path,
+      shadow: agentEventSteps.shadow,
+      costCents: agentEventSteps.costCents,
+      currency: agentEventSteps.currency,
+    })
+    .from(agentEventSteps)
+    .where(and(
+      ofOrg(agentEventSteps, req.orgId!),
+      gte(agentEventSteps.occurredAt, windowStart),
+    ));
+
+  res.json({ items: detectRepeatedSteps({ observations }) });
 });
 
 router.get("/agents/:agentId/supervision", requireAuth, requireOrg, async (req, res) => {
