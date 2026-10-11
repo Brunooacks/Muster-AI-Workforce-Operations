@@ -20,6 +20,7 @@ import executiveReportsRouter from "./executive-reports";
 import professionalPlansRouter from "./professional-plans";
 import accessControlRouter from "./access-control";
 import realtimeGovernanceRouter from "./realtime-governance";
+import internalCronRouter from "./internal-cron";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(executiveReportsRouter);
 router.use(professionalPlansRouter);
 router.use(accessControlRouter);
 router.use(realtimeGovernanceRouter);
+router.use(internalCronRouter);
 
 export default router;

@@ -6,11 +6,7 @@ import {
   agentEvents,
   externalEventReceipts,
   eventOutbox,
-  metricEvidence,
-  connectors,
-  agentConnectorLinks,
 } from "@workspace/db";
-import type { AgentEventKind } from "@workspace/db";
 import {
   IngestAgentEventBody,
   GetAgentTelemetryResponse,
@@ -19,9 +15,7 @@ import {
   PreAssessAgentSourceResponse,
   ReportAgentHeartbeatBody,
   ReadAgentSupervisionResponse,
-  IngestExternalAgentEnvelopeBody,
 } from "@workspace/api-zod";
-import type { ExternalAgentEnvelope } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
 import { ofOrg } from "../lib/tenant-scope";
@@ -34,45 +28,17 @@ import {
 import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
 import { preAssess } from "../lib/pre-assessment";
 import { supervisionFromHeartbeat } from "../lib/supervision";
-import { normalizeExternalObservation } from "../lib/connectors/ingestion";
-import { MUSTER_AGENT_INGESTION_CONTRACT_VERSION } from "../lib/connectors/types";
 import {
-  AGENT_TELEMETRY_EVENT_TYPE,
   loadAgentEvents,
   reevaluateAgentFromTelemetry,
 } from "../lib/agent-telemetry-reevaluation";
-import { supervisionDispatchFor } from "../lib/continuous-supervision";
+import { ingestExternalAgentEnvelope } from "../lib/external-ingestion";
+import { telemetryOutboxEntry } from "../lib/telemetry-outbox";
 
 const router: IRouter = Router();
 
 const WINDOW_DAYS: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
 const DIRECT_AGENT_EVENT_PLATFORM = "muster-direct-agent-v1";
-
-function telemetryOutboxEntry(input: {
-  orgId: string;
-  agentId: string;
-  agentEventId: string;
-  kind: AgentEventKind;
-  occurredAt: Date;
-}): typeof eventOutbox.$inferInsert | null {
-  const dispatch = supervisionDispatchFor(input.kind);
-  if (!dispatch.shouldReevaluate) return null;
-  return {
-    orgId: input.orgId,
-    aggregateType: "agent",
-    aggregateId: input.agentId,
-    eventType: AGENT_TELEMETRY_EVENT_TYPE,
-    priority: dispatch.priority,
-    availableAt: new Date(Date.now() + dispatch.debounceMs),
-    payload: {
-      agentId: input.agentId,
-      agentEventId: input.agentEventId,
-      kind: input.kind,
-      occurredAt: input.occurredAt.toISOString(),
-      debounceMs: dispatch.debounceMs,
-    },
-  };
-}
 
 // ── Ingest: agents report execution events here (fire-and-forget SDK) ──────
 router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) => {
@@ -192,265 +158,13 @@ router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, re
 });
 
 router.post("/integrations/agent-events", requireIntegrationCredential, async (req, res) => {
-  const body = IngestExternalAgentEnvelopeBody.parse(req.body) as ExternalAgentEnvelope;
-  if (body.contractVersion !== MUSTER_AGENT_INGESTION_CONTRACT_VERSION) {
-    res.status(400).json({ error: "Versão de contrato não suportada." });
-    return;
-  }
-
-  const requestedConnectorId = body.source.connectorId;
-  const authenticatedConnectorId = req.integrationConnectorId;
-  if (
-    authenticatedConnectorId &&
-    requestedConnectorId &&
-    requestedConnectorId !== authenticatedConnectorId
-  ) {
-    res.status(401).json({ error: "A credencial não pertence ao conector informado." });
-    return;
-  }
-  const connectorId = authenticatedConnectorId ?? requestedConnectorId;
-  if (connectorId) {
-    const [connector] = await db
-      .select({ id: connectors.id, platform: connectors.platform })
-      .from(connectors)
-      .where(and(eq(connectors.id, connectorId), ofOrg(connectors, req.orgId!)))
-      .limit(1);
-    if (!connector) {
-      res.status(404).json({ error: "Conector não encontrado nesta organização." });
-      return;
-    }
-    if (connector.platform !== body.source.platform) {
-      res.status(400).json({
-        error: `A origem ${body.source.platform} não corresponde ao conector ${connector.platform}.`,
-      });
-      return;
-    }
-    await db
-      .update(connectors)
-      .set({
-        status: "connected",
-        health: "healthy",
-        lastEventAt: new Date(),
-      })
-      .where(and(eq(connectors.id, connector.id), ofOrg(connectors, req.orgId!)));
-  }
-
-  const [linkedAgent] = connectorId
-    ? await db
-        .select({ id: agents.id, externalId: agents.externalId })
-        .from(agentConnectorLinks)
-        .innerJoin(agents, eq(agents.id, agentConnectorLinks.agentId))
-        .where(
-          and(
-            eq(agentConnectorLinks.connectorId, connectorId),
-            eq(agentConnectorLinks.externalId, body.agent.externalId),
-            eq(agentConnectorLinks.orgId, req.orgId!),
-            ofOrg(agents, req.orgId!),
-          ),
-        )
-        .limit(1)
-    : [];
-
-  const [legacyAgent] = linkedAgent
-    ? []
-    : await db
-        .select({ id: agents.id, externalId: agents.externalId })
-        .from(agents)
-        .where(and(eq(agents.externalId, body.agent.externalId), ofOrg(agents, req.orgId!)))
-        .limit(1);
-  const agent = linkedAgent ?? legacyAgent;
-
-  if (!agent) {
-    res.status(202).json({
-        accepted: true,
-        mapped: false,
-        agentExternalId: body.agent.externalId,
-        agentId: null,
-        eventsAccepted: 0,
-        observationsAccepted: 0,
-        nextAction: "Descobrir/importar o agente antes de materializar telemetria e evidências.",
-      });
-    return;
-  }
-
-  if (connectorId && !linkedAgent) {
-    await db
-      .insert(agentConnectorLinks)
-      .values({
-        orgId: req.orgId!,
-        agentId: agent.id,
-        connectorId,
-        externalId: body.agent.externalId,
-        role: "telemetry",
-      })
-      .onConflictDoNothing();
-  }
-
-  const source = {
-    platform: body.source.platform,
-    ...(connectorId ? { connectorId } : {}),
-    ...(body.source.tenant ? { tenant: body.source.tenant } : {}),
-    ...(body.source.reference ? { reference: body.source.reference } : {}),
-  };
-  const materialized = await db.transaction(async (tx) => {
-    if (body.eventId) {
-      const claimed = await tx
-        .insert(externalEventReceipts)
-        .values({
-          orgId: req.orgId!,
-          agentId: agent.id,
-          platform: body.source.platform,
-          eventId: body.eventId,
-        })
-        .onConflictDoNothing({
-          target: [
-            externalEventReceipts.orgId,
-            externalEventReceipts.platform,
-            externalEventReceipts.eventId,
-          ],
-        })
-        .returning({ id: externalEventReceipts.id });
-      if (claimed.length === 0) {
-        return { duplicate: true, eventsAccepted: 0, observationsAccepted: 0 };
-      }
-    }
-
-    let eventsAccepted = 0;
-    if (body.execution) {
-      const execution = body.execution;
-      const kind =
-        execution.status === "error"
-          ? "error"
-          : execution.status === "escalated"
-            ? "escalation"
-            : "execution";
-      const startedAt = execution.startedAt ? new Date(execution.startedAt) : null;
-      const [event] = await tx
-        .insert(agentEvents)
-        .values({
-          agentId: agent.id,
-          ...(startedAt && !Number.isNaN(startedAt.getTime())
-            ? { ts: startedAt }
-            : {}),
-          kind,
-          durationMs:
-            execution.durationMs != null
-              ? Math.round(execution.durationMs)
-              : null,
-          costCents:
-            execution.costCents != null
-              ? Math.round(execution.costCents)
-              : null,
-          tokensIn:
-            execution.tokensIn != null ? Math.round(execution.tokensIn) : null,
-          tokensOut:
-            execution.tokensOut != null
-              ? Math.round(execution.tokensOut)
-              : null,
-          success:
-            execution.status === "running"
-              ? null
-              : execution.status === "success"
-                ? 1
-                : 0,
-          metadata: {
-            ...(execution.metadata ?? {}),
-            source,
-            ...(body.eventId ? { externalEventId: body.eventId } : {}),
-            ...(execution.id ? { externalExecutionId: execution.id } : {}),
-          },
-        })
-        .returning({ id: agentEvents.id, ts: agentEvents.ts });
-      if (!event) throw new Error("Falha ao persistir execução externa.");
-      const outbox = telemetryOutboxEntry({
-        orgId: req.orgId!,
-        agentId: agent.id,
-        agentEventId: event.id,
-        kind,
-        occurredAt: event.ts,
-      });
-      if (outbox) await tx.insert(eventOutbox).values(outbox);
-      eventsAccepted += 1;
-    }
-
-    if (body.feedback) {
-      const [event] = await tx
-        .insert(agentEvents)
-        .values({
-          agentId: agent.id,
-          kind: "feedback",
-          success: body.feedback.kind === "negative" ? 0 : 1,
-          metadata: {
-            ...body.feedback,
-            source,
-            ...(body.eventId ? { externalEventId: body.eventId } : {}),
-          },
-        })
-        .returning({ id: agentEvents.id, ts: agentEvents.ts });
-      if (!event) throw new Error("Falha ao persistir feedback externo.");
-      const outbox = telemetryOutboxEntry({
-        orgId: req.orgId!,
-        agentId: agent.id,
-        agentEventId: event.id,
-        kind: "feedback",
-        occurredAt: event.ts,
-      });
-      if (outbox) await tx.insert(eventOutbox).values(outbox);
-      eventsAccepted += 1;
-    }
-
-    for (const input of body.observations ?? []) {
-      const observation = normalizeExternalObservation(input, source);
-      await tx.insert(metricEvidence).values({
-        orgId: req.orgId!,
-        metricKey: observation.metricKey,
-        label: observation.label,
-        agentId: agent.id,
-        value: observation.value,
-        unit: observation.unit,
-        kind: observation.kind,
-        source: { type: "connector", ...observation.source },
-        lineage: observation.lineage,
-        confidence: observation.confidence,
-        sampleSize: observation.sampleSize ?? null,
-        qualityFlags: [],
-        capturedAt: new Date(observation.capturedAt),
-      });
-    }
-
-    return {
-      duplicate: false,
-      eventsAccepted,
-      observationsAccepted: body.observations?.length ?? 0,
-    };
+  const result = await ingestExternalAgentEnvelope({
+    orgId: req.orgId!,
+    envelope: req.body,
+    authenticatedConnectorId: req.integrationConnectorId,
   });
-
-  if (materialized.duplicate) {
-    res.status(202).json({
-      accepted: true,
-      mapped: true,
-      agentExternalId: body.agent.externalId,
-      agentId: agent.id,
-      eventsAccepted: 0,
-      observationsAccepted: 0,
-      nextAction: "Envelope já processado nesta organização; nenhuma duplicidade foi criada.",
-    });
-    return;
-  }
-
-  const accepted = {
-    accepted: true,
-    mapped: true,
-    agentExternalId: body.agent.externalId,
-    agentId: agent.id,
-    eventsAccepted: materialized.eventsAccepted,
-    observationsAccepted: materialized.observationsAccepted,
-    nextAction:
-      "A reavaliação foi enfileirada; acompanhe a atividade contínua para métricas e decisão atualizadas.",
-  };
-  res.status(202).json(accepted);
+  res.status(result.status).json(result.body);
 });
-
 router.get("/agents/:agentId/supervision", requireAuth, requireOrg, async (req, res) => {
   const agentId = req.params.agentId as string;
   const [agent] = await db

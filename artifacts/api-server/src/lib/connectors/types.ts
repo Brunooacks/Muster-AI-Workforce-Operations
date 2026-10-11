@@ -31,8 +31,12 @@ export interface ConnectorTestResult {
   message: string;
 }
 
-export const MUSTER_CONNECTOR_CONTRACT_VERSION = "muster.connector.v1";
-export const MUSTER_AGENT_INGESTION_CONTRACT_VERSION = "muster.agent-ingestion.v1";
+export const MUSTER_CONNECTOR_CONTRACT_VERSION = "muster.connector.v2";
+export const MUSTER_AGENT_INGESTION_CONTRACT_VERSION = "muster.agent-ingestion.v2";
+export const MUSTER_SUPPORTED_AGENT_INGESTION_CONTRACT_VERSIONS = [
+  "muster.agent-ingestion.v1",
+  MUSTER_AGENT_INGESTION_CONTRACT_VERSION,
+] as const;
 
 export interface ConnectorCapabilities {
   testConnection: boolean;

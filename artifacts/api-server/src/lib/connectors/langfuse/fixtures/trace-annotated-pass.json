@@ -1,0 +1,11 @@
+{
+  "traceId": "trace-pass",
+  "observations": [
+    { "id": "obs-tool", "traceId": "trace-pass", "startTime": "2026-10-10T10:00:03.000Z", "endTime": "2026-10-10T10:00:05.000Z", "type": "TOOL", "name": "search", "model": "tool-model", "usageDetails": { "input": 999, "output": 999 }, "totalCost": 0.02, "environment": "prod", "sessionId": "session-pass" },
+    { "id": "obs-root", "traceId": "trace-pass", "startTime": "2026-10-10T10:00:00.000Z", "endTime": "2026-10-10T10:00:06.000Z", "type": "GENERATION", "isRootObservation": true, "name": "support-agent", "traceName": "Support trace", "model": "gpt-fake", "usageDetails": { "input": 10, "output": 5 }, "totalCost": 0.001, "environment": "prod", "sessionId": "session-pass" },
+    { "id": "obs-embed", "traceId": "trace-pass", "startTime": "2026-10-10T10:00:01.000Z", "endTime": "2026-10-10T10:00:04.000Z", "type": "EMBEDDING", "name": "embed", "model": "text-fake", "usageDetails": { "input": 3, "output": 0 }, "totalCost": 0.004, "environment": "prod", "sessionId": "session-pass" }
+  ],
+  "scores": [
+    { "id": "score-pass", "name": "quality", "source": "ANNOTATION", "dataType": "NUMERIC", "value": 0.5, "timestamp": "2026-10-10T10:00:07.000Z", "authorUserId": "reviewer-fake", "subject": { "kind": "trace", "id": "trace-pass" } }
+  ]
+}

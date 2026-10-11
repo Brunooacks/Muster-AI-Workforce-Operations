@@ -80,11 +80,13 @@ describe.skipIf(!runIntegration)("connector ingestion PostgreSQL", () => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        contractVersion: "muster.agent-ingestion.v1",
+        contractVersion: "muster.agent-ingestion.v2",
         eventId: `event-${suffix}`,
         source: { platform: "webhook", connectorId },
         agent: { externalId, name: "Observed Agent" },
         execution: {
+          taskRunId: `run-${suffix}`,
+          currency: "USD",
           status: "success",
           durationMs: 420,
           costCents: 2,
@@ -114,10 +116,49 @@ describe.skipIf(!runIntegration)("connector ingestion PostgreSQL", () => {
     expect(connector?.lastEventAt).toBeInstanceOf(Date);
 
     const events = await workspaceDb.db
-      .select({ agentId: agentEvents.agentId, kind: agentEvents.kind })
+      .select({
+        agentId: agentEvents.agentId,
+        kind: agentEvents.kind,
+        taskRunId: agentEvents.taskRunId,
+        currency: agentEvents.currency,
+      })
       .from(agentEvents)
       .where(eq(agentEvents.agentId, agentId));
-    expect(events).toContainEqual({ agentId, kind: "execution" });
+    expect(events).toContainEqual({
+      agentId,
+      kind: "execution",
+      taskRunId: `run-${suffix}`,
+      currency: "USD",
+    });
+  });
+
+  it("rejeita feedback v2 para taskRunId que não pertence ao agente", async () => {
+    const response = await fetch(`${baseUrl}/api/integrations/agent-events`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${key.plaintext}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        contractVersion: "muster.agent-ingestion.v2",
+        source: { platform: "webhook", connectorId },
+        agent: { externalId, name: "Observed Agent" },
+        feedback: {
+          taskRunId: "run-inexistente",
+          currency: "BRL",
+          kind: "negative",
+          validation: {
+            status: "rejected",
+            source: "human_review",
+          },
+        },
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: "taskRunId não encontrado para este agente.",
+    });
   });
 
   it("rejects a platform that does not match the authenticated connector", async () => {

@@ -2585,8 +2585,13 @@ export const IngestAgentEventBody = zod.object({
  * Universal ingestion contract for platforms such as Zendesk, Agentforce, OpenTelemetry gateways and proprietary runtimes. The envelope separates identity, execution telemetry, metric evidence and human feedback so the source adapter can evolve without changing the Muster evaluation model. External runtimes authenticate with the connector key issued during configuration; authenticated human calls remain supported for diagnostics.
  * @summary Ingest a normalized external agent envelope
  */
-export const IngestExternalAgentEnvelopeBody = zod.object({
-  "contractVersion": zod.enum(['muster.agent-ingestion.v1']),
+
+
+
+
+
+
+export const IngestExternalAgentEnvelopeBody = zod.union([zod.object({
   "eventId": zod.string().optional().describe('Optional idempotency key supplied by the source platform.'),
   "source": zod.object({
   "platform": zod.string(),
@@ -2603,17 +2608,6 @@ export const IngestExternalAgentEnvelopeBody = zod.object({
   "url": zod.string().optional(),
   "metadata": zod.record(zod.string(), zod.unknown()).optional()
 }),
-  "execution": zod.object({
-  "id": zod.string().optional(),
-  "startedAt": zod.coerce.date().optional(),
-  "completedAt": zod.coerce.date().optional(),
-  "status": zod.enum(['success', 'error', 'escalated', 'running']).optional(),
-  "durationMs": zod.number().optional(),
-  "costCents": zod.number().optional(),
-  "tokensIn": zod.number().optional(),
-  "tokensOut": zod.number().optional(),
-  "metadata": zod.record(zod.string(), zod.unknown()).optional()
-}).optional(),
   "observations": zod.array(zod.object({
   "metricKey": zod.string(),
   "label": zod.string(),
@@ -2628,14 +2622,91 @@ export const IngestExternalAgentEnvelopeBody = zod.object({
   "name": zod.string(),
   "ref": zod.string().optional()
 })).optional()
-})).optional(),
+})).optional()
+}).and(zod.object({
+  "contractVersion": zod.enum(['muster.agent-ingestion.v1']),
+  "execution": zod.object({
+  "taskRunId": zod.string().min(1).optional(),
+  "currency": zod.enum(['BRL', 'USD']).optional(),
+  "id": zod.string().optional(),
+  "startedAt": zod.coerce.date().optional(),
+  "completedAt": zod.coerce.date().optional(),
+  "status": zod.enum(['success', 'error', 'escalated', 'running']).optional(),
+  "durationMs": zod.number().optional(),
+  "costCents": zod.number().optional(),
+  "tokensIn": zod.number().optional(),
+  "tokensOut": zod.number().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+}).optional(),
   "feedback": zod.object({
+  "taskRunId": zod.string().min(1).optional(),
+  "currency": zod.enum(['BRL', 'USD']).optional(),
   "kind": zod.enum(['positive', 'negative', 'correction', 'escalation']),
   "score": zod.number().optional(),
   "comment": zod.string().optional(),
   "metadata": zod.record(zod.string(), zod.unknown()).optional()
 }).optional()
+})),zod.object({
+  "eventId": zod.string().optional().describe('Optional idempotency key supplied by the source platform.'),
+  "source": zod.object({
+  "platform": zod.string(),
+  "tenant": zod.string().optional(),
+  "connectorId": zod.string().optional(),
+  "environment": zod.string().optional(),
+  "reference": zod.string().optional()
+}),
+  "agent": zod.object({
+  "externalId": zod.string(),
+  "name": zod.string(),
+  "version": zod.string().optional(),
+  "runtime": zod.string().optional(),
+  "url": zod.string().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+}),
+  "observations": zod.array(zod.object({
+  "metricKey": zod.string(),
+  "label": zod.string(),
+  "value": zod.number(),
+  "unit": zod.string(),
+  "kind": zod.enum(['observed', 'inferred', 'synthetic']).optional(),
+  "confidence": zod.number().optional(),
+  "sampleSize": zod.number().optional(),
+  "capturedAt": zod.coerce.date().optional(),
+  "lineage": zod.array(zod.object({
+  "stage": zod.string(),
+  "name": zod.string(),
+  "ref": zod.string().optional()
+})).optional()
+})).optional()
+}).and(zod.object({
+  "contractVersion": zod.enum(['muster.agent-ingestion.v2']),
+  "execution": zod.object({
+  "taskRunId": zod.string().min(1),
+  "currency": zod.enum(['BRL', 'USD']).optional(),
+  "id": zod.string().optional(),
+  "startedAt": zod.coerce.date().optional(),
+  "completedAt": zod.coerce.date().optional(),
+  "status": zod.enum(['success', 'error', 'escalated', 'running']).optional(),
+  "durationMs": zod.number().optional(),
+  "costCents": zod.number().optional(),
+  "tokensIn": zod.number().optional(),
+  "tokensOut": zod.number().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+}).optional(),
+  "feedback": zod.object({
+  "taskRunId": zod.string().min(1),
+  "currency": zod.enum(['BRL', 'USD']).optional(),
+  "kind": zod.enum(['positive', 'negative', 'correction', 'escalation']),
+  "score": zod.number().optional(),
+  "comment": zod.string().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "validation": zod.object({
+  "status": zod.enum(['validated', 'rejected', 'unvalidated']),
+  "source": zod.enum(['human_review', 'connector', 'self_reported']),
+  "reviewerRef": zod.string().optional()
 })
+}).optional()
+}))])
 
 
 /**

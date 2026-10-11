@@ -907,56 +907,6 @@ export interface ConnectorCapability {
   note: string;
 }
 
-export type ExternalAgentEnvelopeContractVersion = typeof ExternalAgentEnvelopeContractVersion[keyof typeof ExternalAgentEnvelopeContractVersion];
-
-
-export const ExternalAgentEnvelopeContractVersion = {
-  'musteragent-ingestionv1': 'muster.agent-ingestion.v1',
-} as const;
-
-export type ExternalAgentEnvelopeSource = {
-  platform: string;
-  tenant?: string;
-  connectorId?: string;
-  environment?: string;
-  reference?: string;
-};
-
-export type ExternalAgentEnvelopeAgentMetadata = { [key: string]: unknown };
-
-export type ExternalAgentEnvelopeAgent = {
-  externalId: string;
-  name: string;
-  version?: string;
-  runtime?: string;
-  url?: string;
-  metadata?: ExternalAgentEnvelopeAgentMetadata;
-};
-
-export type ExternalAgentExecutionStatus = typeof ExternalAgentExecutionStatus[keyof typeof ExternalAgentExecutionStatus];
-
-
-export const ExternalAgentExecutionStatus = {
-  success: 'success',
-  error: 'error',
-  escalated: 'escalated',
-  running: 'running',
-} as const;
-
-export type ExternalAgentExecutionMetadata = { [key: string]: unknown };
-
-export interface ExternalAgentExecution {
-  id?: string;
-  startedAt?: string;
-  completedAt?: string;
-  status?: ExternalAgentExecutionStatus;
-  durationMs?: number;
-  costCents?: number;
-  tokensIn?: number;
-  tokensOut?: number;
-  metadata?: ExternalAgentExecutionMetadata;
-}
-
 export type ExternalAgentObservationKind = typeof ExternalAgentObservationKind[keyof typeof ExternalAgentObservationKind];
 
 
@@ -984,6 +934,83 @@ export interface ExternalAgentObservation {
   lineage?: ExternalAgentObservationLineageItem[];
 }
 
+export type ExternalAgentEnvelopeBaseSource = {
+  platform: string;
+  tenant?: string;
+  connectorId?: string;
+  environment?: string;
+  reference?: string;
+};
+
+export type ExternalAgentEnvelopeBaseAgentMetadata = { [key: string]: unknown };
+
+export type ExternalAgentEnvelopeBaseAgent = {
+  externalId: string;
+  name: string;
+  version?: string;
+  runtime?: string;
+  url?: string;
+  metadata?: ExternalAgentEnvelopeBaseAgentMetadata;
+};
+
+export interface ExternalAgentEnvelopeBase {
+  /** Optional idempotency key supplied by the source platform. */
+  eventId?: string;
+  source: ExternalAgentEnvelopeBaseSource;
+  agent: ExternalAgentEnvelopeBaseAgent;
+  observations?: ExternalAgentObservation[];
+}
+
+export type ExternalAgentEnvelopeV1ContractVersion = typeof ExternalAgentEnvelopeV1ContractVersion[keyof typeof ExternalAgentEnvelopeV1ContractVersion];
+
+
+export const ExternalAgentEnvelopeV1ContractVersion = {
+  'musteragent-ingestionv1': 'muster.agent-ingestion.v1',
+} as const;
+
+export type ExternalAgentExecutionCurrency = typeof ExternalAgentExecutionCurrency[keyof typeof ExternalAgentExecutionCurrency];
+
+
+export const ExternalAgentExecutionCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type ExternalAgentExecutionStatus = typeof ExternalAgentExecutionStatus[keyof typeof ExternalAgentExecutionStatus];
+
+
+export const ExternalAgentExecutionStatus = {
+  success: 'success',
+  error: 'error',
+  escalated: 'escalated',
+  running: 'running',
+} as const;
+
+export type ExternalAgentExecutionMetadata = { [key: string]: unknown };
+
+export interface ExternalAgentExecution {
+  /** @minLength 1 */
+  taskRunId?: string;
+  currency?: ExternalAgentExecutionCurrency;
+  id?: string;
+  startedAt?: string;
+  completedAt?: string;
+  status?: ExternalAgentExecutionStatus;
+  durationMs?: number;
+  costCents?: number;
+  tokensIn?: number;
+  tokensOut?: number;
+  metadata?: ExternalAgentExecutionMetadata;
+}
+
+export type ExternalAgentFeedbackCurrency = typeof ExternalAgentFeedbackCurrency[keyof typeof ExternalAgentFeedbackCurrency];
+
+
+export const ExternalAgentFeedbackCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
 export type ExternalAgentFeedbackKind = typeof ExternalAgentFeedbackKind[keyof typeof ExternalAgentFeedbackKind];
 
 
@@ -997,22 +1024,125 @@ export const ExternalAgentFeedbackKind = {
 export type ExternalAgentFeedbackMetadata = { [key: string]: unknown };
 
 export interface ExternalAgentFeedback {
+  /** @minLength 1 */
+  taskRunId?: string;
+  currency?: ExternalAgentFeedbackCurrency;
   kind: ExternalAgentFeedbackKind;
   score?: number;
   comment?: string;
   metadata?: ExternalAgentFeedbackMetadata;
 }
 
-export interface ExternalAgentEnvelope {
-  contractVersion: ExternalAgentEnvelopeContractVersion;
-  /** Optional idempotency key supplied by the source platform. */
-  eventId?: string;
-  source: ExternalAgentEnvelopeSource;
-  agent: ExternalAgentEnvelopeAgent;
+export type ExternalAgentEnvelopeV1 = ExternalAgentEnvelopeBase & {
+  contractVersion: ExternalAgentEnvelopeV1ContractVersion;
   execution?: ExternalAgentExecution;
-  observations?: ExternalAgentObservation[];
   feedback?: ExternalAgentFeedback;
+};
+
+export type ExternalAgentEnvelopeV2ContractVersion = typeof ExternalAgentEnvelopeV2ContractVersion[keyof typeof ExternalAgentEnvelopeV2ContractVersion];
+
+
+export const ExternalAgentEnvelopeV2ContractVersion = {
+  'musteragent-ingestionv2': 'muster.agent-ingestion.v2',
+} as const;
+
+export type ExternalAgentExecutionV2Currency = typeof ExternalAgentExecutionV2Currency[keyof typeof ExternalAgentExecutionV2Currency];
+
+
+export const ExternalAgentExecutionV2Currency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type ExternalAgentExecutionV2Status = typeof ExternalAgentExecutionV2Status[keyof typeof ExternalAgentExecutionV2Status];
+
+
+export const ExternalAgentExecutionV2Status = {
+  success: 'success',
+  error: 'error',
+  escalated: 'escalated',
+  running: 'running',
+} as const;
+
+export type ExternalAgentExecutionV2Metadata = { [key: string]: unknown };
+
+export interface ExternalAgentExecutionV2 {
+  /** @minLength 1 */
+  taskRunId: string;
+  currency?: ExternalAgentExecutionV2Currency;
+  id?: string;
+  startedAt?: string;
+  completedAt?: string;
+  status?: ExternalAgentExecutionV2Status;
+  durationMs?: number;
+  costCents?: number;
+  tokensIn?: number;
+  tokensOut?: number;
+  metadata?: ExternalAgentExecutionV2Metadata;
 }
+
+export type ExternalAgentFeedbackV2Currency = typeof ExternalAgentFeedbackV2Currency[keyof typeof ExternalAgentFeedbackV2Currency];
+
+
+export const ExternalAgentFeedbackV2Currency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type ExternalAgentFeedbackV2Kind = typeof ExternalAgentFeedbackV2Kind[keyof typeof ExternalAgentFeedbackV2Kind];
+
+
+export const ExternalAgentFeedbackV2Kind = {
+  positive: 'positive',
+  negative: 'negative',
+  correction: 'correction',
+  escalation: 'escalation',
+} as const;
+
+export type ExternalAgentFeedbackV2ValidationStatus = typeof ExternalAgentFeedbackV2ValidationStatus[keyof typeof ExternalAgentFeedbackV2ValidationStatus];
+
+
+export const ExternalAgentFeedbackV2ValidationStatus = {
+  validated: 'validated',
+  rejected: 'rejected',
+  unvalidated: 'unvalidated',
+} as const;
+
+export type ExternalAgentFeedbackV2ValidationSource = typeof ExternalAgentFeedbackV2ValidationSource[keyof typeof ExternalAgentFeedbackV2ValidationSource];
+
+
+export const ExternalAgentFeedbackV2ValidationSource = {
+  human_review: 'human_review',
+  connector: 'connector',
+  self_reported: 'self_reported',
+} as const;
+
+export type ExternalAgentFeedbackV2Metadata = { [key: string]: unknown };
+
+export type ExternalAgentFeedbackV2Validation = {
+  status: ExternalAgentFeedbackV2ValidationStatus;
+  source: ExternalAgentFeedbackV2ValidationSource;
+  reviewerRef?: string;
+};
+
+export interface ExternalAgentFeedbackV2 {
+  /** @minLength 1 */
+  taskRunId: string;
+  currency?: ExternalAgentFeedbackV2Currency;
+  kind: ExternalAgentFeedbackV2Kind;
+  score?: number;
+  comment?: string;
+  metadata?: ExternalAgentFeedbackV2Metadata;
+  validation: ExternalAgentFeedbackV2Validation;
+}
+
+export type ExternalAgentEnvelopeV2 = ExternalAgentEnvelopeBase & {
+  contractVersion: ExternalAgentEnvelopeV2ContractVersion;
+  execution?: ExternalAgentExecutionV2;
+  feedback?: ExternalAgentFeedbackV2;
+};
+
+export type ExternalAgentEnvelope = ExternalAgentEnvelopeV1 | ExternalAgentEnvelopeV2;
 
 export interface ExternalAgentIngestionResult {
   accepted: boolean;

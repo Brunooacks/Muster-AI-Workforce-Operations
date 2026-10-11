@@ -965,6 +965,26 @@ export const connectorApiKeys = pgTable("connector_api_keys", {
   connectorApiKeysConnectorIdx: index("connector_api_keys_connector_idx").on(table.connectorId),
 }));
 
+// Marca d'água por organização e conector para coletores pull. O valor só é
+// avançado depois que a janela inteira foi materializada pela fronteira v2.
+export const connectorSyncCursors = pgTable("connector_sync_cursors", {
+  id: id(),
+  orgId: text("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  connectorId: text("connector_id")
+    .notNull()
+    .references(() => connectors.id, { onDelete: "cascade" }),
+  watermark: timestamp("watermark", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  connectorSyncCursorsOrgConnectorUnique: uniqueIndex("connector_sync_cursors_org_connector_idx").on(
+    table.orgId,
+    table.connectorId,
+  ),
+  connectorSyncCursorsConnectorIdx: index("connector_sync_cursors_connector_idx").on(table.connectorId),
+}));
+
 // --- Telemetry (R6) -----------------------------------------------------------
 // Raw execution events reported by agents (SDK/reporter). Aggregations derive
 // the real 5-layer evaluation; when an agent has no events the evaluation
@@ -983,6 +1003,8 @@ export const agentEvents = pgTable("agent_events", {
     .references(() => agents.id, { onDelete: "cascade" }),
   ts: timestamp("ts", { withTimezone: true }).notNull().defaultNow(),
   kind: text("kind").$type<AgentEventKind>().notNull().default("execution"),
+  taskRunId: text("task_run_id"),
+  currency: text("currency"),
   durationMs: integer("duration_ms"),
   costCents: integer("cost_cents"),
   tokensIn: integer("tokens_in"),
@@ -991,6 +1013,10 @@ export const agentEvents = pgTable("agent_events", {
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
 }, (table) => ({
   agentEventsAgentTsIdx: index("agent_events_agent_ts_idx").on(table.agentId, table.ts),
+  agentEventsAgentTaskRunIdx: index("agent_events_agent_task_run_idx").on(
+    table.agentId,
+    table.taskRunId,
+  ),
 }));
 
 export type OutboxStatus =
