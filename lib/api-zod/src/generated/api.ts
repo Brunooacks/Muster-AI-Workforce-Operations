@@ -2588,6 +2588,19 @@ export const IngestAgentEventBody = zod.object({
 
 
 
+export const ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemStepKeyMax = 160;
+
+export const ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemInputFingerprintRegExp = new RegExp('^sha256:[a-f0-9]{64}$');
+export const ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemOutputHashRegExp = new RegExp('^sha256:[a-f0-9]{64}$');
+
+export const ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemTokensInMin = 0;
+
+export const ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemTokensOutMin = 0;
+
+export const ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemCostCentsMin = 0;
+
+export const ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsMax = 100;
+
 
 
 
@@ -2691,7 +2704,19 @@ export const IngestExternalAgentEnvelopeBody = zod.union([zod.object({
   "costCents": zod.number().optional(),
   "tokensIn": zod.number().optional(),
   "tokensOut": zod.number().optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "steps": zod.array(zod.object({
+  "stepKey": zod.string().min(1).max(ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemStepKeyMax),
+  "inputFingerprint": zod.string().regex(ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemInputFingerprintRegExp),
+  "outputHash": zod.string().regex(ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemOutputHashRegExp),
+  "path": zod.enum(['model', 'code', 'human']),
+  "model": zod.string().min(1).optional(),
+  "tokensIn": zod.number().min(ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemTokensInMin).optional(),
+  "tokensOut": zod.number().min(ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemTokensOutMin).optional(),
+  "costCents": zod.number().min(ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsItemCostCentsMin).optional(),
+  "shadow": zod.boolean(),
   "metadata": zod.record(zod.string(), zod.unknown()).optional()
+})).min(1).max(ingestExternalAgentEnvelopeBodyTwoTwoExecutionStepsMax).optional()
 }).optional(),
   "feedback": zod.object({
   "taskRunId": zod.string().min(1),
