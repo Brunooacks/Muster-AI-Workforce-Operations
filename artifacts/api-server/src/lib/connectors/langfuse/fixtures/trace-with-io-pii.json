@@ -1,0 +1,9 @@
+{
+  "traceId": "trace-pii",
+  "observations": [
+    { "id": "obs-pii", "traceId": "trace-pii", "startTime": "2026-10-10T15:00:00.000Z", "endTime": "2026-10-10T15:00:01.000Z", "type": "GENERATION", "isRootObservation": true, "name": "private-agent", "traceName": "Private trace", "input": "CPF 123.456.789-09", "output": "email pessoa.teste@example.invalid", "metadata": { "cpf": "123.456.789-09" }, "statusMessage": "email pessoa.teste@example.invalid" }
+  ],
+  "scores": [
+    { "id": "score-pii", "name": "quality", "source": "ANNOTATION", "dataType": "TEXT", "value": "unclear", "comment": "CPF 123.456.789-09 pessoa.teste@example.invalid", "timestamp": "2026-10-10T15:00:02.000Z", "subject": { "kind": "trace", "id": "trace-pii" } }
+  ]
+}
