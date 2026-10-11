@@ -113,7 +113,7 @@ function needsFx(input: CostPerValidatedTaskInput): boolean {
 }
 
 function toBrlCents(cents: number, currency: CostCurrency, fx?: ExchangeRate): number {
-  return currency === "BRL" ? cents : roundCents(cents * fx!.usdToBrl);
+  return roundCents(currency === "BRL" ? cents : cents * fx!.usdToBrl);
 }
 
 function provenance(
@@ -176,7 +176,7 @@ export function calculateCostPerValidatedTask(
   ), 0);
   const escalatedCost = input.humanReference
     ? toBrlCents(
-      roundCents((input.humanReference.hourlyRateCents * totalEscalatedMinutes) / 60),
+      (input.humanReference.hourlyRateCents * totalEscalatedMinutes) / 60,
       input.humanReference.currency,
       input.fx,
     )
@@ -190,7 +190,11 @@ export function calculateCostPerValidatedTask(
       ([source, tasks]) => [source, {
         count: tasks.length,
         percent: roundPercent((tasks.length / totalValidatedTasks) * 100),
-        provenance: provenance("observed", ["validation"], tasks.map((task) => task.taskRunId)),
+        provenance: provenance(
+          source === "self_reported" ? "declared" : "observed",
+          source === "self_reported" ? ["validation", "self_reported"] : ["validation"],
+          tasks.map((task) => task.taskRunId),
+        ),
       }],
     ),
   ) as Record<ValidationSource, ValidationSourceMetric>;
@@ -220,7 +224,7 @@ export function calculateCostPerValidatedTask(
   const humanCostPerTask = input.humanReference
     ? {
       cents: toBrlCents(
-        roundCents((input.humanReference.hourlyRateCents * input.humanReference.minutesPerTask) / 60),
+        (input.humanReference.hourlyRateCents * input.humanReference.minutesPerTask) / 60,
         input.humanReference.currency,
         input.fx,
       ),

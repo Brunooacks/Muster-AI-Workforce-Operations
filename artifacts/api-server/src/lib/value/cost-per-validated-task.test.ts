@@ -164,6 +164,17 @@ describe("calculateCostPerValidatedTask", () => {
     expect(result).toMatchObject({ status: "available", humanCostPerTask: { cents: 2 } });
   });
 
+  it("converte custo humano em USD antes de arredondar o centavo em BRL", () => {
+    const result = calculateCostPerValidatedTask({
+      tasks: [task()],
+      humanReference: { ...humanReference, hourlyRateCents: 101, minutesPerTask: 1, currency: "USD" },
+      fx: { usdToBrl: 5, rateDate: "2026-10-10", source: "bcb" },
+      outputCurrency: "BRL",
+    });
+
+    expect(result).toMatchObject({ status: "available", humanCostPerTask: { cents: 8 } });
+  });
+
   it("separa contagem e percentual de cada fonte de validacao", () => {
     const result = calculateCostPerValidatedTask({
       tasks: [
@@ -210,6 +221,21 @@ describe("calculateCostPerValidatedTask", () => {
       status: "available",
       costPerValidatedTask: { provenance: { kind: "derived", sources: ["task_input", "validation"] } },
       validationBySource: { human_review: { provenance: { kind: "observed", sources: ["validation"] } } },
+    });
+  });
+
+  it("marca contagem auto relatada como declarada, nao como observada", () => {
+    const result = calculateCostPerValidatedTask({
+      tasks: [
+        task(),
+        task({ taskRunId: "self", validation: { status: "validated", source: "self_reported" } }),
+      ],
+      outputCurrency: "BRL",
+    });
+
+    expect(result).toMatchObject({
+      status: "available",
+      validationBySource: { self_reported: { provenance: { kind: "declared" } } },
     });
   });
 });
