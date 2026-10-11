@@ -69,6 +69,26 @@ describe("parseLangfuseCredential", () => {
     ).rejects.toThrow("não é permitido");
   });
 
+  it("bloqueia faixas IPv4 e IPv6 reservadas em instâncias self-hosted", async () => {
+    for (const baseUrl of [
+      "https://100.64.0.1:3000",
+      "https://198.18.0.1:3000",
+      "https://224.0.0.1:3000",
+      "https://[fe90::1]:3000",
+      "https://[2001:db8::1]:3000",
+    ]) {
+      await expect(
+        parseLangfuseCredential(
+          JSON.stringify({
+            publicKey: "pk-lf-f2-public",
+            secretKey: "sk-lf-f2-secret",
+            baseUrl,
+          }),
+        ),
+      ).rejects.toThrow("não é permitido");
+    }
+  });
+
   it("exige baseUrl HTTPS", async () => {
     await expect(
       parseLangfuseCredential(

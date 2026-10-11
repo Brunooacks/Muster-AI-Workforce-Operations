@@ -58,6 +58,23 @@ describe("createLangfuseClient", () => {
     expect(resolveHost).toHaveBeenCalledWith("self-hosted.langfuse.test");
   });
 
+  it("recusa uma resolução self-hosted que também contenha IP não global", async () => {
+    const resolveHost = vi.fn().mockResolvedValue([
+      { address: "93.184.216.34", family: 4 },
+      { address: "100.64.0.1", family: 4 },
+    ]);
+    const requestImpl = vi.fn();
+    const client = createLangfuseClient({
+      credential: { ...f2Credential, baseUrl: "https://self-hosted.langfuse.test" },
+      resolveHost,
+      requestImpl,
+    });
+
+    await expect(client.listProjects()).rejects.toThrow("não é permitido");
+
+    expect(requestImpl).not.toHaveBeenCalled();
+  });
+
   it("mantém o timeout ativo enquanto lê o JSON da resposta", async () => {
     vi.useFakeTimers();
     let resolveJson!: (body: unknown) => void;

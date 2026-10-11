@@ -203,7 +203,7 @@ function fetchWithResolvedHost(
   requestImpl: typeof https.request,
 ): Promise<Response> {
   const address = addresses[0];
-  if (!address || isBlockedHostname(address.address)) {
+  if (!address || addresses.some(({ address }) => isBlockedHostname(address))) {
     return Promise.reject(new LangfuseClientError("langfuse_unsafe_host"));
   }
 
@@ -212,6 +212,7 @@ function fetchWithResolvedHost(
       method: init.method ?? "GET",
       headers: Object.fromEntries(new Headers(init.headers)),
       signal: init.signal ?? undefined,
+      agent: false,
       lookup: fixedLookup(address),
     }, (response) => {
       const chunks: Buffer[] = [];

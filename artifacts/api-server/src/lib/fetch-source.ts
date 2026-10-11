@@ -131,36 +131,73 @@ function priority(path: string): number {
 // --- SSRF guardrails -------------------------------------------------------
 
 export function isBlockedHostname(hostname: string): boolean {
-  const h = hostname.toLowerCase();
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal"))
     return true;
-  if (h.startsWith("::ffff:")) {
-    const mapped = h.slice("::ffff:".length);
-    if (mapped.includes(".")) return isBlockedHostname(mapped);
-    const groups = mapped.split(":");
-    if (groups.length === 2) {
-      const high = Number.parseInt(groups[0]!, 16);
-      const low = Number.parseInt(groups[1]!, 16);
-      if (Number.isInteger(high) && Number.isInteger(low) && high <= 0xffff && low <= 0xffff) {
-        return isBlockedHostname(`${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`);
-      }
+  const ipv4 = parseIpv4(h);
+  if (ipv4) return isBlockedIpv4(ipv4);
+  const ipv6 = parseIpv6(h);
+  return ipv6 ? isBlockedIpv6(ipv6) : false;
+}
+
+function parseIpv4(value: string): number[] | undefined {
+  const parts = value.split(".");
+  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) return undefined;
+  const octets = parts.map(Number);
+  return octets.every((octet) => octet <= 255) ? octets : undefined;
+}
+
+function isBlockedIpv4([a, b, c]: number[]): boolean {
+  return a === 0
+    || a === 10
+    || (a === 100 && b >= 64 && b <= 127)
+    || a === 127
+    || (a === 169 && b === 254)
+    || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 0 && c === 0)
+    || (a === 192 && b === 0 && c === 2)
+    || (a === 192 && b === 88 && c === 99)
+    || (a === 192 && b === 168)
+    || (a === 198 && (b === 18 || b === 19))
+    || (a === 198 && b === 51 && c === 100)
+    || (a === 203 && b === 0 && c === 113)
+    || a >= 224;
+}
+
+function parseIpv6(value: string): number[] | undefined {
+  const lastColon = value.lastIndexOf(":");
+  if (lastColon >= 0) {
+    const ipv4 = parseIpv4(value.slice(lastColon + 1));
+    if (ipv4) {
+      value = `${value.slice(0, lastColon + 1)}${((ipv4[0]! << 8) | ipv4[1]!).toString(16)}:${((ipv4[2]! << 8) | ipv4[3]!).toString(16)}`;
     }
   }
-  // IPv6 loopback / link-local
-  if (h === "::1" || h.startsWith("fe80:") || h.startsWith("fc") || h.startsWith("fd"))
-    return true;
-  // IPv4 literals in private / reserved ranges
-  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (m) {
-    const [a, b] = [Number(m[1]), Number(m[2])];
-    if (a === 10) return true;
-    if (a === 127) return true;
-    if (a === 0) return true;
-    if (a === 169 && b === 254) return true; // link-local / cloud metadata
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-  }
-  return false;
+  const separator = value.indexOf("::");
+  if (separator !== value.lastIndexOf("::")) return undefined;
+  const left = separator >= 0 ? value.slice(0, separator).split(":").filter(Boolean) : value.split(":");
+  const right = separator >= 0 ? value.slice(separator + 2).split(":").filter(Boolean) : [];
+  if (left.length + right.length > 8 || (separator < 0 && left.length !== 8)) return undefined;
+  const groups = [...left, ...Array(8 - left.length - right.length).fill("0"), ...right];
+  if (groups.some((group) => !/^[\da-f]{1,4}$/.test(group))) return undefined;
+  return groups.map((group) => Number.parseInt(group, 16));
+}
+
+function isBlockedIpv6(groups: number[]): boolean {
+  const ipv4Tail = [groups[6]! >> 8, groups[6]! & 0xff, groups[7]! >> 8, groups[7]! & 0xff];
+  const isIpv4Mapped = groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff;
+  const isIpv4Compatible = groups.slice(0, 6).every((group) => group === 0);
+  if (isIpv4Mapped) return isBlockedIpv4(ipv4Tail);
+  if (isIpv4Compatible) return true;
+
+  const [first, second, third, fourth] = groups;
+  return (first! & 0xfe00) === 0xfc00 // unique local fc00::/7
+    || (first! & 0xffc0) === 0xfe80 // link-local fe80::/10
+    || (first! & 0xff00) === 0xff00 // multicast ff00::/8
+    || (first === 0x0100 && second === 0 && third === 0 && fourth === 0) // discard-only 100::/64
+    || (first === 0x2001 && second === 0x0002 && third === 0) // benchmarking 2001:2::/48
+    || (first === 0x2001 && (second! & 0xfff0) === 0x0010) // ORCHIDv2 2001:10::/28
+    || (first === 0x2001 && second === 0x0db8) // documentation 2001:db8::/32
+    || (first === 0x2002); // deprecated 6to4, with embedded IPv4
 }
 
 function assertSafeUrl(raw: string): URL {
