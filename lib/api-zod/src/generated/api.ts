@@ -1596,10 +1596,6 @@ export const DeleteAgentParams = zod.object({
  * Returns observed task value for the requested inclusive time window without currency conversion.
  * @summary Cost per validated task, separated by currency
  */
-export const GetAgentValueParams = zod.object({
-  "agentId": zod.coerce.string()
-})
-
 export const GetAgentValueQueryParams = zod.object({
   "from": zod.date(),
   "to": zod.date()

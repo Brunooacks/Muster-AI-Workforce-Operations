@@ -119,6 +119,51 @@ describe("GET /agents/:agentId/value", () => {
     expect(lte).toHaveBeenCalledWith(column, new Date("2026-10-11T12:00:00.000Z"));
     expect(response.status).toHaveBeenCalledWith(200);
   });
+
+  it.each([
+    ["ausente", { to: "2026-10-11T23:59:59.999Z" }],
+    ["inválida", { from: "não-é-data", to: "2026-10-11T23:59:59.999Z" }],
+  ])("rejeita data inicial %s", async (_caseName, query) => {
+    const response = responseMock();
+
+    await valueHandler()(request(query), response);
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith({
+      error: "Informe datas from e to válidas.",
+    });
+    expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("rejeita janela cujo início é posterior ao fim", async () => {
+    const response = responseMock();
+
+    await valueHandler()(
+      request({ from: "2026-10-12T00:00:00.000Z", to: "2026-10-11T00:00:00.000Z" }),
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith({
+      error: "A data from deve ser anterior ou igual a to.",
+    });
+    expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it("rejeita janela superior a 92 dias", async () => {
+    const response = responseMock();
+
+    await valueHandler()(
+      request({ from: "2026-07-11T00:00:00.000Z", to: "2026-10-12T00:00:00.000Z" }),
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith({
+      error: "A janela máxima é de 92 dias.",
+    });
+    expect(db.select).not.toHaveBeenCalled();
+  });
 });
 
 function valueHandler(): (req: Request, res: Response) => Promise<void> {
@@ -135,7 +180,7 @@ function valueHandler(): (req: Request, res: Response) => Promise<void> {
   return layer.route.stack.at(-1)!.handle;
 }
 
-function request(query: Record<string, string>): Request {
+function request(query: Record<string, string | undefined>): Request {
   return {
     params: { agentId: "agent-1" },
     query,

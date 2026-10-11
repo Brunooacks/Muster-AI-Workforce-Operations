@@ -203,7 +203,7 @@ export * from './fleetTrendPoint';
 export * from './generateExecutiveReportRequest';
 export * from './generateExecutiveReportRequestNarrativeMode';
 export * from './generateExecutiveReportRequestTemplateId';
-export { type GetAgentValueParams as GetAgentValueQueryInput } from './getAgentValueParams';
+export * from './getAgentValueParams';
 export * from './gitHubStatus';
 export * from './gitHubStatusSource';
 export * from './governanceAgentRef';

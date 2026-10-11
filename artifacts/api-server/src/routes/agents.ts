@@ -39,7 +39,6 @@ import {
   GetGitHubStatusResponse,
   UpdateEvaluationMetricParams,
   UpdateEvaluationMetricBody,
-  GetAgentValueParams,
   GetAgentValueQueryParams,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -74,6 +73,8 @@ import {
 import { aggregateTaskValue } from "../lib/value/task-value";
 
 const router: IRouter = Router();
+const MAX_AGENT_VALUE_WINDOW_DAYS = 92;
+const MAX_AGENT_VALUE_WINDOW_MS = MAX_AGENT_VALUE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 function slugify(name: string): string {
   return name
@@ -277,11 +278,24 @@ router.get("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
 });
 
 router.get("/agents/:agentId/value", requireAuth, requireOrg, async (req, res) => {
-  const { agentId } = GetAgentValueParams.parse(req.params);
-  const { from, to } = GetAgentValueQueryParams.parse({
-    from: new Date(String(req.query.from)),
-    to: new Date(String(req.query.to)),
-  });
+  const { agentId } = GetAgentParams.parse(req.params);
+  const from = new Date(String(req.query.from));
+  const to = new Date(String(req.query.to));
+
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+    res.status(400).json({ error: "Informe datas from e to válidas." });
+    return;
+  }
+  if (from > to) {
+    res.status(400).json({ error: "A data from deve ser anterior ou igual a to." });
+    return;
+  }
+  if (to.getTime() - from.getTime() > MAX_AGENT_VALUE_WINDOW_MS) {
+    res.status(400).json({ error: "A janela máxima é de 92 dias." });
+    return;
+  }
+
+  GetAgentValueQueryParams.parse({ from, to });
   const [agent] = await db
     .select({ id: agents.id })
     .from(agents)
