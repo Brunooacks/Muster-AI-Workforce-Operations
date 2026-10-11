@@ -1,14 +1,24 @@
 import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
+  agentEventSteps,
   agentEvents,
   connectorApiKeys,
   connectors,
   organizations,
 } from "@workspace/db/schema";
 import { generateConnectorApiKey } from "./connector-api-key";
+
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: null, sessionClaims: null }),
+}));
+
+vi.mock("./clerk-config", () => ({
+  clerkRuntimeConfig: () => ({ secretKey: "sk_test_example", publishableKey: "pk_test_example" }),
+}));
 
 const runIntegration = process.env.RUN_CONNECTOR_INGESTION_DB_TESTS === "true";
 
@@ -20,9 +30,13 @@ let baseUrl = "";
 const suffix = randomUUID().slice(0, 8);
 const orgId = `org_connector_${suffix}`;
 const connectorId = `connector_${suffix}`;
+const orgBId = `org_connector_b_${suffix}`;
+const connectorBId = `connector_b_${suffix}`;
 let agentId = "";
+let agentBId = "";
 const externalId = `external_${suffix}`;
 const key = generateConnectorApiKey();
+const keyB = generateConnectorApiKey();
 
 describe.skipIf(!runIntegration)("connector ingestion PostgreSQL", () => {
   beforeAll(async () => {
@@ -57,6 +71,35 @@ describe.skipIf(!runIntegration)("connector ingestion PostgreSQL", () => {
       platform: "webhook",
       bio: "Agent used to validate connector-scoped ingestion.",
     });
+    await workspaceDb.db.insert(organizations).values({
+      id: orgBId,
+      name: "Connector Test B",
+      slug: `connector-test-b-${suffix}`,
+    });
+    await workspaceDb.db.insert(connectors).values({
+      id: connectorBId,
+      orgId: orgBId,
+      platform: "webhook",
+      name: "Webhook Test B",
+      status: "configured",
+      mode: "universal",
+      health: "unverified",
+    });
+    await workspaceDb.db.insert(connectorApiKeys).values({
+      orgId: orgBId,
+      connectorId: connectorBId,
+      prefix: keyB.prefix,
+      keyHash: keyB.keyHash,
+    });
+    agentBId = await admitAgent({
+      orgId: orgBId,
+      connectorId: connectorBId,
+      externalId,
+      name: "Observed Agent B",
+      role: "support",
+      platform: "webhook",
+      bio: "Same external identifier in an isolated organization.",
+    });
 
     const { default: app } = await import("../app");
     server = app.listen(0);
@@ -70,6 +113,7 @@ describe.skipIf(!runIntegration)("connector ingestion PostgreSQL", () => {
     if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
     if (!workspaceDb) return;
     await workspaceDb.db.delete(organizations).where(eq(organizations.id, orgId));
+    await workspaceDb.db.delete(organizations).where(eq(organizations.id, orgBId));
   });
 
   it("accepts a connector key and proves the connection with a real event", async () => {
@@ -130,6 +174,97 @@ describe.skipIf(!runIntegration)("connector ingestion PostgreSQL", () => {
       taskRunId: `run-${suffix}`,
       currency: "USD",
     });
+  });
+
+  it("persiste passos somente uma vez e os isola por organização", async () => {
+    const eventId = `steps-${suffix}`;
+    const envelope = {
+      contractVersion: "muster.agent-ingestion.v2",
+      eventId,
+      source: { platform: "webhook", connectorId },
+      agent: { externalId, name: "Observed Agent" },
+      execution: {
+        taskRunId: `steps-run-${suffix}`,
+        currency: "BRL",
+        status: "success",
+        steps: [{
+          stepKey: "classify.ticket.v1",
+          inputFingerprint: `sha256:${"a".repeat(64)}`,
+          outputHash: `sha256:${"b".repeat(64)}`,
+          path: "model",
+          model: "gpt-5-mini",
+          tokensIn: 12,
+          tokensOut: 3,
+          costCents: 7,
+          shadow: false,
+        }],
+      },
+    };
+    const headers = {
+      authorization: `Bearer ${key.plaintext}`,
+      "content-type": "application/json",
+    };
+
+    const accepted = await fetch(`${baseUrl}/api/integrations/agent-events`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(envelope),
+    });
+    expect(accepted.status).toBe(202);
+
+    const replay = await fetch(`${baseUrl}/api/integrations/agent-events`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(envelope),
+    });
+    expect(replay.status).toBe(202);
+    expect(await replay.json()).toMatchObject({ eventsAccepted: 0 });
+
+    const acceptedBySecondOrg = await fetch(`${baseUrl}/api/integrations/agent-events`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${keyB.plaintext}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        ...envelope,
+        source: { platform: "webhook", connectorId: connectorBId },
+        agent: { externalId, name: "Observed Agent B" },
+      }),
+    });
+    expect(acceptedBySecondOrg.status).toBe(202);
+
+    const firstOrgSteps = await workspaceDb.db
+      .select({
+        orgId: agentEventSteps.orgId,
+        agentId: agentEventSteps.agentId,
+        taskRunId: agentEventSteps.taskRunId,
+        stepKey: agentEventSteps.stepKey,
+      })
+      .from(agentEventSteps)
+      .where(eq(agentEventSteps.orgId, orgId));
+    const secondOrgSteps = await workspaceDb.db
+      .select({
+        orgId: agentEventSteps.orgId,
+        agentId: agentEventSteps.agentId,
+        taskRunId: agentEventSteps.taskRunId,
+        stepKey: agentEventSteps.stepKey,
+      })
+      .from(agentEventSteps)
+      .where(eq(agentEventSteps.orgId, orgBId));
+
+    expect(firstOrgSteps).toEqual([{
+      orgId,
+      agentId,
+      taskRunId: `steps-run-${suffix}`,
+      stepKey: "classify.ticket.v1",
+    }]);
+    expect(secondOrgSteps).toEqual([{
+      orgId: orgBId,
+      agentId: agentBId,
+      taskRunId: `steps-run-${suffix}`,
+      stepKey: "classify.ticket.v1",
+    }]);
   });
 
   it("rejeita feedback v2 para taskRunId que não pertence ao agente", async () => {

@@ -162,6 +162,13 @@
       "when": 1791691062092,
       "tag": "0022_hot_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791699722901,
+      "tag": "0023_serious_natasha_romanoff",
+      "breakpoints": true
     }
   ]
 }

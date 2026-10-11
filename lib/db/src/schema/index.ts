@@ -11,6 +11,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const id = () =>
   text("id")
@@ -997,6 +998,58 @@ export const agentEvents = pgTable("agent_events", {
     table.agentId,
     table.taskRunId,
   ),
+}));
+
+export type AgentEventStepPath = "model" | "code" | "human";
+
+// Derived, non-reversible observations for individual execution steps. The
+// explicit organization and agent columns keep detector queries tenant-scoped
+// without joining agent_events for every analytical window.
+export const agentEventSteps = pgTable("agent_event_steps", {
+  id: id(),
+  orgId: text("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  agentId: text("agent_id")
+    .notNull()
+    .references(() => agents.id, { onDelete: "cascade" }),
+  agentEventId: text("agent_event_id")
+    .notNull()
+    .references(() => agentEvents.id, { onDelete: "cascade" }),
+  taskRunId: text("task_run_id").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  stepKey: text("step_key").notNull(),
+  stepVersion: text("step_version"),
+  inputFingerprint: text("input_fingerprint").notNull(),
+  outputHash: text("output_hash").notNull(),
+  path: text("path").$type<AgentEventStepPath>().notNull(),
+  model: text("model"),
+  shadow: boolean("shadow").notNull(),
+  tokensIn: integer("tokens_in"),
+  tokensOut: integer("tokens_out"),
+  costCents: integer("cost_cents"),
+  currency: text("currency"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  agentEventStepUnique: uniqueIndex("agent_event_steps_event_step_key_idx").on(
+    table.agentEventId,
+    table.stepKey,
+  ),
+  agentStepOccurredIdx: index("agent_event_steps_org_agent_key_occurred_idx").on(
+    table.orgId,
+    table.agentId,
+    table.stepKey,
+    table.occurredAt,
+  ),
+  fingerprintOccurredIdx: index("agent_event_steps_org_key_fingerprint_occurred_idx").on(
+    table.orgId,
+    table.stepKey,
+    table.inputFingerprint,
+    table.occurredAt,
+  ),
+  shadowOccurredIdx: index("agent_event_steps_shadow_occurred_idx")
+    .on(table.orgId, table.agentId, table.stepKey, table.occurredAt)
+    .where(sql`${table.shadow} = true`),
 }));
 
 export type OutboxStatus =

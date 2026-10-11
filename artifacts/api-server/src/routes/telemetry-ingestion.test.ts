@@ -19,6 +19,12 @@ vi.mock("@workspace/db", () => ({
     ts: column,
     kind: column,
   },
+  agentEventSteps: {
+    id: column,
+    orgId: column,
+    agentId: column,
+    agentEventId: column,
+  },
   externalEventReceipts: { id: column, orgId: column, agentId: column, platform: column, eventId: column },
   eventOutbox: { id: column },
   metricEvidence: { id: column },
@@ -109,6 +115,76 @@ describe("ingestão externa de feedback", () => {
       taskRunId: null,
       currency: null,
     }));
+  });
+
+  it("materializa os passos v2 na transação do evento", async () => {
+    const agent = { id: "agent-42", externalId: "external-42" };
+    db.select.mockReturnValueOnce(queryResult([agent]));
+    const eventValues = vi.fn(() => ({
+      returning: vi.fn().mockResolvedValue([{ id: "event-42", ts: new Date("2026-10-11T00:00:00.000Z") }]),
+    }));
+    const stepValues = vi.fn().mockResolvedValue([]);
+    const receiptValues = vi.fn(() => ({
+      onConflictDoNothing: vi.fn(() => ({
+        returning: vi.fn().mockResolvedValue([{ id: "receipt-42" }]),
+      })),
+    }));
+    const tx = {
+      insert: vi.fn()
+        .mockReturnValueOnce({ values: receiptValues })
+        .mockReturnValueOnce({ values: eventValues })
+        .mockReturnValue({ values: stepValues }),
+    };
+    db.transaction.mockImplementationOnce((callback) => callback(tx));
+
+    const response = responseMock();
+    await externalIngestionHandler()(
+      {
+        orgId: "org-42",
+        integrationConnectorId: undefined,
+        body: {
+          contractVersion: "muster.agent-ingestion.v2",
+          eventId: "evt-42",
+          source: { platform: "webhook" },
+          agent: { externalId: "external-42", name: "Agente" },
+          execution: {
+            taskRunId: "run-42",
+            currency: "BRL",
+            steps: [{
+              stepKey: "classify.ticket.v1",
+              inputFingerprint: `sha256:${"a".repeat(64)}`,
+              outputHash: `sha256:${"b".repeat(64)}`,
+              path: "model",
+              model: "gpt-5-mini",
+              tokensIn: 12,
+              tokensOut: 3,
+              costCents: 7,
+              shadow: false,
+            }],
+          },
+        },
+      } as Request,
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(202);
+    expect(stepValues).toHaveBeenCalledWith([expect.objectContaining({
+      orgId: "org-42",
+      agentId: "agent-42",
+      agentEventId: "event-42",
+      taskRunId: "run-42",
+      stepKey: "classify.ticket.v1",
+      stepVersion: "v1",
+      inputFingerprint: `sha256:${"a".repeat(64)}`,
+      outputHash: `sha256:${"b".repeat(64)}`,
+      path: "model",
+      model: "gpt-5-mini",
+      tokensIn: 12,
+      tokensOut: 3,
+      costCents: 7,
+      currency: "BRL",
+      shadow: false,
+    })]);
   });
 });
 
