@@ -32,6 +32,18 @@ export const CONNECTOR_CAPABILITIES: ConnectorCapabilityEntry[] = [
     note: "Descoberta real de repositórios e pré-assessment de agentes.",
   },
   {
+    platform: "langfuse",
+    label: "Langfuse",
+    mode: "live",
+    capabilities: {
+      ...noDiscovery,
+      testConnection: true,
+      discoverAgents: true,
+    },
+    transport: ["REST polling"],
+    note: "Lê traces e scores para descoberta; a coleta de telemetria entra em uma próxima fatia.",
+  },
+  {
     platform: "webhook",
     label: "Webhook universal",
     mode: "live",
