@@ -6,6 +6,10 @@ SSH, nem uso de segredos: essas ações continuam sob responsabilidade do Bruno.
 
 > A validação no domínio real ocorre somente depois da MUS-158. Até lá, registre
 > o resultado como pendente na MUS-162; não marque **Go** por evidência local.
+>
+> Status atual de cada item de infraestrutura, com evidência, e a lista de
+> passos únicos do Bruno: `docs/PRODUCAO-CHECKLIST.md`. Na produção, o "SSE
+> pelo Cloudflare" passa pelo Cloudflare Tunnel (`docs/PRODUCAO-INFRA.md`).
 
 ## Regra de decisão
 

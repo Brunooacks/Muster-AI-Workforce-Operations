@@ -1,0 +1,45 @@
+# Produção pública via Cloudflare Tunnel. Use junto ao compose base:
+#   docker compose -p muster -f deploy/docker-compose.prod.yml \
+#     -f deploy/docker-compose.public.yml up -d
+#
+# O cloudflared só abre conexões de SAÍDA para a Cloudflare: nenhuma porta nova
+# no droplet, nenhuma mudança no Nginx, nos certificados ou na rede do Veltrix.
+# A rota pública (hostname -> http://muster:8080) é configurada no painel da
+# Cloudflare (Networking > Tunnels). O token fica SÓ em /opt/muster/.env.tunnel
+# (0600), separado do .env.production, para que o container do túnel não
+# receba senha do banco nem chaves do Clerk.
+services:
+  muster:
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Atenção: na main de 11/10 nenhuma linha de código lê esta variável.
+      # Enquanto o MUS-166 (PR #27) não entrar, o convite é garantido pelo modo
+      # "Restricted" de cadastro no painel do Clerk de produção.
+      MUSTER_INVITE_ONLY: ${MUSTER_INVITE_ONLY:-true}
+      CONTINUOUS_TELEMETRY_WORKER_ENABLED: ${CONTINUOUS_TELEMETRY_WORKER_ENABLED:-true}
+      ALLOW_SEEDED_EVALUATIONS: "false"
+
+  cloudflared:
+    # cloudflare/cloudflared:2026.10.0 (multi-arch), fixado por digest.
+    image: cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
+    command: ["tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:20241", "run"]
+    env_file: ${MUSTER_TUNNEL_ENV_FILE:-/opt/muster/.env.tunnel}
+    depends_on:
+      muster:
+        condition: service_healthy
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.25
+    pids_limit: 100
+    oom_score_adj: 500
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    restart: unless-stopped
+    networks:
+      - muster-internal
