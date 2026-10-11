@@ -1593,6 +1593,64 @@ export const DeleteAgentParams = zod.object({
 
 
 /**
+ * Returns observed task value for the requested inclusive time window without currency conversion.
+ * @summary Cost per validated task, separated by currency
+ */
+export const GetAgentValueParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const GetAgentValueQueryParams = zod.object({
+  "from": zod.date(),
+  "to": zod.date()
+})
+
+export const GetAgentValueResponse = zod.object({
+  "from": zod.coerce.date(),
+  "to": zod.coerce.date(),
+  "metrics": zod.record(zod.string(), zod.union([zod.object({
+  "status": zod.enum(['available']),
+  "currency": zod.enum(['BRL', 'USD']),
+  "totalCost": zod.object({
+  "cents": zod.number(),
+  "currency": zod.enum(['BRL', 'USD']),
+  "provenance": zod.object({
+  "kind": zod.enum(['observed', 'declared', 'derived']),
+  "sources": zod.array(zod.string()),
+  "taskRunIds": zod.array(zod.string()).optional(),
+  "formula": zod.string().optional()
+})
+}),
+  "costPerValidatedTask": zod.object({
+  "cents": zod.number(),
+  "currency": zod.enum(['BRL', 'USD']),
+  "provenance": zod.object({
+  "kind": zod.enum(['observed', 'declared', 'derived']),
+  "sources": zod.array(zod.string()),
+  "taskRunIds": zod.array(zod.string()).optional(),
+  "formula": zod.string().optional()
+})
+}),
+  "humanCostPerTask": zod.record(zod.string(), zod.unknown()).nullable(),
+  "breakEven": zod.record(zod.string(), zod.unknown()).nullable(),
+  "validationBySource": zod.record(zod.string(), zod.unknown())
+}),zod.object({
+  "status": zod.enum(['insufficient_evidence']),
+  "reason": zod.enum(['missing_fx_rate', 'missing_human_reference', 'no_observed_validations'])
+})])),
+  "validationByStatus": zod.object({
+  "validated": zod.number(),
+  "rejected": zod.number(),
+  "unvalidated": zod.number()
+}),
+  "tasksWithoutCurrency": zod.object({
+  "count": zod.number(),
+  "taskRunIds": zod.array(zod.string())
+})
+})
+
+
+/**
  * @summary Update the agent work record (identity)
  */
 export const UpdateAgentIdentityParams = zod.object({

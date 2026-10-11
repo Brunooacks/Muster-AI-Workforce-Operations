@@ -410,6 +410,72 @@ export interface ExecutiveReportList {
   reports: ExecutiveReportSummary[];
 }
 
+export type AgentValueMoneyMetricCurrency = typeof AgentValueMoneyMetricCurrency[keyof typeof AgentValueMoneyMetricCurrency];
+
+
+export const AgentValueMoneyMetricCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type AgentValueMoneyMetricProvenanceKind = typeof AgentValueMoneyMetricProvenanceKind[keyof typeof AgentValueMoneyMetricProvenanceKind];
+
+
+export const AgentValueMoneyMetricProvenanceKind = {
+  observed: 'observed',
+  declared: 'declared',
+  derived: 'derived',
+} as const;
+
+export type AgentValueMoneyMetricProvenance = {
+  kind: AgentValueMoneyMetricProvenanceKind;
+  sources: string[];
+  taskRunIds?: string[];
+  formula?: string;
+};
+
+export interface AgentValueMoneyMetric {
+  cents: number;
+  currency: AgentValueMoneyMetricCurrency;
+  provenance: AgentValueMoneyMetricProvenance;
+}
+
+export type AgentValueMetric = {
+  status: 'available';
+  currency: 'BRL' | 'USD';
+  totalCost: AgentValueMoneyMetric;
+  costPerValidatedTask: AgentValueMoneyMetric;
+  /** @nullable */
+  humanCostPerTask: { [key: string]: unknown } | null;
+  /** @nullable */
+  breakEven: { [key: string]: unknown } | null;
+  validationBySource: { [key: string]: unknown };
+} | {
+  status: 'insufficient_evidence';
+  reason: 'missing_fx_rate' | 'missing_human_reference' | 'no_observed_validations';
+};
+
+export type AgentValueResponseMetrics = {[key: string]: AgentValueMetric};
+
+export type AgentValueResponseValidationByStatus = {
+  validated: number;
+  rejected: number;
+  unvalidated: number;
+};
+
+export type AgentValueResponseTasksWithoutCurrency = {
+  count: number;
+  taskRunIds: string[];
+};
+
+export interface AgentValueResponse {
+  from: string;
+  to: string;
+  metrics: AgentValueResponseMetrics;
+  validationByStatus: AgentValueResponseValidationByStatus;
+  tasksWithoutCurrency: AgentValueResponseTasksWithoutCurrency;
+}
+
 export type FleetLayerScoreKey = typeof FleetLayerScoreKey[keyof typeof FleetLayerScoreKey];
 
 
@@ -2915,6 +2981,11 @@ export const ListAgentDraftsEnrichmentStatus = {
   enriched: 'enriched',
   failed: 'failed',
 } as const;
+
+export type GetAgentValueParams = {
+from: string;
+to: string;
+};
 
 export type IngestAgentEvent202 = {
   accepted: boolean;

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import {
   db,
   agents,
@@ -9,6 +9,7 @@ import {
   evaluations,
   verdicts,
   metricPoints,
+  agentEvents,
   type KpiMetric,
   type KpiLayer,
 } from "@workspace/db";
@@ -38,6 +39,8 @@ import {
   GetGitHubStatusResponse,
   UpdateEvaluationMetricParams,
   UpdateEvaluationMetricBody,
+  GetAgentValueParams,
+  GetAgentValueQueryParams,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
@@ -68,6 +71,7 @@ import {
   InvalidAdmissionConnectorError,
   MissingConnectorExternalIdError,
 } from "../lib/admission";
+import { aggregateTaskValue } from "../lib/value/task-value";
 
 const router: IRouter = Router();
 
@@ -270,6 +274,48 @@ router.get("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
     return;
   }
   res.json(detail);
+});
+
+router.get("/agents/:agentId/value", requireAuth, requireOrg, async (req, res) => {
+  const { agentId } = GetAgentValueParams.parse(req.params);
+  const { from, to } = GetAgentValueQueryParams.parse({
+    from: new Date(String(req.query.from)),
+    to: new Date(String(req.query.to)),
+  });
+  const [agent] = await db
+    .select({ id: agents.id })
+    .from(agents)
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
+    .limit(1);
+  if (!agent) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
+
+  const events = await db
+    .select({
+      id: agentEvents.id,
+      taskRunId: agentEvents.taskRunId,
+      currency: agentEvents.currency,
+      kind: agentEvents.kind,
+      costCents: agentEvents.costCents,
+      ts: agentEvents.ts,
+      metadata: agentEvents.metadata,
+    })
+    .from(agentEvents)
+    .where(
+      and(
+        eq(agentEvents.agentId, agentId),
+        gte(agentEvents.ts, from),
+        lte(agentEvents.ts, to),
+      ),
+    );
+  const value = aggregateTaskValue(events);
+  res.status(200).json({
+    from: from.toISOString(),
+    to: to.toISOString(),
+    ...value,
+  });
 });
 
 router.patch("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {

@@ -979,6 +979,44 @@ paths:
         "204":
           description: Deleted
 
+  /agents/{agentId}/value:
+    get:
+      operationId: getAgentValue
+      tags: [agents]
+      summary: Cost per validated task, separated by currency
+      description: Returns observed task value for the requested inclusive time window without currency conversion.
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Tenant-scoped value metric by currency
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValueResponse"
+        "404":
+          description: Agent not found in the active organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /agents/{agentId}/identity:
     patch:
       operationId: updateAgentIdentity
@@ -2466,6 +2504,102 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ExecutiveReportSummary"
+
+    AgentValueMoneyMetric:
+      type: object
+      required: [cents, currency, provenance]
+      properties:
+        cents:
+          type: integer
+        currency:
+          type: string
+          enum: [BRL, USD]
+        provenance:
+          type: object
+          required: [kind, sources]
+          properties:
+            kind:
+              type: string
+              enum: [observed, declared, derived]
+            sources:
+              type: array
+              items:
+                type: string
+            taskRunIds:
+              type: array
+              items:
+                type: string
+            formula:
+              type: string
+
+    AgentValueMetric:
+      oneOf:
+        - type: object
+          required: [status, currency, totalCost, costPerValidatedTask, humanCostPerTask, breakEven, validationBySource]
+          properties:
+            status:
+              type: string
+              enum: [available]
+            currency:
+              type: string
+              enum: [BRL, USD]
+            totalCost:
+              $ref: "#/components/schemas/AgentValueMoneyMetric"
+            costPerValidatedTask:
+              $ref: "#/components/schemas/AgentValueMoneyMetric"
+            humanCostPerTask:
+              type: [object, "null"]
+              additionalProperties: true
+            breakEven:
+              type: [object, "null"]
+              additionalProperties: true
+            validationBySource:
+              type: object
+              additionalProperties: true
+        - type: object
+          required: [status, reason]
+          properties:
+            status:
+              type: string
+              enum: [insufficient_evidence]
+            reason:
+              type: string
+              enum: [missing_fx_rate, missing_human_reference, no_observed_validations]
+
+    AgentValueResponse:
+      type: object
+      required: [from, to, metrics, validationByStatus, tasksWithoutCurrency]
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AgentValueMetric"
+        validationByStatus:
+          type: object
+          required: [validated, rejected, unvalidated]
+          properties:
+            validated:
+              type: integer
+            rejected:
+              type: integer
+            unvalidated:
+              type: integer
+        tasksWithoutCurrency:
+          type: object
+          required: [count, taskRunIds]
+          properties:
+            count:
+              type: integer
+            taskRunIds:
+              type: array
+              items:
+                type: string
 
     FleetKpis:
       type: object

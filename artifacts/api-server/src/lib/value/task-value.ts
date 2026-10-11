@@ -18,11 +18,12 @@ const VALIDATION_SOURCES = new Set<ValidationSource>([
   "connector",
   "self_reported",
 ]);
+const CURRENCIES = new Set<CostCurrency>(["BRL", "USD"]);
 
 export interface TaskValueEvent {
   id: string;
   taskRunId: string | null;
-  currency: CostCurrency | null;
+  currency: string | null;
   kind: string;
   costCents: number | null;
   ts: Date;
@@ -65,6 +66,10 @@ function isMoreRecent(candidate: TaskValueEvent, current: TaskValueEvent | null)
   return current === null || candidate.ts.getTime() > current.ts.getTime();
 }
 
+function isCostCurrency(currency: string | null): currency is CostCurrency {
+  return currency !== null && CURRENCIES.has(currency as CostCurrency);
+}
+
 /**
  * Agrupa a telemetria já limitada à organização e janela solicitadas. Eventos
  * sem execução não representam uma tarefa de custo, mesmo que tragam feedback.
@@ -99,11 +104,11 @@ export function aggregateTaskValue(events: TaskValueEvent[]): TaskValueAggregate
     validationByStatus[validation?.status ?? "unvalidated"] += 1;
 
     const currencies = new Set(task.executions.map((event) => event.currency));
-    if (currencies.size !== 1 || currencies.has(null)) {
+    const currency = task.executions[0]!.currency;
+    if (currencies.size !== 1 || !isCostCurrency(currency)) {
       tasksWithoutCurrency.push(taskRunId);
       continue;
     }
-    const currency = task.executions[0]!.currency!;
     const input: TaskCostInput = {
       taskRunId,
       modelCostCents: task.executions.reduce(

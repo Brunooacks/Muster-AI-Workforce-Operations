@@ -34,11 +34,11 @@
 **Interfaces:**
 - Produces: `aggregateTaskValue(events)` com métricas por moeda, contagens de validação e tarefas sem moeda.
 
-- [ ] Escrever testes de falha para agrupamento por tarefa, feedback e moedas.
-- [ ] Executar o teste e confirmar a falha por módulo ausente.
-- [ ] Implementar o agregador e generalizar a métrica para manter a moeda de saída.
-- [ ] Executar o teste e confirmar sucesso.
-- [ ] Commitar a métrica e seus testes.
+- [x] Escrever testes de falha para agrupamento por tarefa, feedback e moedas.
+- [x] Executar o teste e confirmar a falha por módulo ausente.
+- [x] Implementar o agregador e generalizar a métrica para manter a moeda de saída.
+- [x] Executar o teste e confirmar sucesso.
+- [x] Commitar a métrica e seus testes.
 
 ### Task 2: Rota e contrato público
 
@@ -53,8 +53,8 @@
 - Consumes: `aggregateTaskValue(events)` da Task 1.
 - Produces: `GET /agents/{agentId}/value?from&to`.
 
-- [ ] Escrever testes de falha para 200, 404 cross-org e filtros da janela.
-- [ ] Executar o teste e confirmar a falha pela rota ausente.
-- [ ] Adicionar o contrato OpenAPI, regenerar clients e implementar a rota com escopo por organização.
-- [ ] Executar testes de rota e confirmar sucesso.
+- [x] Escrever testes de falha para 200, 404 cross-org e filtros da janela.
+- [x] Executar o teste e confirmar a falha pela rota ausente.
+- [x] Adicionar o contrato OpenAPI, regenerar clients e implementar a rota com escopo por organização.
+- [x] Executar testes de rota e confirmar sucesso.
 - [ ] Commitar rota, contrato gerado e testes.
