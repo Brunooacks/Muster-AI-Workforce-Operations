@@ -5,10 +5,14 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { ExternalAgentFeedbackCurrency } from './externalAgentFeedbackCurrency';
 import type { ExternalAgentFeedbackKind } from './externalAgentFeedbackKind';
 import type { ExternalAgentFeedbackMetadata } from './externalAgentFeedbackMetadata';
 
 export interface ExternalAgentFeedback {
+  /** @minLength 1 */
+  taskRunId?: string;
+  currency?: ExternalAgentFeedbackCurrency;
   kind: ExternalAgentFeedbackKind;
   score?: number;
   comment?: string;

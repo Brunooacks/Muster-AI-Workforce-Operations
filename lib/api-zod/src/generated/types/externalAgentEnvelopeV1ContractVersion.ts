@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ExternalAgentEnvelopeContractVersion = typeof ExternalAgentEnvelopeContractVersion[keyof typeof ExternalAgentEnvelopeContractVersion];
+export type ExternalAgentEnvelopeV1ContractVersion = typeof ExternalAgentEnvelopeV1ContractVersion[keyof typeof ExternalAgentEnvelopeV1ContractVersion];
 
 
-export const ExternalAgentEnvelopeContractVersion = {
+export const ExternalAgentEnvelopeV1ContractVersion = {
   'musteragent-ingestionv1': 'muster.agent-ingestion.v1',
 } as const;
