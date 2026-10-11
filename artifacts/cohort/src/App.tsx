@@ -48,9 +48,11 @@ import {
   requestedAuthRedirect,
   signedOutSignInPath,
 } from "@/lib/auth-routing";
+import { inviteOnlyEnabled } from "@/lib/invite-only";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
+const inviteOnly = inviteOnlyEnabled(import.meta.env.VITE_MUSTER_INVITE_ONLY);
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
@@ -200,7 +202,7 @@ function SignInPage() {
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}${authRoute("sign-up", requestedRedirect)}`}
+        signUpUrl={inviteOnly ? undefined : `${basePath}${authRoute("sign-up", requestedRedirect)}`}
         fallbackRedirectUrl={`${basePath}${authFallbackFromLocation(authLocation)}`}
       />
     </AuthShell>
@@ -316,7 +318,7 @@ function ClerkProviderWithRoutes({
       publishableKey={publishableKey}
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
+      signUpUrl={inviteOnly ? undefined : `${basePath}/sign-up`}
       localization={{
         socialButtonsBlockButton: "Continuar com {{provider|titleize}}",
         dividerText: "ou",
@@ -363,7 +365,7 @@ function ClerkProviderWithRoutes({
                 <Switch>
                   <Route path="/" component={HomeRedirect} />
                   <Route path="/sign-in/*?" component={SignInPage} />
-                  <Route path="/sign-up/*?" component={SignUpPage} />
+                  {!inviteOnly && <Route path="/sign-up/*?" component={SignUpPage} />}
 
                   <Route path="/agentes/:id/conectar">
                     <ProtectedRoute component={WorkforceOsProductionPage} />

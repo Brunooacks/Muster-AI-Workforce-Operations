@@ -17,6 +17,7 @@ import {
   type LocalOrganizationSnapshot,
   type ProvisionedOrganization,
 } from "../lib/organization-provisioning";
+import { inviteOnlyEnabled } from "../lib/invite-only";
 import { requireAuth } from "../middlewares/requireAuth";
 
 interface AuthenticatedOrganizationContext {
@@ -37,6 +38,7 @@ export interface OrganizationRouteDependencies {
     userId: string,
     membership: ClerkOrganizationMembershipSnapshot,
   ) => Promise<ProvisionedOrganization>;
+  inviteOnly: () => boolean;
 }
 
 export interface OrganizationRouteHandlers {
@@ -50,6 +52,7 @@ const defaultDependencies: OrganizationRouteDependencies = {
   listMemberships: listClerkOrganizationMemberships,
   listLocalOrganizations: listLocalOrganizationsByExternalIds,
   provisionOrganization: provisionClerkOrganization,
+  inviteOnly: inviteOnlyEnabled,
 };
 
 export function createOrganizationsRouter(
@@ -122,9 +125,14 @@ export function createOrganizationRouteHandlers(
         return;
       }
       if (!auth.activeOrganizationId) {
-        res.status(409).json({
-          error: "Selecione uma organização ativa no Clerk antes de continuar.",
-          code: "ACTIVE_ORGANIZATION_REQUIRED",
+        const inviteOnly = dependencies.inviteOnly();
+        res.status(inviteOnly ? 403 : 409).json({
+          error: inviteOnly
+            ? "Acesso por convite exige uma organização ativa no Clerk."
+            : "Selecione uma organização ativa no Clerk antes de continuar.",
+          code: inviteOnly
+            ? "INVITATION_REQUIRED"
+            : "ACTIVE_ORGANIZATION_REQUIRED",
         });
         return;
       }
