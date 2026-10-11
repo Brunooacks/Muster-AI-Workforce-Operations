@@ -12,6 +12,10 @@ const OFFICIAL_HOSTS = new Set([
   "hipaa.cloud.langfuse.com",
 ]);
 
+export function isOfficialLangfuseHost(hostname: string): boolean {
+  return OFFICIAL_HOSTS.has(hostname.toLowerCase());
+}
+
 export interface LangfuseCredential {
   publicKey: string;
   secretKey: string;
@@ -64,11 +68,11 @@ export async function parseLangfuseCredential(
     throw new LangfuseCredentialError("A URL base do Langfuse deve usar HTTPS.");
   }
   const hostname = parsedBaseUrl.hostname.replace(/^\[|\]$/g, "");
-  if (isBlockedHostname(hostname) || isBlockedIpv4MappedIpv6(hostname)) {
+  if (isBlockedHostname(hostname)) {
     throw new LangfuseCredentialError("Esse endereço não é permitido.");
   }
 
-  if (!OFFICIAL_HOSTS.has(hostname.toLowerCase())) {
+  if (!isOfficialLangfuseHost(hostname)) {
     try {
       await assertResolvedHostSafe(hostname);
     } catch (error) {
@@ -84,21 +88,4 @@ export async function parseLangfuseCredential(
     secretKey: secretKey.trim(),
     baseUrl: parsedBaseUrl.toString().replace(/\/$/, ""),
   };
-}
-
-function isBlockedIpv4MappedIpv6(hostname: string): boolean {
-  const normalized = hostname.toLowerCase();
-  if (!normalized.startsWith("::ffff:")) return false;
-  const mapped = normalized.slice("::ffff:".length);
-  if (mapped.includes(".")) return isBlockedHostname(mapped);
-
-  const groups = mapped.split(":");
-  if (groups.length !== 2) return false;
-  const high = Number.parseInt(groups[0]!, 16);
-  const low = Number.parseInt(groups[1]!, 16);
-  if (!Number.isInteger(high) || !Number.isInteger(low) || high > 0xffff || low > 0xffff) {
-    return false;
-  }
-  const ipv4 = `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
-  return isBlockedHostname(ipv4);
 }

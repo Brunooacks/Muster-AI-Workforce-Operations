@@ -1,3 +1,7 @@
+import { EventEmitter } from "node:events";
+import type { ClientRequest, IncomingMessage } from "node:http";
+import type { RequestOptions } from "node:https";
+import { PassThrough } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
 import { OBSERVATION_FIELDS, SCORE_FIELDS, createLangfuseClient } from "./client";
 import {
@@ -23,6 +27,63 @@ async function collect<T>(pages: AsyncIterable<T[]>): Promise<T[]> {
 }
 
 describe("createLangfuseClient", () => {
+  it("fixa a conexão self-hosted no IP público validado na hora da requisição", async () => {
+    const resolveHost = vi.fn().mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    const requestImpl = ((
+      url: string | URL,
+      options: RequestOptions,
+      callback?: (response: IncomingMessage) => void,
+    ) => {
+      expect(String(url)).toContain("self-hosted.langfuse.test");
+      options.lookup!("self-hosted.langfuse.test", { all: false }, (error, address, family) => {
+        expect(error).toBeNull();
+        expect(address).toBe("93.184.216.34");
+        expect(family).toBe(4);
+      });
+
+      const response = new PassThrough();
+      Object.assign(response, { statusCode: 200, headers: {} });
+      callback?.(response as unknown as IncomingMessage);
+      queueMicrotask(() => response.end(JSON.stringify(f2ProjectsResponse)));
+      return Object.assign(new EventEmitter(), { end: () => undefined }) as unknown as ClientRequest;
+    }) as typeof import("node:https").request;
+    const client = createLangfuseClient({
+      credential: { ...f2Credential, baseUrl: "https://self-hosted.langfuse.test" },
+      resolveHost,
+      requestImpl,
+    });
+
+    await expect(client.listProjects()).resolves.toEqual(f2ProjectsResponse.data);
+
+    expect(resolveHost).toHaveBeenCalledWith("self-hosted.langfuse.test");
+  });
+
+  it("mantém o timeout ativo enquanto lê o JSON da resposta", async () => {
+    vi.useFakeTimers();
+    let resolveJson!: (body: unknown) => void;
+    const response = {
+      status: 200,
+      ok: true,
+      headers: new Headers(),
+      json: () => new Promise((resolve) => { resolveJson = resolve; }),
+    } as Response;
+    const fetchImpl = vi.fn().mockResolvedValue(response);
+    const client = createLangfuseClient({ credential: f2Credential, fetchImpl });
+
+    try {
+      const projects = client.listProjects();
+      await vi.advanceTimersByTimeAsync(15_000);
+
+      const [, init] = fetchImpl.mock.calls[0]!;
+      expect((init.signal as AbortSignal).aborted).toBe(true);
+
+      resolveJson(f2ProjectsResponse);
+      await expect(projects).resolves.toEqual(f2ProjectsResponse.data);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("pagina observações em três requisições com os campos permitidos", async () => {
     const fetchImpl = vi
       .fn()
@@ -132,6 +193,30 @@ describe("createLangfuseClient", () => {
       status: 401,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("interrompe observações quando o servidor repete um cursor", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(json({ data: [], meta: { cursor: "cursor-repetido" } }))
+      .mockResolvedValueOnce(json({ data: [], meta: { cursor: "cursor-repetido" } }));
+    const client = createLangfuseClient({ credential: f2Credential, fetchImpl });
+
+    await expect(collect(client.listObservations(range))).rejects.toThrow("cursor repetido");
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("interrompe scores ao alcançar o limite de páginas", async () => {
+    const fetchImpl = vi.fn();
+    for (let page = 1; page <= 100; page++) {
+      fetchImpl.mockResolvedValueOnce(json({ data: [], meta: { cursor: `cursor-${page}` } }));
+    }
+    const client = createLangfuseClient({ credential: f2Credential, fetchImpl });
+
+    await expect(collect(client.listScores(range))).rejects.toThrow("limite de 100 páginas");
+
+    expect(fetchImpl).toHaveBeenCalledTimes(100);
   });
 });
 

@@ -134,6 +134,18 @@ export function isBlockedHostname(hostname: string): boolean {
   const h = hostname.toLowerCase();
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal"))
     return true;
+  if (h.startsWith("::ffff:")) {
+    const mapped = h.slice("::ffff:".length);
+    if (mapped.includes(".")) return isBlockedHostname(mapped);
+    const groups = mapped.split(":");
+    if (groups.length === 2) {
+      const high = Number.parseInt(groups[0]!, 16);
+      const low = Number.parseInt(groups[1]!, 16);
+      if (Number.isInteger(high) && Number.isInteger(low) && high <= 0xffff && low <= 0xffff) {
+        return isBlockedHostname(`${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`);
+      }
+    }
+  }
   // IPv6 loopback / link-local
   if (h === "::1" || h.startsWith("fe80:") || h.startsWith("fc") || h.startsWith("fd"))
     return true;
