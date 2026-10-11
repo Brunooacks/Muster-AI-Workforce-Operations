@@ -136,6 +136,7 @@ type PageDict = {
   decisionReasonPlaceholder: string;
   decisionCancel: string;
   decisionConfirm: string;
+  valueSection: { title: string; caption: string };
 };
 
 const PAGE_I18N: Record<Lang, PageDict> = {
@@ -173,6 +174,10 @@ const PAGE_I18N: Record<Lang, PageDict> = {
     decisionReasonPlaceholder: "O que sustentou esta decisão?",
     decisionCancel: "Cancelar",
     decisionConfirm: "Confirmar decisão",
+    valueSection: {
+      title: "Custo por tarefa validada",
+      caption: "Custo observado por tarefa validada, separado por moeda.",
+    },
   },
   en: {
     breadcrumbPortfolio: "Portfolio",
@@ -208,6 +213,10 @@ const PAGE_I18N: Record<Lang, PageDict> = {
     decisionReasonPlaceholder: "What supported this decision?",
     decisionCancel: "Cancel",
     decisionConfirm: "Confirm decision",
+    valueSection: {
+      title: "Cost per validated task",
+      caption: "Observed cost per validated task, separated by currency.",
+    },
   },
   es: {
     breadcrumbPortfolio: "Portafolio",
@@ -243,6 +252,10 @@ const PAGE_I18N: Record<Lang, PageDict> = {
     decisionReasonPlaceholder: "¿Qué sustentó esta decisión?",
     decisionCancel: "Cancelar",
     decisionConfirm: "Confirmar decisión",
+    valueSection: {
+      title: "Costo por tarea validada",
+      caption: "Costo observado por tarea validada, separado por moneda.",
+    },
   },
 };
 
@@ -546,6 +559,8 @@ function TelemetrySection({
 }
 
 function AgentValueSection({ agentId }: { agentId: string }) {
+  const { lang } = useLang();
+  const p = PAGE_I18N[lang];
   const [window, setWindow] = useState<AgentValueWindow>("30d");
   const range = useMemo(() => {
     const to = new Date();
@@ -562,8 +577,8 @@ function AgentValueSection({ agentId }: { agentId: string }) {
     <section>
       <SectionHeader
         number="04"
-        title="Custo por tarefa validada"
-        caption="Custo observado por tarefa validada, separado por moeda."
+        title={p.valueSection.title}
+        caption={p.valueSection.caption}
       />
       <AgentValuePanel
         window={window}
@@ -571,6 +586,7 @@ function AgentValueSection({ agentId }: { agentId: string }) {
         isLoading={isLoading}
         isError={isError}
         error={error}
+        lang={lang}
         onWindowChange={setWindow}
         onRetry={() => void refetch()}
       />

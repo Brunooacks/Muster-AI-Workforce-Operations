@@ -8,7 +8,9 @@ import { AgentValuePanel } from "../components/agent-value-panel";
 
 Object.assign(globalThis, { React });
 
-function response(overrides: Partial<AgentValueResponse> = {}): AgentValueResponse {
+function response(
+  overrides: Partial<AgentValueResponse> = {},
+): AgentValueResponse {
   return {
     from: "2026-10-01T00:00:00.000Z",
     to: "2026-10-11T00:00:00.000Z",
@@ -16,8 +18,16 @@ function response(overrides: Partial<AgentValueResponse> = {}): AgentValueRespon
       BRL: {
         status: "available",
         currency: "BRL",
-        totalCost: { cents: 1234, currency: "BRL", provenance: { kind: "observed", sources: ["execution"] } },
-        costPerValidatedTask: { cents: 617, currency: "BRL", provenance: { kind: "derived", sources: ["validation"] } },
+        totalCost: {
+          cents: 1234,
+          currency: "BRL",
+          provenance: { kind: "observed", sources: ["execution"] },
+        },
+        costPerValidatedTask: {
+          cents: 617,
+          currency: "BRL",
+          provenance: { kind: "derived", sources: ["validation"] },
+        },
         humanCostPerTask: null,
         breakEven: null,
         validationBySource: {},
@@ -25,8 +35,16 @@ function response(overrides: Partial<AgentValueResponse> = {}): AgentValueRespon
       USD: {
         status: "available",
         currency: "USD",
-        totalCost: { cents: 900, currency: "USD", provenance: { kind: "observed", sources: ["execution"] } },
-        costPerValidatedTask: { cents: 450, currency: "USD", provenance: { kind: "derived", sources: ["validation"] } },
+        totalCost: {
+          cents: 900,
+          currency: "USD",
+          provenance: { kind: "observed", sources: ["execution"] },
+        },
+        costPerValidatedTask: {
+          cents: 450,
+          currency: "USD",
+          provenance: { kind: "derived", sources: ["validation"] },
+        },
         humanCostPerTask: null,
         breakEven: null,
         validationBySource: {},
@@ -50,21 +68,76 @@ test("mostra carregamento enquanto busca o custo por tarefa", () => {
 
 test("trata erro e agente não encontrado sem confundir os estados", () => {
   const erro = render({ window: "30d", isError: true, error: { status: 500 } });
-  const notFound = render({ window: "30d", isError: true, error: { status: 404 } });
+  const notFound = render({
+    window: "30d",
+    isError: true,
+    error: { status: 404 },
+  });
 
   assert.match(erro, /Não foi possível carregar o custo por tarefa validada/);
   assert.match(notFound, /Agente não encontrado para este painel/);
 });
 
-test("orienta o envio de validação quando não há tarefas validadas", () => {
+test("orienta o envio de validação quando não há tarefas na janela", () => {
   const html = render({
     window: "30d",
-    data: response({ validationByStatus: { validated: 0, rejected: 1, unvalidated: 2 } }),
+    data: response({
+      metrics: {},
+      validationByStatus: { validated: 0, rejected: 0, unvalidated: 0 },
+      tasksWithoutCurrency: { count: 0, taskRunIds: [] },
+    }),
   });
 
-  assert.match(html, /Ainda não há tarefas validadas nesta janela/);
+  assert.match(html, /Ainda não há tarefas nesta janela/);
   assert.match(html, /href="\/docs\/validacao-de-tarefas\.html"/);
   assert.match(html, /Como enviar validação/);
+});
+
+test("mostra as cópias do painel em inglês", () => {
+  const html = render({
+    window: "30d",
+    data: response(),
+    lang: "en",
+  });
+
+  assert.match(html, /Analysis window/);
+  assert.match(html, /No currency conversion/);
+  assert.match(html, /Cost per validated task/);
+  assert.match(html, /Observed cost in the window/);
+  assert.match(html, /2 validated/);
+});
+
+test("mostra toda a mensagem de erro do painel em inglês", () => {
+  const html = render({
+    window: "30d",
+    isError: true,
+    error: { status: 500 },
+    lang: "en",
+    onRetry: () => undefined,
+  });
+
+  assert.match(html, /Could not load cost per validated task/);
+  assert.match(html, /There was a problem communicating with the server/);
+  assert.match(html, /Try again/);
+  assert.doesNotMatch(html, /Ocorreu um erro ao falar com o servidor/);
+  assert.doesNotMatch(html, /Tentar novamente/);
+});
+
+test("mantém as contagens quando há rejeitadas, mas ainda não há tarefa validada", () => {
+  const html = render({
+    window: "30d",
+    data: response({
+      metrics: {},
+      validationByStatus: { validated: 0, rejected: 2, unvalidated: 1 },
+      tasksWithoutCurrency: { count: 0, taskRunIds: [] },
+    }),
+  });
+
+  assert.match(html, /Ainda não há tarefa validada para calcular o custo/);
+  assert.match(html, /0 validadas/);
+  assert.match(html, /2 rejeitadas/);
+  assert.match(html, /1 não validada/);
+  assert.doesNotMatch(html, /Ainda não há tarefas nesta janela/);
 });
 
 test("separa BRL e USD e mostra contagens e aviso de moeda ausente", () => {
@@ -85,7 +158,12 @@ test("explica quando a moeda ainda não tem evidência observada suficiente", ()
   const html = render({
     window: "30d",
     data: response({
-      metrics: { BRL: { status: "insufficient_evidence", reason: "no_observed_validations" } },
+      metrics: {
+        BRL: {
+          status: "insufficient_evidence",
+          reason: "no_observed_validations",
+        },
+      },
       validationByStatus: { validated: 1, rejected: 0, unvalidated: 0 },
       tasksWithoutCurrency: { count: 0, taskRunIds: [] },
     }),
