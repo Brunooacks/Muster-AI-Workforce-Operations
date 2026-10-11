@@ -41,6 +41,7 @@ import type {
   AgentInput,
   AgentSupervision,
   AgentUpdate,
+  AgentValueResponse,
   Alert,
   AnalyzeSourceInput,
   Area,
@@ -78,6 +79,7 @@ import type {
   FleetKpis,
   FleetSummary,
   GenerateExecutiveReportRequest,
+  GetAgentValueParams,
   GitHubStatus,
   HealthStatus,
   IdentityUpdate,
@@ -199,6 +201,13 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+
+
+
+
+
+
 export const getGetContinuousTelemetryHealthUrl = () => {
 
 
@@ -3236,6 +3245,96 @@ export const useDeleteAgent = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteAgentMutationOptions(options));
     }
+
+export const getGetAgentValueUrl = (agentId: string,
+    params: GetAgentValueParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/agents/${agentId}/value?${stringifiedParams}` : `/api/agents/${agentId}/value`
+}
+
+/**
+ * Returns observed task value for the requested inclusive RFC 3339 time window without currency conversion. The window must not exceed 92 days and from must be before or equal to to.
+ * @summary Cost per validated task, separated by currency
+ */
+export const getAgentValue = async (agentId: string,
+    params: GetAgentValueParams, options?: RequestInit): Promise<AgentValueResponse> => {
+
+  return customFetch<AgentValueResponse>(getGetAgentValueUrl(agentId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentValueQueryKey = (agentId: string,
+    params?: GetAgentValueParams,) => {
+    return [
+    `/api/agents/${agentId}/value`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAgentValueQueryOptions = <TData = Awaited<ReturnType<typeof getAgentValue>>, TError = ErrorType<Error>>(agentId: string,
+    params: GetAgentValueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentValue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentValueQueryKey(agentId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentValue>>> = ({ signal }) => getAgentValue(agentId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentValue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentValueQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentValue>>>
+export type GetAgentValueQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Cost per validated task, separated by currency
+ */
+
+export function useGetAgentValue<TData = Awaited<ReturnType<typeof getAgentValue>>, TError = ErrorType<Error>>(
+ agentId: string,
+    params: GetAgentValueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentValue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentValueQueryOptions(agentId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getUpdateAgentIdentityUrl = (agentId: string,) => {
 

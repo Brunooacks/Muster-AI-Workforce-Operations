@@ -56,6 +56,19 @@ export default defineConfig({
       clean: true,
       prettier: true,
       override: {
+        operations: {
+          getAgentValue: {
+            zod: {
+              generate: { param: false },
+              coerce: {
+                query: ["boolean", "number", "string"],
+                param: ["boolean", "number", "string"],
+                body: ["bigint", "date"],
+                response: ["bigint", "date"],
+              },
+            },
+          },
+        },
         zod: {
           coerce: {
             query: ['boolean', 'number', 'string'],

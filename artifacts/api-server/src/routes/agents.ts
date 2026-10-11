@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import {
   db,
   agents,
@@ -9,6 +9,7 @@ import {
   evaluations,
   verdicts,
   metricPoints,
+  agentEvents,
   type KpiMetric,
   type KpiLayer,
 } from "@workspace/db";
@@ -38,6 +39,7 @@ import {
   GetGitHubStatusResponse,
   UpdateEvaluationMetricParams,
   UpdateEvaluationMetricBody,
+  GetAgentValueQueryParams,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
@@ -68,8 +70,12 @@ import {
   InvalidAdmissionConnectorError,
   MissingConnectorExternalIdError,
 } from "../lib/admission";
+import { aggregateTaskValue } from "../lib/value/task-value";
 
 const router: IRouter = Router();
+const MAX_AGENT_VALUE_WINDOW_DAYS = 92;
+const MAX_AGENT_VALUE_WINDOW_MS = MAX_AGENT_VALUE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+const RFC3339_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](?:0\d|1\d|2[0-3]):[0-5]\d)$/;
 
 function slugify(name: string): string {
   return name
@@ -78,6 +84,32 @@ function slugify(name: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function parseRfc3339Date(value: unknown): Date | null {
+  if (typeof value !== "string") return null;
+
+  const match = RFC3339_DATE_TIME.exec(value);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute, second] = match.map(Number);
+  if (
+    month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59
+  ) {
+    return null;
+  }
+
+  const calendarDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (
+    calendarDate.getUTCFullYear() !== year ||
+    calendarDate.getUTCMonth() !== month - 1 ||
+    calendarDate.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 router.get("/agents", requireAuth, requireOrg, async (req, res) => {
@@ -270,6 +302,61 @@ router.get("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
     return;
   }
   res.json(detail);
+});
+
+router.get("/agents/:agentId/value", requireAuth, requireOrg, async (req, res) => {
+  const { agentId } = GetAgentParams.parse(req.params);
+  const from = parseRfc3339Date(req.query.from);
+  const to = parseRfc3339Date(req.query.to);
+
+  if (!from || !to) {
+    res.status(400).json({ error: "Informe datas from e to válidas." });
+    return;
+  }
+  if (from > to) {
+    res.status(400).json({ error: "A data from deve ser anterior ou igual a to." });
+    return;
+  }
+  if (to.getTime() - from.getTime() > MAX_AGENT_VALUE_WINDOW_MS) {
+    res.status(400).json({ error: "A janela máxima é de 92 dias." });
+    return;
+  }
+
+  GetAgentValueQueryParams.parse({ from, to });
+  const [agent] = await db
+    .select({ id: agents.id })
+    .from(agents)
+    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
+    .limit(1);
+  if (!agent) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
+
+  const events = await db
+    .select({
+      id: agentEvents.id,
+      taskRunId: agentEvents.taskRunId,
+      currency: agentEvents.currency,
+      kind: agentEvents.kind,
+      costCents: agentEvents.costCents,
+      ts: agentEvents.ts,
+      metadata: agentEvents.metadata,
+    })
+    .from(agentEvents)
+    .where(
+      and(
+        eq(agentEvents.agentId, agentId),
+        gte(agentEvents.ts, from),
+        lte(agentEvents.ts, to),
+      ),
+    );
+  const value = aggregateTaskValue(events);
+  res.status(200).json({
+    from: from.toISOString(),
+    to: to.toISOString(),
+    ...value,
+  });
 });
 
 router.patch("/agents/:agentId", requireAuth, requireOrg, async (req, res) => {
