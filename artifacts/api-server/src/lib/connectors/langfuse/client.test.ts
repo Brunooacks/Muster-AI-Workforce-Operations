@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createLangfuseClient } from "./client";
+import { OBSERVATION_FIELDS, SCORE_FIELDS, createLangfuseClient } from "./client";
 import {
   f2Credential,
   f2ObservationPages,
@@ -41,7 +41,7 @@ describe("createLangfuseClient", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     const urls = fetchImpl.mock.calls.map(([url]) => String(url));
     const queries = urls.map((url) => new URL(url).searchParams);
-    expect(queries.every((query) => query.get("fields") === "core,basic,usage,model,metrics")).toBe(true);
+    expect(queries.every((query) => query.get("fields") === "core,basic,usage,model,metrics,trace_context")).toBe(true);
     expect(queries.every((query) => !query.has("io") && !query.has("metadata"))).toBe(true);
     expect(urls[1]).toContain("cursor=f2-observations-page-2");
     expect(urls[2]).toContain("cursor=f2-observations-page-3");
@@ -132,5 +132,15 @@ describe("createLangfuseClient", () => {
       status: 401,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("allowlist de campos do Langfuse", () => {
+  it("nunca pede io nem metadata e inclui trace_context (traceName)", () => {
+    const groups = OBSERVATION_FIELDS.split(",");
+    expect(groups).not.toContain("io");
+    expect(groups).not.toContain("metadata");
+    expect(groups).toContain("trace_context");
+    expect(SCORE_FIELDS.split(",").sort()).toEqual(["annotation", "details", "subject"]);
   });
 });

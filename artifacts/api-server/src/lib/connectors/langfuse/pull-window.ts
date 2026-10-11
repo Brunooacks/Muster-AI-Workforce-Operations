@@ -93,7 +93,7 @@ function stripSensitiveFields<T>(value: T): T {
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
-      .filter(([key]) => !["input", "output", "metadata"].includes(key))
+      .filter(([key]) => !["input", "output", "metadata", "tags"].includes(key))
       .map(([key, nested]) => [key, stripSensitiveFields(nested)]),
   ) as T;
 }

@@ -2,8 +2,10 @@ import type { LangfuseCredential } from "./credential";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_ATTEMPTS = 3;
-const OBSERVATION_FIELDS = "core,basic,usage,model,metrics";
-const SCORE_FIELDS = "subject,annotation,details";
+// Grupos de campos permitidos. `trace_context` traz traceName (usado na
+// descoberta e no mapeador); `io` e `metadata` são proibidos (LGPD).
+export const OBSERVATION_FIELDS = "core,basic,usage,model,metrics,trace_context";
+export const SCORE_FIELDS = "subject,annotation,details";
 
 type FetchImpl = typeof fetch;
 type Sleep = (milliseconds: number) => Promise<void>;
