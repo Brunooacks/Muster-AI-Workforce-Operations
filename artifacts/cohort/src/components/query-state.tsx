@@ -5,11 +5,13 @@ import { AlertOctagon, RotateCw } from "lucide-react";
 export function ErrorState({
   title = "Não foi possível carregar os dados",
   description = "Ocorreu um erro ao falar com o servidor. Verifique a conexão e tente novamente.",
+  retryLabel = "Tentar novamente",
   onRetry,
   compact = false,
 }: {
   title?: string;
   description?: string;
+  retryLabel?: string;
   onRetry?: () => void;
   compact?: boolean;
 }) {
@@ -24,11 +26,13 @@ export function ErrorState({
       </div>
       <div>
         <p className="font-medium text-foreground">{title}</p>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+          {description}
+        </p>
       </div>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry}>
-          <RotateCw className="mr-2 h-4 w-4" /> Tentar novamente
+          <RotateCw className="mr-2 h-4 w-4" /> {retryLabel}
         </Button>
       )}
     </Card>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout";
 import {
   useGetAgent,
@@ -7,12 +7,14 @@ import {
   useUpdateEvaluationMetric,
   useListFleetAlerts,
   useGetAgentTelemetry,
+  useGetAgentValue,
   useReadAgentSupervision,
   useReevaluateAgent,
   getGetAgentQueryKey,
   getGetAgentMetricsQueryKey,
   getListFleetAlertsQueryKey,
   getGetAgentTelemetryQueryKey,
+  getGetAgentValueQueryKey,
 } from "@workspace/api-client-react";
 import type { EvaluationMetricUpdateLayerKey } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
@@ -85,6 +87,10 @@ import {
   RefreshStatusBar,
 } from "@/components/mission-control/operational-status";
 import { relativeAge } from "@/components/mission-control/presentation";
+import {
+  AgentValuePanel,
+  type AgentValueWindow,
+} from "@/components/agent-value-panel";
 
 const AUTONOMY_LABEL: Record<Lang, Record<string, string>> = {
   pt: {
@@ -130,6 +136,7 @@ type PageDict = {
   decisionReasonPlaceholder: string;
   decisionCancel: string;
   decisionConfirm: string;
+  valueSection: { title: string; caption: string };
 };
 
 const PAGE_I18N: Record<Lang, PageDict> = {
@@ -167,6 +174,10 @@ const PAGE_I18N: Record<Lang, PageDict> = {
     decisionReasonPlaceholder: "O que sustentou esta decisão?",
     decisionCancel: "Cancelar",
     decisionConfirm: "Confirmar decisão",
+    valueSection: {
+      title: "Custo por tarefa validada",
+      caption: "Custo observado por tarefa validada, separado por moeda.",
+    },
   },
   en: {
     breadcrumbPortfolio: "Portfolio",
@@ -202,6 +213,10 @@ const PAGE_I18N: Record<Lang, PageDict> = {
     decisionReasonPlaceholder: "What supported this decision?",
     decisionCancel: "Cancel",
     decisionConfirm: "Confirm decision",
+    valueSection: {
+      title: "Cost per validated task",
+      caption: "Observed cost per validated task, separated by currency.",
+    },
   },
   es: {
     breadcrumbPortfolio: "Portafolio",
@@ -237,6 +252,10 @@ const PAGE_I18N: Record<Lang, PageDict> = {
     decisionReasonPlaceholder: "¿Qué sustentó esta decisión?",
     decisionCancel: "Cancelar",
     decisionConfirm: "Confirmar decisión",
+    valueSection: {
+      title: "Costo por tarea validada",
+      caption: "Costo observado por tarea validada, separado por moneda.",
+    },
   },
 };
 
@@ -535,6 +554,42 @@ function TelemetrySection({
           </>
         )}
       </div>
+    </section>
+  );
+}
+
+function AgentValueSection({ agentId }: { agentId: string }) {
+  const { lang } = useLang();
+  const p = PAGE_I18N[lang];
+  const [window, setWindow] = useState<AgentValueWindow>("30d");
+  const range = useMemo(() => {
+    const to = new Date();
+    const from = new Date(to);
+    from.setUTCDate(from.getUTCDate() - Number.parseInt(window, 10));
+
+    return { from: from.toISOString(), to: to.toISOString() };
+  }, [window]);
+  const { data, isLoading, isError, error, refetch } = useGetAgentValue(agentId, range, {
+    query: { enabled: !!agentId, queryKey: getGetAgentValueQueryKey(agentId, range) },
+  });
+
+  return (
+    <section>
+      <SectionHeader
+        number="04"
+        title={p.valueSection.title}
+        caption={p.valueSection.caption}
+      />
+      <AgentValuePanel
+        window={window}
+        data={data}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        lang={lang}
+        onWindowChange={setWindow}
+        onRetry={() => void refetch()}
+      />
     </section>
   );
 }
@@ -1078,9 +1133,12 @@ export default function AgentDetailPage() {
         {/* ===== 03 · Telemetria Operacional ===== */}
         <TelemetrySection agentId={agentId} audience={audience} cardBase={cardBase} />
 
-        {/* ===== 04 · Histórico ===== */}
+        {/* ===== 04 · Custo por tarefa validada ===== */}
+        <AgentValueSection agentId={agentId} />
+
+        {/* ===== 05 · Histórico ===== */}
         <section>
-          <SectionHeader number="04" title={t.sec03.title} caption={t.sec03.caption} />
+          <SectionHeader number="05" title={t.sec03.title} caption={t.sec03.caption} />
           <div className={`${cardBase} p-6`}>
             <TimelineSnapshots agentId={agentId} t={t} />
             <div className="pt-6">
@@ -1089,9 +1147,9 @@ export default function AgentDetailPage() {
           </div>
         </section>
 
-        {/* ===== 05 · Detector de Vitória Ilusória ===== */}
+        {/* ===== 06 · Detector de Vitória Ilusória ===== */}
         <section>
-          <SectionHeader number="05" title={t.sec04.title} caption={t.sec04.caption} />
+          <SectionHeader number="06" title={t.sec04.title} caption={t.sec04.caption} />
           {alertsError ? (
             <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>
               <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3" />
