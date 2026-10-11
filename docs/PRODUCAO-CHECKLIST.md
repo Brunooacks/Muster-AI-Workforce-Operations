@@ -37,8 +37,8 @@ limites: `docs/PRODUCAO-INFRA.md`.
 | --- | --- | --- |
 | Ingestão universal (envelope v1) | ✅ | `POST /api/integrations/agent-events` com chave por conector, idempotência e testes de integração. |
 | Envelope v2 com `taskRunId` e validação (MUS-171) | 🟡 | Em andamento noutra sessão (fatias 1 e 2). |
-| Conector Langfuse de leitura | 🟡 | Fatias 1 (mapeador) e 2 (cliente) em PR rascunho; coleta automática entra depois do envelope v2 na `main`. |
-| Endpoint OTLP GenAI | ❌ | Só desenho (`docs/CONECTOR-OTLP-GENAI.md`), sem receber conteúdo bruto. |
+| Conector Langfuse de leitura | 🟡 | Fatia 1 (mapeador, PR #50) e fatia 2 (cliente) em PR rascunho; coleta automática entra depois do envelope v2 na `main`. |
+| Endpoint OTLP GenAI | ❌ | Só desenho + esqueleto de extração com allowlist (PR #49, `docs/CONECTOR-OTLP-GENAI.md`), sem receber conteúdo bruto. |
 | Isolamento entre organizações | 🟡 | Testes de tenant na `main`; prova no domínio real é do roteiro manual da MUS-162. |
 | Segredos de conectores criptografados | ✅ | AES-256-GCM (`credential-crypto.ts`), chave `MUSTER_CREDENTIAL_ENCRYPTION_KEY` só no host. |
 | Contrato NTT (não concorrência) | ⛔ | Bloqueante comercial: compradores naturais são clientes da NTT. Só o Bruno. |
@@ -54,7 +54,7 @@ limites: `docs/PRODUCAO-INFRA.md`.
 | 5 | Criar a instância de produção do Clerk no domínio, cadastrar os CNAMEs como DNS-only, ligar o modo "Restricted" e anotar `pk_live`/`sk_live` | Clerk + Cloudflare DNS | 30 min (+ propagação) |
 | 6 | Bootstrap com root: `deploy/bootstrap-droplet.sh --deploy-user muster-deploy --veltrix-health-url https://api.veltrixplatform.com/api/healthz` (dry-run, depois `--apply`), instalar a chave SSH do deploy, `usermod -aG docker muster-deploy`, instalar o timer de backup e (recomendado) criar 2 GiB de swap | droplet (SSH root) | 20 min |
 | 7 | Preencher `/opt/muster/.env.production` (senha do Postgres, `DATABASE_URL`, chaves Clerk, `MUSTER_CREDENTIAL_ENCRYPTION_KEY` com cópia offline, `WEB_APP_URL`/`CORS_ALLOWED_ORIGINS`, chaves de guarda) e `/opt/muster/.env.tunnel` com o token | droplet | 10 min |
-| 8 | No GitHub: environment com revisor obrigatório, secrets `MUSTER_DEPLOY_HOST/USER/SSH_KEY/KNOWN_HOSTS`, variáveis `VITE_CLERK_PUBLISHABLE_KEY` e `MUSTER_HEALTH_URL`; por último `MUSTER_DEPLOY_ENABLED=true` | GitHub Settings | 15 min |
+| 8 | No GitHub: environment `staging` (é o nome fixo no `deploy.yml` hoje; serve para este host) com revisor obrigatório, secrets `MUSTER_DEPLOY_HOST/USER/SSH_KEY/KNOWN_HOSTS`, variáveis `VITE_CLERK_PUBLISHABLE_KEY` e `MUSTER_HEALTH_URL`; por último `MUSTER_DEPLOY_ENABLED=true` | GitHub Settings | 15 min |
 | 9 | Tornar público o pacote `ghcr.io/brunooacks/muster` depois do primeiro build (o repositório já é público e a imagem só tem código público + chave publicável), ou fazer `docker login ghcr.io` no droplet com token só-leitura | GitHub Packages | 5 min |
 | 10 | Agendar a cópia off-site no Mac (`muster-backup-pull.sh`, launchd semanal) | Mac | 10 min |
 | 11 | Conferir o contrato com a NTT antes do primeiro design partner pagante | jurídico | — |
