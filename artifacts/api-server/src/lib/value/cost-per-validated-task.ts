@@ -34,7 +34,7 @@ export interface CostPerValidatedTaskInput {
   tasks: TaskCostInput[];
   humanReference?: HumanCostReference;
   fx?: ExchangeRate;
-  outputCurrency: "BRL";
+  outputCurrency: CostCurrency;
 }
 
 export interface MetricProvenance {
@@ -46,7 +46,7 @@ export interface MetricProvenance {
 
 export interface MoneyMetric {
   cents: number;
-  currency: "BRL";
+  currency: CostCurrency;
   provenance: MetricProvenance;
 }
 
@@ -65,7 +65,7 @@ export interface HumanCostPerTaskMetric extends MoneyMetric {
 
 export interface CostPerValidatedTaskAvailable {
   status: "available";
-  currency: "BRL";
+  currency: CostCurrency;
   totalCost: MoneyMetric;
   costPerValidatedTask: MoneyMetric;
   humanCostPerTask: HumanCostPerTaskMetric | null;
@@ -109,17 +109,22 @@ function roundPercent(value: number): number {
 
 function needsFx(input: CostPerValidatedTaskInput): boolean {
   return (
-    input.tasks.some((task) => task.currency === "USD") ||
-    input.humanReference?.currency === "USD"
+    input.tasks.some((task) => task.currency !== input.outputCurrency) ||
+    input.humanReference?.currency !== undefined &&
+      input.humanReference.currency !== input.outputCurrency
   );
 }
 
-function toBrlCents(
+function toOutputCents(
   cents: number,
   currency: CostCurrency,
+  outputCurrency: CostCurrency,
   fx?: ExchangeRate,
 ): number {
-  return roundCents(currency === "BRL" ? cents : cents * fx!.usdToBrl);
+  if (currency === outputCurrency) return roundCents(cents);
+  return roundCents(
+    outputCurrency === "BRL" ? cents * fx!.usdToBrl : cents / fx!.usdToBrl,
+  );
 }
 
 function provenance(
@@ -184,14 +189,20 @@ export function calculateCostPerValidatedTask(
   const automatedAndCorrectionCost = input.tasks.reduce(
     (sum, task) =>
       sum +
-      toBrlCents(task.modelCostCents, task.currency, input.fx) +
-      toBrlCents(task.correctionCostCents ?? 0, task.currency, input.fx),
+      toOutputCents(task.modelCostCents, task.currency, input.outputCurrency, input.fx) +
+      toOutputCents(
+        task.correctionCostCents ?? 0,
+        task.currency,
+        input.outputCurrency,
+        input.fx,
+      ),
     0,
   );
   const escalatedCost = input.humanReference
-    ? toBrlCents(
+    ? toOutputCents(
         (input.humanReference.hourlyRateCents * totalEscalatedMinutes) / 60,
         input.humanReference.currency,
+        input.outputCurrency,
         input.fx,
       )
     : 0;
@@ -220,7 +231,7 @@ export function calculateCostPerValidatedTask(
   const allTaskRunIds = input.tasks.map((task) => task.taskRunId);
   const totalCost: MoneyMetric = {
     cents: totalCostCents,
-    currency: "BRL",
+    currency: input.outputCurrency,
     provenance: provenance(
       "derived",
       input.humanReference ? ["task_input", "human_reference"] : ["task_input"],
@@ -230,7 +241,7 @@ export function calculateCostPerValidatedTask(
   };
   const costPerValidatedTask: MoneyMetric = {
     cents: roundCents(totalCostCents / observedValidatedTasks.length),
-    currency: "BRL",
+    currency: input.outputCurrency,
     provenance: provenance(
       "derived",
       ["task_input", "validation"],
@@ -241,14 +252,15 @@ export function calculateCostPerValidatedTask(
 
   const humanCostPerTask = input.humanReference
     ? {
-        cents: toBrlCents(
+        cents: toOutputCents(
           (input.humanReference.hourlyRateCents *
             input.humanReference.minutesPerTask) /
             60,
           input.humanReference.currency,
+          input.outputCurrency,
           input.fx,
         ),
-        currency: "BRL" as const,
+        currency: input.outputCurrency,
         declared: "manual_entry" as const,
         declaredBy: input.humanReference.declaredBy,
         declaredAt: input.humanReference.declaredAt,
@@ -269,7 +281,7 @@ export function calculateCostPerValidatedTask(
         return {
           savingsPerTask: {
             cents: savingsCents,
-            currency: "BRL" as const,
+            currency: input.outputCurrency,
             provenance: provenance(
               "derived",
               ["manual_entry", "task_input", "validation"],
@@ -293,7 +305,7 @@ export function calculateCostPerValidatedTask(
 
   return {
     status: "available",
-    currency: "BRL",
+    currency: input.outputCurrency,
     totalCost,
     costPerValidatedTask,
     humanCostPerTask,
