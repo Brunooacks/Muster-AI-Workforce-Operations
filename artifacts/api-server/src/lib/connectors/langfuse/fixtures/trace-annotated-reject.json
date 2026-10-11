@@ -1,0 +1,9 @@
+{
+  "traceId": "trace-reject",
+  "observations": [
+    { "id": "obs-reject", "traceId": "trace-reject", "startTime": "2026-10-10T11:00:00.000Z", "endTime": "2026-10-10T11:00:02.000Z", "type": "AGENT", "isRootObservation": true, "name": "refund-agent", "traceName": "Refund trace", "environment": "staging" }
+  ],
+  "scores": [
+    { "id": "score-reject", "name": "quality", "source": "ANNOTATION", "dataType": "BOOLEAN", "value": false, "timestamp": "2026-10-10T11:00:03.000Z", "subject": { "kind": "observation", "id": "obs-reject", "traceId": "trace-reject" } }
+  ]
+}
