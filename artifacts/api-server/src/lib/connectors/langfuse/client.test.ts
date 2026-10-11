@@ -40,6 +40,7 @@ describe("createLangfuseClient", () => {
         expect(address).toBe("93.184.216.34");
         expect(family).toBe(4);
       });
+      expect(options.agent).toBe(false);
 
       const response = new PassThrough();
       Object.assign(response, { statusCode: 200, headers: {} });
@@ -61,7 +62,7 @@ describe("createLangfuseClient", () => {
   it("recusa uma resolução self-hosted que também contenha IP não global", async () => {
     const resolveHost = vi.fn().mockResolvedValue([
       { address: "93.184.216.34", family: 4 },
-      { address: "100.64.0.1", family: 4 },
+      { address: "64:ff9b:1::a9fe:a9fe", family: 6 },
     ]);
     const requestImpl = vi.fn();
     const client = createLangfuseClient({

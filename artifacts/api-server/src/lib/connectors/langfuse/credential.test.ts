@@ -76,6 +76,8 @@ describe("parseLangfuseCredential", () => {
       "https://224.0.0.1:3000",
       "https://[fe90::1]:3000",
       "https://[2001:db8::1]:3000",
+      "https://[64:ff9b::a9fe:a9fe]:3000",
+      "https://[64:ff9b:1::a9fe:a9fe]:3000",
     ]) {
       await expect(
         parseLangfuseCredential(

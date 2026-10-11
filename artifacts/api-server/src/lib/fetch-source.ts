@@ -190,6 +190,9 @@ function isBlockedIpv6(groups: number[]): boolean {
   if (isIpv4Compatible) return true;
 
   const [first, second, third, fourth] = groups;
+  const isWellKnownNat64 = first === 0x0064
+    && second === 0xff9b
+    && groups.slice(2, 6).every((group) => group === 0);
   return (first! & 0xfe00) === 0xfc00 // unique local fc00::/7
     || (first! & 0xffc0) === 0xfe80 // link-local fe80::/10
     || (first! & 0xff00) === 0xff00 // multicast ff00::/8
@@ -197,6 +200,8 @@ function isBlockedIpv6(groups: number[]): boolean {
     || (first === 0x2001 && second === 0x0002 && third === 0) // benchmarking 2001:2::/48
     || (first === 0x2001 && (second! & 0xfff0) === 0x0010) // ORCHIDv2 2001:10::/28
     || (first === 0x2001 && second === 0x0db8) // documentation 2001:db8::/32
+    || (isWellKnownNat64 && isBlockedIpv4(ipv4Tail)) // NAT64 64:ff9b::/96 with reserved IPv4
+    || (first === 0x0064 && second === 0xff9b && third === 0x0001) // local-use NAT64 64:ff9b:1::/48
     || (first === 0x2002); // deprecated 6to4, with embedded IPv4
 }
 
