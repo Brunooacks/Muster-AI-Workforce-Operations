@@ -114,7 +114,7 @@ export function mapLangfuseToEnvelopeV2(
   };
 
   const envelopes = [executionEnvelope];
-  const annotation = selectValidationAnnotation(scores, input.traceId, options.validation.scoreName);
+  const annotation = selectValidationAnnotation(scores, input.traceId, options.validation);
   if (!annotation) {
     warnings.add("insufficient_evidence:no_validation_score");
   } else {
@@ -135,7 +135,8 @@ export function mapLangfuseToEnvelopeV2(
           validation: {
             status: validation.status,
             source: "human_review",
-            ...(annotation.authorUserId ? { reviewerRef: annotation.authorUserId } : {}),
+            // Id do revisor só como hash: rastreável pelo cliente, sem dado pessoal em claro.
+            ...(annotation.authorUserId ? { reviewerRef: `langfuse-user:${sha256Truncated(annotation.authorUserId)}` } : {}),
           },
         },
       });
@@ -153,7 +154,8 @@ function buildExecution(
   warnings: Set<string>,
 ): NonNullable<EnvelopeV2["execution"]> {
   const startedAt = observations[0]?.startTime;
-  const hasOpenObservation = observations.some((observation) => !hasText(observation.endTime));
+  // EVENT é pontual no Langfuse (não tem endTime) e não indica execução aberta.
+  const hasOpenObservation = observations.some((observation) => observation.type !== "EVENT" && !hasText(observation.endTime));
   const endedObservations = observations.filter((observation) => hasText(observation.endTime));
   const completedAt = hasOpenObservation
     ? undefined
@@ -249,17 +251,17 @@ function buildEvaluationEvidence(
 function selectValidationAnnotation(
   scores: LangfuseScoreV3[],
   traceId: string,
-  scoreName: string,
+  validation: MapOptions["validation"],
 ): LangfuseScoreV3 | undefined {
   const candidates = scores.filter((score) =>
-    score.source === "ANNOTATION" && score.name === scoreName && belongsToTrace(score, traceId),
+    score.source === "ANNOTATION" && score.name === validation.scoreName && belongsToTrace(score, traceId),
   );
   // Entre anotações no mesmo instante, a rejeição vence de forma conservadora.
   return candidates.sort((left, right) => {
     const timeDifference = scoreTime(right) - scoreTime(left);
     if (timeDifference !== 0) return timeDifference;
-    const leftRejected = isRejectedAnnotation(left);
-    const rightRejected = isRejectedAnnotation(right);
+    const leftRejected = classifyAnnotation(left, validation).status === "rejected";
+    const rightRejected = classifyAnnotation(right, validation).status === "rejected";
     if (leftRejected !== rightRejected) return leftRejected ? -1 : 1;
     return left.id.localeCompare(right.id);
   })[0];
@@ -280,11 +282,6 @@ function classifyAnnotation(
     if (validation.categoricalReject?.includes(score.value)) return { status: "rejected" };
   }
   return { status: "unvalidated" };
-}
-
-function isRejectedAnnotation(score: LangfuseScoreV3): boolean {
-  return (score.dataType === "BOOLEAN" && score.value === false) ||
-    (score.dataType === "NUMERIC" && typeof score.value === "number" && score.value < 0.5);
 }
 
 function belongsToTrace(score: LangfuseScoreV3, traceId: string): boolean {

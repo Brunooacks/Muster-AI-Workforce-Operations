@@ -59,7 +59,7 @@ describe("mapLangfuseToEnvelopeV2", () => {
     });
     expect(result.envelopes[1]).toMatchObject({
       eventId: "langfuse:project-fake:trace-pass:feedback",
-      feedback: { taskRunId: "langfuse:project-fake:trace-pass", kind: "positive", score: 0.5, validation: { status: "validated", source: "human_review", reviewerRef: "reviewer-fake" } },
+      feedback: { taskRunId: "langfuse:project-fake:trace-pass", kind: "positive", score: 0.5, validation: { status: "validated", source: "human_review", reviewerRef: expect.stringMatching(/^langfuse-user:[a-f0-9]{16}$/) } },
     });
   });
 
@@ -173,5 +173,37 @@ describe("mapLangfuseToEnvelopeV2", () => {
 
     expect(first).toEqual(second);
     expect(first.envelopes[0]?.execution?.metadata?.langfuse).toMatchObject({ sessionIdHash: expect.stringMatching(/^[a-f0-9]{16}$/) });
+  });
+
+  it("não expõe o id do revisor em claro", () => {
+    const result = mapLangfuseToEnvelopeV2(passInput, options);
+
+    expect(JSON.stringify(result)).not.toContain("reviewer-fake");
+  });
+
+  it("não trata EVENT sem endTime como execução em andamento", () => {
+    const result = mapLangfuseToEnvelopeV2({
+      traceId: "trace-event",
+      observations: [
+        { id: "root", traceId: "trace-event", startTime: "2026-10-10T20:00:00.000Z", endTime: "2026-10-10T20:00:02.000Z", type: "AGENT", isRootObservation: true, name: "agent", traceName: "Event trace" },
+        { id: "event", traceId: "trace-event", startTime: "2026-10-10T20:00:01.000Z", type: "EVENT", name: "checkpoint" },
+      ],
+      scores: [],
+    }, options);
+
+    expect(result.envelopes[0]?.execution).toMatchObject({ status: "success", durationMs: 2000 });
+  });
+
+  it("usa o limiar configurado também no desempate entre anotações simultâneas", () => {
+    const result = mapLangfuseToEnvelopeV2({
+      traceId: "trace-threshold",
+      observations: [{ id: "root", traceId: "trace-threshold", startTime: "2026-10-10T21:00:00.000Z", endTime: "2026-10-10T21:00:01.000Z", type: "AGENT", isRootObservation: true, name: "agent", traceName: "Threshold trace" }],
+      scores: [
+        { id: "a-pass", name: "quality", source: "ANNOTATION", dataType: "NUMERIC", value: 0.9, timestamp: "2026-10-10T21:00:05.000Z", subject: { kind: "trace", id: "trace-threshold" } },
+        { id: "b-below", name: "quality", source: "ANNOTATION", dataType: "NUMERIC", value: 0.7, timestamp: "2026-10-10T21:00:05.000Z", subject: { kind: "trace", id: "trace-threshold" } },
+      ],
+    }, { ...options, validation: { scoreName: "quality", numericPassThreshold: 0.8 } });
+
+    expect(result.envelopes[1]?.feedback).toMatchObject({ kind: "negative", score: 0.7, validation: { status: "rejected" } });
   });
 });
