@@ -3126,12 +3126,14 @@ components:
           type: string
 
     ExternalAgentEnvelope:
+      oneOf:
+        - $ref: "#/components/schemas/ExternalAgentEnvelopeV1"
+        - $ref: "#/components/schemas/ExternalAgentEnvelopeV2"
+
+    ExternalAgentEnvelopeBase:
       type: object
       required: [contractVersion, source, agent]
       properties:
-        contractVersion:
-          type: string
-          enum: [muster.agent-ingestion.v1]
         eventId:
           type: string
           description: Optional idempotency key supplied by the source platform.
@@ -3166,18 +3168,48 @@ components:
             metadata:
               type: object
               additionalProperties: true
-        execution:
-          $ref: "#/components/schemas/ExternalAgentExecution"
         observations:
           type: array
           items:
             $ref: "#/components/schemas/ExternalAgentObservation"
-        feedback:
-          $ref: "#/components/schemas/ExternalAgentFeedback"
+
+    ExternalAgentEnvelopeV1:
+      allOf:
+        - $ref: "#/components/schemas/ExternalAgentEnvelopeBase"
+        - type: object
+          required: [contractVersion]
+          properties:
+            contractVersion:
+              type: string
+              enum: [muster.agent-ingestion.v1]
+            execution:
+              $ref: "#/components/schemas/ExternalAgentExecution"
+            feedback:
+              $ref: "#/components/schemas/ExternalAgentFeedback"
+
+    ExternalAgentEnvelopeV2:
+      allOf:
+        - $ref: "#/components/schemas/ExternalAgentEnvelopeBase"
+        - type: object
+          required: [contractVersion]
+          properties:
+            contractVersion:
+              type: string
+              enum: [muster.agent-ingestion.v2]
+            execution:
+              $ref: "#/components/schemas/ExternalAgentExecutionV2"
+            feedback:
+              $ref: "#/components/schemas/ExternalAgentFeedbackV2"
 
     ExternalAgentExecution:
       type: object
       properties:
+        taskRunId:
+          type: string
+          minLength: 1
+        currency:
+          type: string
+          enum: [BRL, USD]
         id:
           type: string
         startedAt:
@@ -3201,6 +3233,38 @@ components:
           type: object
           additionalProperties: true
 
+    ExternalAgentExecutionV2:
+      type: object
+      required: [taskRunId]
+      properties:
+        taskRunId:
+          type: string
+          minLength: 1
+        currency:
+          type: string
+          enum: [BRL, USD]
+        id:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [success, error, escalated, running]
+        durationMs:
+          type: number
+        costCents:
+          type: number
+        tokensIn:
+          type: number
+        tokensOut:
+          type: number
+        metadata:
+          type: object
+          additionalProperties: true
     ExternalAgentObservation:
       type: object
       required: [metricKey, label, value, unit]
@@ -3240,6 +3304,12 @@ components:
       type: object
       required: [kind]
       properties:
+        taskRunId:
+          type: string
+          minLength: 1
+        currency:
+          type: string
+          enum: [BRL, USD]
         kind:
           type: string
           enum: [positive, negative, correction, escalation]
@@ -3250,6 +3320,39 @@ components:
         metadata:
           type: object
           additionalProperties: true
+
+    ExternalAgentFeedbackV2:
+      type: object
+      required: [taskRunId, kind, validation]
+      properties:
+        taskRunId:
+          type: string
+          minLength: 1
+        currency:
+          type: string
+          enum: [BRL, USD]
+        kind:
+          type: string
+          enum: [positive, negative, correction, escalation]
+        score:
+          type: number
+        comment:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        validation:
+          type: object
+          required: [status, source]
+          properties:
+            status:
+              type: string
+              enum: [validated, rejected, unvalidated]
+            source:
+              type: string
+              enum: [human_review, connector, self_reported]
+            reviewerRef:
+              type: string
 
     ExternalAgentIngestionResult:
       type: object

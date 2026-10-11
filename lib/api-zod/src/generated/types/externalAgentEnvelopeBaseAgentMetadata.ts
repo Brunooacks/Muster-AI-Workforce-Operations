@@ -6,4 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ExternalAgentEnvelopeAgentMetadata = { [key: string]: unknown };
+export type ExternalAgentEnvelopeBaseAgentMetadata = { [key: string]: unknown };
