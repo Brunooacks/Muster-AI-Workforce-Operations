@@ -983,6 +983,8 @@ export const agentEvents = pgTable("agent_events", {
     .references(() => agents.id, { onDelete: "cascade" }),
   ts: timestamp("ts", { withTimezone: true }).notNull().defaultNow(),
   kind: text("kind").$type<AgentEventKind>().notNull().default("execution"),
+  taskRunId: text("task_run_id"),
+  currency: text("currency"),
   durationMs: integer("duration_ms"),
   costCents: integer("cost_cents"),
   tokensIn: integer("tokens_in"),
@@ -991,6 +993,10 @@ export const agentEvents = pgTable("agent_events", {
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
 }, (table) => ({
   agentEventsAgentTsIdx: index("agent_events_agent_ts_idx").on(table.agentId, table.ts),
+  agentEventsAgentTaskRunIdx: index("agent_events_agent_task_run_idx").on(
+    table.agentId,
+    table.taskRunId,
+  ),
 }));
 
 export type OutboxStatus =

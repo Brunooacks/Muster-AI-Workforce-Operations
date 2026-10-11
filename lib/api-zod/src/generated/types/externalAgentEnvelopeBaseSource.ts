@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ExternalAgentEnvelopeSource = {
+export type ExternalAgentEnvelopeBaseSource = {
   platform: string;
   tenant?: string;
   connectorId?: string;
