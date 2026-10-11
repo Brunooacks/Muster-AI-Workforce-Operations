@@ -130,7 +130,7 @@ function priority(path: string): number {
 
 // --- SSRF guardrails -------------------------------------------------------
 
-function isBlockedHostname(hostname: string): boolean {
+export function isBlockedHostname(hostname: string): boolean {
   const h = hostname.toLowerCase();
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal"))
     return true;
@@ -170,7 +170,7 @@ function assertSafeUrl(raw: string): URL {
 // Resolve the hostname and reject if any resolved address is private/reserved.
 // Catches hostnames (and redirect targets) that point at internal IPs, which a
 // literal-only check would miss. Best-effort against DNS-based SSRF.
-async function assertResolvedHostSafe(hostname: string): Promise<void> {
+export async function assertResolvedHostSafe(hostname: string): Promise<void> {
   // IP literals are already covered by isBlockedHostname in assertSafeUrl.
   if (/^[\d.]+$/.test(hostname) || hostname.includes(":")) return;
   let addrs: { address: string }[];

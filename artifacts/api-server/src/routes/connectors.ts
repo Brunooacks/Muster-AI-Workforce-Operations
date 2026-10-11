@@ -36,8 +36,11 @@ import {
   proposedMetricsFromDraft,
   scoreEvaluation,
 } from "../lib/discovery";
-import { getConnectorImpl } from "../lib/connectors/registry";
-import { connectorCapabilities } from "../lib/connectors/registry";
+import {
+  connectorCapabilities,
+  formatRealPlatforms,
+  getConnectorImpl,
+} from "../lib/connectors/registry";
 import { resolveImportSource } from "../lib/connectors/import-source";
 import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
 import { preAssess } from "../lib/pre-assessment";
@@ -348,7 +351,7 @@ router.post(
     const impl = getConnectorImpl(body.platform);
     if (!impl) {
       res.status(422).json({
-        error: `Plataforma "${body.platform}" ainda não tem conector real. Disponível: github.`,
+        error: `Plataforma "${body.platform}" ainda não tem conector real. ${formatRealPlatforms()}`,
       });
       return;
     }
