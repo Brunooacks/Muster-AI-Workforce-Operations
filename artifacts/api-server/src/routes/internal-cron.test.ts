@@ -25,6 +25,31 @@ describe("cron interno Langfuse", () => {
     expect(syncAllLangfuseConnectors).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["com token incorreto de mesmo tamanho", "Bearer cron-test-tokex"],
+    ["com token incorreto de tamanho diferente", "Bearer curto"],
+    ["sem header de autorização", undefined],
+  ])("recusa disparos %s", async (_description, authorization) => {
+    process.env.MUSTER_INTERNAL_CRON_TOKEN = "cron-test-token";
+    const response = responseMock();
+
+    await cronHandler()({ get: () => authorization } as unknown as Request, response);
+
+    expect(response.status).toHaveBeenCalledWith(401);
+    expect(response.json).toHaveBeenCalledWith({ error: "Não autorizado." });
+    expect(syncAllLangfuseConnectors).not.toHaveBeenCalled();
+  });
+
+  it("recusa disparos quando o token interno não está configurado", async () => {
+    const response = responseMock();
+
+    await cronHandler()({ get: () => "Bearer cron-test-token" } as unknown as Request, response);
+
+    expect(response.status).toHaveBeenCalledWith(401);
+    expect(response.json).toHaveBeenCalledWith({ error: "Não autorizado." });
+    expect(syncAllLangfuseConnectors).not.toHaveBeenCalled();
+  });
+
   it("dispara a função compartilhada e expõe falhas parciais", async () => {
     process.env.MUSTER_INTERNAL_CRON_TOKEN = "cron-test-token";
     syncAllLangfuseConnectors.mockResolvedValue({
@@ -40,6 +65,29 @@ describe("cron interno Langfuse", () => {
       completed: 1,
       failed: [{ connectorId: "connector-2", error: "credencial inválida" }],
     });
+  });
+
+  it("responde genericamente e registra somente o tipo quando a sincronização falha", async () => {
+    process.env.MUSTER_INTERNAL_CRON_TOKEN = "cron-test-token";
+    syncAllLangfuseConnectors.mockRejectedValue(new Error("falha com dados da conexão"));
+    const response = responseMock();
+    const error = vi.fn();
+
+    await cronHandler()(
+      {
+        body: { token: "não-registre-este-corpo" },
+        get: () => "Bearer cron-test-token",
+        log: { error },
+      } as unknown as Request,
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith({ error: "Falha ao sincronizar conectores Langfuse." });
+    expect(error).toHaveBeenCalledWith(
+      { errorType: "Error" },
+      "Falha na sincronização interna do Langfuse.",
+    );
   });
 });
 

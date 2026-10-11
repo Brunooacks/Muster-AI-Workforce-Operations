@@ -110,6 +110,82 @@ describe("ingestão externa de feedback", () => {
       currency: null,
     }));
   });
+
+  it("mantém o status e o corpo de sucesso para um payload v2 válido", async () => {
+    const agent = { id: "agent-42", externalId: "external-42" };
+    db.select.mockReturnValueOnce(queryResult([agent]));
+    const values = vi.fn(() => ({
+      returning: vi.fn().mockResolvedValue([{ id: "event-42", ts: new Date() }]),
+    }));
+    const insert = vi.fn(() => ({ values }));
+    db.transaction.mockImplementationOnce((callback) => callback({ insert }));
+    const response = responseMock();
+
+    await externalIngestionHandler()(
+      {
+        orgId: "org-42",
+        integrationConnectorId: undefined,
+        body: {
+          contractVersion: "muster.agent-ingestion.v2",
+          source: { platform: "webhook" },
+          agent: { externalId: "external-42", name: "Agente" },
+          execution: { status: "success", taskRunId: "run-42", durationMs: 42 },
+        },
+      } as Request,
+      response,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(202);
+    expect(response.json).toHaveBeenCalledWith({
+      accepted: true,
+      mapped: true,
+      agentExternalId: "external-42",
+      agentId: "agent-42",
+      eventsAccepted: 1,
+      observationsAccepted: 0,
+      nextAction: "A reavaliação foi enfileirada; acompanhe a atividade contínua para métricas e decisão atualizadas.",
+    });
+  });
+
+  it("mantém o receipt idempotente para replay de payload v2", async () => {
+    const agent = { id: "agent-42", externalId: "external-42" };
+    db.select.mockReturnValueOnce(queryResult([agent]));
+    const receiptReturning = vi.fn().mockResolvedValue([]);
+    const insert = vi.fn(() => ({
+      values: () => ({
+        onConflictDoNothing: () => ({ returning: receiptReturning }),
+      }),
+    }));
+    db.transaction.mockImplementationOnce((callback) => callback({ insert }));
+    const response = responseMock();
+
+    await externalIngestionHandler()(
+      {
+        orgId: "org-42",
+        integrationConnectorId: undefined,
+        body: {
+          contractVersion: "muster.agent-ingestion.v2",
+          eventId: "evt-42",
+          source: { platform: "webhook" },
+          agent: { externalId: "external-42", name: "Agente" },
+          execution: { status: "success", taskRunId: "run-42", durationMs: 42 },
+        },
+      } as Request,
+      response,
+    );
+
+    expect(receiptReturning).toHaveBeenCalledOnce();
+    expect(response.status).toHaveBeenCalledWith(202);
+    expect(response.json).toHaveBeenCalledWith({
+      accepted: true,
+      mapped: true,
+      agentExternalId: "external-42",
+      agentId: "agent-42",
+      eventsAccepted: 0,
+      observationsAccepted: 0,
+      nextAction: "Envelope já processado nesta organização; nenhuma duplicidade foi criada.",
+    });
+  });
 });
 
 function externalIngestionHandler(): (req: Request, res: Response) => Promise<void> {
