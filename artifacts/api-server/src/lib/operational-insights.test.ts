@@ -85,6 +85,81 @@ describe("operational insight primitives", () => {
     expect(spike).toMatchObject({ trend: "improving", anomaly: "spike", latestZScore: 10 });
   });
 
+  it("refuses a relative change when the early average is zero", () => {
+    const series = [0, 0, 10, 10].map((value, index) => ({
+      value,
+      observedAt: `2026-08-${String(10 + index).padStart(2, "0")}T12:00:00.000Z`,
+    }));
+
+    const rising = analyzeTrendAndAnomaly(series, "higher-is-better");
+    expect(rising).toMatchObject({
+      trend: "insufficient-data",
+      relativeChangePercent: null,
+      reason: "zero_baseline",
+      absoluteChange: 10,
+      pointsAnalyzed: 4,
+    });
+    expect(rising.anomaly).not.toBe("insufficient-data");
+
+    const falling = analyzeTrendAndAnomaly(series, "lower-is-better");
+    expect(falling).toMatchObject({
+      trend: "insufficient-data",
+      relativeChangePercent: null,
+      reason: "zero_baseline",
+      absoluteChange: 10,
+    });
+  });
+
+  it("keeps directionless series stable but still drops the relative change on a zero baseline", () => {
+    const informational = analyzeTrendAndAnomaly(
+      [0, 0, 10, 10].map((value, index) => ({
+        value,
+        observedAt: `2026-08-${String(10 + index).padStart(2, "0")}T12:00:00.000Z`,
+      })),
+      "informational",
+    );
+
+    expect(informational).toMatchObject({
+      trend: "stable",
+      relativeChangePercent: null,
+      reason: "zero_baseline",
+      absoluteChange: 10,
+    });
+  });
+
+  it("keeps a flat zero series stable without a zero_baseline reason", () => {
+    const flat = analyzeTrendAndAnomaly(
+      [0, 0, 0, 0].map((value, index) => ({
+        value,
+        observedAt: `2026-08-${String(10 + index).padStart(2, "0")}T12:00:00.000Z`,
+      })),
+      "higher-is-better",
+    );
+
+    expect(flat).toMatchObject({
+      trend: "stable",
+      relativeChangePercent: 0,
+      anomaly: "none",
+    });
+    expect(flat.reason).toBeUndefined();
+  });
+
+  it("keeps the relative change untouched when the early average is not zero", () => {
+    const growing = analyzeTrendAndAnomaly(
+      [10, 10, 20, 20].map((value, index) => ({
+        value,
+        observedAt: `2026-08-${String(10 + index).padStart(2, "0")}T12:00:00.000Z`,
+      })),
+      "higher-is-better",
+    );
+
+    expect(growing).toMatchObject({
+      trend: "improving",
+      relativeChangePercent: 100,
+    });
+    expect(growing.reason).toBeUndefined();
+  });
+
   it("prioritizes guardrails, impact, freshness and SLA deterministically", () => {
     const ordered = prioritizeOperationalInsights([
       {
