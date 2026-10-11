@@ -1064,6 +1064,40 @@ export const ExternalAgentExecutionV2Status = {
   running: 'running',
 } as const;
 
+export type ExternalAgentExecutionStepPath = typeof ExternalAgentExecutionStepPath[keyof typeof ExternalAgentExecutionStepPath];
+
+
+export const ExternalAgentExecutionStepPath = {
+  model: 'model',
+  code: 'code',
+  human: 'human',
+} as const;
+
+export type ExternalAgentExecutionStepMetadata = { [key: string]: unknown };
+
+export interface ExternalAgentExecutionStep {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  stepKey: string;
+  /** @pattern ^sha256:[a-f0-9]{64}$ */
+  inputFingerprint: string;
+  /** @pattern ^sha256:[a-f0-9]{64}$ */
+  outputHash: string;
+  path: ExternalAgentExecutionStepPath;
+  /** @minLength 1 */
+  model?: string;
+  /** @minimum 0 */
+  tokensIn?: number;
+  /** @minimum 0 */
+  tokensOut?: number;
+  /** @minimum 0 */
+  costCents?: number;
+  shadow: boolean;
+  metadata?: ExternalAgentExecutionStepMetadata;
+}
+
 export type ExternalAgentExecutionV2Metadata = { [key: string]: unknown };
 
 export interface ExternalAgentExecutionV2 {
@@ -1079,6 +1113,11 @@ export interface ExternalAgentExecutionV2 {
   tokensIn?: number;
   tokensOut?: number;
   metadata?: ExternalAgentExecutionV2Metadata;
+  /**
+     * @minItems 1
+     * @maxItems 100
+     */
+  steps?: ExternalAgentExecutionStep[];
 }
 
 export type ExternalAgentFeedbackV2Currency = typeof ExternalAgentFeedbackV2Currency[keyof typeof ExternalAgentFeedbackV2Currency];

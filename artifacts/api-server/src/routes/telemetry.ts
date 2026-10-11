@@ -4,6 +4,7 @@ import {
   db,
   agents,
   agentEvents,
+  agentEventSteps,
   externalEventReceipts,
   eventOutbox,
   metricEvidence,
@@ -49,6 +50,11 @@ const router: IRouter = Router();
 
 const WINDOW_DAYS: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
 const DIRECT_AGENT_EVENT_PLATFORM = "muster-direct-agent-v1";
+
+function stepVersionFromKey(stepKey: string): string | null {
+  const version = stepKey.split(".").at(-1);
+  return version && /^v[^.]+$/.test(version) ? version : null;
+}
 
 function telemetryOutboxEntry(input: {
   orgId: string;
@@ -341,6 +347,9 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
     let eventsAccepted = 0;
     if (body.execution) {
       const execution = body.execution;
+      const steps = body.contractVersion === "muster.agent-ingestion.v2" && "steps" in execution
+        ? execution.steps
+        : undefined;
       const kind =
         execution.status === "error"
           ? "error"
@@ -387,6 +396,27 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
         })
         .returning({ id: agentEvents.id, ts: agentEvents.ts });
       if (!event) throw new Error("Falha ao persistir execução externa.");
+      const taskRunId = execution.taskRunId;
+      if (steps?.length && taskRunId) {
+        await tx.insert(agentEventSteps).values(steps.map((step) => ({
+          orgId: req.orgId!,
+          agentId: agent.id,
+          agentEventId: event.id,
+          taskRunId,
+          occurredAt: event.ts,
+          stepKey: step.stepKey,
+          stepVersion: stepVersionFromKey(step.stepKey),
+          inputFingerprint: step.inputFingerprint,
+          outputHash: step.outputHash,
+          path: step.path,
+          model: step.model ?? null,
+          shadow: step.shadow,
+          tokensIn: step.tokensIn ?? null,
+          tokensOut: step.tokensOut ?? null,
+          costCents: step.costCents ?? null,
+          currency: execution.currency ?? null,
+        })));
+      }
       const outbox = telemetryOutboxEntry({
         orgId: req.orgId!,
         agentId: agent.id,

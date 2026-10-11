@@ -5,6 +5,7 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { ExternalAgentExecutionStep } from './externalAgentExecutionStep';
 import type { ExternalAgentExecutionV2Currency } from './externalAgentExecutionV2Currency';
 import type { ExternalAgentExecutionV2Metadata } from './externalAgentExecutionV2Metadata';
 import type { ExternalAgentExecutionV2Status } from './externalAgentExecutionV2Status';
@@ -22,4 +23,9 @@ export interface ExternalAgentExecutionV2 {
   tokensIn?: number;
   tokensOut?: number;
   metadata?: ExternalAgentExecutionV2Metadata;
+  /**
+     * @minItems 1
+     * @maxItems 100
+     */
+  steps?: ExternalAgentExecutionStep[];
 }
