@@ -5,7 +5,7 @@ import path from "path";
 
 // PORT and BASE_PATH are optional deployment settings with local defaults.
 const rawPort = process.env.PORT;
-const port = rawPort ? Number(rawPort) : 5173;
+const port = rawPort ? Number(rawPort) : 5273;
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
@@ -15,7 +15,7 @@ const basePath = process.env.BASE_PATH ?? "/";
 
 // Where the local API server listens; the dev server proxies /api to it so the
 // SPA can use same-origin requests exactly like in production.
-const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8087";
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8187";
 
 export default defineConfig({
   base: basePath,

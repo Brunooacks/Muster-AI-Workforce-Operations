@@ -125,7 +125,7 @@ function publicApiBase(): string {
   const declared = (import.meta.env.VITE_PUBLIC_API_URL as string | undefined)?.trim();
   if (declared) return declared.replace(/\/+$/, "");
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    return `${window.location.protocol}//${window.location.hostname}:8087`;
+    return `${window.location.protocol}//${window.location.hostname}:8187`;
   }
   return window.location.origin;
 }

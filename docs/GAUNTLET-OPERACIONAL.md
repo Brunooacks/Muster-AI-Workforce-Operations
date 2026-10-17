@@ -56,7 +56,7 @@ papel `owner` ou `admin`:
 
 ```bash
 export MUSTER_AUTH_TOKEN='token-da-sessao'
-export MUSTER_BASE_URL='http://localhost:8087'
+export MUSTER_BASE_URL='http://localhost:8187'
 pnpm run validate:operational -- --profile=stress
 ```
 
@@ -71,7 +71,7 @@ pnpm run stress:muster -- --rounds=3 --token-file=/tmp/muster-session-token --ba
 
 Para obter o token sem compartilhá-lo no chat:
 
-1. Entre em `http://localhost:5173/sign-in`.
+1. Entre em `http://localhost:5273/sign-in`.
 2. Abra o console do navegador e execute
    `await window.Clerk.session.getToken()`.
 3. Copie o valor retornado para o `export` no seu terminal.
@@ -97,29 +97,40 @@ runtime externo.
 
 ## Playwright autenticado
 
-A suíte usa `@clerk/testing` para criar ou reutilizar uma identidade e uma
-organização exclusivamente de teste. O setup ativa o tenant, sincroniza o Muster,
-remove resíduos desse tenant e cria cinco profissionais determinísticos. Ele
-falha explicitamente quando Clerk ou a API não estão disponíveis; não existe mais
-o comportamento de ignorar os fluxos autenticados.
+A suíte usa `@clerk/testing` e o ticket de teste do Clerk; não há `storageState`
+manual, token pessoal ou leitura de `.env`. Cada execução gera um e-mail Clerk
+derivado do e-mail-base, um usuário, dois tenants marcados como `musterE2E` e
+duas áreas no tenant primário. O teardown remove os tenants no Muster e no Clerk,
+remove o usuário marcado e apaga os artefatos locais. Reexecutar o cleanup é
+seguro quando um recurso já foi removido.
 
-Configure apenas uma instância Clerk de desenvolvimento/teste:
+Configure apenas uma instância Clerk de desenvolvimento/teste. As chaves devem
+ser `pk_test_` e `sk_test_`; a suíte recusa chaves de produção e e-mail que não
+contenha `+clerk_test@`:
 
 ```bash
-export E2E_CLERK_USER_EMAIL='muster.gauntlet+clerk_test@example.com'
-export E2E_CLERK_ORG_NAME='Muster Gauntlet E2E'
+export CLERK_TEST_PUBLISHABLE_KEY='pk_test_...'
+export CLERK_TEST_SECRET_KEY='sk_test_...'
+export E2E_CLERK_USER_EMAIL='muster.e2e+clerk_test@example.com'
+export E2E_CLERK_ORG_NAME='Muster E2E descartável'
+# Opcional; este é o padrão local da MUS-107.
+export E2E_DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:5443/muster'
 pnpm --filter @workspace/muster run test:e2e:authenticated
 ```
 
-Para repetir apenas os casos durante depuração, depois de um setup aprovado:
+O ambiente local reservado é Postgres `muster-mus107-pg` na porta `5443`, API na
+`8187` e web na `5273`. A configuração do Playwright define essas duas últimas
+portas automaticamente. O comando cria o `storageState` apenas durante a rodada
+e o teardown o remove ao final, junto do fixture.
 
-```bash
-pnpm --filter @workspace/muster run test:e2e:authenticated:reuse
-```
+O job `e2e-authenticated` usa os quatro segredos acima no GitHub Actions. A
+ausência de qualquer um falha antes de iniciar servidores, indicando exatamente
+os nomes faltantes. A imagem do job já inclui Chromium compatível com Playwright;
+nenhum comando de instalação de browser é necessário.
 
-O comando `reuse` não substitui o gate canônico e não deve ser usado isoladamente
-no CI. O `storageState` e o fixture ficam em
-`artifacts/cohort/playwright/.clerk/`, diretório ignorado pelo Git.
+As verificações negativas fazem parte do setup: uma sessão válida do tenant
+primário recebe `404` ao buscar um agente real do tenant isolado, e um token de
+uma sessão Clerk revogada recebe `401` da API.
 
 ### Evidência de 7 de setembro de 2026
 

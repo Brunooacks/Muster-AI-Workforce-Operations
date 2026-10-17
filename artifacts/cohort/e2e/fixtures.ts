@@ -15,9 +15,12 @@ export interface E2EAgentFixture {
 }
 
 export interface E2EFixture {
-  userId: string;
-  organizationId: string;
+  runId: string;
+  user: { id: string; email: string };
+  organizations: Array<{ id: string; name: string }>;
   agents: Record<E2EAgentKey, E2EAgentFixture>;
+  areas: Array<{ id: string; name: string }>;
+  isolatedAgent: E2EAgentFixture;
 }
 
 export const E2E_AUTH_FILE = path.resolve(
@@ -39,8 +42,18 @@ export function loadE2EFixture(): E2EFixture {
       throw new Error(`Fixture E2E inválido: agente ${key} não possui id, slug e name.`);
     }
   }
-  if (typeof fixture.userId !== "string" || typeof fixture.organizationId !== "string") {
-    throw new Error("Fixture E2E inválido: usuário ou organização ausente.");
+  if (
+    typeof fixture.runId !== "string" ||
+    typeof fixture.user?.id !== "string" ||
+    typeof fixture.user.email !== "string" ||
+    !Array.isArray(fixture.organizations) ||
+    fixture.organizations.length < 2 ||
+    !Array.isArray(fixture.areas) ||
+    fixture.areas.length < 2 ||
+    !fixture.isolatedAgent ||
+    typeof fixture.isolatedAgent.id !== "string"
+  ) {
+    throw new Error("Fixture E2E inválido: usuário, tenants ou áreas ausentes.");
   }
   return fixture as E2EFixture;
 }

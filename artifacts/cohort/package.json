@@ -9,12 +9,11 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test src/lib/*.test.ts",
-    "test:e2e": "node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test",
-    "test:e2e:setup": "node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test --project=clerk-setup",
-    "test:e2e:authenticated": "node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test --project=authenticated-chromium",
-    "test:e2e:authenticated:reuse": "node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test --project=authenticated-chromium --no-deps",
-    "test:e2e:public": "node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test --project=public-chromium --project=public-mobile",
-    "test:e2e:headed": "node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test --headed"
+    "test:e2e": "node ./node_modules/@playwright/test/cli.js test",
+    "test:e2e:setup": "node ./node_modules/@playwright/test/cli.js test --project=clerk-setup",
+    "test:e2e:authenticated": "node ./node_modules/@playwright/test/cli.js test --project=authenticated-chromium",
+    "test:e2e:public": "node ./node_modules/@playwright/test/cli.js test --project=public-chromium --project=public-mobile",
+    "test:e2e:headed": "node ./node_modules/@playwright/test/cli.js test --headed"
   },
   "devDependencies": {
     "@clerk/backend": "^3.17.1",
