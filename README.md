@@ -19,11 +19,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Drizzle-4169E1?logo=postgresql&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-workspaces-F69220?logo=pnpm&logoColor=white)
 <br/>
-![testes](https://img.shields.io/badge/testes_auditados-392_aprovados-2e7d52)
-![e2e](https://img.shields.io/badge/E2E-91_aprovados-2e7d52)
 ![multi-tenant](https://img.shields.io/badge/multi--tenant-org_+_área-2e7d52)
-![maturidade](https://img.shields.io/badge/maturidade-64%2F100_design_partner-6C63FF)
-![status](https://img.shields.io/badge/piloto_pago-NO--GO-C05640)
+![status](https://img.shields.io/badge/MVP-go%2Fno--go_pendente-C05640)
 
 **🌐 [Português](#-português) · [English](#-english)**
 
@@ -59,6 +56,8 @@ Todo painel de IA que você já viu calcula uma média sobre qualquer coisa que 
 O próprio repositório inclui a **Mara**, agente avaliador `L1` que executa os
 gates técnicos, rejeita documentação como prova operacional e separa software
 funcionando de produto pronto para assumir SLA.
+
+Avaliação registrada em 07/09/2026 (retrato histórico; rode o comando abaixo para o estado atual):
 
 | Decisão em 07/09/2026 | Resultado |
 | :--- | :--- |
@@ -255,6 +254,21 @@ pnpm run evaluate:maturity                           # gate de maturidade comerc
 | [`INTEGRACAO-PLATAFORMAS-EXTERNAS.md`](docs/INTEGRACAO-PLATAFORMAS-EXTERNAS.md) | Pontes de nuvem |
 | [`JORNADAS-A2A.md`](docs/JORNADAS-A2A.md) | Contrato das jornadas |
 | [`VALIDACAO-MVP.md`](docs/VALIDACAO-MVP.md) | O que o portão de ponta a ponta cobre |
+| [`RUNBOOK-MVP.md`](docs/RUNBOOK-MVP.md) | Deploy, rollback e incidentes |
+| [`BACKUP-RESTORE.md`](docs/BACKUP-RESTORE.md) | Backup diário e restore do Postgres |
+| [`STAGING-PRIVADO.md`](docs/STAGING-PRIVADO.md) | Staging privado por túnel SSH |
+| [`GO-NO-GO-MVP.md`](docs/GO-NO-GO-MVP.md) | Decisão go/no-go do MVP |
+| [`QUICKSTART-DESIGN-PARTNER.md`](docs/QUICKSTART-DESIGN-PARTNER.md) | Kit do design partner |
+
+### 📦 O que entrou desde setembro
+
+- Toolchain alinhado em **Node.js 24** e **pnpm 9.15**; `gauntlet-1-validator` integrado em `main`.
+- **Observabilidade mínima** e **guardrails de orçamento de uso de IA**.
+- **Compose de produção por imagem GHCR** (`docker-compose.release.yml`) e **runbook operacional** ([`docs/RUNBOOK-MVP.md`](docs/RUNBOOK-MVP.md)).
+- **Backup diário do Postgres para bucket S3 compatível (R2)** com validação do dump e roteiro de restore ([`docs/BACKUP-RESTORE.md`](docs/BACKUP-RESTORE.md)).
+- **Staging privado** e **go/no-go do MVP** roteirizados ([`docs/STAGING-PRIVADO.md`](docs/STAGING-PRIVADO.md), [`docs/GO-NO-GO-MVP.md`](docs/GO-NO-GO-MVP.md)); ainda não executados, porque dependem de acesso SSH ao host, domínio e chaves do Clerk.
+- Preparação de **proteção de branch** ([`docs/BRANCH-PROTECTION.md`](docs/BRANCH-PROTECTION.md)) e **kit do design partner** ([`docs/QUICKSTART-DESIGN-PARTNER.md`](docs/QUICKSTART-DESIGN-PARTNER.md)).
+- Novas baterias de teste: serializers da API, evidence provenance/baseline, `evaluation-metrics`, middleware `requireOrgRole`, `remote-deploy.sh`; correção de tendência quando o valor anterior é zero; inventário de CTAs públicos ([`docs/INVENTARIO-CTAS.md`](docs/INVENTARIO-CTAS.md)).
 
 ### ⚖️ Estado atual — o que ainda não existe
 
@@ -263,7 +277,8 @@ Coerente com o produto: dizer o que não se sabe, em vez de omitir.
 - **Nenhuma frota de cliente externo recebeu aceite formal.** Há workloads locais e cenários reais controlados, mas não validação de outcome por design partner.
 - **As pontes de nuvem ainda não foram homologadas end-to-end contra uma conta enterprise real.**
 - **A telemetria contínua ainda não passou por soak test de 24 horas** com zero perda, backlog e alertas medidos.
-- **Backup, restore e rollback ainda não têm ensaio aprovado** com RTO/RPO registrados.
+- **Backup e restore têm scripts e roteiro, mas ainda não há ensaio aprovado em produção** com RTO/RPO registrados.
+- **Ainda não há ambiente publicado:** domínio, staging e go/no-go aguardam acesso ao host e chaves do Clerk.
 - **Retenção, exportação/exclusão e threat model permanecem incompletos** para um piloto com dados de cliente.
 - **A oferta comercial ainda não está versionada** com ICP, preço, limites, SLA, suporte e responsabilidades.
 
@@ -297,6 +312,8 @@ Bad for the demo, excellent for the audit — and the reason a freshly registere
 The repository includes **Mara**, an `L1` readiness auditor that runs technical
 gates, refuses to treat documentation as operational proof, and separates
 working software from a product ready to carry an SLA.
+
+Assessment recorded on 2026-09-07 (historical snapshot; run the command below for the current state):
 
 | Decision on 2026-09-07 | Result |
 | :--- | :--- |
@@ -365,12 +382,20 @@ pnpm --filter @workspace/muster run dev          # Web on 5173
 
 Step-by-step guide in [`docs/DEMO-LOCAL.md`](docs/DEMO-LOCAL.md).
 
+### 📦 What landed since September
+
+- Toolchain on **Node.js 24** / **pnpm 9.15**; minimal **observability** and **AI usage budget guardrails**.
+- **GHCR image-based production Compose**, operational **runbook**, and **daily Postgres backup to S3-compatible storage (R2)** with a restore guide.
+- **Private staging** and **MVP go/no-go** scripted but not yet executed (they need host SSH access, a domain and Clerk keys).
+- Branch-protection prep, design-partner kit, and new test suites (API serializers, evidence provenance, evaluation metrics, `requireOrgRole`, `remote-deploy.sh`).
+
 ### ⚖️ Current state — what does not exist yet
 
 - **No external customer fleet has formal acceptance yet.** Local workloads and controlled real scenarios exist, but no design-partner outcome has been signed off.
 - **Cloud bridges have not been certified end-to-end against a real enterprise account.**
 - **Continuous telemetry has not completed a 24-hour soak test** with measured loss, backlog and alerts.
-- **Backup, restore and rollback lack an approved rehearsal** with recorded RTO/RPO.
+- **Backup and restore are scripted, but no production rehearsal has been approved** with recorded RTO/RPO.
+- **No environment is published yet:** domain, staging and go/no-go await host access and Clerk keys.
 - **Retention, export/delete and the threat model remain incomplete** for customer data.
 - **The commercial package is not versioned yet** with ICP, pricing, limits, SLA, support and responsibilities.
 
@@ -379,6 +404,5 @@ Step-by-step guide in [`docs/DEMO-LOCAL.md`](docs/DEMO-LOCAL.md).
 <div align="center">
 
 **Muster** · AI Workforce Operations
-Bruno Oliveira · [bruoacks@gmail.com](mailto:bruoacks@gmail.com)
 
 </div>
