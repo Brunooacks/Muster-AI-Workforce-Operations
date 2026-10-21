@@ -1,0 +1,7 @@
+{
+  "traceId": "trace-error",
+  "observations": [
+    { "id": "obs-error", "traceId": "trace-error", "startTime": "2026-10-10T14:00:00.000Z", "endTime": "2026-10-10T14:00:02.000Z", "type": "GENERATION", "isRootObservation": true, "name": "broken-agent", "traceName": "Broken trace", "level": "ERROR", "statusMessage": "private failure reason", "usageDetails": { "input": 4, "output": 2 } }
+  ],
+  "scores": []
+}

@@ -1,0 +1,11 @@
+{
+  "traceId": "trace-eval",
+  "observations": [
+    { "id": "obs-eval", "traceId": "trace-eval", "startTime": "2026-10-10T12:00:00.000Z", "endTime": "2026-10-10T12:00:01.000Z", "type": "CHAIN", "isRootObservation": true, "name": "judge-target", "traceName": "Judge trace" }
+  ],
+  "scores": [
+    { "id": "eval-number", "name": "quality", "source": "EVAL", "dataType": "NUMERIC", "value": 0.9, "timestamp": "2026-10-10T12:00:02.000Z", "subject": { "kind": "trace", "id": "trace-eval" } },
+    { "id": "api-boolean", "name": "guard", "source": "API", "dataType": "BOOLEAN", "value": true, "timestamp": "2026-10-10T12:00:03.000Z", "subject": { "kind": "trace", "id": "trace-eval" } },
+    { "id": "eval-text", "name": "notes", "source": "EVAL", "dataType": "TEXT", "value": "do not expose", "timestamp": "2026-10-10T12:00:04.000Z", "subject": { "kind": "trace", "id": "trace-eval" } }
+  ]
+}

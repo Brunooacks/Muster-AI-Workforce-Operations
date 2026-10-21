@@ -1,0 +1,7 @@
+{
+  "traceId": "trace-no-score",
+  "observations": [
+    { "id": "obs-no-score", "traceId": "trace-no-score", "startTime": "2026-10-10T13:00:00.000Z", "endTime": "2026-10-10T13:00:01.000Z", "type": "AGENT", "isRootObservation": true, "name": "silent-agent", "traceName": "Silent trace" }
+  ],
+  "scores": []
+}
