@@ -27,6 +27,7 @@ import LandingDemo from "@/components/landing-demo";
 import { WorkforceOverview, WORKFORCE_OVERVIEW_PT, type WorkforceOverviewLabels } from "@/components/workforce-overview";
 import { LangSwitcher } from "@/components/lang-switcher";
 import { useLang, type Lang } from "@/lib/i18n";
+import { inviteContactUrl, inviteOnlyEnabled } from "@/lib/invite-only";
 
 type LandingPaletteId = "graphite" | "dracula" | "mocha";
 
@@ -116,6 +117,22 @@ const LANDING_PALETTE_OPTIONS: Array<{ id: LandingPaletteId; label: string; colo
   { id: "dracula", label: "Dracula", color: "#bd93f9" },
   { id: "mocha", label: "Mocha", color: "#89b4fa" },
 ];
+
+const inviteOnly = inviteOnlyEnabled(import.meta.env.VITE_MUSTER_INVITE_ONLY);
+const contactUrl = inviteContactUrl(import.meta.env.VITE_MUSTER_CONTACT_URL);
+
+function InvitationAccess({ className }: { className: string }) {
+  return (
+    <div className={className} data-invite-only-access="true">
+      <span>Acesso por convite</span>
+      {contactUrl ? (
+        <a href={contactUrl} className="underline underline-offset-4">Falar com a equipe</a>
+      ) : (
+        <span className="text-muted-foreground">Contate a equipe responsável.</span>
+      )}
+    </div>
+  );
+}
 
 /* ── Dicionário da landing (pt canônico · en · es) ─────────── */
 
@@ -639,12 +656,16 @@ export default function LandingPage() {
             >
               {t.signIn}
             </Link>
-            <Link
-              href="/sign-up"
-              className="whitespace-nowrap rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:px-4"
-            >
-              <span className="sm:hidden">{t.signUpShort}</span><span className="hidden sm:inline">{t.signUp}</span>
-            </Link>
+            {inviteOnly ? (
+              <InvitationAccess className="hidden items-center gap-2 rounded-md border border-primary/30 px-3 py-2 text-xs font-semibold text-primary sm:flex" />
+            ) : (
+              <Link
+                href="/sign-up"
+                className="whitespace-nowrap rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:px-4"
+              >
+                <span className="sm:hidden">{t.signUpShort}</span><span className="hidden sm:inline">{t.signUp}</span>
+              </Link>
+            )}
           </nav>
         </div>
       </header>
@@ -670,9 +691,13 @@ export default function LandingPage() {
               ))}
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/sign-up" className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary/90">
-                {t.ctaMain}<ArrowRight className="h-4 w-4" />
-              </Link>
+              {inviteOnly ? (
+                <InvitationAccess className="inline-flex flex-col items-start gap-1 rounded-lg border border-primary/30 bg-primary/[0.07] px-5 py-3 text-sm font-semibold text-primary" />
+              ) : (
+                <Link href="/sign-up" className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary/90">
+                  {t.ctaMain}<ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
               <a href="#plataforma" className="inline-flex items-center gap-2 rounded-lg border border-card-border bg-card px-6 py-3.5 text-sm font-medium text-foreground transition hover:border-primary/50 hover:bg-secondary">
                 {t.ctaSecondary}
               </a>
@@ -753,7 +778,11 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link href="/sign-up" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">{t.ctaMain}<ArrowRight className="h-4 w-4" /></Link>
+              {inviteOnly ? (
+                <InvitationAccess className="mt-8 inline-flex flex-col items-start gap-1 text-sm font-semibold text-primary" />
+              ) : (
+                <Link href="/sign-up" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">{t.ctaMain}<ArrowRight className="h-4 w-4" /></Link>
+              )}
             </div>
             <div className="relative bg-[radial-gradient(circle_at_80%_0%,hsl(var(--primary)/0.16),transparent_38%)] p-7 sm:p-10">
               <div className="flex items-center justify-between gap-3">
@@ -845,13 +874,17 @@ export default function LandingPage() {
         </h2>
         <p className="mx-auto mt-5 max-w-[48ch] text-muted-foreground">{t.finalSub}</p>
         <div className="mt-9">
-          <Link
-            href="/sign-up"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-8 py-4 text-[15px] font-bold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            {t.finalCta}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          {inviteOnly ? (
+            <InvitationAccess className="inline-flex flex-col items-center gap-1 rounded-md border border-primary/30 bg-primary/[0.07] px-6 py-3 text-sm font-semibold text-primary" />
+          ) : (
+            <Link
+              href="/sign-up"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-8 py-4 text-[15px] font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              {t.finalCta}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
         </div>
       </section>
 
