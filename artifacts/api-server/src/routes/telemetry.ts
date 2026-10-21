@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   db,
   agents,
@@ -35,7 +35,9 @@ import { fetchAgentSourceFromUrl, FetchSourceError } from "../lib/fetch-source";
 import { preAssess } from "../lib/pre-assessment";
 import { supervisionFromHeartbeat } from "../lib/supervision";
 import { normalizeExternalObservation } from "../lib/connectors/ingestion";
-import { MUSTER_AGENT_INGESTION_CONTRACT_VERSION } from "../lib/connectors/types";
+import {
+  MUSTER_SUPPORTED_AGENT_INGESTION_CONTRACT_VERSIONS,
+} from "../lib/connectors/types";
 import {
   AGENT_TELEMETRY_EVENT_TYPE,
   loadAgentEvents,
@@ -193,7 +195,7 @@ router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, re
 
 router.post("/integrations/agent-events", requireIntegrationCredential, async (req, res) => {
   const body = IngestExternalAgentEnvelopeBody.parse(req.body) as ExternalAgentEnvelope;
-  if (body.contractVersion !== MUSTER_AGENT_INGESTION_CONTRACT_VERSION) {
+  if (!MUSTER_SUPPORTED_AGENT_INGESTION_CONTRACT_VERSIONS.includes(body.contractVersion)) {
     res.status(400).json({ error: "Versão de contrato não suportada." });
     return;
   }
@@ -273,6 +275,27 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
     return;
   }
 
+  const feedbackTaskRunId = body.feedback?.taskRunId;
+  const feedbackReferencesCurrentExecution =
+    feedbackTaskRunId !== undefined && body.execution?.taskRunId === feedbackTaskRunId;
+  if (feedbackTaskRunId && !feedbackReferencesCurrentExecution) {
+    const [taskRun] = await db
+      .select({ id: agentEvents.id })
+      .from(agentEvents)
+      .where(
+        and(
+          eq(agentEvents.agentId, agent.id),
+          eq(agentEvents.taskRunId, feedbackTaskRunId),
+          inArray(agentEvents.kind, ["execution", "error", "escalation"]),
+        ),
+      )
+      .limit(1);
+    if (!taskRun) {
+      res.status(400).json({ error: "taskRunId não encontrado para este agente." });
+      return;
+    }
+  }
+
   if (connectorId && !linkedAgent) {
     await db
       .insert(agentConnectorLinks)
@@ -333,6 +356,8 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
             ? { ts: startedAt }
             : {}),
           kind,
+          taskRunId: execution.taskRunId ?? null,
+          currency: execution.currency ?? null,
           durationMs:
             execution.durationMs != null
               ? Math.round(execution.durationMs)
@@ -374,14 +399,17 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
     }
 
     if (body.feedback) {
+      const { taskRunId, currency, ...feedbackMetadata } = body.feedback;
       const [event] = await tx
         .insert(agentEvents)
         .values({
           agentId: agent.id,
           kind: "feedback",
+          taskRunId: taskRunId ?? null,
+          currency: currency ?? null,
           success: body.feedback.kind === "negative" ? 0 : 1,
           metadata: {
-            ...body.feedback,
+            ...feedbackMetadata,
             source,
             ...(body.eventId ? { externalEventId: body.eventId } : {}),
           },

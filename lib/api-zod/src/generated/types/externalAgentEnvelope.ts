@@ -5,20 +5,7 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
-import type { ExternalAgentEnvelopeAgent } from './externalAgentEnvelopeAgent';
-import type { ExternalAgentEnvelopeContractVersion } from './externalAgentEnvelopeContractVersion';
-import type { ExternalAgentEnvelopeSource } from './externalAgentEnvelopeSource';
-import type { ExternalAgentExecution } from './externalAgentExecution';
-import type { ExternalAgentFeedback } from './externalAgentFeedback';
-import type { ExternalAgentObservation } from './externalAgentObservation';
+import type { ExternalAgentEnvelopeV1 } from './externalAgentEnvelopeV1';
+import type { ExternalAgentEnvelopeV2 } from './externalAgentEnvelopeV2';
 
-export interface ExternalAgentEnvelope {
-  contractVersion: ExternalAgentEnvelopeContractVersion;
-  /** Optional idempotency key supplied by the source platform. */
-  eventId?: string;
-  source: ExternalAgentEnvelopeSource;
-  agent: ExternalAgentEnvelopeAgent;
-  execution?: ExternalAgentExecution;
-  observations?: ExternalAgentObservation[];
-  feedback?: ExternalAgentFeedback;
-}
+export type ExternalAgentEnvelope = ExternalAgentEnvelopeV1 | ExternalAgentEnvelopeV2;

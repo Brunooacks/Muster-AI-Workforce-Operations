@@ -5,13 +5,13 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
-import type { ExternalAgentEnvelopeAgentMetadata } from './externalAgentEnvelopeAgentMetadata';
+import type { ExternalAgentEnvelopeBaseAgentMetadata } from './externalAgentEnvelopeBaseAgentMetadata';
 
-export type ExternalAgentEnvelopeAgent = {
+export type ExternalAgentEnvelopeBaseAgent = {
   externalId: string;
   name: string;
   version?: string;
   runtime?: string;
   url?: string;
-  metadata?: ExternalAgentEnvelopeAgentMetadata;
+  metadata?: ExternalAgentEnvelopeBaseAgentMetadata;
 };
