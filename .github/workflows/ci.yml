@@ -48,3 +48,106 @@ jobs:
 
       - name: Build
         run: pnpm -r --if-present run build
+
+  docker-smoke:
+    name: docker build · release smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Validate Clerk test secrets
+        env:
+          CLERK_TEST_PUBLISHABLE_KEY: ${{ secrets.CLERK_TEST_PUBLISHABLE_KEY }}
+          CLERK_TEST_SECRET_KEY: ${{ secrets.CLERK_TEST_SECRET_KEY }}
+        run: |
+          missing=()
+          [[ -n "${CLERK_TEST_PUBLISHABLE_KEY:-}" ]] || missing+=(CLERK_TEST_PUBLISHABLE_KEY)
+          [[ -n "${CLERK_TEST_SECRET_KEY:-}" ]] || missing+=(CLERK_TEST_SECRET_KEY)
+
+          if ((${#missing[@]})); then
+            printf 'docker-smoke requer os seguintes GitHub Actions secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Generate ephemeral credential encryption key
+        run: |
+          printf 'MUSTER_CREDENTIAL_ENCRYPTION_KEY=%s\n' "$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+
+      - name: Build production image
+        env:
+          CLERK_TEST_PUBLISHABLE_KEY: ${{ secrets.CLERK_TEST_PUBLISHABLE_KEY }}
+        run: |
+          docker build \
+            --build-arg VITE_CLERK_PUBLISHABLE_KEY="$CLERK_TEST_PUBLISHABLE_KEY" \
+            --tag muster-ci:${{ github.sha }} \
+            .
+
+      - name: Report image size
+        run: |
+          image_bytes="$(docker image inspect muster-ci:${{ github.sha }} --format '{{.Size}}')"
+          image_mebibytes=$(( (image_bytes + 1024 * 1024 - 1) / (1024 * 1024) ))
+          printf 'Imagem Docker: %s MiB (meta: < 400 MiB)\n' "$image_mebibytes"
+          if (( image_mebibytes >= 400 )); then
+            printf 'Imagem Docker excede a meta de 400 MiB.\n' >&2
+            exit 1
+          fi
+
+      - name: Start Postgres and application
+        env:
+          CLERK_TEST_PUBLISHABLE_KEY: ${{ secrets.CLERK_TEST_PUBLISHABLE_KEY }}
+          CLERK_TEST_SECRET_KEY: ${{ secrets.CLERK_TEST_SECRET_KEY }}
+        run: |
+          docker network create muster-ci
+          docker run --detach --name muster-ci-postgres --network muster-ci \
+            --env POSTGRES_DB=muster \
+            --env POSTGRES_PASSWORD=postgres \
+            postgres:16-alpine
+          for attempt in {1..30}; do
+            if docker exec muster-ci-postgres pg_isready --username postgres --dbname muster; then
+              break
+            fi
+            if (( attempt == 30 )); then
+              printf 'O Postgres não ficou pronto dentro do prazo.\n' >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          docker run --detach --name muster-ci-app --network muster-ci \
+            --publish 127.0.0.1:18081:8080 \
+            --env DATABASE_URL=postgresql://postgres:postgres@muster-ci-postgres:5432/muster \
+            --env MIGRATE_ON_START=true \
+            --env CLERK_SECRET_KEY="$CLERK_TEST_SECRET_KEY" \
+            --env CLERK_PUBLISHABLE_KEY="$CLERK_TEST_PUBLISHABLE_KEY" \
+            --env MUSTER_CREDENTIAL_ENCRYPTION_KEY \
+            muster-ci:${{ github.sha }}
+
+      - name: Wait for application health
+        run: |
+          for _ in {1..30}; do
+            health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' muster-ci-app)"
+            if [[ "$health" == healthy ]]; then
+              exit 0
+            fi
+            if [[ "$health" == unhealthy ]]; then
+              printf 'O container da aplicação ficou unhealthy.\n' >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          printf 'O container da aplicação não ficou healthy dentro do prazo.\n' >&2
+          exit 1
+
+      - name: Run release smoke
+        run: pnpm release:smoke -- http://127.0.0.1:18081
+
+      - name: Clean up smoke containers and image
+        if: always()
+        run: |
+          docker rm --force muster-ci-app muster-ci-postgres 2>/dev/null || true
+          docker network rm muster-ci 2>/dev/null || true
+          docker image rm muster-ci:${{ github.sha }} 2>/dev/null || true
