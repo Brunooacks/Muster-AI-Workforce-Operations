@@ -46,3 +46,15 @@ SSH até a configuração posterior do vhost público.
 
 O procedimento completo e o checklist de evidências do staging privado estão em
 [STAGING-PRIVADO.md](../docs/STAGING-PRIVADO.md).
+
+## Produção (design partners)
+
+A produção usa o mesmo compose base com o overlay
+`deploy/docker-compose.public.yml`, que adiciona o `cloudflared` (Cloudflare
+Tunnel, sem porta aberta e sem tocar no Nginx do Veltrix). Ative-o com
+`MUSTER_COMPOSE_OVERLAYS=deploy/docker-compose.public.yml` no
+`.env.production`. O `remote-deploy.sh` então também verifica memória e disco
+livres antes de começar e, com `MUSTER_VELTRIX_HEALTH_URL`, reverte o Muster se
+o Veltrix cair depois da troca. Decisão, limites, backup sem custo e rollback:
+[PRODUCAO-INFRA.md](../docs/PRODUCAO-INFRA.md). Status e passos do Bruno:
+[PRODUCAO-CHECKLIST.md](../docs/PRODUCAO-CHECKLIST.md).

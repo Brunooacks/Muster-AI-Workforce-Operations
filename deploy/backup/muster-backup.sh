@@ -140,11 +140,26 @@ prefix="${MUSTER_BACKUP_S3_PREFIX:-$prefix}"
 retention_days="${MUSTER_BACKUP_RETENTION_DAYS:-$retention_days}"
 local_retention_count="${MUSTER_BACKUP_LOCAL_RETENTION_COUNT:-$local_retention_count}"
 [[ "$prefix" == */ ]] || prefix="$prefix/"
-require_env MUSTER_BACKUP_S3_ENDPOINT
-require_env MUSTER_BACKUP_S3_BUCKET
-require_env AWS_ACCESS_KEY_ID
-require_env AWS_SECRET_ACCESS_KEY
-export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
+# Modo "local": sem bucket S3/R2 (o R2 exige cartão cadastrado na Cloudflare).
+# O dump fica só no droplet, com rotação, e deve ser copiado para fora do host
+# por deploy/backup/muster-backup-pull.sh. Modo "s3" (padrão) mantém o envio.
+backup_mode="${MUSTER_BACKUP_MODE:-s3}"
+case "$backup_mode" in
+  s3)
+    require_env MUSTER_BACKUP_S3_ENDPOINT
+    require_env MUSTER_BACKUP_S3_BUCKET
+    require_env AWS_ACCESS_KEY_ID
+    require_env AWS_SECRET_ACCESS_KEY
+    export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
+    ;;
+  local)
+    # Sem cópia remota, guardamos mais pares por padrão (7 dias de diários).
+    local_retention_count="${MUSTER_BACKUP_LOCAL_RETENTION_COUNT:-7}"
+    ;;
+  *)
+    fail "MUSTER_BACKUP_MODE deve ser s3 ou local."
+    ;;
+esac
 
 [[ "$retention_days" =~ ^[1-9][0-9]*$ ]] || fail "MUSTER_BACKUP_RETENTION_DAYS deve ser um inteiro positivo."
 [[ "$local_retention_count" =~ ^[1-9][0-9]*$ ]] || fail "MUSTER_BACKUP_LOCAL_RETENTION_COUNT deve ser um inteiro positivo."
@@ -163,6 +178,17 @@ dump_database > "$dump_path"
 validate_dump
 dump_hash="$(sha256_file "$dump_path")"
 printf '%s  %s\n' "$dump_hash" "$dump_name" > "$checksum_path"
+
+if [[ "$backup_mode" == local ]]; then
+  # Permite que o usuário de deploy (sem root) copie os dumps para fora do host.
+  if [[ -n "${MUSTER_BACKUP_FILE_OWNER:-}" ]]; then
+    chown "$MUSTER_BACKUP_FILE_OWNER" "$backup_dir" "$dump_path" "$checksum_path" ||
+      fail "não foi possível ajustar o dono dos arquivos de backup."
+  fi
+  prune_local_backups
+  printf 'Backup local concluído: %s (SHA-256 verificado; %s pares mantidos).\n' "$dump_name" "$local_retention_count"
+  exit 0
+fi
 
 aws_cli s3 cp "/work/$dump_name" "s3://$MUSTER_BACKUP_S3_BUCKET/$remote_dump_key" >/dev/null
 aws_cli s3 cp "/work/${dump_name}.sha256" "s3://$MUSTER_BACKUP_S3_BUCKET/${remote_dump_key}.sha256" >/dev/null

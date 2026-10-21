@@ -138,6 +138,19 @@ exit 0
     join(path, "bin", "curl"),
     `#!/usr/bin/env bash
 set -euo pipefail
+url="\${*: -1}"
+if [[ "$url" == *veltrix* ]]; then
+  # FAKE_VELTRIX_SEQUENCE: resultados por chamada, ex. "ok fail".
+  counter='${join(path, "veltrix-calls")}'
+  calls=$(( $(cat "$counter" 2>/dev/null || printf 0) + 1 ))
+  printf '%s' "$calls" > "$counter"
+  read -r -a sequence <<< "\${FAKE_VELTRIX_SEQUENCE:-ok ok}"
+  last=$(( \${#sequence[@]} - 1 ))
+  index=$(( calls - 1 > last ? last : calls - 1 ))
+  result="\${sequence[$index]}"
+  [[ "$result" == ok ]] && exit 0
+  exit 22
+fi
 printf '{"status":"ok","sha":"%s"}\\n' "\${FAKE_HEALTH_SHA:-}"
 `,
   );
@@ -152,9 +165,20 @@ function runDeploy(path, sha, extra = {}) {
     MUSTER_DEPLOY_DIR: join(path, "deploy-root"),
     MUSTER_BACKUP_ENV_FILE: join(path, "missing-backup.env"),
     FAKE_HEALTH_SHA: sha,
+    // Host de teste com folga: 4 GiB livres de RAM e 40 GiB de disco.
+    MUSTER_PREFLIGHT_MEM_AVAILABLE_KIB: String(4 * 1024 * 1024),
+    MUSTER_PREFLIGHT_DISK_AVAILABLE_KIB: String(40 * 1024 * 1024),
     ...extra,
   };
   delete env.MUSTER_BACKUP_S3_BUCKET;
+  for (const key of [
+    "MUSTER_COMPOSE_OVERLAYS",
+    "MUSTER_VELTRIX_HEALTH_URL",
+    "MUSTER_MIN_MEM_AVAILABLE_MIB",
+    "MUSTER_MIN_DISK_FREE_MIB",
+  ]) {
+    if (!(key in extra)) delete env[key];
+  }
   return spawnSync("bash", [deployScript, sha], { encoding: "utf8", env });
 }
 
@@ -269,5 +293,86 @@ describe("deploy remoto do Muster", () => {
     );
 
     expect(readImageTags(path)).toEqual([`MUSTER_IMAGE_TAG=${PREVIOUS_TAG}`]);
+  });
+
+  it("não inicia o deploy quando falta memória para proteger o Veltrix", () => {
+    const path = deployFixture();
+    const result = runDeploy(path, NEW_SHA, {
+      MUSTER_PREFLIGHT_MEM_AVAILABLE_KIB: String(512 * 1024),
+    });
+
+    expect(result.status).toBe(3);
+    expect(result.stderr).toContain("Memória disponível abaixo do mínimo");
+    expect(readLog(path, "docker.log")).toBe("");
+    expect(readImageTags(path)).toEqual([`MUSTER_IMAGE_TAG=${PREVIOUS_TAG}`]);
+  });
+
+  it("não inicia o deploy quando o disco livre está abaixo do mínimo configurado", () => {
+    const path = deployFixture({
+      envLines: [
+        `MUSTER_IMAGE_TAG=${PREVIOUS_TAG}`,
+        "MUSTER_MIN_DISK_FREE_MIB=50000",
+      ],
+    });
+    const result = runDeploy(path, NEW_SHA);
+
+    expect(result.status).toBe(3);
+    expect(result.stderr).toContain("Disco livre abaixo do mínimo");
+    expect(readLog(path, "docker.log")).toBe("");
+  });
+
+  it("aplica o overlay público versionado e recusa caminhos arbitrários", () => {
+    const path = deployFixture({
+      envLines: [
+        `MUSTER_IMAGE_TAG=${PREVIOUS_TAG}`,
+        "MUSTER_COMPOSE_OVERLAYS=deploy/docker-compose.public.yml",
+      ],
+    });
+    write(
+      join(path, "deploy-root", "deploy", "docker-compose.public.yml"),
+      "services:\n  cloudflared:\n    image: cloudflare/cloudflared\n",
+      0o644,
+    );
+    const result = runDeploy(path, NEW_SHA);
+    expect(result.status).toBe(0);
+    const up = dockerCalls(path).find(
+      (call) => call.tag === CANDIDATE_TAG && call.args.trimEnd().endsWith("up -d"),
+    );
+    expect(up?.args).toContain("deploy/docker-compose.public.yml");
+
+    for (const overlay of ["../../etc/passwd", "deploy/outro.yml", "deploy/docker-compose.inexistente.yml"]) {
+      const bad = deployFixture();
+      const rejected = runDeploy(bad, NEW_SHA, { MUSTER_COMPOSE_OVERLAYS: overlay });
+      expect(rejected.status, overlay).toBe(2);
+      expect(readLog(bad, "docker.log"), overlay).toBe("");
+    }
+  });
+
+  it("reverte o Muster quando o Veltrix para de responder depois do deploy", () => {
+    const path = deployFixture();
+    const result = runDeploy(path, NEW_SHA, {
+      MUSTER_VELTRIX_HEALTH_URL: "http://127.0.0.1/veltrix-health",
+      FAKE_VELTRIX_SEQUENCE: "ok fail",
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("O Veltrix deixou de responder");
+    const calls = dockerCalls(path);
+    const candidatoUp = callIndex(calls, CANDIDATE_TAG, "up -d");
+    expect(candidatoUp).toBeGreaterThanOrEqual(0);
+    expect(callIndex(calls, PREVIOUS_TAG, "up -d")).toBeGreaterThan(candidatoUp);
+    expect(readImageTags(path)).toEqual([`MUSTER_IMAGE_TAG=${PREVIOUS_TAG}`]);
+  });
+
+  it("segue o deploy quando o Veltrix já estava fora antes, sem culpar o Muster", () => {
+    const path = deployFixture();
+    const result = runDeploy(path, NEW_SHA, {
+      MUSTER_VELTRIX_HEALTH_URL: "http://127.0.0.1/veltrix-health",
+      FAKE_VELTRIX_SEQUENCE: "fail fail",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("o Veltrix já estava indisponível");
+    expect(readImageTags(path)).toEqual([`MUSTER_IMAGE_TAG=${CANDIDATE_TAG}`]);
   });
 });

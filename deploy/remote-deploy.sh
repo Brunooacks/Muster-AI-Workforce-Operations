@@ -20,11 +20,92 @@ if [[ ! -f "$compose_file" || ! -f "$env_file" ]]; then
 fi
 
 target_tag="sha-$target_sha"
-compose=(docker compose --project-directory "$deploy_dir" --env-file "$env_file" -f "$compose_file")
+
+# Lê uma chave do arquivo de ambiente sem executá-lo (nunca fazemos `source`
+# do .env.production, que contém segredos).
+read_env_value() {
+  awk -F= -v key="$1" '$1 == key { print substr($0, index($0, "=") + 1) }' "$env_file" | tail -n 1
+}
 
 read_current_tag() {
-  awk -F= '$1 == "MUSTER_IMAGE_TAG" { print substr($0, index($0, "=") + 1) }' "$env_file" | tail -n 1
+  read_env_value MUSTER_IMAGE_TAG
 }
+
+# Overlays opcionais (ex.: deploy/docker-compose.public.yml para o Cloudflare
+# Tunnel). Só aceitamos arquivos versionados em deploy/ com nome previsível.
+compose=(docker compose --project-directory "$deploy_dir" --env-file "$env_file" -f "$compose_file")
+overlays="${MUSTER_COMPOSE_OVERLAYS:-$(read_env_value MUSTER_COMPOSE_OVERLAYS)}"
+for overlay in $overlays; do
+  if [[ ! "$overlay" =~ ^deploy/docker-compose\.[a-z0-9-]+\.yml$ || ! -f "$deploy_dir/$overlay" ]]; then
+    printf 'Overlay de compose inválido ou ausente: %s\n' "$overlay" >&2
+    exit 2
+  fi
+  compose+=(-f "$deploy_dir/$overlay")
+done
+
+# Guarda de capacidade: o droplet é compartilhado com o Veltrix. Abaixo destes
+# mínimos o deploy do Muster não começa (nenhum pull, nenhum up).
+min_mem_mib="${MUSTER_MIN_MEM_AVAILABLE_MIB:-$(read_env_value MUSTER_MIN_MEM_AVAILABLE_MIB)}"
+min_disk_mib="${MUSTER_MIN_DISK_FREE_MIB:-$(read_env_value MUSTER_MIN_DISK_FREE_MIB)}"
+min_mem_mib="${min_mem_mib:-1024}"
+min_disk_mib="${min_disk_mib:-5120}"
+veltrix_health_url="${MUSTER_VELTRIX_HEALTH_URL:-$(read_env_value MUSTER_VELTRIX_HEALTH_URL)}"
+
+mem_available_kib() {
+  if [[ -n "${MUSTER_PREFLIGHT_MEM_AVAILABLE_KIB:-}" ]]; then
+    printf '%s\n' "$MUSTER_PREFLIGHT_MEM_AVAILABLE_KIB"
+  else
+    awk '/MemAvailable:/ { print $2; exit }' /proc/meminfo
+  fi
+}
+
+disk_available_kib() {
+  if [[ -n "${MUSTER_PREFLIGHT_DISK_AVAILABLE_KIB:-}" ]]; then
+    printf '%s\n' "$MUSTER_PREFLIGHT_DISK_AVAILABLE_KIB"
+  else
+    df -Pk "$deploy_dir" | awk 'NR == 2 { print $4 }'
+  fi
+}
+
+veltrix_healthy() {
+  [[ -z "$veltrix_health_url" ]] && return 0
+  curl --fail --silent --show-error --max-time 10 "$veltrix_health_url" >/dev/null
+}
+
+preflight() {
+  local mem_kib disk_kib
+  if [[ ! "$min_mem_mib" =~ ^[0-9]+$ || ! "$min_disk_mib" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "Limites de capacidade inválidos (use MiB inteiros)." >&2
+    exit 3
+  fi
+  mem_kib="$(mem_available_kib)"
+  disk_kib="$(disk_available_kib)"
+  if [[ ! "$mem_kib" =~ ^[0-9]+$ || ! "$disk_kib" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "Não foi possível medir memória/disco do host; deploy abortado." >&2
+    exit 3
+  fi
+  printf 'Capacidade: memória disponível=%s MiB (mínimo %s), disco livre=%s MiB (mínimo %s).\n' \
+    "$((mem_kib / 1024))" "$min_mem_mib" "$((disk_kib / 1024))" "$min_disk_mib"
+  if (( mem_kib < min_mem_mib * 1024 )); then
+    printf '%s\n' "Memória disponível abaixo do mínimo; deploy abortado para proteger o Veltrix." >&2
+    exit 3
+  fi
+  if (( disk_kib < min_disk_mib * 1024 )); then
+    printf '%s\n' "Disco livre abaixo do mínimo; deploy abortado para proteger o Veltrix." >&2
+    exit 3
+  fi
+  if [[ -n "$veltrix_health_url" ]]; then
+    if veltrix_healthy; then
+      veltrix_was_healthy=true
+      printf '%s\n' "Veltrix saudável antes do deploy."
+    else
+      veltrix_was_healthy=false
+      printf '%s\n' "Aviso: o Veltrix já estava indisponível antes do deploy do Muster." >&2
+    fi
+  fi
+}
+
+veltrix_was_healthy=false
 
 previous_tag="$(read_current_tag || true)"
 rollback_started=false
@@ -119,6 +200,7 @@ rollback() {
   exit "$deployment_status"
 }
 
+preflight
 backup_database
 backup_to_r2_when_configured
 
@@ -136,6 +218,14 @@ if [[ "$health_body" != *"\"sha\":\"$target_sha\""* ]]; then
 fi
 
 MUSTER_BASE_URL=http://127.0.0.1:8081 bash "$deploy_dir/scripts/release-smoke.sh"
+
+# Se o Veltrix estava saudável antes e deixou de responder depois da troca do
+# Muster, revertemos o Muster: o Veltrix é o produto que já atende clientes.
+if [[ "$veltrix_was_healthy" == true ]] && ! veltrix_healthy; then
+  printf '%s\n' "O Veltrix deixou de responder após o deploy do Muster; revertendo." >&2
+  false
+fi
+
 persist_current_tag
 
 trap - ERR
