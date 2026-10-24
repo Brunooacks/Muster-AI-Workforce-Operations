@@ -8,8 +8,9 @@ const repositoryRoot = join(import.meta.dirname, "..", "..");
 const gate = join(repositoryRoot, "scripts", "ci", "name-gate.sh");
 const hook = join(repositoryRoot, "scripts", "hooks", "pre-push");
 
-// Termo sintético: nunca use um termo real da lista de bloqueio em fixtures.
-const TERM = "Zorblaxquintal";
+// Termo sintético, montado em tempo de execução para que este arquivo passe no
+// próprio gate. Nunca use um termo real da lista de bloqueio em fixtures.
+const TERM = ["Zorblax", "quintal"].join("");
 
 const cleanEnvironment = () => {
   const environment = { ...process.env };
@@ -137,7 +138,7 @@ describe("name-gate.sh · commits", () => {
     const repository = tempRepository();
     commitFile(repository, "base.txt", "base\n");
     const base = git(repository, ["rev-parse", "HEAD"]);
-    commitFile(repository, "src/novo.ts", "a\nb\nconst x = 'zorblaxquintal';\n");
+    commitFile(repository, "src/novo.ts", `a\nb\nconst x = '${TERM.toLowerCase()}';\n`);
     commitFile(repository, "outro.txt", "neutro\n", identity(TERM, "dev@example.invalid"));
 
     const result = runGate(repository, ["--commits", "HEAD", `^${base}`], { MUSTER_BLOCKLIST: TERM });
