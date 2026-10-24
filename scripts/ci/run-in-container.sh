@@ -25,8 +25,15 @@ if [[ -f "$list_file" ]]; then
   mount_args+=(-v "$list_file:/root/.config/muster/blocklist:ro")
 fi
 
-exec docker run --rm \
-  -v "$repo_root:/src:ro" \
+# O tar é montado no host e entra pelo stdin: em worktrees, o .git é um
+# arquivo que aponta para fora do repo e não funcionaria dentro do container.
+cd "$repo_root"
+git ls-files -z --cached |
+  while IFS= read -r -d "" file; do
+    if [[ -e "$file" || -L "$file" ]]; then printf '%s\0' "$file"; fi
+  done |
+  COPYFILE_DISABLE=1 tar --null -T - -cf - |
+  docker run --rm -i \
   -v "$STORE_VOLUME:/pnpm-store" \
   -e npm_config_store_dir=/pnpm-store \
   -e CI=true \
@@ -35,12 +42,7 @@ exec docker run --rm \
   -w /work \
   "$IMAGE" \
   bash -euo pipefail -c '
-    git config --global --add safe.directory /src
-    git -C /src ls-files -z --cached |
-      while IFS= read -r -d "" file; do
-        if [[ -e "/src/$file" || -L "/src/$file" ]]; then printf "%s\0" "$file"; fi
-      done |
-      tar --null -C /src -T - -cf - | tar -xf -
+    tar --warning=no-unknown-keyword -xf -
     git init -q && git add -A
     corepack enable && corepack prepare "pnpm@'"$PNPM_VERSION"'" --activate >/dev/null
     exec "$@"
