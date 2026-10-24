@@ -22,10 +22,11 @@ MUSTER_IMAGE_TAG=sha-<SHA-de-40-caracteres> \
   docker compose -f deploy/docker-compose.prod.yml config
 ```
 
-O workflow `deploy.yml` só é acionado depois de uma execução bem-sucedida do
-workflow `CI` em `main`, ou manualmente com um SHA completo, e permanece
-inativo até que `vars.MUSTER_DEPLOY_ENABLED` seja exatamente `true`. Esse kill
-switch bloqueia inclusive o build e o push da imagem para o GHCR.
+O antigo workflow `deploy.yml` do GitHub Actions foi removido na E0 (CI no
+Woodpecker, `docs/CI.md`). O deploy é manual: com o `ci/woodpecker` verde no
+SHA desejado, a imagem `ghcr.io/brunooacks/muster:sha-<SHA>` é construída e
+enviada à mão e, no host, roda-se `./deploy/remote-deploy.sh <SHA>`. O
+Woodpecker não recebe nenhum segredo de produção.
 
 ## Ordem de ativação do staging
 
