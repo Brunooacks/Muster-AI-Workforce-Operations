@@ -40,6 +40,9 @@ RUN pnpm --filter @workspace/api-server run build
 RUN test -n "$VITE_CLERK_PUBLISHABLE_KEY"
 RUN pnpm --filter @workspace/muster run build
 
+# Migrations for the runtime image, without lib/db/drizzle/down (D-E1-5).
+RUN bash scripts/ci/package-migrations.sh lib/db/drizzle /app/migrations-dist
+
 # ---- Stage 2: runtime -----------------------------------------------------
 FROM node:24-slim AS runner
 
@@ -61,7 +64,7 @@ COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=builder /app/artifacts/cohort/dist/public ./public
 
 # Ship SQL migrations for the explicit startup/release migration step.
-COPY --from=builder /app/lib/db/drizzle ./migrations
+COPY --from=builder /app/migrations-dist ./migrations
 
 # Run as the built-in non-root user.
 USER node
