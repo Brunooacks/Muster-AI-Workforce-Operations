@@ -115,6 +115,14 @@ const PARES_CSS = [
   ["cyan-text", "card"],
   ["cyan-text", "secondary"],
   ["sidebar-foreground", "sidebar"],
+  // Chips de risco/atenção: texto de status sobre fundo, cartão e a própria tinta (15%).
+  ...["chart-2", "chart-3", "chart-4", "destructive"].flatMap((tom) => [
+    [`${tom}-text`, "background"],
+    [`${tom}-text`, "card"],
+    [`${tom}-text`, "secondary"],
+    [`${tom}-text`, "card", tom],
+    [`${tom}-text`, "secondary", tom],
+  ]),
 ];
 
 const PARES_PALETA = [
@@ -131,16 +139,46 @@ const PARES_PALETA = [
   ["wo-muted", "wo-card-2"],
   ["wo-primary", "wo-card"],
   ["wo-accent-ink", "wo-accent"],
-  ["wo-warning", "wo-card"],
-  ["wo-danger", "wo-card"],
+  ...[
+    ["wo-warning-text", "wo-warning"],
+    ["wo-danger-text", "wo-danger"],
+  ].flatMap(([texto, tom]) => [
+    [texto, "wo-card"],
+    [texto, "wo-card-2"],
+    [texto, "wo-bg"],
+    [texto, "wo-card", tom],
+    [texto, "wo-card-2", tom],
+  ]),
+  ...["chart-2", "chart-3", "chart-4", "destructive"].flatMap((tom) => [
+    [`${tom}-text`, "card"],
+    [`${tom}-text`, "secondary"],
+    [`${tom}-text`, "card", tom],
+  ]),
 ];
+
+/** Proporção da tinta de status sobre o fundo nos chips (bg-x/10 a bg-x/15). */
+export const TINTA_CHIP = 0.15;
+
+function paraHex(rgb) {
+  return `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Fundo do chip: `tinta` a TINTA_CHIP sobre `fundo`. */
+export function misturar(tinta, fundo, proporcao = TINTA_CHIP) {
+  const a = paraRgb(tinta);
+  const b = paraRgb(fundo);
+  return paraHex(a.map((v, i) => v * proporcao + b[i] * (1 - proporcao)));
+}
 
 function avalia(tema, tokens, pares) {
   const achados = [];
-  for (const [texto, fundo] of pares) {
+  for (const [texto, fundoBase, tinta] of pares) {
     const corTexto = tokens[texto];
-    const corFundo = tokens[fundo];
-    if (!corTexto || !corFundo) continue;
+    const corBase = tokens[fundoBase];
+    if (!corTexto || !corBase) continue;
+    if (tinta && !tokens[tinta]) continue;
+    const corFundo = tinta ? misturar(tokens[tinta], corBase) : corBase;
+    const fundo = tinta ? `${fundoBase}+${tinta}/${TINTA_CHIP * 100}%` : fundoBase;
     const razao = razaoContraste(corTexto, corFundo);
     achados.push({
       tema,

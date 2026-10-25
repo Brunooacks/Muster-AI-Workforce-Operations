@@ -150,6 +150,11 @@ const productTokens: Record<PaletteId, CSSProperties> = {
     "--accent-foreground": "157 23% 10%",
     "--chart-1": "176 77% 26%",
     "--chart-2": "93 52% 63%",
+    // Versões de texto dos tons de status (chips), ≥4,5:1 no cartão e no cartão-2
+    "--chart-2-text": "93 60% 24%",
+    "--chart-3-text": "12 60% 38%",
+    "--chart-4-text": "340 80% 38%",
+    "--destructive-text": "12 60% 38%",
   } as CSSProperties,
   graphite: {
     "--background": "214 30% 5%",
@@ -172,6 +177,11 @@ const productTokens: Record<PaletteId, CSSProperties> = {
     "--accent-foreground": "198 33% 96%",
     "--chart-1": "201 100% 67%",
     "--chart-2": "155 62% 69%",
+    // Versões de texto dos tons de status (chips), ≥4,5:1 no cartão e no cartão-2
+    "--chart-2-text": "155 62% 69%",
+    "--chart-3-text": "350 100% 78%",
+    "--chart-4-text": "4 85% 74%",
+    "--destructive-text": "350 100% 78%",
   } as CSSProperties,
   dracula: {
     "--background": "231 15% 15%",
@@ -194,6 +204,11 @@ const productTokens: Record<PaletteId, CSSProperties> = {
     "--accent-foreground": "60 30% 96%",
     "--chart-1": "265 89% 78%",
     "--chart-2": "135 94% 65%",
+    // Versões de texto dos tons de status (chips), ≥4,5:1 no cartão e no cartão-2
+    "--chart-2-text": "135 94% 65%",
+    "--chart-3-text": "350 100% 82%",
+    "--chart-4-text": "4 90% 80%",
+    "--destructive-text": "350 100% 82%",
   } as CSSProperties,
   mocha: {
     "--background": "240 21% 12%",
@@ -216,6 +231,11 @@ const productTokens: Record<PaletteId, CSSProperties> = {
     "--accent-foreground": "226 64% 88%",
     "--chart-1": "217 92% 76%",
     "--chart-2": "115 54% 76%",
+    // Versões de texto dos tons de status (chips), ≥4,5:1 no cartão e no cartão-2
+    "--chart-2-text": "115 54% 76%",
+    "--chart-3-text": "350 100% 80%",
+    "--chart-4-text": "4 85% 78%",
+    "--destructive-text": "350 100% 80%",
   } as CSSProperties,
 };
 
@@ -238,6 +258,8 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-accent-ink": "#13250f",
     "--wo-warning": "#996310",
     "--wo-danger": "#c14f43",
+    "--wo-warning-text": "#845409",
+    "--wo-danger-text": "#a23f36",
     colorScheme: "light",
   } as CSSProperties,
   graphite: {
@@ -255,6 +277,8 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-accent-ink": "#061812",
     "--wo-warning": "#f4c45e",
     "--wo-danger": "#ff7a8a",
+    "--wo-warning-text": "#f4c45e",
+    "--wo-danger-text": "#ff7a8a",
     colorScheme: "dark",
   } as CSSProperties,
   dracula: {
@@ -272,6 +296,8 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-accent-ink": "#102716",
     "--wo-warning": "#f1fa8c",
     "--wo-danger": "#ff6b6b",
+    "--wo-warning-text": "#f1fa8c",
+    "--wo-danger-text": "#ffb3b3",
     colorScheme: "dark",
   } as CSSProperties,
   mocha: {
@@ -289,6 +315,8 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-accent-ink": "#132414",
     "--wo-warning": "#f9e2af",
     "--wo-danger": "#f38ba8",
+    "--wo-warning-text": "#f9e2af",
+    "--wo-danger-text": "#f5a3bb",
     colorScheme: "dark",
   } as CSSProperties,
 };
@@ -681,7 +709,7 @@ function NavigationRail({
           aria-label="Sair e voltar para a página inicial"
           title="Sair e voltar para a página inicial"
           onClick={conta.sair}
-          className="mt-2 grid min-h-10 w-full place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
+          className="mt-2 grid min-h-10 w-full place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-text xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden text-[11px] xl:block">Sair para a página inicial</span>
@@ -774,7 +802,7 @@ function TodayScreen({ selectAgent }: { selectAgent: (agentId: string) => void }
               <button key={agent.id} type="button" onClick={() => selectAgent(agent.id)} className="w-full rounded-xl border border-transparent bg-[var(--wo-card-2)] p-3 text-left transition-colors hover:border-[var(--wo-primary)]">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium text-[var(--wo-text)]">{agent.name} · {agent.role}</span>
-                  <span className="text-[10px] text-[var(--wo-warning)]">{agent.reviewUrgency}</span>
+                  <span className="text-[10px] text-[var(--wo-warning-text)]">{agent.reviewUrgency}</span>
                 </div>
                 <p className="mt-2 line-clamp-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">{agent.diagnosis}</p>
                 <div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-[var(--wo-accent)]">Contrato {agent.contractFulfillment}%</span><ChevronRight className="h-3.5 w-3.5 text-[var(--wo-muted)]" /></div>
@@ -793,8 +821,8 @@ function PortfolioMatrix({ agents, selectedAgentId, onSelect }: { agents: Profes
       <div className="absolute inset-y-0 left-1/2 w-px bg-[var(--wo-line)]" />
       <div className="absolute inset-x-0 top-1/2 h-px bg-[var(--wo-line)]" />
       <span className="absolute right-4 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-accent)]">Expandir responsabilidades</span>
-      <span className="absolute left-4 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-warning)]">Mentorar</span>
-      <span className="absolute bottom-3 left-4 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-danger)]">Rever função</span>
+      <span className="absolute left-4 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-warning-text)]">Mentorar</span>
+      <span className="absolute bottom-3 left-4 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-danger-text)]">Rever função</span>
       <span className="absolute bottom-3 right-4 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-muted)]">Corrigir operação</span>
       {agents.map((agent) => {
         const size = Math.max(38, Math.min(58, Number.parseFloat(agent.volume.replace(/[^0-9,.]/g, "").replace(",", ".")) || 42));
@@ -1050,7 +1078,7 @@ const planDecisionCopy: Record<PlanDecision, {
     title: "Solicitar ajuste do plano",
     confirm: "Devolver para ajuste",
     success: "Ajuste solicitado. A nova revisão recebeu SLA e responsáveis.",
-    tone: "text-[var(--wo-warning)]",
+    tone: "text-[var(--wo-warning-text)]",
     consequence: "A versão atual fica congelada e o profissional recebe uma tarefa de reformulação com prazo.",
     nextSteps: [
       { actor: "Muster", title: "Preserva a versão", detail: "Mantém hipótese e provas recusadas para comparação." },
@@ -1062,7 +1090,7 @@ const planDecisionCopy: Record<PlanDecision, {
     title: "Rejeitar plano de desenvolvimento",
     confirm: "Rejeitar e bloquear execução",
     success: "Plano rejeitado. A execução foi bloqueada e o destino do profissional virou ação humana.",
-    tone: "text-[var(--wo-danger)]",
+    tone: "text-[var(--wo-danger-text)]",
     consequence: "A execução é bloqueada; o responsável deve redefinir a função, abrir nova hipótese ou encerrar o vínculo.",
     nextSteps: [
       { actor: "Muster", title: "Bloqueia a execução", detail: "Cancela a liberação e preserva a decisão na auditoria." },
@@ -1311,9 +1339,9 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
           [`${agent.name} · supervisionado`, "Executar plano corrigido", "Aplicar feedback dentro dos limites e reportar cada resultado.", Bot],
           ["Humano · decisão", "Validar evolução", "Confirmar que propósito, responsabilidades e limites seguem no combinado.", Users],
         ].map(([actor, title, description, Icon]) => <div key={actor as string} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]"><span>{actor as string}</span><Icon className="h-3.5 w-3.5" /></div><strong className="mt-3 block text-xs font-medium text-[var(--wo-text)]">{title as string}</strong><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">{description as string}</p></div>)}</div>
-        <div className="mt-4 flex flex-col gap-3 border-t border-[var(--wo-line)] pt-4 lg:flex-row lg:items-center lg:justify-between"><div><strong className="text-xs font-medium text-[var(--wo-text)]">Decisão do responsável</strong><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Toda decisão abre um fluxo com responsável, prazo e prova. Um novo ciclo só começa após concluir o atual.</p>{hasOpenWorkflow && <p className="mt-2 text-[10px] font-medium text-[var(--wo-warning)]">Fluxo em andamento · conclua “{activeAction?.title}” antes de registrar outra decisão.</p>}</div><div className="flex flex-wrap gap-2"><button type="button" data-testid="reject-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("rejected")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><X className="h-3.5 w-3.5" /> Rejeitar</button><button type="button" data-testid="adjust-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("adjustment_requested")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><FileCheck2 className="h-3.5 w-3.5" /> Ajustar</button><button type="button" data-testid="approve-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("approved")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Aprovar plano</button></div></div>
+        <div className="mt-4 flex flex-col gap-3 border-t border-[var(--wo-line)] pt-4 lg:flex-row lg:items-center lg:justify-between"><div><strong className="text-xs font-medium text-[var(--wo-text)]">Decisão do responsável</strong><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Toda decisão abre um fluxo com responsável, prazo e prova. Um novo ciclo só começa após concluir o atual.</p>{hasOpenWorkflow && <p className="mt-2 text-[10px] font-medium text-[var(--wo-warning-text)]">Fluxo em andamento · conclua “{activeAction?.title}” antes de registrar outra decisão.</p>}</div><div className="flex flex-wrap gap-2"><button type="button" data-testid="reject-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("rejected")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><X className="h-3.5 w-3.5" /> Rejeitar</button><button type="button" data-testid="adjust-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("adjustment_requested")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><FileCheck2 className="h-3.5 w-3.5" /> Ajustar</button><button type="button" data-testid="approve-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("approved")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Aprovar plano</button></div></div>
         {decisionMessage && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent)]" role="status">{decisionMessage}</div>}
-        {decisionError && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-danger)_12%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-danger)]" role="alert">{decisionError}</div>}
+        {decisionError && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-danger)_12%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-danger-text)]" role="alert">{decisionError}</div>}
         {decisionsQuery.isLoading && <p className="mt-3 text-[10px] text-[var(--wo-muted)]">Carregando histórico de decisões…</p>}
         {latestDecision && (
           <div className="mt-4 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-3" data-testid="professional-plan-decision">
@@ -1333,7 +1361,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
                   .every((item) => item.status === "completed");
                 return (
                   <div key={`${latestDecision.id}-${action.sequence}`} className={cn("rounded-lg border bg-[var(--wo-card)] p-3", action.sequence === activeAction?.sequence ? "border-[var(--wo-warning)]" : "border-[var(--wo-line)]")}>
-                    <div className="flex items-center justify-between gap-2"><span className="text-[8px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{action.actorType} · {action.owner}</span><span className={cn("text-[8px]", action.status === "blocked" ? "text-[var(--wo-danger)]" : action.status === "completed" ? "text-[var(--wo-accent)]" : "text-[var(--wo-primary)]")}>{planActionStatusCopy[action.status]}</span></div>
+                    <div className="flex items-center justify-between gap-2"><span className="text-[8px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{action.actorType} · {action.owner}</span><span className={cn("text-[8px]", action.status === "blocked" ? "text-[var(--wo-danger-text)]" : action.status === "completed" ? "text-[var(--wo-accent)]" : "text-[var(--wo-primary)]")}>{planActionStatusCopy[action.status]}</span></div>
                     <strong className="mt-2 block text-[11px] font-medium text-[var(--wo-text)]">{action.title}</strong>
                     <p className="mt-1 text-[9px] leading-relaxed text-[var(--wo-muted)]">{action.description}</p>
                     <span className="mt-2 block text-[8px] text-[var(--wo-muted)]">Prazo: {formatPlanDate(action.dueAt)}</span>
@@ -1362,7 +1390,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
             <div className="flex items-start justify-between gap-4"><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-primary)]">Decisão auditável</span><h2 id="plan-decision-title" className="mt-2 text-xl font-medium text-[var(--wo-text)]">{planDecisionCopy[decisionRequest.decision].title}</h2><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">{planDecisionCopy[decisionRequest.decision].consequence}</p></div><button type="button" aria-label="Fechar decisão" onClick={() => setDecisionRequest(null)} disabled={recordDecision.isPending} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)] disabled:opacity-50"><X className="h-4 w-4" /></button></div>
             <div className="mt-4 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-3" data-testid="plan-decision-preview"><span className="text-[8px] font-medium uppercase tracking-[0.1em] text-[var(--wo-primary)]">Depois de confirmar</span><div className="mt-2 space-y-2">{planDecisionCopy[decisionRequest.decision].nextSteps.map((step, index) => <div key={step.title} className="grid grid-cols-[20px_1fr] gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-[var(--wo-primary-soft)] text-[8px] text-[var(--wo-primary)]">{index + 1}</span><p className="text-[9px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">{step.actor} · {step.title}.</strong> {step.detail}</p></div>)}</div></div>
             <label className="mt-5 block"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Justificativa obrigatória</span><textarea value={decisionRequest.reason} onChange={(event) => setDecisionRequest((current) => current ? { ...current, reason: event.target.value } : current)} rows={4} autoFocus placeholder="Registre provas, riscos e condição esperada para o próximo ciclo." className="mt-2 w-full resize-none rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3 text-xs text-[var(--wo-text)] outline-none placeholder:text-[var(--wo-muted)] focus:border-[var(--wo-primary)]" /></label>
-            {decisionError && <p className="mt-3 text-[10px] text-[var(--wo-danger)]" role="alert">{decisionError}</p>}
+            {decisionError && <p className="mt-3 text-[10px] text-[var(--wo-danger-text)]" role="alert">{decisionError}</p>}
             <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setDecisionRequest(null)} disabled={recordDecision.isPending} className="rounded-xl border border-[var(--wo-line)] px-4 py-2.5 text-xs text-[var(--wo-text)] disabled:opacity-50">Cancelar</button><button type="button" onClick={submitDecision} disabled={recordDecision.isPending || decisionRequest.reason.trim().length < 3} className="rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50">{recordDecision.isPending ? "Registrando…" : planDecisionCopy[decisionRequest.decision].confirm}</button></div>
           </div>
         </div>
@@ -1373,7 +1401,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
           <div className="w-full max-w-md rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-shell)] p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-4"><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-primary)]">Prova operacional</span><h2 id="plan-action-title" className="mt-2 text-lg font-medium text-[var(--wo-text)]">{actionRequest.status === "completed" ? "Concluir" : actionRequest.status === "blocked" ? "Bloquear" : "Cancelar"} · {actionRequest.title}</h2><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">Registre o resultado observado, o impedimento ou a razão do encerramento. Essa prova permanece vinculada à decisão.</p></div><button type="button" aria-label="Fechar atualização" onClick={() => setActionRequest(null)} disabled={updatePlanAction.isPending} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)] disabled:opacity-50"><X className="h-4 w-4" /></button></div>
             <label className="mt-5 block"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Prova obrigatória</span><textarea value={actionRequest.evidence} onChange={(event) => setActionRequest((current) => current ? { ...current, evidence: event.target.value } : current)} rows={4} autoFocus placeholder="Ex.: 40 casos válidos concluídos, acurácia de 93% e nenhum limite combinado violado." className="mt-2 w-full resize-none rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3 text-xs text-[var(--wo-text)] outline-none placeholder:text-[var(--wo-muted)] focus:border-[var(--wo-primary)]" /></label>
-            {decisionError && <p className="mt-3 text-[10px] text-[var(--wo-danger)]" role="alert">{decisionError}</p>}
+            {decisionError && <p className="mt-3 text-[10px] text-[var(--wo-danger-text)]" role="alert">{decisionError}</p>}
             <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setActionRequest(null)} disabled={updatePlanAction.isPending} className="rounded-xl border border-[var(--wo-line)] px-4 py-2.5 text-xs text-[var(--wo-text)] disabled:opacity-50">Voltar</button><button type="button" onClick={submitActionTransition} disabled={updatePlanAction.isPending || actionRequest.evidence.trim().length < 3} className="rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50">{updatePlanAction.isPending ? "Salvando…" : "Confirmar e continuar"}</button></div>
           </div>
         </div>

@@ -448,7 +448,7 @@ export default function ConectarPage({ embedded = false }: { embedded?: boolean 
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-chart-2/20">
-                  <Check className="h-3.5 w-3.5 text-chart-2" />
+                  <Check className="h-3.5 w-3.5 text-chart-2-text" />
                 </span>
                 <div>
                   <p className="font-medium text-foreground">{t.arrived}</p>

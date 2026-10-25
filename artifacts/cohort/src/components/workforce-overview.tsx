@@ -76,7 +76,7 @@ export function WorkforceOverview({ labels = WORKFORCE_OVERVIEW_PT, example }: {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
         <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" /> Muster Workforce OS</span>
         <span className="flex items-center gap-2">
-          <span title={example.hint} className="rounded-full border border-chart-2/50 bg-chart-2/10 px-2 py-0.5 text-[8px] text-chart-2">{example.label}</span>
+          <span title={example.hint} className="rounded-full border border-chart-2/50 bg-chart-2/10 px-2 py-0.5 text-[8px] text-chart-2-text">{example.label}</span>
           <span className="flex items-center gap-2 text-primary"><Activity className="h-3.5 w-3.5" /> {labels.live}</span>
         </span>
       </div>

@@ -165,14 +165,14 @@ const VERDICT_META: Record<
   mentor: {
     label: "Mentorar",
     icon: Minus,
-    toneText: "text-chart-2",
+    toneText: "text-chart-2-text",
     toneBg: "bg-chart-2/20",
     barClass: "bg-chart-2",
   },
   retire: {
     label: "Aposentar",
     icon: TrendingDown,
-    toneText: "text-chart-3",
+    toneText: "text-chart-3-text",
     toneBg: "bg-chart-3/15",
     barClass: "bg-chart-3",
   },
@@ -470,10 +470,10 @@ export default function LandingDemo() {
                           animate={reduce ? undefined : { opacity: [1, 0.35, 1] }}
                           transition={reduce ? undefined : { repeat: Infinity, duration: 1.4 }}
                         >
-                          <AlertTriangle className="mt-0.5 h-4 w-4 text-chart-3" strokeWidth={2} />
+                          <AlertTriangle className="mt-0.5 h-4 w-4 text-chart-3-text" strokeWidth={2} />
                         </motion.span>
                         <div>
-                          <p className="text-xs font-semibold text-chart-3">Vitória ilusória detectada</p>
+                          <p className="text-xs font-semibold text-chart-3-text">Vitória ilusória detectada</p>
                           <p className="text-xs text-muted-foreground">{scenario.illusoryNote}</p>
                         </div>
                       </motion.div>

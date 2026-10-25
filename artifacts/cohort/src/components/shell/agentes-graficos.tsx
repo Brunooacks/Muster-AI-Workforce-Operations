@@ -24,8 +24,8 @@ function Vazio({ texto }: { texto: string }) {
 }
 
 const CORES_STATUS: Record<StatusAgente, string> = {
-  fora: "border-[var(--wo-danger)] text-[var(--wo-danger)]",
-  atencao: "border-[var(--wo-warning)] text-[var(--wo-warning)]",
+  fora: "border-[var(--wo-danger)] text-[var(--wo-danger-text)]",
+  atencao: "border-[var(--wo-warning)] text-[var(--wo-warning-text)]",
   "sem-dados": "border-[var(--wo-line)] text-[var(--wo-muted)]",
   dentro: "border-[var(--wo-accent)] text-[var(--wo-accent)]",
 };
@@ -47,7 +47,7 @@ export function ChipStatus({ status }: { status: StatusAgente }) {
 
 const CORES_COBERTURA: Record<Cobertura, string> = {
   fechada: "border-[var(--wo-accent)] text-[var(--wo-accent)]",
-  parcial: "border-[var(--wo-warning)] text-[var(--wo-warning)]",
+  parcial: "border-[var(--wo-warning)] text-[var(--wo-warning-text)]",
   aberta: "border-[var(--wo-line)] text-[var(--wo-muted)]",
 };
 
@@ -93,7 +93,7 @@ export function BulletMeta({ bullet, periodo, semRotulo = false }: { bullet: Bul
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         {!semRotulo && <span className="truncate text-xs font-medium text-[var(--wo-text)]">{bullet.rotulo}</span>}
         <span className="flex items-baseline gap-2">
-          <strong className={cn("font-mono text-lg font-medium tabular-nums", bullet.ok === false ? "text-[var(--wo-danger)]" : "text-[var(--wo-text)]")}>
+          <strong className={cn("font-mono text-lg font-medium tabular-nums", bullet.ok === false ? "text-[var(--wo-danger-text)]" : "text-[var(--wo-text)]")}>
             {numero(bullet.atual, bullet.unidade)}
           </strong>
           <span className="text-[10px] text-[var(--wo-muted)]">últimos 30 dias</span>
@@ -120,7 +120,7 @@ export function BulletMeta({ bullet, periodo, semRotulo = false }: { bullet: Bul
         <span>antes do agente {numero(bullet.antes, bullet.unidade)}</span>
         <span>combinado {bullet.combinadoTexto}</span>
         <span className="font-mono">{periodo}</span>
-        <span className={cn("font-mono uppercase tracking-[0.08em]", bullet.ok === false ? "text-[var(--wo-danger)]" : bullet.ok ? "text-[var(--wo-accent)]" : "")}>
+        <span className={cn("font-mono uppercase tracking-[0.08em]", bullet.ok === false ? "text-[var(--wo-danger-text)]" : bullet.ok ? "text-[var(--wo-accent)]" : "")}>
           {bullet.ok == null ? "sem meta" : bullet.ok ? "dentro do combinado" : "abaixo do combinado"}
         </span>
       </div>

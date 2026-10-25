@@ -714,9 +714,9 @@ export type MetricPillStatus = "stable" | "medium" | "high" | "critical";
 
 const METRIC_PILL_CLASS: Record<MetricPillStatus, string> = {
   stable: "bg-chart-1/15 text-chart-1",
-  medium: "bg-chart-2/20 text-chart-2",
-  high: "bg-chart-3/18 text-chart-3",
-  critical: "bg-chart-4/15 text-chart-4",
+  medium: "bg-chart-2/20 text-chart-2-text",
+  high: "bg-chart-3/18 text-chart-3-text",
+  critical: "bg-chart-4/15 text-chart-4-text",
 };
 
 const METRIC_PILL_LABEL: Record<Lang, Record<MetricPillStatus, string>> = {
@@ -839,7 +839,7 @@ export function MetricRow({
       {rationale && (
         <div className="mt-1 flex items-start gap-1.5 text-[11px] italic text-muted-foreground">
           {offTarget && (
-            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-chart-3" strokeWidth={1.75} />
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-chart-3-text" strokeWidth={1.75} />
           )}
           <span className="leading-snug">{rationale}</span>
         </div>
@@ -885,7 +885,7 @@ export function detectorPresentation(
     case "critical":
       return {
         border: "border-l-chart-4",
-        pill: "bg-chart-4/15 text-chart-4",
+        pill: "bg-chart-4/15 text-chart-4-text",
         pillLabel: patternType?.toLowerCase().includes("vitória")
           ? labels.criticalIllusory
           : labels.critical,
@@ -893,19 +893,19 @@ export function detectorPresentation(
     case "antecedent":
       return {
         border: "border-l-chart-2",
-        pill: "bg-chart-2/20 text-chart-2",
+        pill: "bg-chart-2/20 text-chart-2-text",
         pillLabel: labels.antecedent,
       };
     case "medium":
       return {
         border: "border-l-chart-2",
-        pill: "bg-chart-2/20 text-chart-2",
+        pill: "bg-chart-2/20 text-chart-2-text",
         pillLabel: labels.antagonistic,
       };
     default:
       return {
         border: "border-l-chart-3",
-        pill: "bg-chart-3/18 text-chart-3",
+        pill: "bg-chart-3/18 text-chart-3-text",
         pillLabel: labels.antagonistic,
       };
   }

@@ -47,6 +47,12 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  /* Texto de status (chips de risco/atenção): ≥4,5:1 sobre fundo, cartão e tinta de 10–15% */
+  --color-chart-2-text: hsl(var(--chart-2-text));
+  --color-chart-3-text: hsl(var(--chart-3-text));
+  --color-chart-4-text: hsl(var(--chart-4-text));
+  --color-destructive-text: hsl(var(--destructive-text));
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -104,6 +110,10 @@
 
   /* Âmbar escuro para texto/atenção no modo claro (contraste ≥4.5:1 sobre branco) */
   --chart-2-text: 35 68% 30%;
+  /* Terracota/rosa escuros só para texto: o tom de preenchimento fica 4,4:1 e 3,4:1 em chips */
+  --chart-3-text: 12 60% 38%;
+  --chart-4-text: 340 80% 38%;
+  --destructive-text: 12 60% 38%;
 
   /* Semântica de dado (status), estável nos dois perfis */
   --chart-1: 189 92% 53%;               /* positivo / no alvo         #19d3f5 */
@@ -162,6 +172,9 @@
   /* Ciano para texto no modo escuro (já tem bom contraste) */
   --cyan-text: 189 92% 53%;             /* #19d3f5 */
   --chart-2-text: 40 100% 66%;          /* #ffb020 - texto de atenção no escuro */
+  --chart-3-text: 340 100% 74%;
+  --chart-4-text: 4 80% 72%;
+  --destructive-text: 340 100% 74%;
 
   --chart-1: 189 92% 53%;               /* #19d3f5 */
   --chart-2: 38 100% 56%;               /* #ffb020 */

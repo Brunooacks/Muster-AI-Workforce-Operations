@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   MINIMO_TEXTO_NORMAL,
   conferirContraste,
+  misturar,
   paraRgb,
   razaoContraste,
 } from "./contrast.mjs";
@@ -33,6 +34,11 @@ describe("razaoContraste", () => {
     expect(() => paraRgb("banana")).toThrow(/cor não reconhecida/);
   });
 
+  it("mistura a tinta do chip sobre o fundo", () => {
+    expect(misturar("#000000", "#ffffff", 0.5)).toBe("#808080");
+    expect(misturar("#ff0000", "#ffffff", 0)).toBe("#ffffff");
+  });
+
   it("par fraco fica abaixo do mínimo de texto normal", () => {
     expect(razaoContraste("#777777", "#ffffff")).toBeLessThan(MINIMO_TEXTO_NORMAL);
   });
@@ -54,6 +60,17 @@ describe("pares de tokens do app", () => {
     expect(
       abaixo.map((par) => `${par.tema}: ${par.texto} sobre ${par.fundo} = ${par.razao}:1`),
     ).toEqual([]);
+  });
+
+  it("chips de risco e atenção usam tokens de texto sobre a própria tinta", () => {
+    const chips = pares.filter((par) => par.fundo.includes("+"));
+    const temas = new Set(chips.map((par) => par.tema));
+    for (const tema of ["claro", "noite", "mineral", "graphite", "dracula", "mocha"]) {
+      expect(temas.has(tema)).toBe(true);
+    }
+    expect(chips.some((par) => par.texto === "wo-danger-text")).toBe(true);
+    expect(chips.some((par) => par.texto === "chart-3-text")).toBe(true);
+    expect(chips.every((par) => par.passa)).toBe(true);
   });
 
   it("cada par reportado tem razão coerente com o mínimo", () => {

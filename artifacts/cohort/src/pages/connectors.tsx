@@ -655,7 +655,7 @@ export default function ConnectorsPage() {
               </div>
 
               <div>
-                <div className="flex items-center gap-2 text-xs font-medium"><TriangleAlert className="h-4 w-4 text-chart-2" />{t.gapsTitle}</div>
+                <div className="flex items-center gap-2 text-xs font-medium"><TriangleAlert className="h-4 w-4 text-chart-2-text" />{t.gapsTitle}</div>
                 <div className="mt-3 space-y-2">
                   {assessment.summary.gaps.length > 0 ? assessment.summary.gaps.map((gap) => (
                     <div key={gap} className="rounded-lg bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">{t.gaps[gap]}</div>

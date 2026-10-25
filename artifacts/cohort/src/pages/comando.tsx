@@ -601,7 +601,7 @@ export default function CommandPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                <Gavel className="h-4 w-4 text-chart-2" /> {t.priorityTitle}
+                <Gavel className="h-4 w-4 text-chart-2-text" /> {t.priorityTitle}
               </CardTitle>
               <CardDescription>{t.priorityDesc}</CardDescription>
             </div>
@@ -627,7 +627,7 @@ export default function CommandPage() {
                           <div className="flex min-w-0 items-center gap-3">
                             <AgentDisc name={decision.agentName} />
                             <div className="min-w-0">
-                              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chart-2">{t.decision}</p>
+                              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chart-2-text">{t.decision}</p>
                               <Link href={`/agentes/${decision.agentId}`} className="block truncate font-medium text-foreground hover:underline">
                                 {decision.agentName}
                               </Link>
@@ -659,7 +659,7 @@ export default function CommandPage() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chart-3">{t.incident}</p>
+                          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chart-3-text">{t.incident}</p>
                           <h3 className="mt-1 text-sm font-medium leading-snug text-foreground">{alert.pattern}</h3>
                           <Link href={`/agentes/${alert.agentId}`} className="mt-1 block text-xs text-muted-foreground hover:text-foreground hover:underline">
                             {alert.agentName}
@@ -739,7 +739,7 @@ export default function CommandPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                  <AlertTriangle className="h-4 w-4 text-chart-3" /> {t.alertsTitle}
+                  <AlertTriangle className="h-4 w-4 text-chart-3-text" /> {t.alertsTitle}
                 </CardTitle>
                 <CardDescription>{t.alertsDesc}</CardDescription>
               </div>
@@ -769,7 +769,7 @@ export default function CommandPage() {
                       <span className="truncate text-xs text-muted-foreground">{alert.agentName}</span>
                       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-card-border/60 pt-2 text-[11px] text-muted-foreground">
                         <span>{t.detected} {relativeAge(alert.detectedAt)}</span>
-                        <span className={due.overdue ? "font-medium text-chart-3" : ""}>{due.label}</span>
+                        <span className={due.overdue ? "font-medium text-chart-3-text" : ""}>{due.label}</span>
                       </div>
                     </Link>
                   );

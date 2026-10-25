@@ -85,7 +85,7 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
     <div className="space-y-1">
       <Label htmlFor={`contract-${key}`} className="text-xs">
         {label}
-        {errors[key] && <span className="ml-1 text-destructive">({errors[key]})</span>}
+        {errors[key] && <span className="ml-1 text-destructive-text">({errors[key]})</span>}
       </Label>
       <Input
         id={`contract-${key}`}
@@ -117,7 +117,7 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Carregando contrato…</p>
       ) : isError ? (
-        <p className="text-xs text-destructive">Contrato indisponível.</p>
+        <p className="text-xs text-destructive-text">Contrato indisponível.</p>
       ) : active ? (
         <>
           <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
               <div className="space-y-1 sm:col-span-2">
                 <Label htmlFor="contract-owner" className="text-xs">
                   Responsável
-                  {errors.ownerMemberId && <span className="ml-1 text-destructive">({errors.ownerMemberId})</span>}
+                  {errors.ownerMemberId && <span className="ml-1 text-destructive-text">({errors.ownerMemberId})</span>}
                 </Label>
                 <select
                   id="contract-owner"

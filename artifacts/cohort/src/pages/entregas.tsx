@@ -123,7 +123,7 @@ const ENTREGAS: Entrega[] = [
 
 const STATUS_STYLE: Record<Status, string> = {
   Aceita: "border-primary/40 text-primary",
-  Rejeitada: "border-destructive/40 text-destructive",
+  Rejeitada: "border-destructive/40 text-destructive-text",
   Aguardando: "border-border text-muted-foreground",
 };
 
@@ -235,7 +235,7 @@ export function EntregasScreen() {
           className={cn(
             "rounded-full border px-3.5 py-1.5 text-[13px] transition-colors",
             soComNegativa
-              ? "border-destructive bg-destructive/10 text-destructive"
+              ? "border-destructive bg-destructive/10 text-destructive-text"
               : "border-border text-muted-foreground hover:text-foreground",
           )}
         >

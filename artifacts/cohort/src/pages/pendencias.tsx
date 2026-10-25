@@ -114,7 +114,7 @@ export function PendenciasScreen() {
                     {pt.prazo} {item.prazo}.
                   </p>
                   {item.urgencia === "alta" && (
-                    <span className="mt-2 inline-block rounded-full border border-destructive/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-destructive">
+                    <span className="mt-2 inline-block rounded-full border border-destructive/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-destructive-text">
                       {pt.alta}
                     </span>
                   )}
@@ -177,7 +177,7 @@ export function PendenciasScreen() {
                       placeholder={pt.porque}
                     />
                   </label>
-                  {erro && <p className="mt-1.5 text-[12px] text-destructive">{pt.falta}</p>}
+                  {erro && <p className="mt-1.5 text-[12px] text-destructive-text">{pt.falta}</p>}
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <button
                       type="button"

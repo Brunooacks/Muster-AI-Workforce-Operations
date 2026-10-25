@@ -408,7 +408,7 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                             <Label htmlFor={`alert-due-${alert.id}`} className="flex items-center justify-between text-[10px] uppercase tracking-[0.08em]">
                               <span>{t.dueDate}</span>
                               {deadline && (
-                                <span className={deadline === "overdue" ? "text-chart-3" : "text-chart-2"}>
+                                <span className={deadline === "overdue" ? "text-chart-3-text" : "text-chart-2-text"}>
                                   {deadline === "overdue" ? t.overdue : t.dueSoon}
                                 </span>
                               )}

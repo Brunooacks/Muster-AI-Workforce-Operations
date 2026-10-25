@@ -77,7 +77,7 @@ export function HomeDecisao() {
         <div className="flex flex-col gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[13px] font-medium text-[#a1a1a6]">{t.boardEyebrow}</span>
-            <Badge variant="soon" className="border-chart-2/60 text-chart-2">
+            <Badge variant="soon" className="border-chart-2/60 text-chart-2-text">
               {t.soon}
             </Badge>
           </div>
@@ -88,7 +88,7 @@ export function HomeDecisao() {
         </div>
 
         <div className="mt-auto flex flex-col gap-5">
-          <Badge variant="illustrative" className="self-start border-chart-2/60 bg-chart-2/15 text-chart-2">
+          <Badge variant="illustrative" className="self-start border-chart-2/60 bg-chart-2/15 text-chart-2-text">
             {t.illustrative}
           </Badge>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

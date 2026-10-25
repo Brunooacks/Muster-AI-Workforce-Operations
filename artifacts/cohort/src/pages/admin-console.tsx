@@ -88,7 +88,7 @@ export default function AdminConsolePage() {
     return (
       <div className="p-4 sm:p-6">
         <Panel className="mx-auto max-w-2xl p-7 text-center">
-          <LockKeyhole className="mx-auto h-8 w-8 text-[var(--wo-warning)]" />
+          <LockKeyhole className="mx-auto h-8 w-8 text-[var(--wo-warning-text)]" />
           <h1 className="mt-4 text-2xl font-medium text-[var(--wo-text)]">Administração indisponível</h1>
           <p className="mt-2 text-sm leading-relaxed text-[var(--wo-muted)]">
             Não foi possível confirmar sua alçada no tenant ativo. Troque de organização ou tente carregar novamente.

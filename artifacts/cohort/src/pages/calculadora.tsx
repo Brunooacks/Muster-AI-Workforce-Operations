@@ -149,7 +149,7 @@ export default function CalculadoraPage() {
                     </span>
                     <span
                       id={`calc-${campo}-erro`}
-                      className={`text-[12px] ${erro ? "text-destructive" : "text-muted-foreground"}`}
+                      className={`text-[12px] ${erro ? "text-destructive-text" : "text-muted-foreground"}`}
                     >
                       {erro ?? t.dicas[campo]}
                     </span>

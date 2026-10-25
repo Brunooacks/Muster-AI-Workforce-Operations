@@ -15,7 +15,7 @@ const STATES = [
     head: "Mas o resultado não veio.",
     sub: "das reuniões viraram oportunidade real. Duas passagens de serviço quebradas com o time comercial.",
     label: "das reuniões viraram oportunidade",
-    color: "text-destructive",
+    color: "text-destructive-text",
   },
 ];
 

@@ -16,7 +16,7 @@ const COVERAGE = [
   },
   {
     title: "Fechado",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--chart-3-text))",
     desc: "Ele só executa o que uma pessoa inicia e aprova. Nada corre sem um responsável acionado.",
     example: "ex.: 12 de 47 agentes",
   },

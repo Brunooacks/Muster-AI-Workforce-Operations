@@ -101,7 +101,7 @@ const clerkAppearance = {
       "text-muted-foreground text-xs font-medium uppercase tracking-wider",
     identityPreviewEditButton: "text-primary hover:bg-secondary",
     formFieldSuccessText: "text-primary text-sm",
-    alertText: "text-destructive text-sm",
+    alertText: "text-destructive-text text-sm",
     logoBox: "h-11 flex items-center justify-center mb-7",
     logoImage: "h-11 w-auto max-w-[220px]",
     socialButtonsBlockButton:
@@ -424,7 +424,7 @@ function MissingClerkConfiguration() {
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-background px-6 text-foreground">
       <section className="max-w-xl rounded-2xl border border-destructive/40 bg-card p-8 shadow-lg">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-destructive">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-destructive-text">
           Configuração obrigatória
         </p>
         <h1 className="mt-3 text-2xl font-semibold">Clerk não configurado</h1>

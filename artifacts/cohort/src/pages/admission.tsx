@@ -1477,7 +1477,7 @@ export default function AdmissionPage({ embedded = false }: { embedded?: boolean
                   className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
                 >
                   <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Sparkles className="h-4 w-4 text-chart-2" strokeWidth={1.75} />
+                    <Sparkles className="h-4 w-4 text-chart-2-text" strokeWidth={1.75} />
                     {t.aiToggle}
                   </span>
                   <ChevronDown
@@ -1593,7 +1593,7 @@ export default function AdmissionPage({ embedded = false }: { embedded?: boolean
                           </div>
                         </div>
                         {importTruncated && (
-                          <p className="text-xs text-destructive">
+                          <p className="text-xs text-destructive-text">
                             {t.truncatedWarning}
                           </p>
                         )}
@@ -1637,7 +1637,7 @@ export default function AdmissionPage({ embedded = false }: { embedded?: boolean
                     )}
                     <p
                       className={`text-right font-mono text-xs ${
-                        overLimit ? "text-destructive" : "text-muted-foreground"
+                        overLimit ? "text-destructive-text" : "text-muted-foreground"
                       }`}
                     >
                       {t.charCount(

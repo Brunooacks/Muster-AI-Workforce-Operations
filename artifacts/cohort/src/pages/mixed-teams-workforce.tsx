@@ -83,8 +83,8 @@ function Panel({ children, className }: { children: ReactNode; className?: strin
 function Chip({ children, tone = "neutral" }: { children: ReactNode; tone?: Tone }) {
   const tones: Record<Tone, string> = {
     good: "bg-[color-mix(in_srgb,var(--wo-accent)_16%,transparent)] text-[var(--wo-accent)]",
-    watch: "bg-[color-mix(in_srgb,var(--wo-warning)_16%,transparent)] text-[var(--wo-warning)]",
-    risk: "bg-[color-mix(in_srgb,var(--wo-danger)_16%,transparent)] text-[var(--wo-danger)]",
+    watch: "bg-[color-mix(in_srgb,var(--wo-warning)_16%,transparent)] text-[var(--wo-warning-text)]",
+    risk: "bg-[color-mix(in_srgb,var(--wo-danger)_16%,transparent)] text-[var(--wo-danger-text)]",
     primary: "bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]",
     neutral: "bg-[var(--wo-card-2)] text-[var(--wo-muted)]",
   };
@@ -196,7 +196,7 @@ export function MixedTeamsScreen() {
             </div>
             <div className="mt-6 grid gap-3 lg:grid-cols-2">
               <div className="rounded-xl bg-[var(--wo-card-2)] p-4"><div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[var(--wo-accent)]" /><strong className="text-xs text-[var(--wo-text)]">Definition of Done</strong></div><div className="mt-3 space-y-2">{scenario.definitionOfDone.map((item) => <p key={item} className="flex gap-2 text-[10px] leading-relaxed text-[var(--wo-muted)]"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--wo-accent)]" />{item}</p>)}</div></div>
-              <div className="rounded-xl bg-[var(--wo-card-2)] p-4"><div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[var(--wo-warning)]" /><strong className="text-xs text-[var(--wo-text)]">Limites de autonomia</strong></div><div className="mt-3 space-y-2">{scenario.guardrails.map((item) => <p key={item} className="flex gap-2 text-[10px] leading-relaxed text-[var(--wo-muted)]"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--wo-warning)]" />{item}</p>)}</div></div>
+              <div className="rounded-xl bg-[var(--wo-card-2)] p-4"><div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[var(--wo-warning-text)]" /><strong className="text-xs text-[var(--wo-text)]">Limites de autonomia</strong></div><div className="mt-3 space-y-2">{scenario.guardrails.map((item) => <p key={item} className="flex gap-2 text-[10px] leading-relaxed text-[var(--wo-muted)]"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--wo-warning)]" />{item}</p>)}</div></div>
             </div>
           </div>
           <div className="border-t border-[var(--wo-line)] bg-[var(--wo-card-2)] p-5 xl:border-l xl:border-t-0">
@@ -241,7 +241,7 @@ export function MixedTeamsScreen() {
 
       <div className="grid gap-3 xl:grid-cols-[1.15fr_.85fr]">
         <ResponsibilityPanel scenario={scenario} />
-        <Panel className="p-4"><div className="flex items-center gap-2"><GitBranch className="h-4 w-4 text-[var(--wo-warning)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Contrato de decisão</h2></div><div className="mt-4 space-y-2"><Decision icon={Bot} title="Agente executa" detail="Baixo risco, política conhecida, prova e rollback disponíveis." tone="primary" /><Decision icon={Zap} title="Agente propõe" detail="Humano valida ambiguidade, impacto ou mudança relevante." tone="watch" /><Decision icon={UserCheck} title="Humano decide" detail="Prioridade, exceção, compromisso externo ou ação irreversível." tone="good" /><Decision icon={ShieldCheck} title="Limite combinado bloqueia" detail="Segurança, qualidade ou conformidade interrompem o fluxo." tone="risk" /></div></Panel>
+        <Panel className="p-4"><div className="flex items-center gap-2"><GitBranch className="h-4 w-4 text-[var(--wo-warning-text)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Contrato de decisão</h2></div><div className="mt-4 space-y-2"><Decision icon={Bot} title="Agente executa" detail="Baixo risco, política conhecida, prova e rollback disponíveis." tone="primary" /><Decision icon={Zap} title="Agente propõe" detail="Humano valida ambiguidade, impacto ou mudança relevante." tone="watch" /><Decision icon={UserCheck} title="Humano decide" detail="Prioridade, exceção, compromisso externo ou ação irreversível." tone="good" /><Decision icon={ShieldCheck} title="Limite combinado bloqueia" detail="Segurança, qualidade ou conformidade interrompem o fluxo." tone="risk" /></div></Panel>
       </div>
 
       <Panel className="overflow-hidden"><div className="border-b border-[var(--wo-line)] px-4 py-3"><div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-[var(--wo-primary)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Scorecard do contrato</h2></div><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Resultado, qualidade, fluxo, automação, governança e adoção — sem reduzir performance a dinheiro.</p></div><div className="grid gap-px bg-[var(--wo-line)] sm:grid-cols-2 xl:grid-cols-4">{scenario.metrics.map((metric) => <div key={metric.key} className="bg-[var(--wo-card)] p-4"><div className="flex items-start justify-between gap-3"><span><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{CATEGORY_LABELS[metric.category] ?? metric.category}</span><strong className="mt-1 block text-xs text-[var(--wo-text)]">{metric.label}</strong></span><Chip tone={metricTone(metric.status)}>{metric.status === "healthy" ? "saudável" : "atenção"}</Chip></div><div className="mt-4 flex items-end justify-between"><strong className="font-mono text-2xl font-medium text-[var(--wo-text)]">{metric.value}</strong><span className="text-[9px] text-[var(--wo-accent)]">{metric.trend}</span></div><p className="mt-2 text-[9px] text-[var(--wo-muted)]">Alvo {metric.target}</p><p className="mt-3 border-t border-[var(--wo-line)] pt-3 text-[9px] leading-relaxed text-[var(--wo-muted)]">{metric.description}</p></div>)}</div></Panel>
@@ -261,7 +261,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 function ActorIdentity({ participant, label }: { participant: TeamOperatingScenario["participants"][number] | undefined; label: string }) {
-  if (!participant) return <span className="text-[9px] text-[var(--wo-danger)]">Sem responsável</span>;
+  if (!participant) return <span className="text-[9px] text-[var(--wo-danger-text)]">Sem responsável</span>;
   return (
     <div className="flex items-center gap-2">
       {participant.platform ? <PlatformIcon platform={participant.platform} size="sm" /> : <span className="grid h-6 w-6 place-items-center rounded-md bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><UserCheck className="h-3 w-3" /></span>}
@@ -287,7 +287,7 @@ function BacklogTable({ scenario, workItems }: { scenario: TeamOperatingScenario
               <td className="max-w-[280px] px-3 py-3"><span className="font-mono text-[9px] text-[var(--wo-primary)]">{workItem.id}</span><strong className="mt-1 block font-medium text-[var(--wo-text)]">{workItem.title}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">{workItem.epic}</span><span className="mt-2 block text-[9px] text-[var(--wo-muted)]">Prova: {workItem.evidence}</span></td>
               <td className="px-3 py-3"><ActorIdentity participant={owner} label="Executa" /><div className="mt-2"><Chip tone={modeTone(workItem.mode)}>{modeLabels[workItem.mode]}</Chip></div></td>
               <td className="px-3 py-3"><ActorIdentity participant={accountable} label="Responde pelo resultado" /><span className="mt-2 block text-[9px] text-[var(--wo-muted)]">{workItem.contributorIds.length} apoio(s)</span></td>
-              <td className="max-w-[220px] px-3 py-3"><p className="text-[10px] leading-relaxed text-[var(--wo-text)]">{workItem.nextStep}</p>{workItem.blockedReason && <p className="mt-2 rounded-lg bg-[color-mix(in_srgb,var(--wo-danger)_10%,transparent)] px-2 py-1.5 text-[9px] leading-relaxed text-[var(--wo-danger)]">{workItem.blockedReason}</p>}<span className="mt-2 block text-[9px] text-[var(--wo-muted)]">Atualizado {workItem.lastActivity}</span></td>
+              <td className="max-w-[220px] px-3 py-3"><p className="text-[10px] leading-relaxed text-[var(--wo-text)]">{workItem.nextStep}</p>{workItem.blockedReason && <p className="mt-2 rounded-lg bg-[color-mix(in_srgb,var(--wo-danger)_10%,transparent)] px-2 py-1.5 text-[9px] leading-relaxed text-[var(--wo-danger-text)]">{workItem.blockedReason}</p>}<span className="mt-2 block text-[9px] text-[var(--wo-muted)]">Atualizado {workItem.lastActivity}</span></td>
               <td className="px-3 py-3"><div className="w-28"><div className="mb-1.5 flex justify-between font-mono text-[9px] text-[var(--wo-muted)]"><span>{workItem.points} pts</span><span>{workItem.progress}%</span></div><ProgressBar value={workItem.progress} /></div></td>
               <td className="px-4 py-3"><Chip tone={statusTone(workItem.status)}>{statusLabels[workItem.status]}</Chip><span className="mt-2 block text-[9px] text-[var(--wo-text)]">{workItem.due}</span></td>
             </tr>
@@ -328,7 +328,7 @@ function ResponsibilityPanel({ scenario }: { scenario: TeamOperatingScenario }) 
           <div key={participant.id} className="grid gap-4 px-4 py-4 lg:grid-cols-[1fr_1.15fr_.75fr] lg:items-center">
             <div className="flex items-center gap-3">{participant.platform ? <PlatformIcon platform={participant.platform} /> : <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><UserCheck className="h-4 w-4" /></span>}<span><strong className="block text-xs text-[var(--wo-text)]">{participant.name}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">{participant.role}</span><span className="mt-2 block text-[9px] text-[var(--wo-accent)]">Agora: {participant.currentFocus}</span></span></div>
             <div><p className="text-[10px] text-[var(--wo-text)]">{participant.scope}</p><p className="mt-1 flex items-start gap-1.5 text-[9px] text-[var(--wo-muted)]"><LockKeyhole className="mt-0.5 h-3 w-3 shrink-0" />{participant.decisionRights}</p><div className="mt-2 flex flex-wrap gap-1.5"><Chip tone="primary">Executa {allocation.executing.length}</Chip><Chip tone="good">Accountable {allocation.accountable.length}</Chip><Chip>Apoia {allocation.contributing.length}</Chip></div></div>
-            <div><div className="mb-1.5 flex justify-between font-mono text-[9px] text-[var(--wo-muted)]"><span>Carga · {allocation.active.length} ativos</span><span>{participant.workload}%</span></div><ProgressBar value={participant.workload} tone={participant.workload > 85 ? "warning" : "accent"} />{participant.workload > 85 && <span className="mt-2 block text-[9px] text-[var(--wo-warning)]">Acima do limiar de atenção</span>}</div>
+            <div><div className="mb-1.5 flex justify-between font-mono text-[9px] text-[var(--wo-muted)]"><span>Carga · {allocation.active.length} ativos</span><span>{participant.workload}%</span></div><ProgressBar value={participant.workload} tone={participant.workload > 85 ? "warning" : "accent"} />{participant.workload > 85 && <span className="mt-2 block text-[9px] text-[var(--wo-warning-text)]">Acima do limiar de atenção</span>}</div>
           </div>
         );
       })}</div>
@@ -341,7 +341,7 @@ function Filter({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 function MiniStat({ icon: Icon, label, value, risk = false }: { icon: typeof Bot; label: string; value: string; risk?: boolean }) {
-  return <div className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3"><div className="flex items-center justify-between"><span className="text-[8px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{label}</span><Icon className={cn("h-3.5 w-3.5", risk ? "text-[var(--wo-danger)]" : "text-[var(--wo-primary)]")} /></div><strong className={cn("mt-2 block font-mono text-lg", risk ? "text-[var(--wo-danger)]" : "text-[var(--wo-text)]")}>{value}</strong></div>;
+  return <div className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3"><div className="flex items-center justify-between"><span className="text-[8px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{label}</span><Icon className={cn("h-3.5 w-3.5", risk ? "text-[var(--wo-danger-text)]" : "text-[var(--wo-primary)]")} /></div><strong className={cn("mt-2 block font-mono text-lg", risk ? "text-[var(--wo-danger-text)]" : "text-[var(--wo-text)]")}>{value}</strong></div>;
 }
 
 function Decision({ icon: Icon, title, detail, tone }: { icon: typeof Bot; title: string; detail: string; tone: Tone }) {

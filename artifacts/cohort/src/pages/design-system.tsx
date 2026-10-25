@@ -68,7 +68,7 @@ function ComparativeBarChart() {
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Alvo: {item.target}{item.unit}</span>
-              <span className={cn("font-mono", item.value >= item.target ? "text-chart-1" : "text-chart-3")}>
+              <span className={cn("font-mono", item.value >= item.target ? "text-chart-1" : "text-chart-3-text")}>
                 {item.value >= item.target ? "✓ No alvo" : "⚠ Abaixo"}
               </span>
             </div>
@@ -477,7 +477,7 @@ function FormDemo() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="nome" className="flex items-center gap-1">
-                Nome do agente <span className="text-chart-3" aria-hidden="true">*</span>
+                Nome do agente <span className="text-chart-3-text" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="nome"
@@ -490,14 +490,14 @@ function FormDemo() {
                 aria-describedby={errors.nome && touched.nome ? "nome-error" : undefined}
               />
               {errors.nome && touched.nome && (
-                <p id="nome-error" className="text-xs text-chart-3" role="alert">
+                <p id="nome-error" className="text-xs text-chart-3-text" role="alert">
                   {errors.nome}
                 </p>
               )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="funcao" className="flex items-center gap-1">
-                Função <span className="text-chart-3" aria-hidden="true">*</span>
+                Função <span className="text-chart-3-text" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="funcao"
@@ -510,7 +510,7 @@ function FormDemo() {
                 aria-describedby={errors.funcao && touched.funcao ? "funcao-error" : undefined}
               />
               {errors.funcao && touched.funcao && (
-                <p id="funcao-error" className="text-xs text-chart-3" role="alert">
+                <p id="funcao-error" className="text-xs text-chart-3-text" role="alert">
                   {errors.funcao}
                 </p>
               )}
@@ -520,7 +520,7 @@ function FormDemo() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="custoMeta" className="flex items-center gap-1">
-                Custo por resultado (meta) <span className="text-chart-3" aria-hidden="true">*</span>
+                Custo por resultado (meta) <span className="text-chart-3-text" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="custoMeta"
@@ -534,14 +534,14 @@ function FormDemo() {
                 aria-describedby={errors.custoMeta && touched.custoMeta ? "custoMeta-error" : undefined}
               />
               {errors.custoMeta && touched.custoMeta && (
-                <p id="custoMeta-error" className="text-xs text-chart-3" role="alert">
+                <p id="custoMeta-error" className="text-xs text-chart-3-text" role="alert">
                   {errors.custoMeta}
                 </p>
               )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="responsavel" className="flex items-center gap-1">
-                Responsável <span className="text-chart-3" aria-hidden="true">*</span>
+                Responsável <span className="text-chart-3-text" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="responsavel"
@@ -554,7 +554,7 @@ function FormDemo() {
                 aria-describedby={errors.responsavel && touched.responsavel ? "responsavel-error" : undefined}
               />
               {errors.responsavel && touched.responsavel && (
-                <p id="responsavel-error" className="text-xs text-chart-3" role="alert">
+                <p id="responsavel-error" className="text-xs text-chart-3-text" role="alert">
                   {errors.responsavel}
                 </p>
               )}
@@ -563,7 +563,7 @@ function FormDemo() {
 
           <div className="space-y-1">
             <Label htmlFor="objetivo" className="flex items-center gap-1">
-              Objetivo <span className="text-chart-3" aria-hidden="true">*</span>
+              Objetivo <span className="text-chart-3-text" aria-hidden="true">*</span>
             </Label>
             <Textarea
               id="objetivo"
@@ -577,7 +577,7 @@ function FormDemo() {
               aria-describedby={errors.objetivo && touched.objetivo ? "objetivo-error" : undefined}
             />
             {errors.objetivo && touched.objetivo && (
-              <p id="objetivo-error" className="text-xs text-chart-3" role="alert">
+              <p id="objetivo-error" className="text-xs text-chart-3-text" role="alert">
                 {errors.objetivo}
               </p>
             )}
@@ -585,7 +585,7 @@ function FormDemo() {
 
           <div className="space-y-1">
             <Label htmlFor="limite" className="flex items-center gap-1">
-              Limite <span className="text-chart-3" aria-hidden="true">*</span>
+              Limite <span className="text-chart-3-text" aria-hidden="true">*</span>
             </Label>
             <Textarea
               id="limite"
@@ -599,7 +599,7 @@ function FormDemo() {
               aria-describedby={errors.limite && touched.limite ? "limite-error" : undefined}
             />
             {errors.limite && touched.limite && (
-              <p id="limite-error" className="text-xs text-chart-3" role="alert">
+              <p id="limite-error" className="text-xs text-chart-3-text" role="alert">
                 {errors.limite}
               </p>
             )}
@@ -607,7 +607,7 @@ function FormDemo() {
 
           {missingFields.length > 0 && (
             <div className="rounded-lg border border-chart-2 bg-chart-2/10 p-3" role="alert">
-              <div className="flex items-center gap-2 text-sm text-chart-2">
+              <div className="flex items-center gap-2 text-sm text-chart-2-text">
                 <CircleAlert className="h-4 w-4 shrink-0" />
                 <span>
                   Falta preencher: <strong>{missingFields.map((f) => f.charAt(0).toUpperCase() + f.slice(1)).join(", ")}</strong>

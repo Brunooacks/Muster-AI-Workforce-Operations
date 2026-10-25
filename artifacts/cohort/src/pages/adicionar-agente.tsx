@@ -164,7 +164,7 @@ export function AdicionarAgenteScreen() {
               const rotulo = (
                 <>
                   {campo.rotulo}
-                  {campo.obrigatorio && <span className="ml-1 text-[var(--wo-danger)]">*</span>}
+                  {campo.obrigatorio && <span className="ml-1 text-[var(--wo-danger-text)]">*</span>}
                 </>
               );
               const classes = cn(
@@ -213,10 +213,10 @@ export function AdicionarAgenteScreen() {
         <div className="mt-6 flex flex-col gap-3 border-t border-[var(--wo-line)] pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0" role="alert" data-testid="falta-preencher">
             {erro ? (
-              <p className="text-[12px] font-medium text-[var(--wo-danger)]">{erro}</p>
+              <p className="text-[12px] font-medium text-[var(--wo-danger-text)]">{erro}</p>
             ) : (
               <p className="text-[11px] text-[var(--wo-muted)]">
-                Campos com <span className="text-[var(--wo-danger)]">*</span> são obrigatórios.
+                Campos com <span className="text-[var(--wo-danger-text)]">*</span> são obrigatórios.
               </p>
             )}
           </div>
