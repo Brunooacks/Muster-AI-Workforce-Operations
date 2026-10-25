@@ -34,6 +34,7 @@ import { LangProvider } from "@/lib/i18n";
 
 import LandingPage from "@/pages/landing";
 import DesignLabPage from "@/pages/design-lab";
+import DesignSystemPage from "@/pages/design-system";
 import WorkforceOsLabPage from "@/pages/workforce-os-lab";
 import OnboardingPage from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
@@ -387,6 +388,9 @@ function ClerkProviderWithRoutes({
                       component={DesignLabPage}
                       requireOnboarding={false}
                     />
+                  </Route>
+                  <Route path="/design-system">
+                    <DesignSystemPage />
                   </Route>
                   <Route path="/onboarding">
                     <ProtectedRoute
