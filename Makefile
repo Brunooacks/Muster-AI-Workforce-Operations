@@ -13,12 +13,13 @@ define step
 	@printf '\n==> [%s] %s\n' "$$(date -u +%H:%M:%S)" "$(1)"
 endef
 
-.PHONY: help ci ci-core ci-container ci-integration toolchain install typecheck test build go-test down-guard name-gate hooks
+.PHONY: help ci ci-core ci-container ci-integration toolchain install typecheck test contrast build go-test down-guard name-gate hooks
 
 help:
 	@printf '%s\n' \
 	  'make ci            install, typecheck, test, build, go-test, down-guard e name-gate' \
 	  'make ci-core       o mesmo que ci, sem o name-gate (step separado no Woodpecker)' \
+	  'make contrast      contraste WCAG dos pares de tokens texto/fundo (≥4,5:1)' \
 	  'make ci-container  make ci dentro de node:$(NODE_MAJOR)-bookworm (toolchain fixa)' \
 	  'make ci-integration migra DATABASE_URL (Postgres efêmero) e roda pnpm test:integration' \
 	  'make name-gate     gate de nomes bloqueados (lista fora do repo)' \
@@ -28,7 +29,7 @@ ci: ci-core name-gate
 	$(call step,ci concluído)
 
 # Ordem do antigo .github/workflows/ci.yml: install → typecheck → test → build.
-ci-core: toolchain install typecheck test build go-test down-guard
+ci-core: toolchain install typecheck test contrast build go-test down-guard
 
 ci-container:
 	bash scripts/ci/run-in-container.sh make ci
@@ -55,6 +56,10 @@ typecheck:
 test:
 	$(call step,test)
 	pnpm test
+
+contrast:
+	$(call step,contrast)
+	pnpm --filter @workspace/scripts run contrast
 
 build:
 	$(call step,build)

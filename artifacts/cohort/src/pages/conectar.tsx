@@ -71,7 +71,7 @@ const PT: Dict = {
   eyebrow: "INTEGRAÇÃO",
   title: (nome) => `Ligar a telemetria de ${nome}`,
   subtitle:
-    "Sem evidência, a plataforma não dá nota. São três passos e o último acontece sozinho.",
+    "Sem prova, a plataforma não dá nota. São três passos e o último acontece sozinho.",
   stepKey: "A credencial deste agente",
   stepKeyHelp:
     "Vale só para ele: uma credencial do agente A não consegue reportar pelo agente B. Aparece uma única vez.",

@@ -114,7 +114,7 @@ const PT = {
       desc: "Promover, Mentorar ou Aposentar sugeridos pela análise",
     },
     probation: {
-      label: "Fim de período de probation",
+      label: "Fim de período de experiência",
       desc: "Quando um agente conclui a janela de observação",
     },
     digest: {

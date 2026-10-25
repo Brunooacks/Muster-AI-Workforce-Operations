@@ -652,7 +652,7 @@ export function OnboardingScreen({ navigate }: { navigate: (screen: OnboardingTa
   const ecosystemSignals = [
     { source: "NIST", date: "14 ago 2026", title: "Identidade e autorização tornam-se fundamentos para agentes enterprise", implication: "O Muster deve tratar identidade, autoridade delegada e não repúdio como contrato operacional, não como metadado opcional.", href: "https://www.nist.gov/artificial-intelligence/ai-agent-standards-initiative" },
     { source: "OpenTelemetry", date: "03 set 2026", title: "Convenções GenAI avançam a interoperabilidade da telemetria", implication: "O contrato universal deve mapear agente, operação, conversa, modelo e fonte sem copiar conteúdo sensível por padrão.", href: "https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/" },
-    { source: "Linux Foundation", date: "23 jun 2025", title: "A2A consolida uma linguagem aberta para colaboração entre agentes", implication: "Jornadas precisam observar passagens, identidade, contexto e resultado entre fornecedores, não apenas etapas internas do Muster.", href: "https://www.linuxfoundation.org/press/linux-foundation-launches-the-agent2agent-protocol-project-to-enable-secure-intelligent-communication-between-ai-agents" },
+    { source: "Linux Foundation", date: "23 jun 2025", title: "Protocolo aberto consolida uma linguagem comum para colaboração entre agentes", implication: "Jornadas precisam observar passagens, identidade, contexto e resultado entre fornecedores, não apenas etapas internas do Muster.", href: "https://www.linuxfoundation.org/press/linux-foundation-launches-the-agent2agent-protocol-project-to-enable-secure-intelligent-communication-between-ai-agents" },
   ];
 
   return (
@@ -760,7 +760,7 @@ const metricDomains = [
       { name: "Intervenções humanas úteis", layer: "Colaboração", current: "76%", target: "≥ 80%", source: "Revisões registradas", status: "watch" as Tone },
       { name: "Exceções reincidentes", layer: "Qualidade", current: "7,2%", target: "≤ 5%", source: "ERP + cohorts", status: "risk" as Tone },
       { name: "Decisões dentro da autonomia", layer: "Governança", current: "99,2%", target: "≥ 99%", source: "Motor de políticas", status: "good" as Tone },
-      { name: "Handoff aceito sem devolução", layer: "Passagem", current: "81%", target: "≥ 90%", source: "Journey telemetry", status: "watch" as Tone },
+      { name: "Passagem aceita sem devolução", layer: "Passagem", current: "81%", target: "≥ 90%", source: "Journey telemetry", status: "watch" as Tone },
     ],
   },
 ];
@@ -956,7 +956,7 @@ const mixedTeams = [
       { name: "Patrícia", role: "Humana · accountable", purpose: 91, quality: 90, load: 88, interventions: 57, status: "watch" as Tone },
       { name: "Sofia", role: "Agente · resolução", purpose: 61, quality: 68, load: 96, interventions: 32, status: "risk" as Tone },
       { name: "Lia", role: "Agente · triagem", purpose: 84, quality: 86, load: 79, interventions: 12, status: "good" as Tone },
-      { name: "Monitor", role: "Agente · outcome", purpose: 74, quality: 82, load: 66, interventions: 8, status: "watch" as Tone },
+      { name: "Monitor", role: "Agente · resultado", purpose: 74, quality: 82, load: 66, interventions: 8, status: "watch" as Tone },
       { name: "Especialista N2", role: "Humano · decisão", purpose: 88, quality: 93, load: 91, interventions: 49, status: "watch" as Tone },
     ],
   },
@@ -1282,7 +1282,7 @@ export function BenchmarksScreen() {
 
 const connectorCatalog = [
   { name: "GitHub", platform: "github", category: "Código e execução", environment: "cloud", status: "connected", detail: "4 agentes · 12 workflows", icon: Code2 },
-  { name: "OpenTelemetry", platform: "opentelemetry", category: "Telemetria", environment: "hybrid", status: "connected", detail: "18 s freshness", icon: Activity },
+  { name: "OpenTelemetry", platform: "opentelemetry", category: "Telemetria", environment: "hybrid", status: "connected", detail: "18 s de atualização", icon: Activity },
   { name: "AWS Bedrock", platform: "aws-bedrock", category: "Cloud agents", environment: "cloud", status: "ready", detail: "template disponível", icon: Cloud },
   { name: "Azure AI Foundry", platform: "azure-ai-foundry", category: "Cloud agents", environment: "cloud", status: "ready", detail: "template disponível", icon: Cloud },
   { name: "Google Vertex AI", platform: "google-vertex-ai", category: "Cloud agents", environment: "cloud", status: "ready", detail: "template disponível", icon: Cloud },
@@ -1302,13 +1302,13 @@ export function ConnectorsScreen() {
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
-      <ScreenHeader eyebrow="Ecossistema plug-and-play" title="Um contrato comum para cloud, on-premise e execução local." description="O Muster mantém o plano de controle centralizado ou privado, enquanto collectors próximos ao runtime leem código, logs, traces, decisões, custos e outcomes sem exigir um único provedor." action={<button type="button" onClick={() => setSelectedConnector("Nova conexão")} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><PlugZap className="h-4 w-4" /> Adicionar conexão</button>} />
+      <ScreenHeader eyebrow="Ecossistema plug-and-play" title="Um contrato comum para cloud, on-premise e execução local." description="O Muster mantém o plano de controle centralizado ou privado, enquanto collectors próximos ao runtime leem código, logs, registros de execução, decisões, custos e resultados sem exigir um único provedor." action={<button type="button" onClick={() => setSelectedConnector("Nova conexão")} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><PlugZap className="h-4 w-4" /> Adicionar conexão</button>} />
 
       {selectedConnector && <Panel className="border-[var(--wo-primary)] p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">{selectedConnector}</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Selecione credencial, ambiente e contrato de coleta antes de ativar.</p></div><button type="button" onClick={() => setSelectedConnector(null)} className="rounded-xl border border-[var(--wo-line)] px-4 py-2 text-xs text-[var(--wo-text)]">Fechar configuração</button></div></Panel>}
 
       <div className="grid gap-3 lg:grid-cols-3">
         {[
-          ["Cloud gerenciada", "AWS · Azure · GCP · SaaS", "Control plane Muster e coleta via APIs/eventos.", Cloud, "primary"],
+          ["Cloud gerenciada", "AWS · Azure · GCP · SaaS", "Painel de controle do Muster e coleta via APIs/eventos.", Cloud, "primary"],
           ["Arquitetura híbrida", "Cloud + runtime privado", "Collectors locais; governança e fallback por política.", Network, "good"],
           ["On-premise / local", "GPU · vLLM · Docker · Kubernetes", "Dados e execução permanecem na infraestrutura do cliente.", Server, "watch"],
         ].map(([title, subtitle, description, Icon, tone]) => <Panel key={title as string} className="p-4"><span className={cn("grid h-10 w-10 place-items-center rounded-xl", toneClass[tone as Tone])}><Icon className="h-4 w-4" /></span><h2 className="mt-4 text-sm font-medium text-[var(--wo-text)]">{title as string}</h2><span className="mt-1 block text-[10px] text-[var(--wo-accent)]">{subtitle as string}</span><p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">{description as string}</p></Panel>)}
@@ -1321,7 +1321,7 @@ export function ConnectorsScreen() {
 
       <Panel className="p-4">
         <div className="grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
-          <div><div className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-[var(--wo-accent)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Contrato universal do agente</h2></div><p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">Identidade, organização, propósito, execução, decisão, prova, custo opcional, feedback e ação corretiva seguem o mesmo envelope, independentemente do runtime.</p></div>
+          <div><div className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-[var(--wo-accent)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Contrato universal do agente</h2></div><p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">Identidade, organização, propósito, execução, decisão, prova, custo opcional, feedback e ação corretiva seguem o mesmo formato, independentemente do runtime.</p></div>
           <div className="grid gap-2 sm:grid-cols-5">{["Descobrir", "Coletar", "Medir", "Decidir", "Ajustar"].map((step, index) => <div key={step} className="rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] text-[var(--wo-primary)]">0{index + 1}</span><strong className="mt-2 block text-xs font-medium text-[var(--wo-text)]">{step}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">com prova</span></div>)}</div>
         </div>
       </Panel>

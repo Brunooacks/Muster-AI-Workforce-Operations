@@ -126,7 +126,7 @@ export default function AdminConsolePage() {
     <div className="space-y-5 p-4 sm:p-6" data-testid="admin-console" data-operational-source="api">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-[var(--wo-primary)]">Admin Console · tenant control plane</span>
+          <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-[var(--wo-primary)]">Admin Console · painel de controle da organização</span>
           <h1 className="mt-2 max-w-5xl text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)] sm:text-4xl">
             Estruture a companhia antes de operar a força de trabalho.
           </h1>

@@ -58,7 +58,7 @@ function ContractNumbers({ c }: { c: AgentContract }) {
   return (
     <div className="space-y-1.5">
       {row("Métrica", `${c.metricKey} (${c.unit}, ${c.direction === "down" ? "menor é melhor" : "maior é melhor"})`)}
-      {row("Baseline → meta", `${c.baseline} → ${c.target}`)}
+      {row("Linha de base → meta", `${c.baseline} → ${c.target}`)}
       {c.limit !== null && row("Limite", String(c.limit))}
       {row("Prazo", c.deadline)}
       {row("Min. humanos de referência", c.referenceHumanMinutes === null ? "não informado" : String(c.referenceHumanMinutes))}
@@ -198,13 +198,13 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
                 </select>
               </div>
               {field("deadline", "Prazo", { type: "date", min: today })}
-              {field("baseline", "Baseline", { inputMode: "decimal" })}
+              {field("baseline", "Linha de base", { inputMode: "decimal" })}
               {field("target", "Meta", { inputMode: "decimal" })}
               {field("limit", "Limite (opcional)", { inputMode: "decimal" })}
               {field("referenceHumanMinutes", "Min. humanos de referência", { inputMode: "decimal" })}
               <div className="space-y-1 sm:col-span-2">
                 <Label htmlFor="contract-owner" className="text-xs">
-                  Dono
+                  Responsável
                   {errors.ownerMemberId && <span className="ml-1 text-destructive">({errors.ownerMemberId})</span>}
                 </Label>
                 <select

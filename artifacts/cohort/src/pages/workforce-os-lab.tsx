@@ -176,7 +176,7 @@ const productTokens: Record<PaletteId, CSSProperties> = {
     "--secondary": "232 14% 31%",
     "--secondary-foreground": "60 30% 96%",
     "--muted": "232 14% 31%",
-    "--muted-foreground": "232 42% 77%",
+    "--muted-foreground": "232 42% 79%",
     "--accent": "232 14% 31%",
     "--accent-foreground": "60 30% 96%",
     "--chart-1": "265 89% 78%",
@@ -223,7 +223,7 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-primary-soft": "#dbeee9",
     "--wo-accent": "#9dd36f",
     "--wo-accent-ink": "#13250f",
-    "--wo-warning": "#a76f16",
+    "--wo-warning": "#996310",
     "--wo-danger": "#c14f43",
     colorScheme: "light",
   } as CSSProperties,
@@ -258,7 +258,7 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-accent": "#50fa7b",
     "--wo-accent-ink": "#102716",
     "--wo-warning": "#f1fa8c",
-    "--wo-danger": "#ff5555",
+    "--wo-danger": "#ff6b6b",
     colorScheme: "dark",
   } as CSSProperties,
   mocha: {
@@ -1348,7 +1348,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
           <div className="w-full max-w-lg rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-shell)] p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-4"><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-primary)]">Decisão auditável</span><h2 id="plan-decision-title" className="mt-2 text-xl font-medium text-[var(--wo-text)]">{planDecisionCopy[decisionRequest.decision].title}</h2><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">{planDecisionCopy[decisionRequest.decision].consequence}</p></div><button type="button" aria-label="Fechar decisão" onClick={() => setDecisionRequest(null)} disabled={recordDecision.isPending} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)] disabled:opacity-50"><X className="h-4 w-4" /></button></div>
             <div className="mt-4 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-3" data-testid="plan-decision-preview"><span className="text-[8px] font-medium uppercase tracking-[0.1em] text-[var(--wo-primary)]">Depois de confirmar</span><div className="mt-2 space-y-2">{planDecisionCopy[decisionRequest.decision].nextSteps.map((step, index) => <div key={step.title} className="grid grid-cols-[20px_1fr] gap-2"><span className="grid h-5 w-5 place-items-center rounded-full bg-[var(--wo-primary-soft)] text-[8px] text-[var(--wo-primary)]">{index + 1}</span><p className="text-[9px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">{step.actor} · {step.title}.</strong> {step.detail}</p></div>)}</div></div>
-            <label className="mt-5 block"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Justificativa obrigatória</span><textarea value={decisionRequest.reason} onChange={(event) => setDecisionRequest((current) => current ? { ...current, reason: event.target.value } : current)} rows={4} autoFocus placeholder="Registre evidências, riscos e condição esperada para o próximo ciclo." className="mt-2 w-full resize-none rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3 text-xs text-[var(--wo-text)] outline-none placeholder:text-[var(--wo-muted)] focus:border-[var(--wo-primary)]" /></label>
+            <label className="mt-5 block"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Justificativa obrigatória</span><textarea value={decisionRequest.reason} onChange={(event) => setDecisionRequest((current) => current ? { ...current, reason: event.target.value } : current)} rows={4} autoFocus placeholder="Registre provas, riscos e condição esperada para o próximo ciclo." className="mt-2 w-full resize-none rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3 text-xs text-[var(--wo-text)] outline-none placeholder:text-[var(--wo-muted)] focus:border-[var(--wo-primary)]" /></label>
             {decisionError && <p className="mt-3 text-[10px] text-[var(--wo-danger)]" role="alert">{decisionError}</p>}
             <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setDecisionRequest(null)} disabled={recordDecision.isPending} className="rounded-xl border border-[var(--wo-line)] px-4 py-2.5 text-xs text-[var(--wo-text)] disabled:opacity-50">Cancelar</button><button type="button" onClick={submitDecision} disabled={recordDecision.isPending || decisionRequest.reason.trim().length < 3} className="rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50">{recordDecision.isPending ? "Registrando…" : planDecisionCopy[decisionRequest.decision].confirm}</button></div>
           </div>
@@ -1358,8 +1358,8 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
       {actionRequest && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/65 p-4" role="dialog" aria-modal="true" aria-labelledby="plan-action-title">
           <div className="w-full max-w-md rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-shell)] p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-4"><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-primary)]">Evidência operacional</span><h2 id="plan-action-title" className="mt-2 text-lg font-medium text-[var(--wo-text)]">{actionRequest.status === "completed" ? "Concluir" : actionRequest.status === "blocked" ? "Bloquear" : "Cancelar"} · {actionRequest.title}</h2><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">Registre o resultado observado, o impedimento ou a razão do encerramento. Essa evidência permanece vinculada à decisão.</p></div><button type="button" aria-label="Fechar atualização" onClick={() => setActionRequest(null)} disabled={updatePlanAction.isPending} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)] disabled:opacity-50"><X className="h-4 w-4" /></button></div>
-            <label className="mt-5 block"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Evidência obrigatória</span><textarea value={actionRequest.evidence} onChange={(event) => setActionRequest((current) => current ? { ...current, evidence: event.target.value } : current)} rows={4} autoFocus placeholder="Ex.: 40 casos válidos concluídos, acurácia de 93% e nenhum guardrail violado." className="mt-2 w-full resize-none rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3 text-xs text-[var(--wo-text)] outline-none placeholder:text-[var(--wo-muted)] focus:border-[var(--wo-primary)]" /></label>
+            <div className="flex items-start justify-between gap-4"><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-primary)]">Prova operacional</span><h2 id="plan-action-title" className="mt-2 text-lg font-medium text-[var(--wo-text)]">{actionRequest.status === "completed" ? "Concluir" : actionRequest.status === "blocked" ? "Bloquear" : "Cancelar"} · {actionRequest.title}</h2><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">Registre o resultado observado, o impedimento ou a razão do encerramento. Essa prova permanece vinculada à decisão.</p></div><button type="button" aria-label="Fechar atualização" onClick={() => setActionRequest(null)} disabled={updatePlanAction.isPending} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)] disabled:opacity-50"><X className="h-4 w-4" /></button></div>
+            <label className="mt-5 block"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Prova obrigatória</span><textarea value={actionRequest.evidence} onChange={(event) => setActionRequest((current) => current ? { ...current, evidence: event.target.value } : current)} rows={4} autoFocus placeholder="Ex.: 40 casos válidos concluídos, acurácia de 93% e nenhum limite combinado violado." className="mt-2 w-full resize-none rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-3 text-xs text-[var(--wo-text)] outline-none placeholder:text-[var(--wo-muted)] focus:border-[var(--wo-primary)]" /></label>
             {decisionError && <p className="mt-3 text-[10px] text-[var(--wo-danger)]" role="alert">{decisionError}</p>}
             <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setActionRequest(null)} disabled={updatePlanAction.isPending} className="rounded-xl border border-[var(--wo-line)] px-4 py-2.5 text-xs text-[var(--wo-text)] disabled:opacity-50">Voltar</button><button type="button" onClick={submitActionTransition} disabled={updatePlanAction.isPending || actionRequest.evidence.trim().length < 3} className="rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50">{updatePlanAction.isPending ? "Salvando…" : "Confirmar e continuar"}</button></div>
           </div>

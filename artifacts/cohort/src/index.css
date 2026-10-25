@@ -156,7 +156,7 @@
   --accent: 189 92% 53%;
   --accent-foreground: 225 37% 4%;
   --destructive: 340 100% 62%;          /* #ff3d81 */
-  --destructive-foreground: 210 36% 95%;
+  --destructive-foreground: 225 37% 4%;
   --ring: 189 92% 53%;
 
   /* Ciano para texto no modo escuro (já tem bom contraste) */

@@ -174,7 +174,7 @@ test("decisões profissionais abrem e executam um fluxo operacional", () => {
   assert.match(page, /data-testid="plan-decision-preview"/);
   assert.match(page, /data-testid="professional-plan-next-action"/);
   assert.match(page, /requestActionTransition/);
-  assert.match(page, /Evidência obrigatória/);
+  assert.match(page, /Prova obrigatória/);
   assert.match(page, /Um novo ciclo só começa após concluir o atual/);
 });
 
