@@ -3,6 +3,7 @@ import { getAuth } from "@clerk/express";
 import { and, eq } from "drizzle-orm";
 import { db, organizations, organizationMembers } from "@workspace/db";
 import { resolveActiveOrganizationId } from "../lib/active-organization";
+import { personalExternalId } from "../lib/account-scope";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -73,10 +74,34 @@ export async function requireOrg(
     }
   }
 
+  if (!claimedOrg) {
+    // Sem organização ativa na sessão = conta pessoal (se já provisionada).
+    // A conta pessoal só é usada aqui, nunca quando há organização ativa.
+    const [personal] = await db
+      .select({ id: organizations.id })
+      .from(organizations)
+      .innerJoin(organizationMembers, eq(organizationMembers.orgId, organizations.id))
+      .where(
+        and(
+          eq(organizations.externalId, personalExternalId(userId)),
+          eq(organizations.kind, "personal"),
+          eq(organizationMembers.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (personal) {
+      req.orgId = personal.id;
+      next();
+      return;
+    }
+  }
+
+  // Fallback de vínculo único: só contas de empresa entram na contagem.
   const memberships = await db
     .select({ orgId: organizationMembers.orgId })
     .from(organizationMembers)
-    .where(eq(organizationMembers.userId, userId))
+    .innerJoin(organizations, eq(organizations.id, organizationMembers.orgId))
+    .where(and(eq(organizationMembers.userId, userId), eq(organizations.kind, "company")))
     .limit(2);
 
   if (memberships.length === 1) {

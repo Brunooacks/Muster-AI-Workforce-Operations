@@ -14,6 +14,7 @@ import {
   listClerkOrganizationMemberships,
   listLocalOrganizationsByExternalIds,
   provisionClerkOrganization,
+  provisionPersonalAccount,
   type LocalOrganizationSnapshot,
   type ProvisionedOrganization,
 } from "../lib/organization-provisioning";
@@ -37,6 +38,8 @@ export interface OrganizationRouteDependencies {
     userId: string,
     membership: ClerkOrganizationMembershipSnapshot,
   ) => Promise<ProvisionedOrganization>;
+  /** Conta pessoal: usada quando não há organização ativa na sessão. */
+  provisionPersonalAccount?: (userId: string) => Promise<ProvisionedOrganization>;
 }
 
 export interface OrganizationRouteHandlers {
@@ -50,6 +53,7 @@ const defaultDependencies: OrganizationRouteDependencies = {
   listMemberships: listClerkOrganizationMemberships,
   listLocalOrganizations: listLocalOrganizationsByExternalIds,
   provisionOrganization: provisionClerkOrganization,
+  provisionPersonalAccount,
 };
 
 export function createOrganizationsRouter(
@@ -119,6 +123,12 @@ export function createOrganizationRouteHandlers(
       const userId = auth.userId ?? req.userId;
       if (!userId) {
         res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      if (!auth.activeOrganizationId && dependencies.provisionPersonalAccount) {
+        const personal = await dependencies.provisionPersonalAccount(userId);
+        req.orgId = personal.id;
+        res.json({ organization: { ...personal, kind: "personal" } });
         return;
       }
       if (!auth.activeOrganizationId) {
