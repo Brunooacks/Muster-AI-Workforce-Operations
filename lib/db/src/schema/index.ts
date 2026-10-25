@@ -14,6 +14,7 @@ import {
   unique,
   foreignKey,
   check,
+  numeric,
 } from "drizzle-orm/pg-core";
 
 const id = () =>
@@ -1046,7 +1047,20 @@ export type AgentEventKind =
   | "error"
   | "escalation"
   | "feedback"
-  | "heartbeat";
+  | "heartbeat"
+  // Cunha (0023): aprovação/rejeição humana de uma tarefa (regra R5).
+  | "human_review";
+
+export type AcceptedByKind = "human" | "auto";
+
+/** Capabilities que a tarefa usou; base da escolha do modelo de referência (D-C1). */
+export interface TaskCapabilities {
+  tools?: boolean;
+  vision?: boolean;
+  /** Janela de contexto usada, em tokens. */
+  contextWindow?: number;
+  [key: string]: unknown;
+}
 
 export const agentEvents = pgTable("agent_events", {
   id: id(),
@@ -1061,8 +1075,85 @@ export const agentEvents = pgTable("agent_events", {
   tokensOut: integer("tokens_out"),
   success: integer("success"), // 1/0/null — drizzle boolean-as-int keeps parity with is_custom
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  // --- Cunha · resultado da tarefa (0023) ------------------------------------
+  // Todas anuláveis: evento antigo continua válido. Conta/projeto vêm do
+  // agente (trigger, quando o INSERT não informa) e o ambiente vem da chave;
+  // nunca do corpo da requisição. Nomes iguais aos headers x-veltrix-* (R2).
+  orgId: text("org_id"),
+  projectId: text("project_id"),
+  environmentId: text("environment_id"),
+  /** x-veltrix-task */
+  taskId: text("task_id"),
+  /** x-veltrix-run */
+  runId: text("run_id"),
+  /** Ordinal do run dentro da task (1, 2, …). */
+  attempt: integer("attempt"),
+  /** run_id da tentativa anterior da mesma task. */
+  retryOf: text("retry_of"),
+  expected: jsonb("expected").$type<unknown>(),
+  actual: jsonb("actual").$type<unknown>(),
+  /** Quem decidiu: pessoa (human) ou regra (auto). Em human_review, o revisor. */
+  acceptedBy: text("accepted_by"),
+  acceptedByKind: text("accepted_by_kind").$type<AcceptedByKind>(),
+  acceptedRuleVersion: text("accepted_rule_version"),
+  /** Não nulo = a tarefa foi aceita por este evento. */
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  capabilities: jsonb("capabilities").$type<TaskCapabilities>(),
+  reworkCount: integer("rework_count"),
+  /** Minutos humanos reais: revisão (human_review) ou retrabalho (demais). */
+  humanMinutes: numeric("human_minutes", { precision: 8, scale: 2, mode: "number" }),
+  contextTokens: integer("context_tokens"),
+  model: text("model"),
 }, (table) => ({
   agentEventsAgentTsIdx: index("agent_events_agent_ts_idx").on(table.agentId, table.ts),
+  agentEventsOrgProjectEnvTsIdx: index("agent_events_org_project_env_ts_idx").on(
+    table.orgId,
+    table.projectId,
+    table.environmentId,
+    table.ts,
+  ),
+  // Um resultado terminal por tentativa; escalation/feedback/human_review
+  // anotam a tentativa e podem se repetir.
+  agentEventsTaskAttemptIdx: uniqueIndex("agent_events_task_attempt_idx")
+    .on(table.orgId, table.taskId, table.attempt)
+    .where(sql`"task_id" IS NOT NULL AND "kind" IN ('execution', 'error')`),
+  agentEventsOrgRunIdx: index("agent_events_org_run_idx")
+    .on(table.orgId, table.runId)
+    .where(sql`"run_id" IS NOT NULL`),
+  agentEventsAgentFk: foreignKey({
+    name: "agent_events_agent_project_org_fk",
+    columns: [table.agentId, table.projectId, table.orgId],
+    foreignColumns: [agents.id, agents.projectId, agents.orgId],
+  }).onDelete("cascade"),
+  agentEventsProjectFk: foreignKey({
+    name: "agent_events_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }),
+  agentEventsEnvironmentFk: foreignKey({
+    name: "agent_events_environment_fk",
+    columns: [table.environmentId, table.projectId, table.orgId],
+    foreignColumns: [environments.id, environments.projectId, environments.orgId],
+  }),
+  agentEventsEnvironmentNeedsProject: check(
+    "agent_events_environment_needs_project",
+    sql`"environment_id" IS NULL OR "project_id" IS NOT NULL`,
+  ),
+  agentEventsAttemptCheck: check("agent_events_attempt_check", sql`"attempt" IS NULL OR "attempt" >= 1`),
+  agentEventsAcceptedKindCheck: check(
+    "agent_events_accepted_by_kind_check",
+    sql`"accepted_by_kind" IS NULL OR "accepted_by_kind" IN ('human', 'auto')`,
+  ),
+  // D-C3: aceite automático sem versão da regra não é prova de nada.
+  agentEventsAutoNeedsRuleCheck: check(
+    "agent_events_auto_needs_rule_version",
+    sql`"accepted_by_kind" IS DISTINCT FROM 'auto' OR "accepted_rule_version" IS NOT NULL`,
+  ),
+  agentEventsReworkCheck: check("agent_events_rework_count_check", sql`"rework_count" IS NULL OR "rework_count" >= 0`),
+  agentEventsHumanMinutesCheck: check(
+    "agent_events_human_minutes_check",
+    sql`"human_minutes" IS NULL OR "human_minutes" >= 0`,
+  ),
 }));
 
 export type OutboxStatus =

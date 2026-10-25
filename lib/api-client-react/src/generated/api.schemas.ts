@@ -2408,9 +2408,29 @@ export const AgentEventInputKind = {
   escalation: 'escalation',
   feedback: 'feedback',
   heartbeat: 'heartbeat',
+  human_review: 'human_review',
 } as const;
 
 export type AgentEventInputMetadata = { [key: string]: unknown };
+
+export type AgentEventInputAcceptedByKind = typeof AgentEventInputAcceptedByKind[keyof typeof AgentEventInputAcceptedByKind];
+
+
+export const AgentEventInputAcceptedByKind = {
+  human: 'human',
+  auto: 'auto',
+} as const;
+
+/**
+ * Capabilities que a tarefa usou (base do modelo de referência).
+ */
+export interface TaskCapabilities {
+  tools?: boolean;
+  vision?: boolean;
+  /** @minimum 0 */
+  contextWindow?: number;
+  [key: string]: unknown;
+ }
 
 export interface AgentEventInput {
   environment?: EnvironmentKind;
@@ -2426,8 +2446,66 @@ export interface AgentEventInput {
   costCents?: number;
   tokensIn?: number;
   tokensOut?: number;
+  /** Em human_review, a decisão (true = aprovado, false = rejeitado). */
   success?: boolean;
   metadata?: AgentEventInputMetadata;
+  /**
+     * Tarefa (x-veltrix-task).
+     * @minLength 1
+     * @maxLength 200
+     */
+  taskId?: string;
+  /**
+     * Execução/tentativa da tarefa (x-veltrix-run).
+     * @minLength 1
+     * @maxLength 200
+     */
+  runId?: string;
+  /**
+     * Ordinal do run dentro da task. Sem valor = 1, ou anterior + 1 quando há retryOf. attempt > 1 exige retryOf.
+     * @minimum 1
+     */
+  attempt?: number;
+  /**
+     * runId da tentativa anterior da mesma task.
+     * @minLength 1
+     * @maxLength 200
+     */
+  retryOf?: string;
+  /** Resultado esperado (camada 2). */
+  expected?: unknown;
+  /** Resultado obtido (camada 2). */
+  actual?: unknown;
+  /**
+     * Quem decidiu (pessoa ou regra). Em human_review, o revisor.
+     * @minLength 1
+     * @maxLength 200
+     */
+  acceptedBy?: string;
+  acceptedByKind?: AgentEventInputAcceptedByKind;
+  /**
+     * Obrigatório quando acceptedByKind = auto.
+     * @minLength 1
+     * @maxLength 100
+     */
+  acceptedRuleVersion?: string;
+  acceptedAt?: string;
+  capabilities?: TaskCapabilities;
+  /** @minimum 0 */
+  reworkCount?: number;
+  /**
+     * Minutos humanos reais (revisão em human_review; retrabalho nos demais).
+     * @minimum 0
+     * @maximum 999999.99
+     */
+  humanMinutes?: number;
+  /** @minimum 0 */
+  contextTokens?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  model?: string;
 }
 
 export type AgentHeartbeatInputStatus = typeof AgentHeartbeatInputStatus[keyof typeof AgentHeartbeatInputStatus];

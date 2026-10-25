@@ -2695,19 +2695,60 @@ export const IngestAgentEventParams = zod.object({
 
 export const ingestAgentEventBodyIdempotencyKeyMax = 200;
 
+export const ingestAgentEventBodyTaskIdMax = 200;
+
+export const ingestAgentEventBodyRunIdMax = 200;
+
+
+export const ingestAgentEventBodyRetryOfMax = 200;
+
+export const ingestAgentEventBodyAcceptedByMax = 200;
+
+export const ingestAgentEventBodyAcceptedRuleVersionMax = 100;
+
+export const ingestAgentEventBodyCapabilitiesContextWindowMin = 0;
+
+export const ingestAgentEventBodyReworkCountMin = 0;
+
+export const ingestAgentEventBodyHumanMinutesMin = 0;
+export const ingestAgentEventBodyHumanMinutesMax = 999999.99;
+
+export const ingestAgentEventBodyContextTokensMin = 0;
+
+export const ingestAgentEventBodyModelMax = 200;
+
 
 
 export const IngestAgentEventBody = zod.object({
   "environment": zod.enum(['sandbox', 'prod']).optional().describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
   "idempotencyKey": zod.string().min(1).max(ingestAgentEventBodyIdempotencyKeyMax).optional().describe('Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.'),
-  "kind": zod.enum(['execution', 'error', 'escalation', 'feedback', 'heartbeat']).optional(),
+  "kind": zod.enum(['execution', 'error', 'escalation', 'feedback', 'heartbeat', 'human_review']).optional(),
   "ts": zod.coerce.date().optional(),
   "durationMs": zod.number().optional(),
   "costCents": zod.number().optional(),
   "tokensIn": zod.number().optional(),
   "tokensOut": zod.number().optional(),
-  "success": zod.boolean().optional(),
-  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+  "success": zod.boolean().optional().describe('Em human_review, a decisão (true = aprovado, false = rejeitado).'),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "taskId": zod.string().min(1).max(ingestAgentEventBodyTaskIdMax).optional().describe('Tarefa (x-veltrix-task).'),
+  "runId": zod.string().min(1).max(ingestAgentEventBodyRunIdMax).optional().describe('Execução\/tentativa da tarefa (x-veltrix-run).'),
+  "attempt": zod.number().min(1).optional().describe('Ordinal do run dentro da task. Sem valor = 1, ou anterior + 1 quando há retryOf. attempt > 1 exige retryOf.'),
+  "retryOf": zod.string().min(1).max(ingestAgentEventBodyRetryOfMax).optional().describe('runId da tentativa anterior da mesma task.'),
+  "expected": zod.unknown().optional().describe('Resultado esperado (camada 2).'),
+  "actual": zod.unknown().optional().describe('Resultado obtido (camada 2).'),
+  "acceptedBy": zod.string().min(1).max(ingestAgentEventBodyAcceptedByMax).optional().describe('Quem decidiu (pessoa ou regra). Em human_review, o revisor.'),
+  "acceptedByKind": zod.enum(['human', 'auto']).optional(),
+  "acceptedRuleVersion": zod.string().min(1).max(ingestAgentEventBodyAcceptedRuleVersionMax).optional().describe('Obrigatório quando acceptedByKind = auto.'),
+  "acceptedAt": zod.coerce.date().optional(),
+  "capabilities": zod.object({
+  "tools": zod.boolean().optional(),
+  "vision": zod.boolean().optional(),
+  "contextWindow": zod.number().min(ingestAgentEventBodyCapabilitiesContextWindowMin).optional()
+}).optional().describe('Capabilities que a tarefa usou (base do modelo de referência).'),
+  "reworkCount": zod.number().min(ingestAgentEventBodyReworkCountMin).optional(),
+  "humanMinutes": zod.number().min(ingestAgentEventBodyHumanMinutesMin).max(ingestAgentEventBodyHumanMinutesMax).optional().describe('Minutos humanos reais (revisão em human_review; retrabalho nos demais).'),
+  "contextTokens": zod.number().min(ingestAgentEventBodyContextTokensMin).optional(),
+  "model": zod.string().min(1).max(ingestAgentEventBodyModelMax).optional()
 })
 
 

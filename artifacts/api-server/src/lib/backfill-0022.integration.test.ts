@@ -249,7 +249,9 @@ describe.skipIf(!runIntegration)("0022 · up → down → up", () => {
     await db.migrateUntil("0021_premium_molten_man");
     await seed0021(db);
     schema0021 = await schemaSnapshot(db);
-    await db.migrateUntil();
+    // Só até a 0022: as migrações da cunha (0023+) dependem dela e têm o próprio
+    // up → down → up em cunha-migrations.integration.test.ts.
+    await db.migrateUntil("0022_projects_envs");
     schema0022 = await schemaSnapshot(db);
   }, 120_000);
 
@@ -283,7 +285,7 @@ describe.skipIf(!runIntegration)("0022 · up → down → up", () => {
   });
 
   it("up de novo reaplica a 0022 com o mesmo schema e chaves em prod", async () => {
-    await db.migrateUntil();
+    await db.migrateUntil("0022_projects_envs");
     expect(await schemaSnapshot(db)).toEqual(schema0022);
     const [row] = await db.query<{ total: number; prod: number }>(`
       SELECT count(*)::int AS total, count(*) FILTER (WHERE e.kind = 'prod')::int AS prod

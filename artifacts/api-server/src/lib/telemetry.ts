@@ -1,4 +1,4 @@
-import type { LayerKey } from "@workspace/db";
+import type { AgentEventKind, LayerKey } from "@workspace/db";
 import { metricTargetStatus } from "@workspace/metrics";
 import type { ProposedMetric } from "./discovery";
 import { loadMetricEvidence } from "./evidence";
@@ -17,7 +17,7 @@ export interface AgentEventRow {
   id: string;
   agentId: string;
   ts: Date; // event timestamp
-  kind: "execution" | "error" | "escalation" | "feedback" | "heartbeat";
+  kind: AgentEventKind;
   durationMs: number | null;
   costCents: number | null; // integer cents (BRL)
   tokensIn: number | null;

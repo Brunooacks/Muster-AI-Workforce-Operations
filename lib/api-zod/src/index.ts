@@ -3,3 +3,4 @@ export * from "./generated/types";
 export * from "./mixed-teams";
 export * from "./journeys";
 export * from "./task-envelope";
+export * from "./agent-event-envelope";

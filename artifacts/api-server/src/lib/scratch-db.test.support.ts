@@ -33,13 +33,23 @@ export function sqlStatements(text: string): string[] {
     .filter((s) => s.replace(/--.*$/gm, "").trim().length > 0);
 }
 
+/** Trecho reexecutável entre `-- >>> marcador` e `-- <<< marcador` de uma up. */
+export function markedStatements(upPath: string, marker: string): string[] {
+  const up = readFileSync(upPath, "utf8");
+  const inicio = up.indexOf(`-- >>> ${marker}`);
+  const fim = up.indexOf(`-- <<< ${marker}`);
+  if (inicio < 0 || fim < 0) throw new Error(`marcadores ${marker} ausentes em ${upPath}`);
+  return sqlStatements(up.slice(inicio, fim));
+}
+
 /** O trecho reexecutável de backfill da 0022 (entre os marcadores). */
 export function backfill0022Statements(): string[] {
-  const up = readFileSync(UP_0022, "utf8");
-  const inicio = up.indexOf("-- >>> backfill-0022");
-  const fim = up.indexOf("-- <<< backfill-0022");
-  if (inicio < 0 || fim < 0) throw new Error("marcadores de backfill ausentes na 0022");
-  return sqlStatements(up.slice(inicio, fim));
+  return markedStatements(UP_0022, "backfill-0022");
+}
+
+/** Up e down de uma migração pelo tag do journal. */
+export function migrationFiles(tag: string): { up: string; down: string } {
+  return { up: join(DRIZZLE_DIR, `${tag}.sql`), down: join(DRIZZLE_DIR, "down", `${tag}.sql`) };
 }
 
 function urlFor(database: string): string {

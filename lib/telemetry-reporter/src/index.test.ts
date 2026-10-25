@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  VELTRIX_RUN_HEADER,
+  VELTRIX_TASK_HEADER,
   createMusterReporter,
+  taskFromVeltrixHeaders,
   withMusterExecutionContext,
   type AgentEvent,
 } from "./index";
@@ -177,5 +180,121 @@ describe("createMusterReporter", () => {
     ) as AgentEvent;
     expect(body.kind).toBe("error");
     expect((body.metadata as { message: string }).message).toBe("agent exploded");
+  });
+});
+
+describe("tarefas (cunha · C1.4)", () => {
+  function bodies(fetchImpl: ReturnType<typeof okFetch>) {
+    return fetchImpl.mock.calls.map((call) => JSON.parse((call as unknown as [string, RequestInit])[1].body as string));
+  }
+
+  it("startTask → report leva taskId/runId/attempt 1, sem retryOf", async () => {
+    const fetchImpl = okFetch();
+    const reporter = createMusterReporter({ ...base, fetchImpl });
+    const run = reporter.startTask({ taskId: "task-1", runId: "run-1" });
+
+    await run.report({ kind: "execution", success: true, costCents: 4, contextTokens: 300, model: "m-small" });
+
+    expect(bodies(fetchImpl)).toEqual([
+      {
+        kind: "execution",
+        success: true,
+        costCents: 4,
+        contextTokens: 300,
+        model: "m-small",
+        taskId: "task-1",
+        runId: "run-1",
+        attempt: 1,
+      },
+    ]);
+  });
+
+  it("retry calcula attempt e retryOf a partir do run anterior (encadeado)", () => {
+    const reporter = createMusterReporter({ ...base, fetchImpl: okFetch() });
+    const first = reporter.startTask({ taskId: "task-1", runId: "run-1" });
+    const second = reporter.retry(first, { runId: "run-2" });
+    const third = second.retry({ runId: "run-3" });
+
+    expect({ ...second }).toMatchObject({ taskId: "task-1", runId: "run-2", attempt: 2, retryOf: "run-1" });
+    expect({ ...third }).toMatchObject({ taskId: "task-1", runId: "run-3", attempt: 3, retryOf: "run-2" });
+  });
+
+  it("startTask sem ids gera ids distintos", () => {
+    const reporter = createMusterReporter({ ...base, fetchImpl: okFetch() });
+    const a = reporter.startTask();
+    const b = reporter.startTask();
+    expect(a.taskId).not.toBe(b.taskId);
+    expect(a.runId).not.toBe(a.taskId);
+    expect(a.attempt).toBe(1);
+  });
+
+  it("review manda human_review com decisão, minutos e revisor", async () => {
+    const fetchImpl = okFetch();
+    const reporter = createMusterReporter({ ...base, fetchImpl });
+    const run = reporter.retry({ taskId: "task-1", runId: "run-1", attempt: 1 }, { runId: "run-2" });
+
+    await run.review({ approved: false, minutes: 6.5, by: "ana@cliente" });
+
+    expect(bodies(fetchImpl)).toEqual([
+      {
+        kind: "human_review",
+        taskId: "task-1",
+        runId: "run-2",
+        attempt: 2,
+        success: false,
+        acceptedBy: "ana@cliente",
+        humanMinutes: 6.5,
+      },
+    ]);
+  });
+
+  it("accept auto leva regra e versão; human não leva versão", async () => {
+    const fetchImpl = okFetch();
+    const reporter = createMusterReporter({ ...base, fetchImpl });
+    const run = reporter.startTask({ taskId: "t", runId: "r" });
+
+    await run.accept({ by: "regra:schema-ok", kind: "auto", ruleVersion: "v3" });
+    await reporter.accept(run, { by: "bruno", kind: "human" });
+
+    expect(bodies(fetchImpl)).toEqual([
+      { kind: "feedback", taskId: "t", runId: "r", attempt: 1, acceptedBy: "regra:schema-ok", acceptedByKind: "auto", acceptedRuleVersion: "v3" },
+      { kind: "feedback", taskId: "t", runId: "r", attempt: 1, acceptedBy: "bruno", acceptedByKind: "human" },
+    ]);
+  });
+
+  it("rework vira reworkCount e acceptedAt Date vira ISO", async () => {
+    const fetchImpl = okFetch();
+    const reporter = createMusterReporter({ ...base, fetchImpl });
+    await reporter.report({ rework: 2, acceptedAt: new Date("2026-10-01T00:00:00.000Z") });
+    expect(bodies(fetchImpl)).toEqual([{ reworkCount: 2, acceptedAt: "2026-10-01T00:00:00.000Z" }]);
+  });
+
+  it("trackExecution do run leva os campos da tarefa no sucesso e no erro", async () => {
+    const fetchImpl = okFetch();
+    const reporter = createMusterReporter({ ...base, fetchImpl });
+    const run = reporter.startTask({ taskId: "t", runId: "r" });
+
+    await run.trackExecution(async () => "ok", { enrich: () => ({ costCents: 2 }) });
+    await expect(run.retry({ runId: "r2" }).trackExecution(async () => { throw new Error("falhou"); })).rejects.toThrow("falhou");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const [ok, erro] = bodies(fetchImpl);
+    expect(ok).toMatchObject({ kind: "execution", success: true, costCents: 2, taskId: "t", runId: "r", attempt: 1 });
+    expect(erro).toMatchObject({ kind: "error", taskId: "t", runId: "r2", attempt: 2, retryOf: "r" });
+  });
+
+  it("taskFromVeltrixHeaders lê x-veltrix-task/x-veltrix-run de objeto ou Headers", () => {
+    expect(VELTRIX_TASK_HEADER).toBe("x-veltrix-task");
+    expect(VELTRIX_RUN_HEADER).toBe("x-veltrix-run");
+    expect(taskFromVeltrixHeaders({ "X-Veltrix-Task": "t1", "x-veltrix-run": ["r1"] })).toEqual({ taskId: "t1", runId: "r1" });
+    expect(taskFromVeltrixHeaders(new Headers({ "x-veltrix-task": "t2" }))).toEqual({ taskId: "t2" });
+  });
+
+  it("evento antigo (sem campos de tarefa) sai igual ao da versão anterior", async () => {
+    const fetchImpl = okFetch();
+    const reporter = createMusterReporter({ ...base, fetchImpl });
+    const legado: AgentEvent = { kind: "escalation", durationMs: 5, metadata: { a: 1 } };
+    await reporter.report(legado);
+    expect(bodies(fetchImpl)).toEqual([{ kind: "escalation", durationMs: 5, metadata: { a: 1 } }]);
   });
 });

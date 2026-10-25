@@ -1886,6 +1886,21 @@ paths:
                   duplicate:
                     type: boolean
                     description: True when this idempotency key was already accepted for this agent.
+        "409":
+          description: Já existe resultado (execution/error) para esta tentativa da tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: >-
+            Cadeia de tarefa inválida (retryOf de outra task ou fora de ordem,
+            attempt > 1 sem retryOf, runId/attempt sem taskId) ou aceite auto
+            sem acceptedRuleVersion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /integrations/agent-events:
     post:
@@ -5427,7 +5442,7 @@ components:
             rede para evitar materializar o evento duas vezes.
         kind:
           type: string
-          enum: [execution, error, escalation, feedback, heartbeat]
+          enum: [execution, error, escalation, feedback, heartbeat, human_review]
         # Optional occurrence time (ISO 8601). Agents that batch or replay
         # events report the real execution time; when omitted the server
         # stamps the event with "now".
@@ -5444,9 +5459,84 @@ components:
           type: number
         success:
           type: boolean
+          description: Em human_review, a decisão (true = aprovado, false = rejeitado).
         metadata:
           type: object
           additionalProperties: true
+        # Cunha (C1.3): resultado da tarefa. Nomes iguais aos headers
+        # x-veltrix-task / x-veltrix-run. Conta, projeto e ambiente vêm sempre
+        # da credencial, nunca do corpo.
+        taskId:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Tarefa (x-veltrix-task).
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Execução/tentativa da tarefa (x-veltrix-run).
+        attempt:
+          type: integer
+          minimum: 1
+          description: >-
+            Ordinal do run dentro da task. Sem valor = 1, ou anterior + 1
+            quando há retryOf. attempt > 1 exige retryOf.
+        retryOf:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: runId da tentativa anterior da mesma task.
+        expected:
+          description: Resultado esperado (camada 2).
+        actual:
+          description: Resultado obtido (camada 2).
+        acceptedBy:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Quem decidiu (pessoa ou regra). Em human_review, o revisor.
+        acceptedByKind:
+          type: string
+          enum: [human, auto]
+        acceptedRuleVersion:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Obrigatório quando acceptedByKind = auto.
+        acceptedAt:
+          type: string
+          format: date-time
+        capabilities:
+          $ref: "#/components/schemas/TaskCapabilities"
+        reworkCount:
+          type: integer
+          minimum: 0
+        humanMinutes:
+          type: number
+          minimum: 0
+          maximum: 999999.99
+          description: Minutos humanos reais (revisão em human_review; retrabalho nos demais).
+        contextTokens:
+          type: integer
+          minimum: 0
+        model:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    TaskCapabilities:
+      type: object
+      description: Capabilities que a tarefa usou (base do modelo de referência).
+      properties:
+        tools:
+          type: boolean
+        vision:
+          type: boolean
+        contextWindow:
+          type: integer
+          minimum: 0
+      additionalProperties: true
 
     AgentHeartbeatInput:
       type: object

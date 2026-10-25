@@ -5968,7 +5968,7 @@ export const ingestAgentEvent = async (agentId: string,
 
 
 
-export const getIngestAgentEventMutationOptions = <TError = ErrorType<unknown>,
+export const getIngestAgentEventMutationOptions = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext> => {
 
@@ -5997,12 +5997,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type IngestAgentEventMutationResult = NonNullable<Awaited<ReturnType<typeof ingestAgentEvent>>>
     export type IngestAgentEventMutationBody = BodyType<AgentEventInput>
-    export type IngestAgentEventMutationError = ErrorType<unknown>
+    export type IngestAgentEventMutationError = ErrorType<Error>
 
     /**
  * @summary Ingest a telemetry event (execution, error, escalation) for an agent
  */
-export const useIngestAgentEvent = <TError = ErrorType<unknown>,
+export const useIngestAgentEvent = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof ingestAgentEvent>>,
