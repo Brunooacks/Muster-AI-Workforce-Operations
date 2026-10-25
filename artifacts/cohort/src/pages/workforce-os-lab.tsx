@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ComponentPropsWithoutRef, type CSSProperties, type ReactNode } from "react";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import {
   getListAgentsQueryKey,
@@ -87,6 +87,19 @@ import AccountSettingsPage from "@/pages/configuracoes";
 import ProfilePage from "@/pages/perfil";
 import ConectarPage from "@/pages/conectar";
 import AdminConsolePage from "@/pages/admin-console";
+import { Badge } from "@/components/ui/badge";
+import { formatBRL } from "@/lib/calculadora";
+import {
+  FRICCAO_ILUSTRATIVA,
+  bulletDaMeta,
+  coberturaDoAgente,
+  metasDoAgente,
+  motivoDoStatus,
+  ordenarAgentes,
+  statusDoAgente,
+  type StatusAgente,
+} from "@/lib/agentes";
+import { BulletMeta, FriccaoEmpilhada, SeloCobertura, ChipStatus } from "@/components/shell/agentes-graficos";
 import { AgentOutcomePanel } from "@/components/agent-outcome";
 import { AgentContractPanel } from "@/components/agent-contract";
 import { queryClient } from "@/lib/queryClient";
@@ -286,6 +299,10 @@ const demoAgents: ProfessionalAgent[] = [
     reviewDue: "Hoje, 14:30",
     reviewUrgency: "42 min",
     volume: "22,1 mil",
+    monthlyVolume: 236,
+    monthlyCost: 49.56,
+    observedMetricCount: 3,
+    percepcao: { nota: 4.2, respostas: 14, positivas: 11, negativas: 3 },
     autonomy: "Supervisionada",
     duties: [
       "Identificar intenção e contexto mínimo do atendimento.",
@@ -303,10 +320,10 @@ const demoAgents: ProfessionalAgent[] = [
       "Solicitar revisão humana com confiança abaixo de 70%.",
     ],
     metrics: [
-      { label: "Resolução no primeiro contato", baseline: "68%", target: "≥ 75%", current: "61%", status: "off", source: "Zendesk · tickets" },
-      { label: "Reabertura em 72 horas", baseline: "17%", target: "≤ 15%", current: "24%", status: "off", source: "Zendesk · eventos" },
-      { label: "Escalonamento apropriado", baseline: "82%", target: "≥ 80%", current: "86%", status: "on", source: "Auditoria amostral" },
-      { label: "Completude de evidência", baseline: "88%", target: "≥ 95%", current: "91%", status: "watch", source: "Muster telemetry" },
+      { label: "Resolução no primeiro contato", baseline: "68%", target: "≥ 75%", current: "61%", status: "off", source: "Zendesk · tickets", casos: 96 },
+      { label: "Reabertura em 72 horas", baseline: "17%", target: "≤ 15%", current: "24%", status: "off", source: "Zendesk · eventos", casos: 61 },
+      { label: "Escalonamento apropriado", baseline: "82%", target: "≥ 80%", current: "86%", status: "on", source: "Auditoria amostral", casos: 24 },
+      { label: "Completude de evidência", baseline: "88%", target: "≥ 95%", current: "91%", status: "watch", source: "Muster telemetry", casos: 30 },
     ],
     diagnosis: "Sofia executa o dever de responder rapidamente, mas deixou de cumprir a responsabilidade de confirmar resolução sustentável.",
     recommendation: "Revisar a base de conhecimento de cobrança e manter autonomia supervisionada até dois ciclos consecutivos dentro da meta.",
@@ -329,14 +346,18 @@ const demoAgents: ProfessionalAgent[] = [
     reviewDue: "Hoje, 17:00",
     reviewUrgency: "3 h",
     volume: "14,2 mil",
+    monthlyVolume: 50,
+    monthlyCost: 11,
+    observedMetricCount: 1,
+    percepcao: { nota: 4, respostas: 8, positivas: 7, negativas: 1 },
     autonomy: "Supervisionada",
     duties: ["Enriquecer o contexto do lead.", "Aplicar critérios de qualificação vigentes.", "Registrar motivo e confiança da decisão."],
     responsibilities: ["Preservar qualidade do pipeline.", "Evitar falso positivo acima de 5%.", "Escalonar campanhas sem regra de ICP válida."],
     boundaries: ["Não descartar contas estratégicas.", "Não alterar critérios comerciais.", "Solicitar revisão em campanhas novas."],
     metrics: [
-      { label: "Conversão qualificada", baseline: "24%", target: "≥ 25%", current: "21%", status: "off", source: "Salesforce · pipeline" },
-      { label: "Falso positivo de lead", baseline: "6%", target: "≤ 5%", current: "11%", status: "off", source: "Feedback do vendedor" },
-      { label: "Speed to lead", baseline: "7 min", target: "< 5 min", current: "3 min", status: "on", source: "Salesforce · eventos" },
+      { label: "Conversão qualificada", baseline: "24%", target: "≥ 25%", current: "21%", status: "off", source: "Salesforce · pipeline", casos: 41 },
+      { label: "Falso positivo de lead", baseline: "6%", target: "≤ 5%", current: "11%", status: "off", source: "Feedback do vendedor", casos: 18 },
+      { label: "Speed to lead", baseline: "7 min", target: "< 5 min", current: "3 min", status: "on", source: "Salesforce · eventos", casos: 52 },
     ],
     diagnosis: "A rapidez foi preservada, mas o critério de fit não acompanhou a nova campanha enterprise.",
     recommendation: "Recalibrar regras por campanha e revisar amostra com Revenue Operations antes da próxima janela.",
@@ -359,22 +380,26 @@ const demoAgents: ProfessionalAgent[] = [
     reviewDue: "Em 12 dias",
     reviewUrgency: "No prazo",
     volume: "8,7 mil",
+    monthlyVolume: 9,
+    monthlyCost: 3.96,
+    observedMetricCount: 2,
+    percepcao: { nota: 4.8, respostas: 5, positivas: 5, negativas: 0 },
     autonomy: "Autônoma",
     duties: ["Validar pré-condições de deploy.", "Executar rollout gradual.", "Acionar rollback ao romper guardrails."],
     responsibilities: ["Manter taxa de sucesso acima de 95%.", "Garantir evidência por execução.", "Notificar owner em recuperação automática."],
     boundaries: ["Não promover mudança sem testes.", "Não ignorar bloqueios de segurança.", "Não alterar guardrails sem comitê."],
     metrics: [
-      { label: "Deploys sem rollback", baseline: "91%", target: "≥ 95%", current: "97%", status: "on", source: "CI/CD telemetry" },
-      { label: "Completude de trace", baseline: "94%", target: "≥ 99%", current: "99%", status: "on", source: "OpenTelemetry" },
+      { label: "Deploys sem rollback", baseline: "91%", target: "≥ 95%", current: "97%", status: "on", source: "CI/CD telemetry", casos: 9 },
+      { label: "Completude de trace", baseline: "94%", target: "≥ 99%", current: "99%", status: "on", source: "OpenTelemetry", casos: 9 },
     ],
     diagnosis: "Vega cumpre o contrato com evidência consistente e pode assumir maior volume dentro dos mesmos limites.",
     recommendation: "Promover gradualmente o volume, preservando rollback automático e revisão quinzenal.",
   },
   {
     id: "reviewer",
-    initials: "RP",
-    name: "Revisor PR",
-    role: "Especialista de Code Review",
+    initials: "TÉ",
+    name: "Téo",
+    role: "Especialista de Revisão de PR",
     team: "Engenharia assistida",
     purpose: "Aumentar a cobertura de revisão sem elevar regressões ou reduzir responsabilidade humana.",
     owner: "Marina Costa",
@@ -388,13 +413,17 @@ const demoAgents: ProfessionalAgent[] = [
     reviewDue: "Amanhã",
     reviewUrgency: "19 h",
     volume: "486 PRs",
+    monthlyVolume: 5,
+    monthlyCost: 1.3,
+    observedMetricCount: 1,
+    percepcao: { nota: 3, respostas: 6, positivas: 4, negativas: 2 },
     autonomy: "Supervisionada",
     duties: ["Inspecionar mudanças elegíveis.", "Classificar riscos.", "Justificar recomendações."],
     responsibilities: ["Cobrir mais de 90% dos PRs elegíveis.", "Manter defeito escapado abaixo de 5%.", "Exigir gate humano em módulos críticos."],
     boundaries: ["Não aprovar merge.", "Não dispensar testes obrigatórios.", "Não revisar segredos ou dados não autorizados."],
     metrics: [
-      { label: "Cobertura de revisão", baseline: "76%", target: "≥ 90%", current: "92%", status: "on", source: "GitHub" },
-      { label: "Defeito escapado", baseline: "6%", target: "≤ 5%", current: "8%", status: "off", source: "Incidentes atribuídos" },
+      { label: "Cobertura de revisão", baseline: "76%", target: "≥ 90%", current: "92%", status: "on", source: "GitHub", casos: 5 },
+      { label: "Defeito escapado", baseline: "6%", target: "≤ 5%", current: "8%", status: "off", source: "Incidentes atribuídos", casos: 12 },
     ],
     diagnosis: "A cobertura cresceu, mas a profundidade de revisão não acompanhou o risco de módulos concorrentes.",
     recommendation: "Aplicar política por risco e manter gate humano para módulos críticos.",
@@ -417,13 +446,17 @@ const demoAgents: ProfessionalAgent[] = [
     reviewDue: "Em 8 dias",
     reviewUrgency: "No prazo",
     volume: "1,8 mil",
+    monthlyVolume: 8,
+    monthlyCost: 1.44,
+    observedMetricCount: 2,
+    percepcao: { nota: 5, respostas: 3, positivas: 3, negativas: 0 },
     autonomy: "Autônoma",
     duties: ["Orientar próximos passos.", "Confirmar documentos.", "Escalonar exceções."],
     responsibilities: ["Evitar pendências silenciosas.", "Preservar experiência humana.", "Registrar consentimento e evidências."],
     boundaries: ["Não decidir exceções trabalhistas.", "Não acessar dados fora do escopo.", "Não concluir onboarding incompleto."],
     metrics: [
-      { label: "Onboardings completos", baseline: "89%", target: "≥ 92%", current: "93%", status: "on", source: "HRIS" },
-      { label: "Experiência do colaborador", baseline: "4,1/5", target: "≥ 4/5", current: "4,5/5", status: "on", source: "Pesquisa pós-ciclo" },
+      { label: "Onboardings completos", baseline: "89%", target: "≥ 92%", current: "93%", status: "on", source: "HRIS", casos: 8 },
+      { label: "Experiência do colaborador", baseline: "4,1/5", target: "≥ 4/5", current: "4,5/5", status: "on", source: "Pesquisa pós-ciclo", casos: 3 },
     ],
     diagnosis: "Maia cumpre propósito e responsabilidades com impacto humano positivo.",
     recommendation: "Manter contrato e ampliar volume com acompanhamento mensal da experiência.",
@@ -446,60 +479,29 @@ const demoAgents: ProfessionalAgent[] = [
     reviewDue: "Vencido",
     reviewUrgency: "2 h atrasado",
     volume: "3,2 mil",
+    monthlyVolume: 4,
+    monthlyCost: 1.64,
+    observedMetricCount: 0,
+    percepcao: { nota: 4.5, respostas: 2, positivas: 2, negativas: 0 },
     autonomy: "Assistida",
     duties: ["Comparar registros.", "Classificar divergências.", "Encaminhar exceções com contexto."],
     responsibilities: ["Manter precisão acima de 98%.", "Não ocultar divergências.", "Produzir trilha auditável."],
     boundaries: ["Não efetuar baixa financeira.", "Não alterar origem dos dados.", "Não resolver exceções sem owner."],
     metrics: [
-      { label: "Precisão de conciliação", baseline: "92%", target: "≥ 98%", current: "89%", status: "off", source: "ERP · amostra auditada" },
-      { label: "Exceções com evidência", baseline: "74%", target: "≥ 95%", current: "71%", status: "off", source: "Muster evidence" },
+      { label: "Precisão de conciliação", baseline: "92%", target: "≥ 98%", current: "89%", status: "off", source: "ERP · amostra auditada", casos: 0 },
+      { label: "Exceções com evidência", baseline: "74%", target: "≥ 95%", current: "71%", status: "off", source: "Muster evidence", casos: 0 },
+      { label: "Tempo até a primeira exceção do dia", baseline: "6 h", target: "", current: "4 h", status: "off", source: "ERP · amostra auditada", casos: 0 },
     ],
     diagnosis: "Dora ainda não demonstra consistência suficiente para cumprir a função acordada.",
     recommendation: "Reduzir escopo, corrigir instrumentação e repetir período de experiência com amostra mínima.",
   },
 ];
 
-const agentManagerScorecards: Record<string, { cost: string; accuracy: number; efficacy: number; efficiency: number; adoption: number; governance: number }> = {
-  sofia: { cost: "R$ 0,12", accuracy: 72, efficacy: 61, efficiency: 88, adoption: 84, governance: 95 },
-  julia: { cost: "R$ 0,18", accuracy: 74, efficacy: 72, efficiency: 91, adoption: 79, governance: 93 },
-  vega: { cost: "R$ 0,16", accuracy: 96, efficacy: 91, efficiency: 94, adoption: 81, governance: 99 },
-  reviewer: { cost: "R$ 0,09", accuracy: 84, efficacy: 76, efficiency: 92, adoption: 78, governance: 97 },
-  maia: { cost: "R$ 0,14", accuracy: 93, efficacy: 93, efficiency: 88, adoption: 90, governance: 98 },
-  dora: { cost: "R$ 0,41", accuracy: 89, efficacy: 48, efficiency: 61, adoption: 58, governance: 91 },
-};
-
-const statusStyle: Record<AgentStatus, CSSProperties> = {
-  healthy: { color: "var(--wo-accent-ink)", background: "var(--wo-accent)" },
-  attention: { color: "var(--wo-accent-ink)", background: "var(--wo-warning)" },
-  critical: { color: "white", background: "var(--wo-danger)" },
-  probation: { color: "var(--wo-text)", background: "var(--wo-primary-soft)" },
-};
-
-function StatusBadge({ agent }: { agent: ProfessionalAgent }) {
+function Panel({ children, className, ...rest }: ComponentPropsWithoutRef<"section">) {
   return (
-    <span className="inline-flex rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em]" style={statusStyle[agent.status]}>
-      {agent.statusLabel}
-    </span>
-  );
-}
-
-function Panel({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <section className={cn("rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-card)]", className)}>
+    <section {...rest} className={cn("rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-card)]", className)}>
       {children}
     </section>
-  );
-}
-
-function ScoreBar({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="grid grid-cols-[110px_1fr_34px] items-center gap-2 text-xs">
-      <span className="text-[var(--wo-muted)]">{label}</span>
-      <div className="h-1.5 overflow-hidden rounded-full bg-[var(--wo-line)]">
-        <div className="h-full rounded-full bg-[var(--wo-primary)]" style={{ width: `${value}%` }} />
-      </div>
-      <strong className="text-right font-mono font-medium text-[var(--wo-text)]">{value}</strong>
-    </div>
   );
 }
 
@@ -831,52 +833,195 @@ function PortfolioMatrix({ agents, selectedAgentId, onSelect }: { agents: Profes
   );
 }
 
-function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, isLoading, isError }: { agents: ProfessionalAgent[]; selectedAgent: ProfessionalAgent | null; onSelect: (agentId: string) => void; openProfessional: (agentId: string) => void; isLoading: boolean; isError: boolean }) {
-  return (
-    <div className="space-y-4 p-4 sm:p-6">
-      <div>
-        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Portfólio profissional</div>
-        <h1 className="mt-2 text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)] sm:text-4xl">Propósito × saúde operacional</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--wo-muted)]">O eixo principal avalia se cada profissional executa a função combinada. Volume, custo e impacto financeiro permanecem como contexto secundário.</p>
+function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, isLoading, isError, operational = false }: { agents: ProfessionalAgent[]; selectedAgent: ProfessionalAgent | null; onSelect: (agentId: string) => void; openProfessional: (agentId: string) => void; isLoading: boolean; isError: boolean; operational?: boolean }) {
+  const linhas = ordenarAgentes(agents.map((agent) => ({ agent, status: statusDoAgente(agent) })));
+  const totalEntregas = agents.reduce((soma, agent) => soma + (agent.monthlyVolume ?? 0), 0);
+  const coberturas = (["fechada", "parcial", "aberta"] as const).map((estado) => ({
+    estado,
+    quantidade: agents.filter((agent) => coberturaDoAgente(agent) === estado).length,
+  }));
+  const semAgentes = !isLoading && !isError && agents.length === 0;
+
+  if (isLoading) {
+    return <div className="space-y-4 p-4 sm:p-6"><Panel className="p-8 text-sm text-[var(--wo-muted)]">Carregando agentes reais do tenant…</Panel></div>;
+  }
+  if (isError) {
+    return <div className="space-y-4 p-4 sm:p-6"><Panel className="border-[var(--wo-danger)] p-8"><h2 className="text-lg font-medium text-[var(--wo-text)]">Não foi possível carregar os agentes</h2><p className="mt-2 text-sm text-[var(--wo-muted)]">A tela não substitui dados indisponíveis por demonstrações. Verifique API, autenticação e tenant.</p></Panel></div>;
+  }
+  if (semAgentes) {
+    return (
+      <div className="space-y-4 p-4 sm:p-6">
+        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Operação · últimos 30 dias</div>
+        <Panel className="p-8">
+          <h2 className="text-lg font-medium text-[var(--wo-text)]">Nenhum agente ainda.</h2>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--wo-muted)]">Adicione o primeiro agente para acompanhar o que ele entregou, a prova e o custo. Os primeiros dados aparecem após a primeira execução.</p>
+          <Link href="/admissao" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><UserPlus className="h-4 w-4" /> Adicionar agente</Link>
+        </Panel>
       </div>
-      {isLoading ? (
-        <Panel className="p-8 text-sm text-[var(--wo-muted)]">Carregando profissionais reais do tenant…</Panel>
-      ) : isError ? (
-        <Panel className="border-[var(--wo-danger)] p-8"><h2 className="text-lg font-medium text-[var(--wo-text)]">Não foi possível carregar o portfólio</h2><p className="mt-2 text-sm text-[var(--wo-muted)]">A operação não substitui dados indisponíveis por demonstrações. Verifique API, autenticação e tenant.</p></Panel>
-      ) : !selectedAgent ? (
-        <Panel className="p-8"><h2 className="text-lg font-medium text-[var(--wo-text)]">Nenhum profissional admitido</h2><p className="mt-2 max-w-xl text-sm text-[var(--wo-muted)]">Cadastre um agente, conecte sua telemetria e forme uma baseline real. Dados de demonstração aparecem somente no laboratório visual.</p><Link href="/admissao" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><UserPlus className="h-4 w-4" /> Admitir primeiro agente</Link></Panel>
-      ) : <>
+    );
+  }
+
+  return (
+    <div className="space-y-4 p-4 sm:p-6" data-testid="agentes-lista">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Operação · últimos 30 dias</div>
+          <h1 className="mt-2 text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)] sm:text-4xl">Agentes</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--wo-muted)]">O que cada agente entregou, quanto custou e o que ainda precisa da sua decisão. Quem está fora do combinado vem primeiro.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!operational && <Badge variant="illustrative">Dados ilustrativos</Badge>}
+          <Link href="/admissao" className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><UserPlus className="h-4 w-4" /> Adicionar agente</Link>
+        </div>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[1.35fr_.65fr]">
+        <Panel className="p-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-medium text-[var(--wo-text)]">Fricção por tipo</h2>
+            <span className="text-[10px] text-[var(--wo-muted)]">execuções que precisaram de mais de uma tentativa</span>
+          </div>
+          <FriccaoEmpilhada
+            segmentos={operational ? [] : FRICCAO_ILUSTRATIVA}
+            totalEntregas={operational ? (totalEntregas || null) : 312}
+            periodo="out/26"
+            vazio="Sem fricção registrada nos últimos 30 dias. Ela aparece quando uma entrega precisa de nova tentativa."
+          />
+        </Panel>
+        <Panel className="p-4">
+          <h2 className="text-sm font-medium text-[var(--wo-text)]">Prova das metas</h2>
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-3">
+            <strong className="font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{coberturas[0]!.quantidade}</strong>
+            <span className="text-xs text-[var(--wo-muted)]">de {agents.length} agentes com cobertura fechada</span>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {coberturas.map((item) => (
+              <li key={item.estado} className="flex items-center justify-between gap-2 text-[11px]">
+                <SeloCobertura cobertura={item.estado} />
+                <span className="font-mono text-[var(--wo-muted)]">{item.quantidade} {item.quantidade === 1 ? "agente" : "agentes"}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[10px] leading-relaxed text-[var(--wo-muted)]">
+            Cobertura fecha quando toda meta do agente tem prova registrada no período.
+          </p>
+        </Panel>
+      </div>
+
+      <Panel className="overflow-hidden" data-testid="agentes-tabela">
+        <div className="border-b border-[var(--wo-line)] px-4 py-3">
+          <h2 className="text-sm font-medium text-[var(--wo-text)]">Lista de agentes</h2>
+          <p className="mt-1 text-[10px] text-[var(--wo-muted)]">Colunas: agente · função, responsável, entregas (30 dias), gasto (30 dias), metas atingidas, cobertura e próxima revisão.</p>
+        </div>
+        <div className="hidden overflow-x-auto sm:block">
+          <table className="w-full min-w-[900px] border-collapse text-xs">
+            <thead>
+              <tr className="text-left text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">
+                <th className="px-4 py-3 font-normal">Agente · função</th>
+                <th className="px-3 py-3 font-normal">Responsável</th>
+                <th className="px-3 py-3 text-right font-normal">Entregas (30 d)</th>
+                <th className="px-3 py-3 text-right font-normal">Gasto (30 d)</th>
+                <th className="px-3 py-3 font-normal">Metas atingidas</th>
+                <th className="px-3 py-3 font-normal">Cobertura</th>
+                <th className="px-3 py-3 font-normal">Próxima revisão</th>
+                <th className="px-3 py-3 font-normal" />
+              </tr>
+            </thead>
+            <tbody>
+              {linhas.map(({ agent, status }) => {
+                const metas = metasDoAgente(agent);
+                const cobertura = coberturaDoAgente(agent);
+                const custoPorEntrega = agent.monthlyVolume && agent.monthlyCost != null
+                  ? agent.monthlyCost / agent.monthlyVolume
+                  : null;
+                return (
+                  <tr key={agent.id} className="border-t border-[var(--wo-line)] transition-colors hover:bg-[var(--wo-card-2)]">
+                    <td className="px-4 py-3">
+                      <button type="button" onClick={() => onSelect(agent.id)} className="flex items-center gap-3 text-left">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--wo-primary-soft)] text-[10px] font-medium text-[var(--wo-primary)]">{agent.initials}</span>
+                        <span className="min-w-0">
+                          <strong className="block font-medium text-[var(--wo-text)]">{agent.name}</strong>
+                          <span className="mt-1 block truncate text-[10px] text-[var(--wo-muted)]">{agent.role}</span>
+                          <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <ChipStatus status={status} />
+                            <span className="text-[9px] text-[var(--wo-muted)]">Cumpre {metas.rotulo}</span>
+                          </span>
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-3 py-3 text-[var(--wo-muted)]">{agent.owner}</td>
+                    <td className="px-3 py-3 text-right font-mono tabular-nums text-[var(--wo-text)]">{agent.monthlyVolume?.toLocaleString("pt-BR") ?? "—"}</td>
+                    <td className="px-3 py-3 text-right">
+                      <span className="block font-mono tabular-nums text-[var(--wo-text)]">{agent.monthlyCost != null ? formatBRL(agent.monthlyCost) : "—"}</span>
+                      <span className="mt-0.5 block text-[9px] text-[var(--wo-muted)]">{custoPorEntrega != null ? `${formatBRL(custoPorEntrega)} por entrega` : "sem custo registrado"}</span>
+                    </td>
+                    <td className="px-3 py-3 font-mono tabular-nums text-[var(--wo-text)]">{metas.rotulo}</td>
+                    <td className="px-3 py-3"><SeloCobertura cobertura={cobertura} /></td>
+                    <td className="px-3 py-3 text-[var(--wo-muted)]">{agent.reviewDue}</td>
+                    <td className="px-3 py-3">
+                      <button type="button" aria-label={`Abrir prontuário de ${agent.name}`} onClick={() => openProfessional(agent.id)} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-primary-soft)] hover:text-[var(--wo-text)]"><ChevronRight className="h-4 w-4" /></button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <ul className="divide-y divide-[var(--wo-line)] sm:hidden">
+          {linhas.map(({ agent, status }) => {
+            const metas = metasDoAgente(agent);
+            const cobertura = coberturaDoAgente(agent);
+            return (
+              <li key={agent.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--wo-primary-soft)] text-[10px] font-medium text-[var(--wo-primary)]">{agent.initials}</span>
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm font-medium text-[var(--wo-text)]">{agent.name}</strong>
+                      <span className="mt-0.5 block truncate text-[10px] text-[var(--wo-muted)]">{agent.role} · {agent.owner}</span>
+                    </div>
+                  </div>
+                  <ChipStatus status={status} />
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                  <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Entregas (30 d)</dt><dd className="font-mono tabular-nums text-[var(--wo-text)]">{agent.monthlyVolume?.toLocaleString("pt-BR") ?? "—"}</dd></div>
+                  <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Gasto (30 d)</dt><dd className="font-mono tabular-nums text-[var(--wo-text)]">{agent.monthlyCost != null ? formatBRL(agent.monthlyCost) : "—"}</dd></div>
+                  <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Metas</dt><dd className="font-mono tabular-nums text-[var(--wo-text)]">{metas.rotulo}</dd></div>
+                  <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Próxima revisão</dt><dd className="text-[var(--wo-text)]">{agent.reviewDue}</dd></div>
+                </dl>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <SeloCobertura cobertura={cobertura} />
+                  <button type="button" onClick={() => openProfessional(agent.id)} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--wo-line)] px-3 py-2 text-[11px] text-[var(--wo-text)]">Abrir prontuário <ChevronRight className="h-3.5 w-3.5" /></button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
+
       <div className="grid gap-3 xl:grid-cols-[1.45fr_.55fr]">
         <Panel className="p-4">
           <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-sm font-medium text-[var(--wo-text)]">Mapa da força de trabalho</h2><span className="text-[10px] text-[var(--wo-muted)]">Bolha = volume acompanhado</span></div>
-          <PortfolioMatrix agents={agents} selectedAgentId={selectedAgent.id} onSelect={onSelect} />
+          <PortfolioMatrix agents={agents} selectedAgentId={selectedAgent?.id ?? ""} onSelect={onSelect} />
         </Panel>
         <Panel className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-xs font-medium text-[var(--wo-primary)]">{selectedAgent.initials}</span><div><h2 className="text-base font-medium text-[var(--wo-text)]">{selectedAgent.name}</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">{selectedAgent.role}</p><div className="mt-2"><PlatformStack platforms={selectedAgent.platforms} /></div></div></div>
-            <StatusBadge agent={selectedAgent} />
-          </div>
-          <div className="mt-4 rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Propósito contratado</span><p className="mt-2 text-xs leading-relaxed text-[var(--wo-text)]">{selectedAgent.purpose}</p></div>
-          <div className="mt-4 space-y-3">
-            <ScoreBar label="Propósito" value={selectedAgent.contractFulfillment} />
-            <ScoreBar label="Saúde" value={selectedAgent.operationalHealth} />
-            <ScoreBar label="Responsabilidades" value={selectedAgent.responsibilityCoverage} />
-            <ScoreBar label="Evidência" value={selectedAgent.evidenceConfidence} />
-          </div>
-          <div className="mt-4 rounded-xl bg-[color-mix(in_srgb,var(--wo-warning)_14%,var(--wo-card))] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-warning)]">Próxima decisão</span><p className="mt-2 text-[11px] leading-relaxed text-[var(--wo-muted)]">{selectedAgent.recommendation}</p></div>
-          <button type="button" onClick={() => openProfessional(selectedAgent.id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir prontuário profissional <ArrowRight className="h-4 w-4" /></button>
+          {!selectedAgent ? (
+            <div className="text-sm text-[var(--wo-muted)]">Escolha um agente na lista para ver o combinado dele.</div>
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-xs font-medium text-[var(--wo-primary)]">{selectedAgent.initials}</span><div><h2 className="text-base font-medium text-[var(--wo-text)]">{selectedAgent.name}</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">{selectedAgent.role}</p><div className="mt-2"><PlatformStack platforms={selectedAgent.platforms} /></div></div></div>
+                <ChipStatus status={statusDoAgente(selectedAgent)} />
+              </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">{motivoDoStatus(selectedAgent)}</p>
+              <div className="mt-4 rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">O que foi combinado</span><p className="mt-2 text-xs leading-relaxed text-[var(--wo-text)]">{selectedAgent.purpose}</p></div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Metas atingidas</span><span className="font-mono text-sm text-[var(--wo-text)]">{metasDoAgente(selectedAgent).rotulo}</span></div>
+              <div className="mt-3"><SeloCobertura cobertura={coberturaDoAgente(selectedAgent)} /></div>
+              <button type="button" onClick={() => openProfessional(selectedAgent.id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir prontuário <ArrowRight className="h-4 w-4" /></button>
+            </>
+          )}
         </Panel>
       </div>
-      <Panel className="overflow-hidden">
-        <div className="border-b border-[var(--wo-line)] px-4 py-3"><h2 className="text-sm font-medium text-[var(--wo-text)]">Gestão direta</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Cada linha liga função, contrato, review e autonomia.</p></div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[780px] border-collapse text-xs">
-            <thead><tr className="text-left text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]"><th className="px-4 py-3 font-normal">Profissional · função</th><th className="px-3 py-3 font-normal">Owner</th><th className="px-3 py-3 font-normal">Contrato</th><th className="px-3 py-3 font-normal">Responsabilidades</th><th className="px-3 py-3 font-normal">Autonomia</th><th className="px-3 py-3 font-normal">Review</th><th className="px-3 py-3 font-normal" /></tr></thead>
-            <tbody>{agents.map((agent) => <tr key={agent.id} className="border-t border-[var(--wo-line)] transition-colors hover:bg-[var(--wo-card-2)]"><td className="px-4 py-3"><button type="button" onClick={() => onSelect(agent.id)} className="flex items-center gap-3 text-left"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--wo-primary-soft)] text-[10px] font-medium text-[var(--wo-primary)]">{agent.initials}</span><span><strong className="block font-medium text-[var(--wo-text)]">{agent.name}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">{agent.role} · {agent.team}</span><span className="mt-2 block"><PlatformStack platforms={agent.platforms} compact /></span></span></button></td><td className="px-3 py-3 text-[var(--wo-muted)]">{agent.owner}</td><td className="px-3 py-3 font-mono text-[var(--wo-text)]">{agent.contractFulfillment}%</td><td className="px-3 py-3 font-mono text-[var(--wo-text)]">{agent.responsibilityCoverage}%</td><td className="px-3 py-3 text-[var(--wo-muted)]">{agent.autonomy}</td><td className="px-3 py-3 text-[var(--wo-muted)]">{agent.reviewDue}</td><td className="px-3 py-3"><button type="button" aria-label={`Abrir prontuário de ${agent.name}`} onClick={() => openProfessional(agent.id)} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-primary-soft)] hover:text-[var(--wo-text)]"><ChevronRight className="h-4 w-4" /></button></td></tr>)}</tbody>
-          </table>
-        </div>
-      </Panel>
-      </>}
     </div>
   );
 }
@@ -965,21 +1110,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
     status: Exclude<PlanActionTransition, "in_progress">;
     evidence: string;
   } | null>(null);
-  const managerScorecard = agentManagerScorecards[agent.id] ?? {
-    cost: agent.costPerExecution == null
-      ? "Não medido"
-      : agent.costPerExecution.toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }),
-    accuracy: agent.contractFulfillment,
-    efficacy: agent.contractFulfillment,
-    efficiency: agent.operationalHealth,
-    adoption: agent.responsibilityCoverage,
-    governance: agent.evidenceConfidence,
-  };
+
   const decisionsQuery = useListProfessionalPlanDecisions(agent.id);
   const reevaluate = useReevaluateAgent();
   const recordDecision = useRecordProfessionalPlanDecision();
@@ -1106,16 +1237,68 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="flex items-center gap-4"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--wo-accent)] text-sm font-medium text-[var(--wo-accent-ink)]">{agent.initials}</span><div><div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Prontuário profissional</div><h1 className="mt-1 text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)]">{agent.name}</h1><p className="mt-1 text-xs text-[var(--wo-muted)]">{agent.role} · {agent.team} · owner {agent.owner}</p><div className="mt-2"><PlatformStack platforms={agent.platforms} /></div></div></div>
-        <div className="flex flex-wrap items-center gap-2"><StatusBadge agent={agent} /><span className="rounded-full border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-2 py-1 text-[10px] text-[var(--wo-muted)]">Review: {agent.reviewDue}</span><button type="button" data-testid="reevaluate-professional" data-operational-action="reevaluate-agent" onClick={handleReevaluate} disabled={reevaluate.isPending} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><RefreshCw className={cn("h-3.5 w-3.5", reevaluate.isPending && "animate-spin")} />{reevaluate.isPending ? "Reavaliando…" : "Reavaliar agora"}</button></div>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between" data-testid="prontuario-abertura">
+        <div className="flex items-start gap-4"><span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[var(--wo-accent)] text-sm font-medium text-[var(--wo-accent-ink)]">{agent.initials}</span><div className="min-w-0"><div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Agentes · prontuário</div><h1 className="mt-1 text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)]">{agent.name}</h1><p className="mt-1 text-xs text-[var(--wo-muted)]">{agent.role} · Responsável: {agent.owner}</p><div className="mt-2 flex flex-wrap items-center gap-2"><PlatformStack platforms={agent.platforms} /><ChipStatus status={statusDoAgente(agent)} /><SeloCobertura cobertura={coberturaDoAgente(agent)} /></div><p className="mt-3 text-[13px] leading-relaxed text-[var(--wo-text)]" data-testid="prontuario-status">{motivoDoStatus(agent)}</p><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Revisão humana marcada: {agent.reviewDue}</p></div></div>
+        <div className="flex flex-wrap items-center gap-2"><button type="button" data-testid="reevaluate-professional" data-operational-action="reevaluate-agent" onClick={handleReevaluate} disabled={reevaluate.isPending} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><RefreshCw className={cn("h-3.5 w-3.5", reevaluate.isPending && "animate-spin")} />{reevaluate.isPending ? "Recalculando…" : "Recalcular com os dados das últimas 24 h"}</button></div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" data-testid="prontuario-blocos">
+        <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">1 · Entregas</span><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{agent.monthlyVolume?.toLocaleString("pt-BR") ?? "—"}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">entregas nos últimos 30 dias</span><Link href={`/entregas?agente=${encodeURIComponent(agent.name)}`} className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--wo-primary)]">Ver as entregas <ArrowRight className="h-3 w-3" /></Link></Panel>
+        <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">2 · Prova</span><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{metasDoAgente(agent).total === 0 ? "—" : `${agent.observedMetricCount ?? 0} de ${metasDoAgente(agent).total}`}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">metas com prova no período</span><div className="mt-2"><SeloCobertura cobertura={coberturaDoAgente(agent)} /></div></Panel>
+        <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">3 · Custo</span><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{agent.monthlyCost != null ? formatBRL(agent.monthlyCost) : "—"}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">{agent.monthlyVolume && agent.monthlyCost != null ? `${formatBRL(agent.monthlyCost / agent.monthlyVolume)} por entrega · out/26` : "sem custo registrado no período"}</span></Panel>
+        <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">4 · Percepção</span>{agent.percepcao ? <><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{agent.percepcao.nota.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">de 5 em {agent.percepcao.respostas} respostas · <span aria-hidden="true">👎</span> {agent.percepcao.negativas}</span></> : <p className="mt-2 text-[11px] leading-relaxed text-[var(--wo-muted)]">Sem percepção registrada no período. Ela aparece depois que quem recebe a entrega responde.</p>}</Panel>
+        <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">5 · O que fazer agora</span><p className="mt-2 text-[11px] leading-relaxed text-[var(--wo-text)]">{agent.recommendation}</p><Link href="/pendencias" className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--wo-primary)]">Abrir Pendências <ArrowRight className="h-3 w-3" /></Link></Panel>
       </div>
 
       {reevaluationMessage && <div className="rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent)]" role="status">{reevaluationMessage}</div>}
 
       <Panel className="p-4 sm:p-5">
-        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Goal className="h-4 w-4" /></span><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">Contrato de propósito</span><h2 className="mt-2 max-w-4xl text-xl font-medium leading-snug text-[var(--wo-text)]">{agent.purpose}</h2></div></div>
-        <div className="mt-5 grid gap-3 lg:grid-cols-3"><ContractList title="Deveres" icon={ClipboardCheck} items={agent.duties} /><ContractList title="Responsabilidades" icon={UserCheck} items={agent.responsibilities} /><ContractList title="Limites de atuação" icon={ShieldCheck} items={agent.boundaries} /></div>
+        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Goal className="h-4 w-4" /></span><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">O que foi combinado</span><h2 className="mt-2 max-w-4xl text-xl font-medium leading-snug text-[var(--wo-text)]">{agent.purpose}</h2></div></div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-3"><ContractList title="Faz" icon={ClipboardCheck} items={agent.duties} /><ContractList title="Precisa garantir" icon={UserCheck} items={agent.responsibilities} /><ContractList title="Não pode" icon={ShieldCheck} items={agent.boundaries} /></div>
+      </Panel>
+
+      <Panel className="p-4 sm:p-5" data-testid="prontuario-metas">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--wo-accent)]">Metas</div>
+            <h2 className="mt-2 text-lg font-medium text-[var(--wo-text)]">Antes do agente, o combinado e os últimos 30 dias</h2>
+            <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-[var(--wo-muted)]">Cada linha mostra o valor medido antes do agente começar, o que foi combinado e o que aconteceu nos últimos 30 dias — com a prova que sustenta o número.</p>
+          </div>
+          <span className="shrink-0 rounded-full border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-2.5 py-1 font-mono text-[10px] text-[var(--wo-muted)]">{metasDoAgente(agent).rotulo} cumpridas</span>
+        </div>
+        {agent.metrics.length === 0 ? (
+          <p className="mt-4 rounded-xl border border-dashed border-[var(--wo-line)] px-4 py-6 text-center text-[11px] leading-relaxed text-[var(--wo-muted)]">
+            Nenhuma meta declarada. Defina metas para medir o combinado deste agente.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {agent.metrics.map((metric) => {
+              const bullet = bulletDaMeta(metric);
+              return (
+                <li key={metric.label} className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-3 sm:p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    <div className="min-w-0">
+                      <strong className="block text-sm font-medium text-[var(--wo-text)]">{bullet.rotulo}</strong>
+                      <span className="mt-0.5 block text-[10px] text-[var(--wo-muted)]">{bullet.fonte}</span>
+                    </div>
+                    {bullet.casos != null && bullet.casos > 0 ? (
+                      <Link href={`/entregas?agente=${encodeURIComponent(agent.name)}`} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--wo-line)] px-2.5 py-1 text-[10px] text-[var(--wo-primary)]">ver {bullet.casos} casos</Link>
+                    ) : (
+                      <span className="shrink-0 text-[10px] text-[var(--wo-muted)]">sem casos registrados</span>
+                    )}
+                  </div>
+                  <div className="mt-3"><BulletMeta bullet={bullet} periodo="out/26" semRotulo /></div>
+                  {bullet.semMeta && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--wo-card)] px-3 py-2">
+                      <span className="text-[11px] text-[var(--wo-muted)]">Estimado · sem meta definida. Defina metas para medir o combinado.</span>
+                      <Link href="/metricas" className="text-[11px] font-medium text-[var(--wo-primary)]">Definir metas</Link>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Panel>
 
       {operational && (
@@ -1128,28 +1311,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
         </Panel>
       )}
 
-      <Panel className="p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Scorecard gerencial</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">As lentes executivas acompanham o contrato até o nível do agente.</p></div><span className="text-[9px] text-[var(--wo-muted)]">janela móvel de 30 dias</span></div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">{[
-          ["Custo / execução", managerScorecard.cost, "-12%", DatabaseZap],
-          ["Acurácia", `${managerScorecard.accuracy}%`, "+2 pp", Target],
-          ["Eficácia", `${managerScorecard.efficacy}%`, "outcome", Goal],
-          ["Eficiência", `${managerScorecard.efficiency}%`, "tempo + recurso", Clock3],
-          ["Adoção", `${managerScorecard.adoption}%`, "uso recorrente", Users],
-          ["Governança", `${managerScorecard.governance}%`, "guardrails", ShieldCheck],
-        ].map(([label, value, note, Icon]) => <div key={label as string} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between"><span className="text-[9px] text-[var(--wo-muted)]">{label as string}</span><Icon className="h-3.5 w-3.5 text-[var(--wo-primary)]" /></div><strong className="mt-3 block font-mono text-lg font-medium text-[var(--wo-text)]">{value as string}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">{note as string}</span></div>)}</div>
-      </Panel>
 
-      <div className="grid gap-3 xl:grid-cols-[1.25fr_.75fr]">
-        <Panel className="overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-[var(--wo-line)] px-4 py-3"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Avaliação do contrato</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Baseline, compromisso, resultado e fonte de evidência.</p></div><span className="font-mono text-sm text-[var(--wo-text)]">{agent.contractFulfillment}%</span></div>
-          <div className="overflow-x-auto"><table className="w-full min-w-[620px] border-collapse text-xs"><thead><tr className="text-left text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]"><th className="px-4 py-3 font-normal">Compromisso</th><th className="px-3 py-3 text-right font-normal">Baseline</th><th className="px-3 py-3 text-right font-normal">Meta</th><th className="px-3 py-3 text-right font-normal">Atual</th></tr></thead><tbody>{agent.metrics.map((metric) => <tr key={metric.label} className="border-t border-[var(--wo-line)]"><td className="px-4 py-3"><strong className="block font-medium text-[var(--wo-text)]">{metric.label}</strong><span className="mt-2 flex items-center gap-2 text-[10px] text-[var(--wo-muted)]"><PlatformStack platforms={platformIdsFromSource(metric.source)} compact />{metric.source}</span></td><td className="px-3 py-3 text-right font-mono text-[var(--wo-muted)]">{metric.baseline}</td><td className="px-3 py-3 text-right font-mono text-[var(--wo-muted)]">{metric.target}</td><td className={cn("px-3 py-3 text-right font-mono font-medium", metric.status === "off" ? "text-[var(--wo-danger)]" : metric.status === "watch" ? "text-[var(--wo-warning)]" : "text-[var(--wo-accent)]")}>{metric.current}</td></tr>)}</tbody></table></div>
-        </Panel>
-        <div className="space-y-3">
-          <Panel className="p-4"><h2 className="text-sm font-medium text-[var(--wo-text)]">Leitura de desempenho</h2><div className="mt-4 space-y-3"><ScoreBar label="Propósito" value={agent.contractFulfillment} /><ScoreBar label="Saúde" value={agent.operationalHealth} /><ScoreBar label="Responsabilidade" value={agent.responsibilityCoverage} /><ScoreBar label="Evidência" value={agent.evidenceConfidence} /></div><div className="mt-4 rounded-xl border-l-2 border-[var(--wo-primary)] bg-[var(--wo-primary-soft)] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-primary)]">Diagnóstico</span><p className="mt-2 text-[11px] leading-relaxed text-[var(--wo-muted)]">{agent.diagnosis}</p></div></Panel>
-          <Panel className="p-4"><div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-muted)]"><Activity className="h-3.5 w-3.5" /> Evidência correlacionada</div><div className="mt-3 space-y-2"><div className="rounded-xl bg-[var(--wo-card-2)] p-3 text-[10px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">Telemetria:</strong> {agent.diagnosis}</div><div className="rounded-xl bg-[var(--wo-card-2)] p-3 text-[10px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">Cobertura:</strong> {agent.metrics.length > 0 ? `${agent.observedMetricCount ?? agent.metrics.length}/${agent.metrics.length} compromissos com evidência observada no último ciclo.` : "a baseline ainda não possui métricas suficientes."}</div></div></Panel>
-        </div>
-      </div>
 
       <Panel className="border-[var(--wo-accent)] p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--wo-accent)]">Plano de desenvolvimento</div><h2 className="mt-2 text-lg font-medium text-[var(--wo-text)]">{agent.recommendation}</h2></div><span className="text-right text-[10px] text-[var(--wo-muted)]">Próxima avaliação<br /><strong className="text-sm font-medium text-[var(--wo-accent)]">2 ciclos válidos</strong></span></div>
@@ -1322,7 +1484,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "today" && <ManagerScreen selectAgent={openProfessional} navigate={navigate} agents={visibleAgents} operational={!semApi} />}
             {screen === "onboarding" && <OnboardingScreen navigate={navigate} />}
             {screen === "reports" && <ExecutiveReportsScreen />}
-            {screen === "portfolio" && <PortfolioScreen agents={visibleAgents} selectedAgent={selectedAgent} onSelect={setSelectedAgentId} openProfessional={openProfessional} isLoading={!semApi && agentsQuery.isLoading} isError={!semApi && agentsQuery.isError} />}
+            {screen === "portfolio" && <PortfolioScreen agents={visibleAgents} selectedAgent={selectedAgent} onSelect={setSelectedAgentId} openProfessional={openProfessional} isLoading={!semApi && agentsQuery.isLoading} isError={!semApi && agentsQuery.isError} operational={!semApi} />}
             {screen === "professional" && (selectedAgent ? <ProfessionalScreen key={selectedAgent.id} agent={selectedAgent} operational={!semApi} /> : <div className="p-6"><Panel className="p-8"><h1 className="text-xl font-medium text-[var(--wo-text)]">Profissional não encontrado</h1><p className="mt-2 text-sm text-[var(--wo-muted)]">Admitir e conectar o agente é obrigatório antes de abrir seu prontuário operacional.</p><Link href="/admissao" className="mt-5 inline-flex rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir admissão</Link></Panel></div>)}
             {screen === "metrics" && (semApi ? <MetricsScreen /> : <MetricasPage embedded />)}
             {screen === "teams" && (semApi ? <MixedTeamsScreen /> : <OperationalMixedTeamsScreen />)}

@@ -11,6 +11,8 @@ export type WorkforceContractMetric = {
   status: "on" | "off" | "watch";
   source: string;
   observed?: boolean;
+  /** quantidade de casos que comprovam a meta no período */
+  casos?: number;
 };
 
 export type WorkforceProfessionalAgent = {
@@ -42,6 +44,8 @@ export type WorkforceProfessionalAgent = {
   diagnosis: string;
   recommendation: string;
   observedMetricCount?: number;
+  /** percepção de quem recebeu a entrega: nota de 1 a 5, respostas e 👍👎 */
+  percepcao?: { nota: number; respostas: number; positivas: number; negativas: number };
 };
 
 function clampScore(value: number): number {

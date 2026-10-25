@@ -280,7 +280,7 @@ export function leituraOperacional(opcoes: {
 const ENTREGAS_DEMO: EntregaResumo[] = [
   { id: "e-2418", descricao: "Ticket #48217 reclassificado e respondido", agente: "Sofia · Atendimento N1", data: "out 24", status: "Aceita", prova: "zendesk · 14:32" },
   { id: "e-2417", descricao: "Reembolso de R$ 320 aprovado dentro do limite", agente: "Sofia · Atendimento N1", data: "out 24", status: "Aceita", prova: "zendesk · 11:08" },
-  { id: "e-2416", descricao: "Proposta comercial personalizada enviada", agente: "Dora · Prospecting", data: "out 23", status: "Aceita", prova: "hubspot · 17:45" },
+  { id: "e-2416", descricao: "Conciliação de 320 transações fechada", agente: "Dora · Conciliação", data: "out 23", status: "Aceita", prova: "hubspot · 17:45" },
   { id: "e-2413", descricao: "Cobrança duplicada gerada por erro de dados", agente: "Sofia · Atendimento N1", data: "out 22", status: "Rejeitada", prova: "zendesk · 10:11" },
   { id: "e-2412", descricao: "Relatório semanal consolidado", agente: "Téo · Revisão", data: "out 22", status: "Aguardando", prova: null },
 ];
@@ -328,7 +328,7 @@ const DEMO_POR_PERIODO: Record<Periodo, {
     ],
     acoes: [
       { id: "a-1", agente: "Sofia · Atendimento N1", motivo: "24% das entregas do período foram reabertas", acao: "Revisar a base de cobrança da Sofia", responsavel: "Patrícia", prazo: "sex 30", bloco: "bloco 1 · Entregas" },
-      { id: "a-2", agente: "Dora · Prospecting", motivo: "custo por entrega em R$ 0,41, acima da meta de R$ 0,30", acao: "Reduzir o escopo das exceções", responsavel: "Marcos", prazo: "04/11", bloco: "bloco 3 · Custo" },
+      { id: "a-2", agente: "Dora · Conciliação", motivo: "custo por entrega em R$ 0,41, acima da meta de R$ 0,30", acao: "Reduzir o escopo das exceções", responsavel: "Marcos", prazo: "04/11", bloco: "bloco 3 · Custo" },
       { id: "a-3", agente: "Téo · Revisão", motivo: "6 👎 no período, todos por resumo incompleto", acao: "Pedir o exemplo do que faltou", responsavel: "Ana", prazo: "amanhã", bloco: "bloco 4 · Percepção" },
     ],
   },
@@ -353,7 +353,7 @@ const DEMO_POR_PERIODO: Record<Periodo, {
       { periodo: "set", valor: 0.26 },
     ],
     acoes: [
-      { id: "a-1", agente: "Dora · Prospecting", motivo: "custo por entrega em R$ 0,44, acima da meta de R$ 0,30", acao: "Reduzir o escopo das exceções", responsavel: "Marcos", prazo: "encerrado", bloco: "bloco 3 · Custo" },
+      { id: "a-1", agente: "Dora · Conciliação", motivo: "custo por entrega em R$ 0,44, acima da meta de R$ 0,30", acao: "Reduzir o escopo das exceções", responsavel: "Marcos", prazo: "encerrado", bloco: "bloco 3 · Custo" },
       { id: "a-2", agente: "Sofia · Atendimento N1", motivo: "18% das entregas foram reabertas em 72 h", acao: "Revisar a base de conhecimento", responsavel: "Patrícia", prazo: "encerrado", bloco: "bloco 1 · Entregas" },
     ],
   },
@@ -379,7 +379,7 @@ const DEMO_POR_PERIODO: Record<Periodo, {
     ],
     acoes: [
       { id: "a-1", agente: "Sofia · Atendimento N1", motivo: "24% das entregas do período foram reabertas", acao: "Revisar a base de cobrança da Sofia", responsavel: "Patrícia", prazo: "sex 30", bloco: "bloco 1 · Entregas" },
-      { id: "a-2", agente: "Dora · Prospecting", motivo: "custo por entrega em R$ 0,41, acima da meta de R$ 0,30", acao: "Reduzir o escopo das exceções", responsavel: "Marcos", prazo: "04/11", bloco: "bloco 3 · Custo" },
+      { id: "a-2", agente: "Dora · Conciliação", motivo: "custo por entrega em R$ 0,41, acima da meta de R$ 0,30", acao: "Reduzir o escopo das exceções", responsavel: "Marcos", prazo: "04/11", bloco: "bloco 3 · Custo" },
       { id: "a-3", agente: "Téo · Revisão", motivo: "17 👍 e 17 👎 no período, nota média 4,1", acao: "Padronizar o resumo do que mudou", responsavel: "Ana", prazo: "06/11", bloco: "bloco 4 · Percepção" },
     ],
   },
