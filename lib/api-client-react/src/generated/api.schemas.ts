@@ -1113,6 +1113,11 @@ export interface AgentInput {
      * @minLength 1
      */
   connectorId?: string;
+  /**
+     * Projeto do agente. Sem valor, o agente entra no projeto Padrão da conta.
+     * @minLength 1
+     */
+  projectId?: string;
   /** Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como "sem área" e a atribuição fica pendente. */
   areaId?: string | null;
   /** @minLength 1 */
@@ -2303,14 +2308,80 @@ export interface ProfessionalPlanDecision {
   decidedAt: string;
 }
 
+/**
+ * Ambiente de um projeto. Chave sandbox nunca alcança prod.
+ */
+export type EnvironmentKind = typeof EnvironmentKind[keyof typeof EnvironmentKind];
+
+
+export const EnvironmentKind = {
+  sandbox: 'sandbox',
+  prod: 'prod',
+} as const;
+
+export interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  /** Projeto "Padrão" criado para toda conta. */
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface ProjectInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /**
+     * Sem valor, é derivado do nome.
+     * @minLength 1
+     * @maxLength 60
+     * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+     */
+  slug?: string;
+}
+
+export interface Environment {
+  id: string;
+  projectId: string;
+  kind: EnvironmentKind;
+  createdAt: string;
+}
+
+export interface ProjectCreated {
+  project: Project;
+  environments: Environment[];
+}
+
+export interface RuntimeAgent {
+  id: string;
+  name: string;
+  slug: string;
+  projectId: string;
+}
+
+export interface RuntimeOutboxEvent {
+  id: string;
+  eventType: string;
+  status: string;
+  projectId: string;
+  environment: EnvironmentKind;
+  createdAt: string;
+}
+
 export interface AgentApiKeyInput {
   /** Nome operacional da credencial (ex.- "produção", "staging"). */
   label?: string;
+  environment?: EnvironmentKind;
 }
 
 export interface AgentApiKey {
   id: string;
   agentId: string;
+  projectId: string;
+  environment: EnvironmentKind;
   label?: string | null;
   /** Handle público da credencial — não é segredo. */
   prefix: string;
@@ -2342,6 +2413,7 @@ export const AgentEventInputKind = {
 export type AgentEventInputMetadata = { [key: string]: unknown };
 
 export interface AgentEventInput {
+  environment?: EnvironmentKind;
   /**
      * Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.
      * @minLength 1
@@ -2370,6 +2442,7 @@ export const AgentHeartbeatInputStatus = {
 export type AgentHeartbeatInputMetadata = { [key: string]: unknown };
 
 export interface AgentHeartbeatInput {
+  environment?: EnvironmentKind;
   runtime?: string;
   version?: string;
   intervalSeconds?: number;
@@ -2785,6 +2858,11 @@ export const ListAgentDraftsEnrichmentStatus = {
   enriched: 'enriched',
   failed: 'failed',
 } as const;
+
+export type ListRuntimeAgentsParams = {
+project?: string;
+environment?: EnvironmentKind;
+};
 
 export type IngestAgentEvent202 = {
   accepted: boolean;

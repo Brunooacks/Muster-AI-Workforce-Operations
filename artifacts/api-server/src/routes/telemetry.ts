@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import {
   db,
@@ -24,8 +24,8 @@ import {
 import type { ExternalAgentEnvelope } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
-import { ofOrg } from "../lib/tenant-scope";
-import { requireAgentCredential } from "../middlewares/requireAgentCredential";
+import { inProject, ofOrg } from "../lib/tenant-scope";
+import { agentScopeOf, requireAgentCredential } from "../middlewares/requireAgentCredential";
 import { requireIntegrationCredential } from "../middlewares/requireIntegrationCredential";
 import {
   summarizeEvents,
@@ -50,6 +50,9 @@ const DIRECT_AGENT_EVENT_PLATFORM = "muster-direct-agent-v1";
 
 function telemetryOutboxEntry(input: {
   orgId: string;
+  /** Projeto do agente e ambiente da chave (E1); sessão humana não tem ambiente. */
+  projectId: string;
+  environmentId: string | null;
   agentId: string;
   agentEventId: string;
   kind: AgentEventKind;
@@ -59,6 +62,8 @@ function telemetryOutboxEntry(input: {
   if (!dispatch.shouldReevaluate) return null;
   return {
     orgId: input.orgId,
+    projectId: input.projectId,
+    environmentId: input.environmentId,
     aggregateType: "agent",
     aggregateId: input.agentId,
     eventType: AGENT_TELEMETRY_EVENT_TYPE,
@@ -74,16 +79,32 @@ function telemetryOutboxEntry(input: {
   };
 }
 
+/**
+ * Agente do ingest. Com chave de agente o middleware já resolveu conta,
+ * projeto e ambiente, e a leitura fica no projeto da chave; com sessão humana
+ * (diagnóstico) segue org-wide, como antes da E1.
+ */
+async function ingestAgent(
+  req: Request,
+  agentId: string,
+): Promise<{ id: string; projectId: string } | null> {
+  const where = req.projectId
+    ? inProject(agents, agentScopeOf(req), eq(agents.id, agentId))
+    : and(eq(agents.id, agentId), ofOrg(agents, req.orgId!));
+  const [agent] = await db
+    .select({ id: agents.id, projectId: agents.projectId })
+    .from(agents)
+    .where(where)
+    .limit(1);
+  return agent ?? null;
+}
+
 // ── Ingest: agents report execution events here (fire-and-forget SDK) ──────
 router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) => {
   const agentId = req.params.agentId as string;
   const body = IngestAgentEventBody.parse(req.body);
 
-  const [agent] = await db
-    .select({ id: agents.id })
-    .from(agents)
-    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
-    .limit(1);
+  const agent = await ingestAgent(req, agentId);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });
     return;
@@ -146,6 +167,8 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
     if (!event) throw new Error("Falha ao persistir evento do agente.");
     const outbox = telemetryOutboxEntry({
       orgId: req.orgId!,
+      projectId: agent.projectId,
+      environmentId: req.environmentId ?? null,
       agentId,
       agentEventId: event.id,
       kind,
@@ -161,11 +184,7 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
 router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, res) => {
   const agentId = req.params.agentId as string;
   const body = ReportAgentHeartbeatBody.parse(req.body ?? {});
-  const [agent] = await db
-    .select({ id: agents.id })
-    .from(agents)
-    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
-    .limit(1);
+  const agent = await ingestAgent(req, agentId);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });
     return;
@@ -237,7 +256,7 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
 
   const [linkedAgent] = connectorId
     ? await db
-        .select({ id: agents.id, externalId: agents.externalId })
+        .select({ id: agents.id, externalId: agents.externalId, projectId: agents.projectId })
         .from(agentConnectorLinks)
         .innerJoin(agents, eq(agents.id, agentConnectorLinks.agentId))
         .where(
@@ -254,7 +273,7 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
   const [legacyAgent] = linkedAgent
     ? []
     : await db
-        .select({ id: agents.id, externalId: agents.externalId })
+        .select({ id: agents.id, externalId: agents.externalId, projectId: agents.projectId })
         .from(agents)
         .where(and(eq(agents.externalId, body.agent.externalId), ofOrg(agents, req.orgId!)))
         .limit(1);
@@ -364,6 +383,9 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
       if (!event) throw new Error("Falha ao persistir execução externa.");
       const outbox = telemetryOutboxEntry({
         orgId: req.orgId!,
+        // Chave de conector é org-wide: projeto do agente, sem ambiente.
+        projectId: agent.projectId,
+        environmentId: null,
         agentId: agent.id,
         agentEventId: event.id,
         kind,
@@ -390,6 +412,9 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
       if (!event) throw new Error("Falha ao persistir feedback externo.");
       const outbox = telemetryOutboxEntry({
         orgId: req.orgId!,
+        // Chave de conector é org-wide: projeto do agente, sem ambiente.
+        projectId: agent.projectId,
+        environmentId: null,
         agentId: agent.id,
         agentEventId: event.id,
         kind: "feedback",

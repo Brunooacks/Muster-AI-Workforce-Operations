@@ -104,6 +104,9 @@ function blocosDeAcesso(fonte: string, tabela: string): Array<{ bloco: string; l
 function temEscopo(bloco: string): boolean {
   return (
     bloco.includes("orgId") ||
+    // inProject/inEnv sempre incluem a conta (ver tenant-scope.ts).
+    bloco.includes("inProject(") ||
+    bloco.includes("inEnv(") ||
     bloco.includes("inOrg(") ||
     bloco.includes("ofOrg(") ||
     bloco.includes("agentIdsOfOrg")
@@ -254,11 +257,11 @@ function acessosSemProjeto(fonte: string): string[] {
  */
 const ORG_WIDE_PENDENTES: Record<string, number> = {
   "lib/admission.ts": 2,
-  "lib/agent-telemetry-reevaluation.ts": 3,
+  "lib/agent-telemetry-reevaluation.ts": 2,
   "lib/continuous-telemetry-worker.ts": 1,
   "lib/professional-plan-service.ts": 1,
   "lib/serializers.ts": 1,
-  "routes/agent-keys.ts": 3,
+  "routes/agent-keys.ts": 1,
   "routes/agents.ts": 8,
   "routes/areas.ts": 2,
   "routes/connectors.ts": 3,
@@ -269,7 +272,7 @@ const ORG_WIDE_PENDENTES: Record<string, number> = {
   "routes/journeys.ts": 4,
   "routes/mixed-teams.ts": 1,
   "routes/realtime-governance.ts": 1,
-  "routes/telemetry.ts": 5,
+  "routes/telemetry.ts": 2,
   "routes/verdict-actions.ts": 1,
 };
 

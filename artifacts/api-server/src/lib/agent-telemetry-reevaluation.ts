@@ -80,6 +80,8 @@ export async function reevaluateAgentFromTelemetry(input: {
   agentId: string;
   orgId: string;
   projectionCauseEventId?: string;
+  /** Escopo do evento causador: a projeção fica no mesmo projeto/ambiente. */
+  projectionScope?: { projectId: string | null; environmentId: string | null };
 }): Promise<AgentTelemetryReevaluationResult | null> {
   const [agent] = await db
     .select()
@@ -488,6 +490,8 @@ export async function reevaluateAgentFromTelemetry(input: {
     if (input.projectionCauseEventId) {
       await transaction.insert(eventOutbox).values({
         orgId: input.orgId,
+        projectId: input.projectionScope?.projectId ?? null,
+        environmentId: input.projectionScope?.environmentId ?? null,
         aggregateType: "agent",
         aggregateId: input.agentId,
         eventType: AGENT_EVALUATION_PROJECTED_EVENT_TYPE,

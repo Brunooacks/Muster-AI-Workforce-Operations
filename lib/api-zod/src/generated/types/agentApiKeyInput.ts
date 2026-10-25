@@ -5,8 +5,10 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { EnvironmentKind } from './environmentKind';
 
 export interface AgentApiKeyInput {
   /** Nome operacional da credencial (ex.- "produção", "staging"). */
   label?: string;
+  environment?: EnvironmentKind;
 }

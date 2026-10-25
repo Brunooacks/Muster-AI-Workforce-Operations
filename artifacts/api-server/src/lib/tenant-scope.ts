@@ -4,6 +4,8 @@ import {
   agents,
   agentApiKeys,
   eventOutbox,
+  projects,
+  environments,
   areas,
   teams,
   purposes,
@@ -33,6 +35,8 @@ import type { EnvironmentKind } from "@workspace/db/schema";
 /** Tabelas-raiz: pertencem diretamente a uma organização. */
 export const ROOT_TABLES = {
   agents,
+  projects,
+  environments,
   areas,
   teams,
   purposes,
