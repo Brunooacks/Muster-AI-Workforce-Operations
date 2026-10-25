@@ -95,6 +95,7 @@ export function routeForWorkforceScreen(
 ): string {
   if (screen === "professional") return `/agentes/${encodeURIComponent(agentId)}`;
   if (screen === "connection") return `/agentes/${encodeURIComponent(agentId)}/conectar`;
+  if (screen === "alerts") return "/pendencias";
   return [...WORKFORCE_NAV_ITEMS, ...WORKFORCE_SPECIALIZED_ROUTES]
     .find((item) => item.screen === screen)?.path ?? "/comando";
 }

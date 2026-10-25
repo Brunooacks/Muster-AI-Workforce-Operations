@@ -66,6 +66,14 @@ test("fluxos especializados mantêm contexto no item principal", () => {
   assert.equal(navigationScreenForWorkforceScreen("profile"), "settings");
 });
 
+test("Pendências é a casa das decisões e as rotas antigas seguem vivas", () => {
+  assert.equal(routeForWorkforceScreen("alerts"), "/pendencias");
+  assert.deepEqual(resolveWorkforceRoute("/pendencias"), { screen: "alerts" });
+  assert.deepEqual(resolveWorkforceRoute("/alertas"), { screen: "alerts" });
+  assert.equal(isKnownAppPath("/pendencias"), true);
+  assert.equal(isKnownAppPath("/alertas"), true);
+});
+
 test("Admin Console é uma rota corporativa de primeira classe", () => {
   assert.deepEqual(resolveWorkforceRoute("/admin"), { screen: "admin" });
   assert.equal(routeForWorkforceScreen("admin"), "/admin");

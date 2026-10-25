@@ -209,7 +209,10 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
   const { lang } = useLang();
   const t = alertsI18n[lang];
   const { toast } = useToast();
-  const { data: alerts, isLoading, isError, refetch } = useListFleetAlerts();
+  const { data: alertsResposta, isLoading, isError, refetch } = useListFleetAlerts();
+  // Sem API (modo demonstração ou preview estático) a rota responde HTML:
+  // não é lista de alertas, então a tela mostra o estado vazio em vez de quebrar.
+  const alerts = Array.isArray(alertsResposta) ? alertsResposta : undefined;
   const updateAlert = useUpdateFleetAlert();
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [drafts, setDrafts] = useState<Record<string, { assignedTo: string; dueAt: string }>>({});

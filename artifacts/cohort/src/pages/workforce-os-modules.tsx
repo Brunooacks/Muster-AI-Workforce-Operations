@@ -24,8 +24,6 @@ import {
   Cloud,
   Code2,
   Database,
-  DollarSign,
-  Eye,
   ExternalLink,
   Gauge,
   GitCompareArrows,
@@ -41,11 +39,9 @@ import {
   Server,
   Settings2,
   ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
   Target,
   Trash2,
-  TrendingUp,
   TriangleAlert,
   UserCheck,
   Users,
@@ -55,7 +51,23 @@ import {
 import { cn } from "@/lib/utils";
 import { readAdoptionProgress, saveAdoptionProgress } from "@/lib/onboarding";
 import { PlatformIcon, PlatformStack, platformIdsFromSource } from "@/components/platform-badge";
-import { RealtimeGovernancePanel } from "@/components/mission-control/realtime-governance-panel";
+import { Badge } from "@/components/ui/badge";
+import { classeSelo, type Selo } from "@/lib/shell-nav";
+import {
+  PERIODOS,
+  leituraIlustrativa,
+  leituraOperacional,
+  type Periodo,
+  type StatusEntrega as StatusEntregaVisao,
+} from "@/lib/visao-geral";
+import {
+  ComoCalculamos,
+  GraficoCustoResultado,
+  GraficoGastoOrcamento,
+  GraficoTarefaResultado,
+  MatrizCustoResultado,
+} from "@/components/shell/visao-geral-graficos";
+import { formatBRL, formatNumero } from "@/lib/calculadora";
 import type { WorkforceProfessionalAgent } from "@/lib/workforce-agent-adapter";
 import {
   accountableForWorkItem,
@@ -145,23 +157,69 @@ function TrendChart({ months, series, min = 50, max = 100 }: { months: string[];
   );
 }
 
-const managerMetrics = [
-  { id: "cost", label: "Custo por execução", value: "R$ 0,18", note: "-12% vs. mês anterior", icon: DollarSign, tone: "good" as Tone, group: "Economia" },
-  { id: "accuracy", label: "Acurácia", value: "88,4%", note: "+2,1 pp · amostra auditada", icon: Target, tone: "good" as Tone, group: "Qualidade" },
-  { id: "efficacy", label: "Eficácia", value: "82%", note: "outcome correto / tentativas", icon: CircleCheck, tone: "good" as Tone, group: "Resultado" },
-  { id: "efficiency", label: "Eficiência", value: "86%", note: "+6 pp · tempo e recursos", icon: Gauge, tone: "primary" as Tone, group: "Produtividade" },
-  { id: "adoption", label: "Adoção útil", value: "74%", note: "+8 pp · uso recorrente", icon: Users, tone: "watch" as Tone, group: "Adoção" },
-  { id: "governance", label: "Governança", value: "96%", note: "-1 pp · guardrails", icon: ShieldCheck, tone: "good" as Tone, group: "Risco" },
-  { id: "reliability", label: "Confiabilidade", value: "99,2%", note: "execuções sem incidente", icon: Activity, tone: "good" as Tone, group: "Operação" },
-  { id: "purpose", label: "Propósito cumprido", value: "84%", note: "+4 pp · contrato da função", icon: Waypoints, tone: "primary" as Tone, group: "Propósito" },
-];
+type StatusEntrega = StatusEntregaVisao;
 
-const managerTeams = [
-  { name: "Engenharia assistida", purpose: 89, accuracy: 92, efficiency: 91, adoption: 81, cost: "R$ 0,16", volume: "12,4 mil", trend: "+7 pp", tone: "good" as Tone },
-  { name: "Atendimento híbrido", purpose: 78, accuracy: 84, efficiency: 88, adoption: 79, cost: "R$ 0,11", volume: "22,1 mil", trend: "-2 pp", tone: "watch" as Tone },
-  { name: "Operações críticas", purpose: 73, accuracy: 96, efficiency: 69, adoption: 62, cost: "R$ 0,41", volume: "3,2 mil", trend: "-4 pp", tone: "risk" as Tone },
-  { name: "People Operations", purpose: 93, accuracy: 91, efficiency: 84, adoption: 88, cost: "R$ 0,14", volume: "1,8 mil", trend: "+3 pp", tone: "good" as Tone },
-];
+const statusEntregaClass: Record<StatusEntrega, string> = {
+  Aceita: "border-[var(--wo-primary)]/50 text-[var(--wo-primary)]",
+  Rejeitada: "border-[var(--wo-danger)]/50 text-[var(--wo-danger)]",
+  Aguardando: "border-[var(--wo-line)] text-[var(--wo-muted)]",
+};
+
+function Bloco({
+  numero,
+  titulo,
+  selo,
+  pergunta,
+  children,
+  rodape,
+  className,
+}: {
+  numero: number;
+  titulo: string;
+  selo: Selo;
+  pergunta: string;
+  children: ReactNode;
+  rodape?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("flex min-w-0 flex-col rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-4 sm:p-5", className)}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--wo-primary-soft)] font-mono text-[11px] text-[var(--wo-primary)]">{numero}</span>
+        <h2 className="text-sm font-medium text-[var(--wo-text)]">{titulo}</h2>
+        <span className={cn("rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]", classeSelo(selo))}>{selo}</span>
+      </div>
+      <p className="mt-1 text-[11px] text-[var(--wo-muted)]">{pergunta}</p>
+      <div className="mt-3 flex-1 space-y-3">{children}</div>
+      {rodape}
+    </section>
+  );
+}
+
+function SerieCusto({ serie }: { serie: Array<{ periodo: string; valor: number }> }) {
+  if (serie.length === 0) {
+    return <p className="rounded-xl border border-dashed border-[var(--wo-line)] px-3 py-4 text-[11px] leading-relaxed text-[var(--wo-muted)]">A série histórica de custo aparece após o primeiro ciclo fechado no período.</p>;
+  }
+  const maximo = Math.max(...serie.map((ponto) => ponto.valor));
+  return (
+    <div>
+      <div className="flex h-24 items-end gap-2 border-b border-[var(--wo-line)] px-1">
+        {serie.map((ponto, index) => (
+          <div key={ponto.periodo} className="flex flex-1 flex-col items-center justify-end gap-1.5">
+            <span className="font-mono text-[9px] text-[var(--wo-muted)]">{ponto.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span
+              className="w-full max-w-8 rounded-t"
+              style={{ height: `${(ponto.valor / maximo) * 72}px`, background: "var(--wo-primary)", opacity: 0.45 + index * 0.09 }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 flex gap-2 px-1">
+        {serie.map((ponto) => <span key={ponto.periodo} className="flex-1 text-center text-[9px] text-[var(--wo-muted)]">{ponto.periodo}</span>)}
+      </div>
+    </div>
+  );
+}
 
 export function ManagerScreen({
   selectAgent,
@@ -170,12 +228,11 @@ export function ManagerScreen({
   operational = false,
 }: {
   selectAgent: (agentId: string) => void;
-  navigate: (screen: "portfolio" | "teams" | "journeys" | "alerts") => void;
+  navigate: (screen: "portfolio" | "teams" | "journeys" | "alerts" | "entregas" | "metrics" | "admission") => void;
   agents?: WorkforceProfessionalAgent[];
   operational?: boolean;
 }) {
-  const [showConfiguration, setShowConfiguration] = useState(false);
-  const [visibleMetrics, setVisibleMetrics] = useState<string[]>(managerMetrics.map((metric) => metric.id));
+  const [periodo, setPeriodo] = useState<Periodo>("Este mês");
   const summaryQuery = useGetFleetSummary({
     query: {
       queryKey: getGetFleetSummaryQueryKey(),
@@ -200,98 +257,24 @@ export function ManagerScreen({
   const summary = summaryQuery.data;
   const kpis = kpisQuery.data;
   const alerts = alertsQuery.data ?? [];
-  const layerScore = (key: string) => kpis?.layers.find((layer) => layer.key === key)?.score ?? 0;
-  const formatMoney = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-  const operationalMetrics = [
-    { id: "cost", label: "Custo mensal", value: formatMoney(kpis?.roi.monthlyCost ?? 0), note: "telemetria consolidada do tenant", icon: DollarSign, tone: "neutral" as Tone, group: "Economia" },
-    { id: "accuracy", label: "Saúde operacional", value: `${summary?.avgHealthScore ?? 0}%`, note: `${summary?.totalAgents ?? 0} profissionais monitorados`, icon: Target, tone: "primary" as Tone, group: "Qualidade" },
-    { id: "efficacy", label: "Eficácia", value: `${layerScore("efficacy")}%`, note: "outcome correto / tentativas", icon: CircleCheck, tone: "good" as Tone, group: "Resultado" },
-    { id: "efficiency", label: "Eficiência", value: `${layerScore("efficiency")}%`, note: "tempo e recursos observados", icon: Gauge, tone: "primary" as Tone, group: "Produtividade" },
-    { id: "adoption", label: "Adoção útil", value: `${layerScore("adoption")}%`, note: "uso recorrente no fluxo real", icon: Users, tone: "watch" as Tone, group: "Adoção" },
-    { id: "governance", label: "Governança", value: `${layerScore("governance")}%`, note: "evidência, limites e guardrails", icon: ShieldCheck, tone: "good" as Tone, group: "Risco" },
-    { id: "reliability", label: "Alertas ativos", value: String(summary?.activeAlerts ?? 0), note: "sinais que exigem acompanhamento", icon: Activity, tone: (summary?.activeAlerts ?? 0) > 0 ? "risk" as Tone : "good" as Tone, group: "Operação" },
-    { id: "purpose", label: "Avaliações válidas", value: String(kpis?.totalEvaluations ?? 0), note: "base comparável disponível", icon: Waypoints, tone: "primary" as Tone, group: "Propósito" },
-  ];
-  const displayedMetrics = operational ? operationalMetrics : managerMetrics;
-  const operationalTrend = kpis?.trend.slice(-6) ?? [];
-  const efficacyDelta = operationalTrend.length > 1
-    ? operationalTrend.at(-1)!.efficacy - operationalTrend[0]!.efficacy
-    : 0;
-  const adoptionDelta = operationalTrend.length > 1
-    ? operationalTrend.at(-1)!.adoption - operationalTrend[0]!.adoption
-    : 0;
-  const months = operational
-    ? operationalTrend.map((point) => point.period)
-    : ["mar", "abr", "mai", "jun", "jul", "ago"];
-  const scoreSeries: TrendSeries[] = operational
-    ? [
-        { label: "Eficácia", values: operationalTrend.map((point) => point.efficacy), color: "var(--wo-accent)" },
-        { label: "Saúde", values: operationalTrend.map((point) => point.health), color: "var(--wo-primary)" },
-        { label: "Eficiência", values: operationalTrend.map((point) => point.efficiency), color: "var(--wo-warning)" },
-        { label: "Adoção", values: operationalTrend.map((point) => point.adoption), color: "var(--wo-muted)", dashed: true },
-      ]
-    : [
-        { label: "Eficácia", values: [70, 73, 76, 78, 80, 82], color: "var(--wo-accent)" },
-        { label: "Acurácia", values: [79, 81, 83, 84, 86, 88], color: "var(--wo-primary)" },
-        { label: "Eficiência", values: [72, 76, 78, 81, 84, 86], color: "var(--wo-warning)" },
-        { label: "Adoção", values: [55, 59, 64, 67, 70, 74], color: "var(--wo-muted)", dashed: true },
-      ];
-  const costHistory = operational ? [] : [0.26, 0.24, 0.23, 0.21, 0.2, 0.18];
-  const operationalTeams = Object.values(agents.reduce<Record<string, WorkforceProfessionalAgent[]>>((groups, agent) => {
-    (groups[agent.team] ??= []).push(agent);
-    return groups;
-  }, {})).map((members) => {
-    const average = (selector: (agent: WorkforceProfessionalAgent) => number) => Math.round(members.reduce((sum, agent) => sum + selector(agent), 0) / members.length);
-    const health = average((agent) => agent.operationalHealth);
-    const totalVolume = members.reduce((sum, agent) => sum + (agent.monthlyVolume ?? 0), 0);
-    const totalCost = members.reduce((sum, agent) => sum + (agent.monthlyCost ?? 0), 0);
-    return {
-      name: members[0]?.team ?? "Equipe sem nome",
-      purpose: average((agent) => agent.contractFulfillment),
-      accuracy: average((agent) => agent.evidenceConfidence),
-      efficiency: health,
-      adoption: average((agent) => agent.responsibilityCoverage),
-      cost: totalVolume > 0
-        ? (totalCost / totalVolume).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        : "Não medido",
-      volume: totalVolume > 0 ? totalVolume.toLocaleString("pt-BR") : `${members.length} profissional(is)`,
-      trend: kpis?.trend.length ? "histórico" : "baseline",
-      tone: health >= 80 ? "good" as Tone : health >= 60 ? "watch" as Tone : "risk" as Tone,
-    };
-  });
-  const teamRows = operational ? operationalTeams : managerTeams;
-  const operationalQueue = alerts.map((alert) => {
-    const agent = agents.find((candidate) => candidate.id === alert.agentId);
-    const dueAt = alert.dueAt ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(alert.dueAt)) : "sem prazo";
-    const tone: Tone = alert.severity === "critical" || alert.severity === "high" ? "risk" : "watch";
-    return [alert.id, alert.agentId, agent?.platforms[0] ?? "muster", `${alert.agentName} · ${agent?.role ?? "função não informada"}`, alert.pattern, alert.recommendation, dueAt, tone] as const;
-  });
-  const decisionQueue = operational ? operationalQueue : [
-    ["demo-sofia", "sofia", "zendesk-ai", "Sofia · Suporte N1", "Acurácia caiu 7 pp após mudança de conhecimento", "Revisar autonomia", "42 min", "risk"],
-    ["demo-reviewer", "reviewer", "github-copilot", "Revisor PR · Engenharia", "Cobertura cresceu, mas defeito escapado chegou a 8%", "Recalibrar por risco", "19 h", "watch"],
-    ["demo-dora", "dora", "erp", "Dora · Operações", "Custo alto e evidência insuficiente em exceções", "Reduzir escopo", "vencido", "risk"],
-    ["demo-vega", "vega", "kubernetes", "Vega · Entrega contínua", "Qualidade e custo sustentáveis por três ciclos", "Expandir volume", "12 dias", "good"],
-  ] as const;
-  const operationalGates = [
-    { label: "Evidência suficiente", score: layerScore("governance"), detail: `${kpis?.totalEvaluations ?? 0} avaliações válidas`, tone: layerScore("governance") >= 80 ? "good" as Tone : "watch" as Tone },
-    { label: "Métrica comparável", score: (kpis?.totalEvaluations ?? 0) > 0 ? 100 : 0, detail: (kpis?.totalEvaluations ?? 0) > 0 ? "baseline formada" : "aguardando primeira avaliação", tone: (kpis?.totalEvaluations ?? 0) > 0 ? "good" as Tone : "risk" as Tone },
-    { label: "Relevância para o papel", score: agents.length ? Math.round((agents.filter((agent) => agent.metrics.length > 0).length / agents.length) * 100) : 0, detail: `${agents.filter((agent) => agent.metrics.length > 0).length}/${agents.length} profissionais com métricas`, tone: agents.some((agent) => agent.metrics.length > 0) ? "good" as Tone : "watch" as Tone },
-    { label: "Decisão acionável", score: agents.length === 0 ? 0 : alerts.length ? Math.round((alerts.filter((alert) => alert.assignedTo && alert.dueAt).length / alerts.length) * 100) : 100, detail: agents.length === 0 ? "aguardando profissionais admitidos" : alerts.length ? `${alerts.filter((alert) => !alert.assignedTo || !alert.dueAt).length} alertas sem owner ou prazo` : "nenhum alerta pendente", tone: agents.length > 0 && !alerts.some((alert) => !alert.assignedTo || !alert.dueAt) ? "good" as Tone : "watch" as Tone },
-    { label: "Accountability humana", score: agents.length ? Math.round((agents.filter((agent) => agent.owner !== "Owner pendente").length / agents.length) * 100) : 0, detail: `${agents.filter((agent) => agent.owner !== "Owner pendente").length}/${agents.length} owners definidos`, tone: agents.every((agent) => agent.owner !== "Owner pendente") && agents.length ? "good" as Tone : "watch" as Tone },
-  ];
-  const gauntletGates = operational ? operationalGates : [
-    { label: "Evidência suficiente", score: 96, detail: "97% das execuções correlacionadas", tone: "good" as Tone },
-    { label: "Métrica comparável", score: 91, detail: "baseline e coorte válidos", tone: "good" as Tone },
-    { label: "Relevância para o papel", score: 94, detail: "8/8 métricas ligadas ao contrato", tone: "good" as Tone },
-    { label: "Decisão acionável", score: 82, detail: "3 ações ainda sem owner confirmado", tone: "watch" as Tone },
-    { label: "Accountability humana", score: 100, detail: "todas as alçadas críticas definidas", tone: "primary" as Tone },
-  ];
-  const operationalBlocker = agents.length === 0
-    ? "admitir o primeiro profissional e receber telemetria para formar uma baseline real."
-    : alerts.some((alert) => !alert.assignedTo || !alert.dueAt)
-      ? "confirmar owners e prazos dos alertas antes de liberar o plano para execução."
-      : "nenhum bloqueio operacional identificado com a evidência disponível.";
-  const toggleMetric = (metricId: string) => setVisibleMetrics((current) => current.includes(metricId) ? current.filter((id) => id !== metricId) : [...current, metricId]);
+  const leitura = operational
+    ? leituraOperacional({
+        periodo,
+        agents,
+        alertas: alerts,
+        totalAgents: summary?.totalAgents,
+        saudeMedia: summary?.avgHealthScore,
+        alertasAtivos: summary?.activeAlerts,
+      })
+    : leituraIlustrativa(periodo);
+  const semEntregas = operational && agents.length === 0;
+  const idDoAgente = (rotulo: string) => {
+    const nome = rotulo.split(" · ")[0]!.trim().toLowerCase();
+    return agents.find((agente) => agente.name.toLowerCase() === nome)?.id ?? nome;
+  };
+  const rotuloDetalhes = operational && kpis
+    ? `Ver qualidade, governança e outros indicadores (${formatNumero(kpis.totalEvaluations)} avaliações) →`
+    : "Ver qualidade, governança e outros indicadores →";
 
   return (
     <div
@@ -299,80 +282,320 @@ export function ManagerScreen({
       data-workforce-embedded-page={operational ? "true" : undefined}
       data-operational-source={operational ? "api" : "scenario"}
     >
-      <ScreenHeader
-        eyebrow="Central de comando · força de trabalho híbrida"
-        title="Resultado, custo e responsabilidade na mesma leitura."
-        description="O scorecard combina o que o agente entrega, quanto consome, como opera, quem adota e se permanece dentro do papel contratado. Cada gestor escolhe as métricas relevantes sem perder o núcleo comparável."
-        action={<button type="button" onClick={() => setShowConfiguration((current) => !current)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] px-4 py-2.5 text-xs text-[var(--wo-text)]"><SlidersHorizontal className="h-4 w-4" /> Configurar scorecard</button>}
-      />
-
-      <Panel className="p-4" data-testid="hybrid-workforce-control-plane">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div><h2 className="text-sm font-medium text-[var(--wo-text)]">Control plane do trabalho</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Entre no nível certo para controlar identidade, composição, fluxo end-to-end ou decisão pendente.</p></div>
-          <Chip tone={alerts.length > 0 ? "watch" : "good"}>{alerts.length} decisões ativas</Chip>
+      <section
+        data-testid="visao-geral-abertura"
+        className="rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-5 sm:p-6"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Visão geral</span>
+          {!operational && <Badge variant="illustrative">Dados ilustrativos</Badge>}
+          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">{leitura.rotuloPeriodo}</span>
         </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            ["portfolio", "Profissionais", `${agents.length} agentes`, "Identidade, propósito, contrato e saúde.", Bot],
-            ["teams", "Equipes híbridas", `${teamRows.length} equipes`, "Papéis humanos, agentes e produtividade coletiva.", Users],
-            ["journeys", "Jornadas A2A", "Fluxo end-to-end", "Backlog, handoffs, SLA e resultado final.", Route],
-            ["alerts", "Decisões", `${alerts.length} pendentes`, "Owner, prazo, recomendação e resolução.", BellRing],
-          ].map(([target, label, value, description, Icon]) => (
-            <button key={target as string} type="button" onClick={() => navigate(target as "portfolio" | "teams" | "journeys" | "alerts")} className="group rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-3 text-left transition-colors hover:border-[var(--wo-primary)]">
-              <div className="flex items-center justify-between"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Icon className="h-3.5 w-3.5" /></span><ArrowRight className="h-3.5 w-3.5 text-[var(--wo-muted)] transition-transform group-hover:translate-x-0.5" /></div>
-              <strong className="mt-3 block text-xs font-medium text-[var(--wo-text)]">{label as string}</strong><span className="mt-1 block font-mono text-[10px] text-[var(--wo-primary)]">{value as string}</span><p className="mt-2 text-[9px] leading-relaxed text-[var(--wo-muted)]">{description as string}</p>
-            </button>
-          ))}
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--wo-muted)]">
+          Saiba o que seus agentes entregaram, com prova, e quanto isso custou.
+        </p>
+        <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <strong className="font-mono text-5xl font-medium leading-none tracking-tight tabular-nums sm:text-6xl">
+                {leitura.numero.valor}
+              </strong>
+              <span className="text-sm text-[var(--wo-muted)]">{leitura.numero.rotulo}</span>
+            </div>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--wo-text)]">{leitura.frase}</p>
+          </div>
+          <div role="tablist" aria-label="Período da visão geral" className="inline-flex shrink-0 gap-1 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-1">
+            {PERIODOS.map((opcao) => (
+              <button
+                key={opcao}
+                type="button"
+                role="tab"
+                aria-selected={periodo === opcao}
+                onClick={() => setPeriodo(opcao)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-[11px] transition-colors",
+                  periodo === opcao
+                    ? "bg-[var(--wo-card)] text-[var(--wo-text)] shadow-sm"
+                    : "text-[var(--wo-muted)] hover:text-[var(--wo-text)]",
+                )}
+              >
+                {opcao}
+              </button>
+            ))}
+          </div>
         </div>
-      </Panel>
+      </section>
 
-      {operational && <RealtimeGovernancePanel />}
+      {semEntregas ? (
+        <section className="rounded-2xl border border-dashed border-[var(--wo-line)] bg-[var(--wo-card)] p-8 text-center">
+          <p className="mx-auto max-w-xl text-sm leading-relaxed text-[var(--wo-muted)]">
+            Ainda não há entregas registradas. Conecte um agente para começar. Os primeiros dados aparecem após a primeira execução.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("admission")}
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"
+          >
+            Conectar agente <ArrowRight className="h-4 w-4" />
+          </button>
+        </section>
+      ) : (
+        <>
+          <div data-testid="visao-geral-blocos" className="grid gap-3 xl:grid-cols-2">
+            <Bloco numero={1} titulo="Entregas do período" selo="NOVO" pergunta="O que foi feito?">
+              {leitura.entregas.total == null ? (
+                <p className="rounded-xl border border-dashed border-[var(--wo-line)] px-3 py-4 text-[11px] leading-relaxed text-[var(--wo-muted)]">
+                  {leitura.entregas.vazio}
+                </p>
+              ) : (
+                <>
+                  <p className="flex flex-wrap items-baseline gap-x-3">
+                    <strong className="font-mono text-3xl font-medium tabular-nums text-[var(--wo-text)]">{formatNumero(leitura.entregas.total)}</strong>
+                    <span className="text-xs text-[var(--wo-muted)]">entregas no período · {leitura.entregas.aceitas != null ? `${formatNumero(leitura.entregas.aceitas)} aceitas` : "aceitas sem dado"}</span>
+                  </p>
+                  <ul className="space-y-2">
+                    {leitura.entregas.ultimas.map((entrega) => (
+                      <li key={entrega.id} className="flex items-start justify-between gap-3 border-b border-[var(--wo-line)] pb-2 last:border-0 last:pb-0">
+                        <button type="button" onClick={() => selectAgent(idDoAgente(entrega.agente))} className="min-w-0 text-left">
+                          <span className="block truncate text-xs text-[var(--wo-text)]">{entrega.descricao}</span>
+                          <span className="mt-0.5 block text-[10px] text-[var(--wo-muted)]">{entrega.agente} · {entrega.data}</span>
+                        </button>
+                        <span className={cn("shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em]", statusEntregaClass[entrega.status])}>
+                          {entrega.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => navigate("entregas")}
+                    className="inline-flex items-center gap-2 text-xs text-[var(--wo-primary)]"
+                  >
+                    Ver todas as entregas <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+              <ComoCalculamos>
+                Entrega é trabalho concluído e verificável (ticket resolvido, PR revisado). Aceita é a entrega confirmada pela regra combinada ou por uma pessoa. O total sai do período selecionado.
+              </ComoCalculamos>
+            </Bloco>
 
-      {showConfiguration && (
-        <Panel className="border-[var(--wo-primary)] p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-[var(--wo-primary)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Métricas visíveis para este gestor</h2></div><p className="mt-2 text-[10px] text-[var(--wo-muted)]">A personalização altera a leitura, não o contrato nem os guardrails da organização.</p></div><Chip tone="primary">{visibleMetrics.length}/{managerMetrics.length} ativas</Chip></div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{displayedMetrics.map((metric) => { const active = visibleMetrics.includes(metric.id); return <button key={metric.id} type="button" aria-pressed={active} onClick={() => toggleMetric(metric.id)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-left transition-colors", active ? "border-[var(--wo-primary)] bg-[var(--wo-primary-soft)]" : "border-[var(--wo-line)] bg-[var(--wo-card-2)] opacity-60")}><span className={cn("grid h-8 w-8 place-items-center rounded-lg", active ? toneClass.primary : toneClass.neutral)}><metric.icon className="h-3.5 w-3.5" /></span><span><strong className="block text-xs font-medium text-[var(--wo-text)]">{metric.label}</strong><span className="mt-1 block text-[9px] uppercase tracking-[0.06em] text-[var(--wo-muted)]">{metric.group}</span></span></button>; })}</div>
-        </Panel>
+            <Bloco numero={2} titulo="Prova" selo="SUBSTITUI" pergunta="Como eu sei que é verdade?">
+              {leitura.prova.comProva != null && leitura.prova.aceitas != null ? (
+                <>
+                  <p className="flex flex-wrap items-baseline gap-x-3">
+                    <strong className="font-mono text-3xl font-medium tabular-nums text-[var(--wo-text)]">{formatNumero(leitura.prova.comProva)}</strong>
+                    <span className="text-xs text-[var(--wo-muted)]">de {formatNumero(leitura.prova.aceitas)} entregas aceitas com prova verificável</span>
+                  </p>
+                  <div className="h-3 overflow-hidden rounded-full bg-[var(--wo-card-2)]">
+                    <span
+                      className="block h-full rounded-full bg-[var(--wo-primary)]"
+                      style={{ width: `${leitura.prova.percentual ?? 0}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-[var(--wo-muted)]">{leitura.prova.nota}</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("entregas")}
+                    className="inline-flex items-center gap-2 text-xs text-[var(--wo-primary)]"
+                  >
+                    Ver a prova de cada entrega <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="rounded-xl border border-dashed border-[var(--wo-line)] px-3 py-4 text-[11px] leading-relaxed text-[var(--wo-muted)]">
+                    {leitura.prova.vazio}
+                  </p>
+                  <p className="text-xs text-[var(--wo-text)]">{leitura.prova.nota}</p>
+                </>
+              )}
+              <ComoCalculamos>
+                Prova é o registro que permite conferir a entrega: origem (ticket, PR ou execução), fonte do dado e horário. Contamos entregas aceitas com os três campos preenchidos.
+              </ComoCalculamos>
+            </Bloco>
+
+            <Bloco
+              numero={3}
+              titulo="Custo"
+              selo="EVOLUI"
+              pergunta="Quanto custou, e está dentro do combinado?"
+              className="xl:col-span-2"
+            >
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-4">
+                  <h3 className="text-xs font-medium text-[var(--wo-text)]">Gasto do mês vs. orçamento</h3>
+                  <div className="mt-3">
+                    <GraficoGastoOrcamento
+                      gasto={leitura.custo.gasto}
+                      orcamento={leitura.custo.orcamento}
+                      percentual={leitura.custo.percentual}
+                      periodo={leitura.rotuloPeriodo}
+                      aviso={leitura.custo.aviso}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-4">
+                  <h3 className="text-xs font-medium text-[var(--wo-text)]">Custo por entrega aceita</h3>
+                  {leitura.custo.porEntrega == null ? (
+                    <p className="mt-3 rounded-xl border border-dashed border-[var(--wo-line)] px-3 py-4 text-[11px] leading-relaxed text-[var(--wo-muted)]">
+                      Sem custo por entrega aceita neste período: faltam entregas aceitas para dividir o gasto.
+                    </p>
+                  ) : (
+                    <div className="mt-3">
+                      <div className="flex flex-wrap items-baseline gap-x-3">
+                        <strong className="font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{formatBRL(leitura.custo.porEntrega)}</strong>
+                        <span className="text-xs text-[var(--wo-muted)]">por entrega aceita</span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-[var(--wo-muted)]">
+                        {leitura.custo.meta != null
+                          ? `meta combinada ${formatBRL(leitura.custo.meta)} · ${leitura.custo.porEntrega <= leitura.custo.meta ? "dentro do combinado" : "acima do combinado"}`
+                          : "Sem meta definida. Defina a meta para medir o combinado."}
+                      </p>
+                    </div>
+                  )}
+                  <div className="mt-4">
+                    <GraficoCustoResultado
+                      muster={leitura.custo.porEntrega}
+                      humano={leitura.custo.custoHumano}
+                      periodo={leitura.rotuloPeriodo}
+                      aviso="Sem custo por resultado no período."
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-4">
+                  <h3 className="text-xs font-medium text-[var(--wo-text)]">Custo por entrega · 6 meses</h3>
+                  <div className="mt-3">
+                    <SerieCusto serie={leitura.custo.serie} />
+                  </div>
+                </div>
+              </div>
+              <ComoCalculamos>
+                Custo por entrega aceita = gasto do período ÷ entregas aceitas. Orçamento é quanto o agente pode gastar no período. A referência humana usa o custo-hora configurado em Configurações → Custos.
+              </ComoCalculamos>
+            </Bloco>
+
+            <Bloco numero={4} titulo="O que quem usa achou" selo="NOVO" pergunta="Quem recebeu a entrega ficou satisfeito?">
+              {leitura.percepcao.nota == null ? (
+                <p className="rounded-xl border border-dashed border-[var(--wo-line)] px-3 py-4 text-[11px] leading-relaxed text-[var(--wo-muted)]">
+                  {leitura.percepcao.vazio}
+                </p>
+              ) : (
+                <>
+                  <p className="flex flex-wrap items-baseline gap-x-3">
+                    <strong className="font-mono text-3xl font-medium tabular-nums text-[var(--wo-text)]">{leitura.percepcao.nota.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
+                    <span className="text-xs text-[var(--wo-muted)]">de 5 · {leitura.percepcao.respostas} respostas · {leitura.percepcao.desgostos} 👎 no período</span>
+                  </p>
+                  <ul className="space-y-2">
+                    {leitura.percepcao.comentarios.map((comentario) => (
+                      <li key={comentario.autor} className="border-b border-[var(--wo-line)] pb-2 text-[11px] last:border-0 last:pb-0">
+                        <span className="text-[var(--wo-muted)]">{comentario.autor} · {comentario.nota}/5</span>
+                        <p className="text-[var(--wo-text)]">{comentario.texto}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              <ComoCalculamos>
+                Percepção é a nota de 1 a 5 e o 👍👎 de quem recebe a entrega, com o comentário mais recente. Cobre o caso "entregue, mas não atendeu".
+              </ComoCalculamos>
+            </Bloco>
+
+            <Bloco numero={5} titulo="O que fazer agora" selo="EVOLUI" pergunta="O que eu faço agora?">
+              {leitura.acoes.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-[var(--wo-line)] px-3 py-4 text-[11px] leading-relaxed text-[var(--wo-muted)]">
+                  Sem ação recomendada neste período. As pendências são geradas quando um bloco acima sai do combinado.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {leitura.acoes.map((acao) => (
+                    <li key={acao.id} className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-3">
+                      <p className="text-xs leading-relaxed text-[var(--wo-text)]">
+                        <strong className="font-medium">{acao.agente}:</strong> {acao.motivo}. Sugerimos {acao.acao}.
+                      </p>
+                      <p className="mt-1.5 flex flex-wrap gap-x-2 text-[10px] text-[var(--wo-muted)]">
+                        <span>{acao.responsavel}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>até {acao.prazo}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>ligado ao {acao.bloco}</span>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate("alerts")}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-4 py-2.5 text-xs font-medium text-[var(--wo-text)]"
+              >
+                Abrir Pendências ({leitura.acoes.length}) <ArrowRight className="h-4 w-4" />
+              </button>
+              <ComoCalculamos>
+                Cada ação vem de um bloco acima (reabertura, custo ou percepção) ou de um alerta aberto. Decidir nas Pendências exige justificativa e fica registrado.
+              </ComoCalculamos>
+            </Bloco>
+          </div>
+
+          <div className="grid gap-3 xl:grid-cols-[1.1fr_.9fr]">
+            <Panel className="p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-medium text-[var(--wo-text)]">Tarefa no prazo × resultado aceito</h2>
+                  <p className="mt-1 text-[10px] leading-relaxed text-[var(--wo-muted)]">
+                    O combinado são duas coisas: entregar no prazo e entregar algo que quem recebe aceita.
+                  </p>
+                </div>
+                <span className="rounded-full border border-[var(--wo-line)] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">
+                  {leitura.rotuloPeriodo}
+                </span>
+              </div>
+              <div className="mt-4">
+                <GraficoTarefaResultado
+                  noPrazo={leitura.tarefaResultado.noPrazo}
+                  metaPrazo={leitura.tarefaResultado.metaPrazo}
+                  resultado={leitura.tarefaResultado.resultado}
+                  metaResultado={leitura.tarefaResultado.metaResultado}
+                  periodo={leitura.rotuloPeriodo}
+                  vazio={leitura.tarefaResultado.vazio}
+                />
+              </div>
+            </Panel>
+
+            <Panel className="p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-medium text-[var(--wo-text)]">Custo × resultado por agente</h2>
+                  <p className="mt-1 text-[10px] leading-relaxed text-[var(--wo-muted)]">
+                    Onde cada agente está: o que ampliar, o que corrigir, o que observar e o que desligar.
+                  </p>
+                </div>
+                <span className="rounded-full border border-[var(--wo-line)] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">
+                  {leitura.rotuloPeriodo}
+                </span>
+              </div>
+              <div className="mt-4">
+                <MatrizCustoResultado
+                  pontos={leitura.matriz}
+                  eixoCusto={leitura.eixoCusto}
+                  eixoResultado={leitura.eixoResultado}
+                  vazio={leitura.matrizVazia}
+                />
+              </div>
+            </Panel>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("metrics")}
+            className="inline-flex items-center gap-2 self-start text-xs text-[var(--wo-primary)]"
+          >
+            {rotuloDetalhes}
+          </button>
+        </>
       )}
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {displayedMetrics.filter((metric) => visibleMetrics.includes(metric.id)).map((metric) => <SummaryCard key={metric.id} label={metric.label} value={metric.value} note={metric.note} icon={metric.icon} tone={metric.tone} />)}
-      </div>
-
-      <div className="grid gap-3 xl:grid-cols-[1.35fr_.65fr]">
-        <Panel className="p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Evolução consolidada · 6 meses</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Comparação entre resultado, qualidade, produtividade e uso real.</p></div><div className="flex gap-2">{operational ? operationalTrend.length > 1 ? <><Chip tone={efficacyDelta >= 0 ? "good" : "risk"}>{efficacyDelta >= 0 ? "+" : ""}{efficacyDelta} pp eficácia</Chip><Chip tone={adoptionDelta >= 0 ? "primary" : "risk"}>{adoptionDelta >= 0 ? "+" : ""}{adoptionDelta} pp adoção</Chip></> : <Chip tone="neutral">baseline aguardada</Chip> : <><Chip tone="good">+12 pp eficácia</Chip><Chip tone="primary">+19 pp adoção</Chip></>}</div></div>
-          {operational && operationalTrend.length === 0
-            ? <div className="grid min-h-52 place-items-center rounded-xl bg-[var(--wo-card-2)] px-6 text-center text-xs text-[var(--wo-muted)]">O histórico aparecerá após dois ciclos comparáveis de avaliação.</div>
-            : <TrendChart months={months} series={scoreSeries} min={50} max={100} />}
-        </Panel>
-
-        <Panel className="p-4">
-          <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-[var(--wo-accent)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Economia da operação</h2></div><Chip tone={operational ? "primary" : "good"}>{operational ? "janela atual" : "-31% em 6 meses"}</Chip></div>
-          <div className="mt-4 grid grid-cols-2 gap-2">{(operational ? [["Custo mensal", formatMoney(kpis?.roi.monthlyCost ?? 0)], ["Valor observado", formatMoney(kpis?.roi.monthlyValue ?? 0)], ["Valor líquido", formatMoney(kpis?.roi.netValue ?? 0)], ["ROI", `${kpis?.roi.roiPercent ?? 0}%`]] : [["Custo mensal", "R$ 38,4k"], ["Outcome aceito", "R$ 0,24"], ["Retrabalho", "R$ 4,6k"], ["Orçamento usado", "72%"]]).map(([label, value]) => <div key={label} className="rounded-xl bg-[var(--wo-card-2)] p-3"><span className="block text-[9px] text-[var(--wo-muted)]">{label}</span><strong className="mt-1 block font-mono text-sm text-[var(--wo-text)]">{value}</strong></div>)}</div>
-          {costHistory.length > 0 ? <div className="mt-5 flex h-32 items-end gap-2 border-b border-[var(--wo-line)] px-1">{costHistory.map((cost, index) => <div key={months[index]} className="flex flex-1 flex-col items-center justify-end gap-2"><span className="font-mono text-[8px] text-[var(--wo-muted)]">{cost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span><div className="w-full max-w-8 rounded-t bg-[var(--wo-primary)]" style={{ height: `${(cost / 0.28) * 86}px`, opacity: 0.45 + index * 0.09 }} /><span className="text-[8px] text-[var(--wo-muted)]">{months[index]}</span></div>)}</div> : <div className="mt-5 rounded-xl bg-[var(--wo-card-2)] p-4 text-[10px] leading-relaxed text-[var(--wo-muted)]">A série histórica de custo será exibida quando houver ciclos mensais comparáveis. O valor atual vem da telemetria real do tenant.</div>}
-          <p className="mt-3 text-[10px] leading-relaxed text-[var(--wo-muted)]">{operational ? "Economia é uma lente opcional: propósito, qualidade, segurança e responsabilidade permanecem visíveis mesmo sem valor financeiro." : "O custo caiu sem perda de acurácia. A economia vem de menos retry, contexto reutilizado e maior adoção do fluxo correto."}</p>
-        </Panel>
-      </div>
-
-      <Panel className="overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-[var(--wo-line)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Portfólio por equipe</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Compare resultado, qualidade, produtividade, adoção e custo sem reduzir tudo a um único score.</p></div><button type="button" onClick={() => navigate("teams")} className="inline-flex items-center gap-2 text-xs text-[var(--wo-text)]"><Eye className="h-3.5 w-3.5" /> Abrir análise completa</button></div>
-        {teamRows.length > 0 ? <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-xs"><thead><tr className="text-left text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]"><th className="px-4 py-3 font-normal">Equipe</th><th className="px-3 py-3 text-right font-normal">Propósito</th><th className="px-3 py-3 text-right font-normal">Acurácia</th><th className="px-3 py-3 text-right font-normal">Eficiência</th><th className="px-3 py-3 text-right font-normal">Adoção</th><th className="px-3 py-3 text-right font-normal">Custo/exec.</th><th className="px-3 py-3 text-right font-normal">Volume</th><th className="px-4 py-3 font-normal">Tendência</th></tr></thead><tbody>{teamRows.map((team) => <tr key={team.name} className="border-t border-[var(--wo-line)]"><td className="px-4 py-3 font-medium text-[var(--wo-text)]">{team.name}</td><td className="px-3 py-3 text-right font-mono text-[var(--wo-text)]">{team.purpose}%</td><td className="px-3 py-3 text-right font-mono text-[var(--wo-text)]">{team.accuracy}%</td><td className="px-3 py-3 text-right font-mono text-[var(--wo-text)]">{team.efficiency}%</td><td className="px-3 py-3 text-right font-mono text-[var(--wo-text)]">{team.adoption}%</td><td className="px-3 py-3 text-right font-mono text-[var(--wo-text)]">{team.cost}</td><td className="px-3 py-3 text-right font-mono text-[var(--wo-muted)]">{team.volume}</td><td className="px-4 py-3"><Chip tone={team.tone}>{team.trend}</Chip></td></tr>)}</tbody></table></div> : <div className="p-6 text-center text-xs text-[var(--wo-muted)]">Admitir profissionais e vinculá-los a uma área formará esta visão automaticamente.</div>}
-      </Panel>
-
-      <div className="grid gap-3 xl:grid-cols-[1.15fr_.85fr]">
-        <Panel className="overflow-hidden">
-          <div className="border-b border-[var(--wo-line)] px-4 py-3"><h2 className="text-sm font-medium text-[var(--wo-text)]">Fila de decisões do gestor</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Ordenada por risco, impacto e prazo — não apenas pelo pior score.</p></div>
-          {decisionQueue.length > 0 ? <div className="divide-y divide-[var(--wo-line)]">{decisionQueue.map(([queueId, agentId, platform, agent, signal, action, sla, tone]) => <button key={queueId as string} type="button" onClick={() => selectAgent(agentId as string)} className="grid w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--wo-card-2)] sm:grid-cols-[1fr_150px_65px_auto] sm:items-center"><div className="flex items-start gap-3"><PlatformIcon platform={platform as string} /><span><strong className="text-xs font-medium text-[var(--wo-text)]">{agent as string}</strong><p className="mt-1 text-[10px] text-[var(--wo-muted)]">{signal as string}</p></span></div><span className="text-[10px] text-[var(--wo-text)]">{action as string}</span><span className="font-mono text-[9px] text-[var(--wo-muted)]">{sla as string}</span><Chip tone={tone as Tone}>revisar</Chip></button>)}</div> : <div className="p-6 text-center text-xs text-[var(--wo-muted)]">Nenhuma decisão operacional pendente neste tenant.</div>}
-        </Panel>
-
-        <Panel className="p-4">
-          <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-[var(--wo-primary)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Gauntlet da decisão</h2></div><Chip tone="watch">{gauntletGates.filter((gate) => gate.score >= 80).length}/5 gates</Chip></div>
-          <p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">A recomendação só fica pronta quando evidência, comparabilidade, papel e accountability passam pelos verificadores.</p>
-          <div className="mt-4 space-y-2">{gauntletGates.map((gate) => <div key={gate.label} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between gap-3"><strong className="text-[10px] font-medium text-[var(--wo-text)]">{gate.label}</strong><Chip tone={gate.tone}>{gate.score}/100</Chip></div><p className="mt-1 text-[9px] text-[var(--wo-muted)]">{gate.detail}</p><div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--wo-line)]"><div className="h-full rounded-full bg-[var(--wo-primary)]" style={{ width: `${gate.score}%` }} /></div></div>)}</div>
-          <div className="mt-3 rounded-xl border border-[var(--wo-warning)] bg-[color-mix(in_srgb,var(--wo-warning)_8%,var(--wo-card))] p-3 text-[10px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-warning)]">{operational && agents.length > 0 && !alerts.some((alert) => !alert.assignedTo || !alert.dueAt) ? "Leitura:" : "Bloqueio:"}</strong> {operational ? operationalBlocker : "confirmar owners das ações antes de liberar o plano para execução."}</div>
-        </Panel>
-      </div>
     </div>
   );
 }

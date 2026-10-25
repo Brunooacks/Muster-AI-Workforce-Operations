@@ -228,8 +228,14 @@ test("comando produtivo evolui a experiência nova com telemetria da API", () =>
   assert.match(modules, /useGetFleetSummary/);
   assert.match(modules, /useGetFleetKpis/);
   assert.match(modules, /useListFleetAlerts/);
-  assert.match(modules, /data-testid="hybrid-workforce-control-plane"/);
-  assert.match(modules, /Control plane do trabalho/);
+  assert.match(modules, /data-testid="visao-geral-abertura"/);
+  assert.match(modules, /data-testid="visao-geral-blocos"/);
+  assert.match(modules, /leituraOperacional\(/);
+  assert.match(modules, /leituraIlustrativa\(/);
+  assert.match(modules, /Dados ilustrativos/);
+  assert.match(modules, /Saiba o que seus agentes entregaram, com prova, e quanto isso custou\./);
+  assert.doesNotMatch(modules, /Control plane do trabalho/);
+  assert.doesNotMatch(modules, /Gauntlet/);
 });
 
 test("métricas, benchmarks e governança produtivos usam API", () => {

@@ -984,7 +984,9 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
   const reevaluate = useReevaluateAgent();
   const recordDecision = useRecordProfessionalPlanDecision();
   const updatePlanAction = useUpdateProfessionalPlanAction();
-  const latestDecision = decisionsQuery.data?.[0];
+  // Sem API (modo demonstração/preview estático) a rota responde HTML, não lista.
+  const historico = Array.isArray(decisionsQuery.data) ? decisionsQuery.data : [];
+  const latestDecision = historico[0];
   const activeAction = latestDecision?.actions.find(
     (action) => !["completed", "cancelled"].includes(action.status),
   );
@@ -1196,7 +1198,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
                 );
               })}
             </div>
-            <p className="mt-3 text-[9px] text-[var(--wo-muted)]">{decisionsQuery.data?.length ?? 0} decisão(ões) preservada(s) no histórico.</p>
+            <p className="mt-3 text-[9px] text-[var(--wo-muted)]">{historico.length} decisão(ões) preservada(s) no histórico.</p>
           </div>
         )}
       </Panel>
