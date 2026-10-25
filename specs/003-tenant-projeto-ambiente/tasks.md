@@ -11,4 +11,4 @@ Formato Spec Kit. `[x]` = feito e commitado nesta branch (um commit por tarefa).
 - [x] **T1.7** Rotas e queries (chaves com ambiente, agente com projeto, outbox, `/projects`, runtime do agente, OpenAPI + Zod + cliente, seletor de ambiente na tela de chaves)
 - [x] **T1.8** Envelope de tarefa (`task-envelope.schema.json` + Zod + teste)
 - [x] **T1.9** Matriz de isolamento 2×2×2 + `make ci-integration` + step no Woodpecker
-- [ ] **T1.10** Runbook `docs/runbooks/0022-projects-envs.md` (sem aplicar em servidor)
+- [x] **T1.10** Runbook `docs/runbooks/0022-projects-envs.md` (sem aplicar em servidor)
