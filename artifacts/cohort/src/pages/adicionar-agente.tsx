@@ -224,7 +224,11 @@ export function AdicionarAgenteScreen() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => (indice === 0 ? navigate("/agentes") : setIndice((atual) => atual - 1))}
+              onClick={() => {
+                setErro(null);
+                if (indice === 0) navigate("/agentes");
+                else setIndice((atual) => atual - 1);
+              }}
               className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] text-[var(--wo-text)]"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> {indice === 0 ? "Cancelar" : "Voltar"}

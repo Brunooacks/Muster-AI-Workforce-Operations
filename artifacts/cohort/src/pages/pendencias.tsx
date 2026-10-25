@@ -70,6 +70,15 @@ export function PendenciasScreen() {
 
   const pendentes = PENDENCIAS.filter((item) => !decididas.includes(item.id));
 
+  // Cada pendência começa com a justificativa vazia: o texto não passa de um
+  // item para outro.
+  function abrir(id: string, proxima: "aprovar" | "ajustar" | "recusar") {
+    if (aberta !== id) setJustificativa("");
+    setAberta(id);
+    setAcao(proxima);
+    setErro(false);
+  }
+
   function confirmar(id: string) {
     if (justificativa.trim() === "") {
       setErro(true);
@@ -125,9 +134,7 @@ export function PendenciasScreen() {
                     <button
                       type="button"
                       onClick={() => {
-                        setAberta(item.id);
-                        setAcao("aprovar");
-                        setErro(false);
+                        abrir(item.id, "aprovar");
                       }}
                       className="rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-opacity hover:opacity-90"
                     >
@@ -136,9 +143,7 @@ export function PendenciasScreen() {
                     <button
                       type="button"
                       onClick={() => {
-                        setAberta(item.id);
-                        setAcao("ajustar");
-                        setErro(false);
+                        abrir(item.id, "ajustar");
                       }}
                       className="rounded-full border border-border px-4 py-2 text-[13px] transition-colors hover:text-foreground"
                     >
@@ -147,9 +152,7 @@ export function PendenciasScreen() {
                     <button
                       type="button"
                       onClick={() => {
-                        setAberta(item.id);
-                        setAcao("recusar");
-                        setErro(false);
+                        abrir(item.id, "recusar");
                       }}
                       className="rounded-full border border-border px-4 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
                     >
