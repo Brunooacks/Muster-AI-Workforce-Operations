@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 /**
  * Muster brand symbol — three ascending chevrons ("Camadas Ascendentes").
  * Theme-aware: strokes use CSS tokens so it adapts to light/dark automatically.
+ * Light mode: ink (#1d1d1f) with layered opacity
+ * Dark mode: cyan (#19d3f5) with layered opacity
  */
 export function MusterMark({ className }: { className?: string }) {
   return (
@@ -17,10 +19,11 @@ export function MusterMark({ className }: { className?: string }) {
         strokeWidth={4.6}
         strokeLinecap="round"
         strokeLinejoin="round"
+        stroke="hsl(var(--primary))"
       >
-        <path d="M15 47 L32 38 L49 47" stroke="hsl(var(--chart-1))" />
-        <path d="M15 37 L32 28 L49 37" stroke="hsl(var(--primary) / 0.65)" />
-        <path d="M15 27 L32 18 L49 27" stroke="hsl(var(--primary))" />
+        <path d="M15 47 L32 38 L49 47" opacity="0.35" />
+        <path d="M15 37 L32 28 L49 37" opacity="0.65" />
+        <path d="M15 27 L32 18 L49 27" />
       </g>
     </svg>
   );
