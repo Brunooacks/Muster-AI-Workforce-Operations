@@ -249,7 +249,8 @@ function acessosSemProjeto(fonte: string): string[] {
  * arquivo: são as consultas de sessão humana, que seguem org-wide por decisão
  * da E1 (`?project=` fica para quando a UI tiver seletor). A lista é fechada
  * nos dois sentidos — consulta nova sem projeto quebra o teste, e consulta
- * migrada obriga a baixar o número aqui.
+ * migrada obriga a baixar o número aqui. Caminho de chave de agente
+ * (CAMINHOS_DE_CHAVE) não pode aparecer nesta lista.
  */
 const ORG_WIDE_PENDENTES: Record<string, number> = {
   "lib/admission.ts": 2,
@@ -257,8 +258,6 @@ const ORG_WIDE_PENDENTES: Record<string, number> = {
   "lib/continuous-telemetry-worker.ts": 1,
   "lib/professional-plan-service.ts": 1,
   "lib/serializers.ts": 1,
-  // Caminho de chave: sai desta lista na T1.6.
-  "middlewares/requireAgentCredential.ts": 2,
   "routes/agent-keys.ts": 3,
   "routes/agents.ts": 8,
   "routes/areas.ts": 2,
@@ -273,6 +272,9 @@ const ORG_WIDE_PENDENTES: Record<string, number> = {
   "routes/telemetry.ts": 5,
   "routes/verdict-actions.ts": 1,
 };
+
+/** Arquivos que atendem chave de agente: nenhum acesso pode ficar só na conta. */
+const CAMINHOS_DE_CHAVE = ["middlewares/requireAgentCredential.ts", "routes/agent-runtime.ts"];
 
 describe("isolamento por projeto — varredura do código", () => {
   it("todo acesso a tabela com projeto usa inProject/inEnv ou está na lista org-wide", () => {
@@ -295,6 +297,12 @@ describe("isolamento por projeto — varredura do código", () => {
       contagem,
       `Acessos org-wide em tabela com projeto (${detalhes.length}):\n  ${detalhes.join("\n  ")}`,
     ).toEqual(ORG_WIDE_PENDENTES);
+  });
+
+  it("caminho de chave de agente nunca fica na lista org-wide", () => {
+    for (const caminho of CAMINHOS_DE_CHAVE) {
+      expect(ORG_WIDE_PENDENTES[caminho], caminho).toBeUndefined();
+    }
   });
 
   it("o scanner pega leitura de agents só com ofOrg (fixture)", () => {

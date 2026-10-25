@@ -116,6 +116,8 @@ export interface TenantScope {
 
 export type ProjectScope = TenantScope & { projectId: string };
 export type EnvironmentScope = ProjectScope & { environmentId: string };
+/** O que uma chave de agente resolve: a tupla inteira, sem campo opcional. */
+export type AgentKeyScope = EnvironmentScope & { environmentKind: EnvironmentKind };
 
 export interface TabelaComProjeto extends TabelaComOrg {
   projectId: PgColumn;
