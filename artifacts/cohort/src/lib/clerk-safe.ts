@@ -1,4 +1,4 @@
-import { useOrganization, useUser } from "@clerk/react";
+import { useClerk, useOrganization, useUser } from "@clerk/react";
 
 /**
  * O build de demonstração não monta o ClerkProvider. Sem isso, telas que
@@ -21,5 +21,23 @@ export function useIdentidadeSegura(): { userId?: string; orgId?: string } {
     return { userId: user?.id, orgId: organization?.id };
   } catch {
     return {};
+  }
+}
+
+/** Ações de conta do Clerk; no demo viram no-op e `disponivel` fica falso. */
+export function useAcoesClerkSeguras(): {
+  disponivel: boolean;
+  openUserProfile: () => void;
+  openOrganizationProfile: () => void;
+} {
+  try {
+    const clerk = useClerk();
+    return {
+      disponivel: true,
+      openUserProfile: () => clerk.openUserProfile(),
+      openOrganizationProfile: () => clerk.openOrganizationProfile(),
+    };
+  } catch {
+    return { disponivel: false, openUserProfile: () => {}, openOrganizationProfile: () => {} };
   }
 }

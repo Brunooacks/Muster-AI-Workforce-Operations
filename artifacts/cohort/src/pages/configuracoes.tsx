@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useClerk } from "@clerk/react";
+import { useAcoesClerkSeguras } from "@/lib/clerk-safe";
 import {
   Building2,
   Plug,
@@ -540,7 +540,7 @@ function IntegrationsSection() {
 }
 
 function TeamSection() {
-  const { openOrganizationProfile } = useClerk();
+  const { openOrganizationProfile } = useAcoesClerkSeguras();
   const { lang } = useLang();
   const t = L[lang];
   return (
@@ -583,7 +583,7 @@ function NotificationsSection() {
 }
 
 function SecuritySection() {
-  const { openUserProfile } = useClerk();
+  const { openUserProfile } = useAcoesClerkSeguras();
   const { lang } = useLang();
   const t = L[lang];
   return (

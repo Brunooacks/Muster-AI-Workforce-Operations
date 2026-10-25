@@ -122,6 +122,20 @@ function TelaCarregando() {
   );
 }
 
+/** Telas que dependem da conta real (Clerk): no demo explicam em vez de quebrar. */
+function SoComLogin({ titulo }: { titulo: string }) {
+  return (
+    <div className="p-4 sm:p-6">
+      <Panel className="p-8">
+        <h1 className="text-xl font-medium text-[var(--wo-text)]">{titulo}</h1>
+        <p className="mt-2 text-sm text-[var(--wo-muted)]">
+          Disponível com login. Na demonstração não há organização nem membros reais.
+        </p>
+      </Panel>
+    </div>
+  );
+}
+
 type Screen = WorkforceScreen;
 export type PaletteId = "mineral" | "graphite" | "dracula" | "mocha";
 type AgentStatus = "healthy" | "attention" | "critical" | "probation";
@@ -1515,7 +1529,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "admission" && (semApi ? <AdicionarAgenteScreen /> : <AdmissionPage embedded />)}
             {screen === "alerts" &&
               (location === "/pendencias" ? <PendenciasScreen /> : <AlertsPage embedded />)}
-            {screen === "admin" && <AdminConsolePage />}
+            {screen === "admin" && (demo ? <SoComLogin titulo="Administração da organização" /> : <AdminConsolePage />)}
             {screen === "accountSettings" && <AccountSettingsPage embedded palette={palette} setPalette={setPalette} />}
             {screen === "profile" && <ProfilePage embedded demo={demo} />}
             {screen === "connection" && <ConectarPage embedded />}
