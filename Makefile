@@ -13,13 +13,14 @@ define step
 	@printf '\n==> [%s] %s\n' "$$(date -u +%H:%M:%S)" "$(1)"
 endef
 
-.PHONY: help ci ci-core ci-container toolchain install typecheck test build go-test down-guard name-gate hooks
+.PHONY: help ci ci-core ci-container ci-integration toolchain install typecheck test build go-test down-guard name-gate hooks
 
 help:
 	@printf '%s\n' \
 	  'make ci            install, typecheck, test, build, go-test, down-guard e name-gate' \
 	  'make ci-core       o mesmo que ci, sem o name-gate (step separado no Woodpecker)' \
 	  'make ci-container  make ci dentro de node:$(NODE_MAJOR)-bookworm (toolchain fixa)' \
+	  'make ci-integration migra DATABASE_URL (Postgres efêmero) e roda pnpm test:integration' \
 	  'make name-gate     gate de nomes bloqueados (lista fora do repo)' \
 	  'make hooks         instala os hooks de scripts/hooks (pre-push)'
 
@@ -63,6 +64,21 @@ build:
 go-test:
 	$(call step,go-test)
 	@if [[ -d core ]]; then (cd core && go test ./...); else echo 'core/ ausente; go test pulado.'; fi
+
+# Testes contra Postgres real (matriz 2×2×2 da E1, backfill/down da 0022, outbox…).
+# DATABASE_URL precisa apontar para um banco DESCARTÁVEL: os testes criam e
+# apagam bancos auxiliares nele. As tentativas cobrem o Postgres do service do
+# Woodpecker ainda subindo.
+ci-integration:
+	$(call step,ci-integration)
+	@if [[ -z "$${DATABASE_URL:-}" ]]; then echo 'ci-integration: defina DATABASE_URL (Postgres efêmero).' >&2; exit 2; fi
+	@for tentativa in $$(seq 1 30); do \
+	  if pnpm --filter @workspace/db exec drizzle-kit migrate --config ./drizzle.config.ts >/dev/null 2>&1; then exit 0; fi; \
+	  sleep 2; \
+	done; \
+	echo 'ci-integration: não consegui migrar o banco (Postgres no ar?).' >&2; \
+	pnpm --filter @workspace/db exec drizzle-kit migrate --config ./drizzle.config.ts; exit 1
+	pnpm run test:integration
 
 down-guard:
 	$(call step,down-guard)

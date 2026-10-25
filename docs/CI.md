@@ -12,6 +12,7 @@ pode ser reproduzido na máquina local com o mesmo resultado.
 | `make ci-container` | `make ci` dentro de `node:24-bookworm` com pnpm 9.15.0 |
 | `make name-gate` | gate de nomes bloqueados nos arquivos versionados |
 | `make down-guard` | garante que `lib/db/drizzle/down/` fica fora do journal, da imagem e do deploy |
+| `make ci-integration` | migra `DATABASE_URL` (Postgres **descartável**) e roda `pnpm test:integration` (matriz 2×2×2 da E1, backfill e up→down→up da 0022) |
 | `make hooks` | `git config core.hooksPath scripts/hooks` (instala o pre-push) |
 
 A ordem segue o antigo `ci.yml`: `pnpm install --frozen-lockfile`,
@@ -63,7 +64,9 @@ Pipeline em `.woodpecker/ci.yml`, em PR para `main` e push em `main`:
 - step `name-gate`: `make name-gate`, com o segredo `muster_blocklist`;
 - step `ci`: `make ci-core` em `node:24-bookworm` com pnpm 9.15.0 e o store do
   pnpm no volume `muster-pnpm-store` do agent (o repo precisa estar marcado
-  como *trusted* para aceitar volumes).
+  como *trusted* para aceitar volumes);
+- step `integration`: `make ci-integration` contra o service `postgres`
+  (`postgres:16-alpine`, sem senha, só existe durante o run).
 
 Configuração do servidor que este repo pressupõe (T0.4, droplet isolado):
 

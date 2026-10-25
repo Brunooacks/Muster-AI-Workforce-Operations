@@ -32,3 +32,27 @@ steps:
       - corepack enable
       - corepack prepare pnpm@9.15.0 --activate
       - make ci-core
+
+  # Integração contra Postgres efêmero (service abaixo): matriz 2×2×2 da E1,
+  # backfill e up→down→up da 0022. Sem segredo nenhum; o banco morre com o run.
+  - name: integration
+    image: node:24-bookworm
+    depends_on: [ci]
+    environment:
+      CI: "true"
+      npm_config_store_dir: /pnpm-store
+      DATABASE_URL: postgresql://postgres@postgres:5432/muster
+    volumes:
+      - muster-pnpm-store:/pnpm-store
+    commands:
+      - corepack enable
+      - corepack prepare pnpm@9.15.0 --activate
+      - pnpm install --frozen-lockfile
+      - make ci-integration
+
+services:
+  - name: postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: muster
+      POSTGRES_HOST_AUTH_METHOD: trust
