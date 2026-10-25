@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import {
   ClerkProvider,
   SignIn,
@@ -32,12 +32,6 @@ import { TenantBootstrapBoundary } from "@/components/tenant-bootstrap";
 import { AppShellProvider } from "@/lib/app-shell";
 import { LangProvider } from "@/lib/i18n";
 
-import LandingPage from "@/pages/landing";
-import DesignLabPage from "@/pages/design-lab";
-import DesignSystemPage from "@/pages/design-system";
-import CalculadoraPage from "@/pages/calculadora";
-import WorkforceOsLabPage from "@/pages/workforce-os-lab";
-import OnboardingPage from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 import { isOnboardingComplete } from "@/lib/onboarding";
 import { MusterMark } from "@/components/logo";
@@ -50,6 +44,15 @@ import {
   requestedAuthRedirect,
   signedOutSignInPath,
 } from "@/lib/auth-routing";
+
+// Cada rota vira um chunk próprio: a home e a calculadora não carregam a área
+// logada, e a área logada não carrega a home.
+const LandingPage = lazy(() => import("@/pages/landing"));
+const DesignLabPage = lazy(() => import("@/pages/design-lab"));
+const DesignSystemPage = lazy(() => import("@/pages/design-system"));
+const CalculadoraPage = lazy(() => import("@/pages/calculadora"));
+const WorkforceOsLabPage = lazy(() => import("@/pages/workforce-os-lab"));
+const OnboardingPage = lazy(() => import("@/pages/onboarding"));
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
@@ -364,6 +367,7 @@ function ClerkProviderWithRoutes({
           <TooltipProvider>
             <TenantBootstrapBoundary>
               <AppShellProvider>
+                <Suspense fallback={null}>
                 <Switch>
                   <Route path="/" component={HomeRedirect} />
                   <Route path="/sign-in/*?" component={SignInPage} />
@@ -405,6 +409,7 @@ function ClerkProviderWithRoutes({
 
                   <Route component={NotFound} />
                 </Switch>
+                </Suspense>
               </AppShellProvider>
             </TenantBootstrapBoundary>
             <Toaster />
@@ -436,6 +441,7 @@ function MissingClerkConfiguration() {
 function DemoRoutes() {
   return (
     <AppShellProvider>
+      <Suspense fallback={null}>
       <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/design-system" component={DesignSystemPage} />
@@ -450,6 +456,7 @@ function DemoRoutes() {
       </Route>
         <Route component={NotFound} />
       </Switch>
+      </Suspense>
     </AppShellProvider>
   );
 }

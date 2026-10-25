@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentPropsWithoutRef, type CSSProperties, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, type ComponentPropsWithoutRef, type CSSProperties, type ReactNode } from "react";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import {
   getListAgentsQueryKey,
@@ -74,19 +74,8 @@ import {
   SettingsScreen,
 } from "@/pages/workforce-os-modules";
 import { MixedTeamsScreen } from "@/pages/mixed-teams-workforce";
-import { OperationalMixedTeamsScreen } from "@/pages/mixed-teams-operational";
 import { ConnectorsScreen } from "@/pages/connectors-workforce";
 import { ExecutiveReportsScreen } from "@/pages/executive-reports-workforce";
-import MetricasPage from "@/pages/metricas";
-import BenchmarksPage from "@/pages/benchmarks";
-import GovernancePage from "@/pages/governanca";
-import JourneysPage from "@/pages/journeys";
-import AdmissionPage from "@/pages/admission";
-import AlertsPage from "@/pages/alerts";
-import AccountSettingsPage from "@/pages/configuracoes";
-import ProfilePage from "@/pages/perfil";
-import ConectarPage from "@/pages/conectar";
-import AdminConsolePage from "@/pages/admin-console";
 import { Badge } from "@/components/ui/badge";
 import { formatBRL } from "@/lib/calculadora";
 import {
@@ -108,6 +97,30 @@ import {
   type WorkforceContractMetric,
   type WorkforceProfessionalAgent,
 } from "@/lib/workforce-agent-adapter";
+
+// Telas ligadas à API e de conta: carregadas sob demanda para não pesar no
+// bundle inicial (home, calculadora e telas de demonstração).
+const OperationalMixedTeamsScreen = lazy(() =>
+  import("@/pages/mixed-teams-operational").then((m) => ({ default: m.OperationalMixedTeamsScreen })),
+);
+const MetricasPage = lazy(() => import("@/pages/metricas"));
+const BenchmarksPage = lazy(() => import("@/pages/benchmarks"));
+const GovernancePage = lazy(() => import("@/pages/governanca"));
+const JourneysPage = lazy(() => import("@/pages/journeys"));
+const AdmissionPage = lazy(() => import("@/pages/admission"));
+const AlertsPage = lazy(() => import("@/pages/alerts"));
+const AccountSettingsPage = lazy(() => import("@/pages/configuracoes"));
+const ProfilePage = lazy(() => import("@/pages/perfil"));
+const ConectarPage = lazy(() => import("@/pages/conectar"));
+const AdminConsolePage = lazy(() => import("@/pages/admin-console"));
+
+function TelaCarregando() {
+  return (
+    <div className="p-6" role="status" aria-live="polite">
+      <p className="text-sm text-[var(--wo-muted)]">Carregando…</p>
+    </div>
+  );
+}
 
 type Screen = WorkforceScreen;
 export type PaletteId = "mineral" | "graphite" | "dracula" | "mocha";
@@ -1459,6 +1472,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
         <div className="min-w-0 flex-1">
           <AppHeader labMode={labMode} screen={screen} />
           <main className="pb-16 md:pb-0">
+            <Suspense fallback={<TelaCarregando />}>
             {screen === "today" && <ManagerScreen selectAgent={openProfessional} navigate={navigate} agents={visibleAgents} operational={!semApi} />}
             {screen === "onboarding" && <OnboardingScreen navigate={navigate} />}
             {screen === "reports" && <ExecutiveReportsScreen operational={!semApi} />}
@@ -1479,6 +1493,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "connection" && <ConectarPage embedded />}
             {screen === "entregas" && <EntregasScreen />}
             {screen === "mapa" && <MapaScreen />}
+            </Suspense>
           </main>
           <ShellBottomBar screen={screen} labMode={!navegaPorRota} navigate={navigate} />
         </div>
