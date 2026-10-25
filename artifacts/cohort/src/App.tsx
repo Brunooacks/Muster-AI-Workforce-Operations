@@ -40,6 +40,10 @@ import NotFound from "@/pages/not-found";
 import { isOnboardingComplete } from "@/lib/onboarding";
 import { MusterMark } from "@/components/logo";
 import { WORKFORCE_STATIC_PATHS } from "@/lib/workforce-routing";
+import VisaoGeralPage from "@/muster/pages/visao-geral";
+import DirecionamentoPage from "@/muster/pages/direcionamento";
+import BaselinePage from "@/muster/pages/baseline";
+import HistoricoPage from "@/muster/pages/historico";
 import {
   authFallbackFromLocation,
   authRoute,
@@ -227,7 +231,7 @@ function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <Redirect to="/comando" />
+        <Redirect to="/visao-geral" />
       </Show>
       <Show when="signed-out">
         <LandingPage />
@@ -365,6 +369,10 @@ function ClerkProviderWithRoutes({
                   <Route path="/sign-in/*?" component={SignInPage} />
                   <Route path="/sign-up/*?" component={SignUpPage} />
 
+                  <Route path="/visao-geral"><ProtectedRoute component={VisaoGeralPage} /></Route>
+                  <Route path="/direcionamento"><ProtectedRoute component={DirecionamentoPage} /></Route>
+                  <Route path="/baseline"><ProtectedRoute component={BaselinePage} /></Route>
+                  <Route path="/historico"><ProtectedRoute component={HistoricoPage} /></Route>
                   <Route path="/agentes/:id/conectar">
                     <ProtectedRoute component={WorkforceOsProductionPage} />
                   </Route>

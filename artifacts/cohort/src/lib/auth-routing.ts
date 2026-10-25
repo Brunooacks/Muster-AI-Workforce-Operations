@@ -1,5 +1,5 @@
-export const DEFAULT_AUTH_REDIRECT = "/comando";
-export const DEFAULT_ONBOARDING_REDIRECT = "/comando";
+export const DEFAULT_AUTH_REDIRECT = "/visao-geral";
+export const DEFAULT_ONBOARDING_REDIRECT = "/visao-geral";
 
 type AuthMode = "sign-in" | "sign-up";
 
