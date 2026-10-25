@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MusterMark } from "@/components/logo";
 import { useLang, type Lang } from "@/lib/i18n";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 const TABS = [
   { label: "Identidade", badge: "ATIVA", badgeColor: "chart-1" },
@@ -66,11 +67,13 @@ export function HomeFicha() {
   const [tab, setTab] = useState(0);
   const [touched, setTouched] = useState(false);
 
+  const reduzirMovimento = useReducedMotion();
+
   useEffect(() => {
-    if (touched) return;
+    if (touched || reduzirMovimento) return;
     const id = window.setInterval(() => setTab((current) => (current + 1) % TABS.length), 3600);
     return () => window.clearInterval(id);
-  }, [touched]);
+  }, [touched, reduzirMovimento]);
 
   const badgeColor =
     TABS[tab].badgeColor === "chart-1"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useLang, type Lang } from "@/lib/i18n";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 const STATES = [
   {
@@ -36,11 +37,13 @@ export function HomeAcompanhamento() {
   const [state, setState] = useState(0);
   const [touched, setTouched] = useState(false);
 
+  const reduzirMovimento = useReducedMotion();
+
   useEffect(() => {
-    if (touched) return;
+    if (touched || reduzirMovimento) return;
     const id = window.setInterval(() => setState((current) => 1 - current), 4200);
     return () => window.clearInterval(id);
-  }, [touched]);
+  }, [touched, reduzirMovimento]);
 
   const current = STATES[state];
 
