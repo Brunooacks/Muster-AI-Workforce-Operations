@@ -200,7 +200,7 @@ function SerieCusto({ serie }: { serie: Array<{ periodo: string; valor: number }
   if (serie.length === 0) {
     return <p className="rounded-xl border border-dashed border-[var(--wo-line)] px-3 py-4 text-[11px] leading-relaxed text-[var(--wo-muted)]">A série histórica de custo aparece após o primeiro ciclo fechado no período.</p>;
   }
-  const maximo = Math.max(...serie.map((ponto) => ponto.valor));
+  const maximo = Math.max(...serie.map((ponto) => ponto.valor), 0);
   return (
     <div>
       <div className="flex h-24 items-end gap-2 border-b border-[var(--wo-line)] px-1">
@@ -209,7 +209,7 @@ function SerieCusto({ serie }: { serie: Array<{ periodo: string; valor: number }
             <span className="font-mono text-[9px] text-[var(--wo-muted)]">{ponto.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <span
               className="w-full max-w-8 rounded-t"
-              style={{ height: `${(ponto.valor / maximo) * 72}px`, background: "var(--wo-primary)", opacity: 0.45 + index * 0.09 }}
+              style={{ height: `${maximo > 0 ? (Math.max(0, ponto.valor) / maximo) * 72 : 0}px`, background: "var(--wo-primary)", opacity: 0.45 + index * 0.09 }}
             />
           </div>
         ))}

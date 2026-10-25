@@ -49,7 +49,7 @@ export function GraficoGastoOrcamento({
     { ate: 90, cor: "var(--wo-warning)", rotulo: "atenção" },
     { ate: 100, cor: "var(--wo-danger)", rotulo: "limite do orçamento" },
   ];
-  const preenchido = Math.min(100, percentual);
+  const preenchido = Math.min(100, Math.max(0, percentual));
 
   return (
     <div>
@@ -101,7 +101,7 @@ export function GraficoCustoResultado({
   aviso?: string;
 }) {
   if (muster == null) return <Vazio texto={aviso ?? "Sem custo por resultado no período."} />;
-  if (humano == null) {
+  if (humano == null || humano <= 0) {
     return (
       <div>
         <div className="flex flex-wrap items-baseline gap-x-3">
@@ -117,8 +117,14 @@ export function GraficoCustoResultado({
     { rotulo: "Com o Muster", valor: muster, cor: "var(--wo-primary)" },
     { rotulo: "Feito à mão (referência)", valor: humano, cor: "var(--wo-muted)" },
   ];
-  const maior = Math.max(muster, humano);
-  const economia = Math.max(0, Math.round((1 - muster / humano) * 100));
+  const maior = Math.max(muster, humano, 1e-9);
+  const diferenca = Math.round(Math.abs(1 - muster / humano) * 100);
+  const comparacao =
+    muster < humano
+      ? `${diferenca}% mais barato que a revisão humana`
+      : muster > humano
+        ? `${diferenca}% mais caro que a revisão humana`
+        : "Mesmo custo da revisão humana";
 
   return (
     <div>
@@ -136,7 +142,7 @@ export function GraficoCustoResultado({
         ))}
       </div>
       <p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">
-        {economia}% mais barato que a revisão humana para o mesmo resultado, no período de {periodo}.
+        {comparacao} para o mesmo resultado, no período de {periodo}.
       </p>
     </div>
   );
@@ -174,10 +180,10 @@ export function GraficoTarefaResultado({
             <strong className="font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{barra.valor}%</strong>
           </div>
           <div className="relative mt-2 h-4 overflow-hidden rounded-full bg-[var(--wo-card-2)]">
-            <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${barra.valor}%`, background: barra.cor }} />
+            <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.min(100, Math.max(0, barra.valor))}%`, background: barra.cor }} />
             <span
               className="absolute inset-y-0 w-0.5 bg-[var(--wo-text)] opacity-70"
-              style={{ left: `${barra.meta}%` }}
+              style={{ left: `${Math.min(100, Math.max(0, barra.meta))}%` }}
               aria-hidden="true"
             />
           </div>
@@ -252,7 +258,7 @@ export function MatrizCustoResultado({
           return (
             <span
               key={ponto.nome}
-              className="absolute z-10 -translate-x-1/2 translate-y-1/2 whitespace-nowrap rounded-full px-2 py-1 font-mono text-[10px] font-medium shadow"
+              className="absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full px-2 py-1 font-mono text-[10px] font-medium shadow"
               style={{ left: `${x}%`, top: `${100 - y}%`, background: cor, color: "var(--wo-shell)" }}
               title={`${ponto.nome}: ${formatBRL(ponto.custo)} por entrega · ${Math.round(ponto.resultado)}% de resultado`}
             >
