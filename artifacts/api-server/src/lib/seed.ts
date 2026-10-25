@@ -493,7 +493,7 @@ const SEED_AGENTS: SeedAgentSpec[] = [
     autonomyLevel: "restricted",
     autonomyNotes: "Apenas pré-análise; aprovação final é sempre humana.",
     limits: ["Sem decisão final de aprovação", "Retenção de dados conforme LGPD"],
-    businessOwner: "Bruno Carvalho",
+    businessOwner: "Rafael Carvalho",
     technicalOwner: "Plataforma de Risco",
     governanceSponsor: "Comitê de Compliance",
     baseline: "Tempo de verificação: 6min",

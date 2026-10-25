@@ -35,11 +35,11 @@ test("adapta um agente real sem inventar owner ou baseline", () => {
 
 test("usa owner e contrato profissional quando a API os fornece", () => {
   const adapted = adaptApiAgent(agent({
-    businessOwner: "Bruno Oliveira",
+    businessOwner: "Rafael Lima",
     monthlyVolume: 100,
     monthlyCost: 14,
   }));
-  assert.equal(adapted.owner, "Bruno Oliveira");
+  assert.equal(adapted.owner, "Rafael Lima");
   assert.equal(adapted.costPerExecution, 0.14);
   assert.equal(adapted.monthlyVolume, 100);
 });
@@ -93,7 +93,7 @@ test("preserva o contrato da admissão e explicita lacunas de evidência", () =>
         ],
       },
     },
-    owners: { businessOwner: "Bruno", technicalOwner: "Bruno", governanceSponsor: "Bruno" },
+    owners: { businessOwner: "Rafael", technicalOwner: "Rafael", governanceSponsor: "Rafael" },
   } as unknown as AgentDetail;
   const adapted = adaptApiAgent(agent({
     monthlyVolume: 1,

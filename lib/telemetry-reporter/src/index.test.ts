@@ -254,11 +254,11 @@ describe("tarefas (cunha · C1.4)", () => {
     const run = reporter.startTask({ taskId: "t", runId: "r" });
 
     await run.accept({ by: "regra:schema-ok", kind: "auto", ruleVersion: "v3" });
-    await reporter.accept(run, { by: "bruno", kind: "human" });
+    await reporter.accept(run, { by: "revisora", kind: "human" });
 
     expect(bodies(fetchImpl)).toEqual([
       { kind: "feedback", taskId: "t", runId: "r", attempt: 1, acceptedBy: "regra:schema-ok", acceptedByKind: "auto", acceptedRuleVersion: "v3" },
-      { kind: "feedback", taskId: "t", runId: "r", attempt: 1, acceptedBy: "bruno", acceptedByKind: "human" },
+      { kind: "feedback", taskId: "t", runId: "r", attempt: 1, acceptedBy: "revisora", acceptedByKind: "human" },
     ]);
   });
 
