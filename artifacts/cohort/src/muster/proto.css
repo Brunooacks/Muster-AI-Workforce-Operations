@@ -329,7 +329,7 @@ a.cite:hover{background:#000;transform:translateY(-1px)}
 .toasts{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;align-items:center;z-index:100;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
 .toast{display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--on-ink);padding:13px 20px 13px 14px;border-radius:999px;font:500 14px/1.3 var(--app-font-sans);box-shadow:0 20px 50px -18px rgba(0,0,0,.6);animation:mp-toast .5s var(--ease) both}
 .toast.out{animation:mp-toastout .3s ease both}
-.toast i{width:22px;height:22px;border-radius:50%;background:var(--c1);color:var(--ink);font:700 12px/22px var(--app-font-sans);text-align:center;font-style:normal;flex:none}
+.toast i{width:22px;height:22px;border-radius:50%;background:var(--c1);color:var(--ink);font:600 12px/22px var(--app-font-sans);text-align:center;font-style:normal;flex:none}
 
 
 .modal{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(10,10,12,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:mp-fade .25s both}
@@ -453,7 +453,7 @@ a.cite:hover{background:#000;transform:translateY(-1px)}
 .crit{display:flex;flex-direction:column}
 .crit .c{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:18px 0;border-top:1px solid rgba(255,255,255,.12)}
 .crit .c:first-child{border-top:0}
-.crit .c i{width:22px;height:22px;border-radius:50%;font:700 12px/22px var(--app-font-sans);text-align:center;font-style:normal;color:#1d1d1f}
+.crit .c i{width:22px;height:22px;border-radius:50%;font:600 12px/22px var(--app-font-sans);text-align:center;font-style:normal;color:#1d1d1f}
 .crit .c.ok i{background:var(--c1)}.crit .c.warn i{background:var(--c2)}.crit .c.bad i{background:var(--c4);color:var(--on-ink)}
 .crit .c b{font:500 15px/1.3 var(--app-font-sans);color:var(--on-ink)}
 .crit .c span{display:block;font:400 12.5px/1.4 var(--app-font-sans);color:#a9a9b0;margin-top:2px}
@@ -561,7 +561,7 @@ a.cite:hover{background:#000;transform:translateY(-1px)}
 .chk{display:flex;flex-direction:column;gap:2px}
 .chk div{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);font:500 15px var(--app-font-sans)}
 .chk div:first-child{border-top:0}
-.chk i{width:22px;height:22px;border-radius:50%;background:var(--c1);font:700 12px/22px var(--app-font-sans);text-align:center;font-style:normal;color:var(--ink);flex:none}
+.chk i{width:22px;height:22px;border-radius:50%;background:var(--c1);font:600 12px/22px var(--app-font-sans);text-align:center;font-style:normal;color:var(--ink);flex:none}
 .arti{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:20px 0;border-top:1px solid var(--line)}
 .arti:first-child{border-top:0}
 .arti .ic{width:40px;height:40px;border-radius:12px;background:var(--surf);display:flex;align-items:center;justify-content:center}
@@ -619,7 +619,7 @@ a.cite:hover{background:#000;transform:translateY(-1px)}
 .cks{display:flex;flex-direction:column;gap:2px}
 .cks div{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);font:400 14px/1.45 var(--app-font-sans);color:var(--mut)}
 .cks div:first-child{border-top:0}
-.cks i{width:20px;height:20px;border-radius:50%;background:var(--c1);font:700 11px/20px var(--app-font-sans);text-align:center;color:var(--ink);font-style:normal;flex:none;margin-top:1px}
+.cks i{width:20px;height:20px;border-radius:50%;background:var(--c1);font:600 11px/20px var(--app-font-sans);text-align:center;color:var(--ink);font-style:normal;flex:none;margin-top:1px}
 .cks b{color:var(--ink);font-weight:500}
 .pkg{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px}
 .pkg .items{display:flex;flex-direction:column}
@@ -1080,3 +1080,6 @@ h1 .itip{width:22px;height:22px;font-size:13px;vertical-align:.35em}
 .mp :where(dd){margin-left:40px}
 .mp :where(ol,ul){margin:1em 0;padding-left:40px}
 .mp :where(ol){list-style:decimal}.mp :where(ul){list-style:disc}
+.mp :where(h4){margin:1.33em 0}
+/* O protótipo só carrega Geist até 600; negrito renderiza com a face 600. */
+.mp :where(b,strong){font-weight:600}
