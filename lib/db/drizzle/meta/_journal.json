@@ -183,6 +183,13 @@
       "when": 1792899094881,
       "tag": "0025_rates_offinvoice",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792899833796,
+      "tag": "0026_outcome_snapshots",
+      "breakpoints": true
     }
   ]
 }

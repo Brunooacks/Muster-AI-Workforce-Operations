@@ -23,10 +23,10 @@ Formato Spec Kit. `[x]` = feito e commitado nesta branch (um commit por item).
 
 ## Item 4 · Cálculo da camada 1 (MUS-177)
 
-- [ ] **C4.1** `formula.md`
-- [ ] **C4.2** `outcome-layers.ts` (camadas 1–2, sinais, cobertura) no lugar do `score: 50`
-- [ ] **C4.3** Golden test de 3 agentes + `golden.csv`
-- [ ] **C4.4** Migração 0026 `outcome_snapshots` + fechamento por período + down
+- [x] **C4.1** `formula.md`
+- [x] **C4.2** `outcome-layers.ts` (camadas 1–2, sinais, cobertura) no lugar do `score: 50`
+- [x] **C4.3** Golden test de 3 agentes + `golden.csv`
+- [x] **C4.4** Migração 0026 `outcome_snapshots` + fechamento por período + down
 
 ## Item 12 · Página do agente nas três camadas (MUS-178)
 

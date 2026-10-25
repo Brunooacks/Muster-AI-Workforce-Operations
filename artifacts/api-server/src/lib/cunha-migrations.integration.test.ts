@@ -18,6 +18,7 @@ const M0022 = "0022_projects_envs";
 const M0023 = "0023_agent_events_outcome";
 const M0024 = "0024_agent_contracts";
 const M0025 = "0025_rates_offinvoice";
+const M0026 = "0026_outcome_snapshots";
 
 // ag_c_3 fica num segundo projeto da org_c_1: o backfill precisa seguir o
 // projeto do agente, não o Padrão da conta.
@@ -299,7 +300,7 @@ describe.skipIf(!runIntegration)("0025 · role_rates e off_invoice_costs", () =>
  * up → down → up de cada migração da cunha, da mais nova para a mais antiga:
  * o down de N volta o retrato exatamente ao de N−1 e os eventos ficam.
  */
-const CADEIA = [M0023, M0024, M0025];
+const CADEIA = [M0023, M0024, M0025, M0026];
 
 describe.skipIf(!runIntegration)("cunha · up → down → up", () => {
   let db: ScratchDb;

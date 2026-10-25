@@ -827,6 +827,53 @@ export const offInvoiceCosts = pgTable("off_invoice_costs", {
   ),
 }));
 
+// --- Snapshot de resultado por período (cunha · 0026) -------------------------
+// Base da prova (camada 3) e do veredito futuro. Imutável (trigger): guarda os
+// inputs normalizados, o custo-hora e os preços usados, então o cálculo é
+// reproduzido só com a linha, mesmo depois de contrato/custo-hora mudarem.
+export const outcomeSnapshots = pgTable("outcome_snapshots", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull(),
+  environmentId: text("environment_id"),
+  agentId: text("agent_id").notNull(),
+  /** YYYY-MM */
+  period: text("period").notNull(),
+  layer1: jsonb("layer1").$type<Record<string, unknown>>().notNull(),
+  layer2: jsonb("layer2").$type<Record<string, unknown>>().notNull(),
+  signals: jsonb("signals").$type<Record<string, unknown>>().notNull(),
+  contractId: text("contract_id"),
+  contractVersion: integer("contract_version"),
+  calcVersion: text("calc_version").notNull(),
+  inputsHash: text("inputs_hash").notNull(),
+  inputs: jsonb("inputs").$type<Record<string, unknown>>().notNull(),
+  roleRatesSnapshot: jsonb("role_rates_snapshot").$type<Record<string, unknown> | null>(),
+  pricesSnapshot: jsonb("prices_snapshot").$type<Record<string, unknown> | null>(),
+  referenceModel: text("reference_model"),
+  priceVersion: text("price_version"),
+  taskCoverage: numeric("task_coverage", { precision: 6, scale: 4, mode: "number" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  outcomeSnapshotsUnique: uniqueIndex("outcome_snapshots_agent_period_calc_hash_idx").on(
+    table.agentId,
+    table.period,
+    table.calcVersion,
+    table.inputsHash,
+  ),
+  outcomeSnapshotsOrgPeriodIdx: index("outcome_snapshots_org_period_idx").on(table.orgId, table.period),
+  outcomeSnapshotsAgentFk: foreignKey({
+    name: "outcome_snapshots_agent_project_org_fk",
+    columns: [table.agentId, table.projectId, table.orgId],
+    foreignColumns: [agents.id, agents.projectId, agents.orgId],
+  }).onDelete("cascade"),
+  outcomeSnapshotsContractFk: foreignKey({
+    name: "outcome_snapshots_contract_fk",
+    columns: [table.contractId, table.contractVersion],
+    foreignColumns: [agentContracts.id, agentContracts.version],
+  }),
+  outcomeSnapshotsPeriodCheck: check("outcome_snapshots_period_check", sql`"period" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+}));
+
 export type AlertSeverity = "critical" | "high" | "medium" | "antecedent";
 export type AlertStatus = "active" | "acknowledged" | "resolved";
 export type GovernanceAssessmentStatus =
