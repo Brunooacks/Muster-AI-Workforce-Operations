@@ -139,6 +139,7 @@ const PARES_PALETA = [
   ["wo-muted", "wo-card-2"],
   ["wo-primary", "wo-card"],
   ["wo-accent-ink", "wo-accent"],
+  ["wo-primary-ink", "wo-primary"],
   ...[
     ["wo-warning-text", "wo-warning"],
     ["wo-danger-text", "wo-danger"],

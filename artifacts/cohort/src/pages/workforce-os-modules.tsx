@@ -296,7 +296,7 @@ export function ManagerScreen({
         </p>
         <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-linha de base gap-x-3 gap-y-1">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <strong className="font-mono text-5xl font-medium leading-none tracking-tight tabular-nums sm:text-6xl">
                 {leitura.numero.valor}
               </strong>
@@ -349,7 +349,7 @@ export function ManagerScreen({
                 </p>
               ) : (
                 <>
-                  <p className="flex flex-wrap items-linha de base gap-x-3">
+                  <p className="flex flex-wrap items-baseline gap-x-3">
                     <strong className="font-mono text-3xl font-medium tabular-nums text-[var(--wo-text)]">{formatNumero(leitura.entregas.total)}</strong>
                     <span className="text-xs text-[var(--wo-muted)]">entregas no período · {leitura.entregas.aceitas != null ? `${formatNumero(leitura.entregas.aceitas)} aceitas` : "aceitas sem dado"}</span>
                   </p>
@@ -383,7 +383,7 @@ export function ManagerScreen({
             <Bloco numero={2} titulo="Prova" selo="SUBSTITUI" pergunta="Como eu sei que é verdade?">
               {leitura.prova.comProva != null && leitura.prova.aceitas != null ? (
                 <>
-                  <p className="flex flex-wrap items-linha de base gap-x-3">
+                  <p className="flex flex-wrap items-baseline gap-x-3">
                     <strong className="font-mono text-3xl font-medium tabular-nums text-[var(--wo-text)]">{formatNumero(leitura.prova.comProva)}</strong>
                     <span className="text-xs text-[var(--wo-muted)]">de {formatNumero(leitura.prova.aceitas)} entregas aceitas com prova verificável</span>
                   </p>
@@ -444,7 +444,7 @@ export function ManagerScreen({
                     </p>
                   ) : (
                     <div className="mt-3">
-                      <div className="flex flex-wrap items-linha de base gap-x-3">
+                      <div className="flex flex-wrap items-baseline gap-x-3">
                         <strong className="font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{formatBRL(leitura.custo.porEntrega)}</strong>
                         <span className="text-xs text-[var(--wo-muted)]">por entrega aceita</span>
                       </div>
@@ -484,7 +484,7 @@ export function ManagerScreen({
                 </p>
               ) : (
                 <>
-                  <p className="flex flex-wrap items-linha de base gap-x-3">
+                  <p className="flex flex-wrap items-baseline gap-x-3">
                     <strong className="font-mono text-3xl font-medium tabular-nums text-[var(--wo-text)]">{leitura.percepcao.nota.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
                     <span className="text-xs text-[var(--wo-muted)]">de 5 · {leitura.percepcao.respostas} respostas · {leitura.percepcao.desgostos} 👎 no período</span>
                   </p>
