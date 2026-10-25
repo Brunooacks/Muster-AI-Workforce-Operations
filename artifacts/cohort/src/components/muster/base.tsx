@@ -37,15 +37,20 @@ export type KpiTone = "neutral" | "good" | "warn" | "bad";
 
 const toneClass: Record<KpiTone, string> = {
   neutral: "text-foreground",
-  good: "text-emerald-600 dark:text-emerald-400",
-  warn: "text-amber-600 dark:text-amber-400",
-  bad: "text-red-600 dark:text-red-400",
+  good: "text-foreground",
+  warn: "text-[hsl(var(--chart-2))]",
+  bad: "text-[hsl(var(--chart-3))]",
 };
 
-/** KPI grande com, no máximo, uma linha curta embaixo. */
+/**
+ * KPI grande (padrão do protótipo): rótulo mono em caixa alta, valor grande,
+ * variação opcional e, no máximo, uma linha curta embaixo.
+ */
 export function Kpi({
   label,
   value,
+  unit,
+  delta,
   line,
   info,
   tone = "neutral",
@@ -53,6 +58,8 @@ export function Kpi({
 }: {
   label: string;
   value: string;
+  unit?: string;
+  delta?: { text: string; up: boolean };
   line?: string;
   info?: ReactNode;
   tone?: KpiTone;
@@ -60,20 +67,24 @@ export function Kpi({
   estimated?: boolean;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4" data-testid="kpi">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        <span className="truncate">{label}</span>
+    <div className="flex min-w-0 flex-col gap-1.5 rounded-[22px] bg-card px-5 pb-4 pt-5 ring-1 ring-border" data-testid="kpi">
+      <div className="flex items-center gap-1.5">
+        <small className="truncate font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{label}</small>
         {info ? <InfoTip>{info}</InfoTip> : null}
       </div>
       <div
         className={cn(
-          "mt-1 text-2xl font-semibold tabular-nums sm:text-3xl",
+          "whitespace-nowrap text-[clamp(30px,3.2vw,42px)] font-semibold leading-none tracking-[-0.04em] tabular-nums",
           estimated ? "text-muted-foreground" : toneClass[tone],
         )}
       >
         {value}
+        {unit ? <sub className="ml-1 align-baseline text-[0.42em] tracking-normal text-muted-foreground">{unit}</sub> : null}
       </div>
-      {line ? <p className="mt-1 truncate text-xs text-muted-foreground">{line}</p> : null}
+      {delta ? (
+        <div className={cn("font-mono text-[12.5px] font-medium", delta.up ? "text-[#0f7a5f] dark:text-[hsl(var(--chart-1))]" : "text-[hsl(var(--chart-3))]")}>{delta.text}</div>
+      ) : null}
+      {line ? <p className="mt-auto truncate border-t border-border pt-2 text-[13.5px] leading-snug text-muted-foreground">{line}</p> : null}
     </div>
   );
 }
@@ -81,7 +92,7 @@ export function Kpi({
 /** Aviso discreto no rodapé da tela (premissas, fontes, ressalvas). */
 export function FooterNote({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-8 border-t pt-3 text-[11px] leading-relaxed text-muted-foreground" role="note">
+    <p className="mt-8 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground" role="note">
       {children}
     </p>
   );
@@ -91,7 +102,7 @@ export function FooterNote({ children }: { children: ReactNode }) {
 export function IllustrativeBadge() {
   const { lang } = useLang();
   return (
-    <span className="inline-flex items-center rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground">
+    <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
       {UI_COPY[lang].illustrative}
     </span>
   );
@@ -109,12 +120,62 @@ export function BaselineSeal({ source }: { source: "declared" | "measured" }) {
     <span
       className={cn(
         "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+        "font-mono",
         source === "measured"
-          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          ? "bg-[hsl(var(--chart-1)/0.14)] text-[#0f7a5f] dark:text-[hsl(var(--chart-1))]"
           : "bg-muted text-muted-foreground",
       )}
     >
       {label}
     </span>
+  );
+}
+
+/** Cabeçalho de tela: título curto, selo ilustrativo e "i" opcional. */
+export function ScreenHeader({ title, subtitle, info, actions }: { title: string; subtitle?: string; info?: ReactNode; actions?: ReactNode }) {
+  return (
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-[clamp(30px,4vw,44px)] font-semibold leading-[1.05] tracking-[-0.035em]">{title}</h1>
+          {info ? <InfoTip>{info}</InfoTip> : null}
+          <IllustrativeBadge />
+        </div>
+        {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+      </div>
+      {actions}
+    </div>
+  );
+}
+
+const bandClass = {
+  green: "bg-[hsl(var(--chart-1)/0.14)] text-[#0f7a5f] dark:text-[hsl(var(--chart-1))]",
+  yellow: "bg-[hsl(var(--chart-2)/0.18)] text-[#8a5a00] dark:text-[hsl(var(--chart-2))]",
+  red: "bg-[hsl(var(--chart-3)/0.14)] text-[hsl(var(--chart-3))]",
+} as const;
+
+export function BandPill({ band, label }: { band: keyof typeof bandClass; label: string }) {
+  return <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", bandClass[band])}>{label}</span>;
+}
+
+/** Barra horizontal simples (0..1). */
+export function Meter({ value, tone = "neutral" }: { value: number; tone?: KpiTone }) {
+  const color = { neutral: "bg-foreground", good: "bg-[hsl(var(--chart-1))]", warn: "bg-[hsl(var(--chart-2))]", bad: "bg-[hsl(var(--chart-3))]" }[tone];
+  return (
+    <div className="h-1.5 w-full rounded-full bg-muted">
+      <div className={cn("h-1.5 rounded-full", color)} style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
+    </div>
+  );
+}
+
+export function Section({ title, info, children, className }: { title: string; info?: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <section className={cn("min-w-0 rounded-[22px] bg-card px-5 pb-3.5 pt-5 ring-1 ring-border", className)}>
+      <div className="mb-3 flex items-center gap-1.5">
+        <h3 className="text-base font-semibold leading-tight">{title}</h3>
+        {info ? <InfoTip>{info}</InfoTip> : null}
+      </div>
+      {children}
+    </section>
   );
 }
