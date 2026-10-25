@@ -151,8 +151,8 @@ function formatCurrencyK(value: number) {
 
 function healthTone(score: number) {
   if (score >= 80) return "text-chart-1";
-  if (score >= 60) return "text-chart-2";
-  return "text-chart-3";
+  if (score >= 60) return "text-chart-2-text";
+  return "text-chart-3-text";
 }
 
 export default function AgentsPage() {
@@ -339,7 +339,7 @@ export default function AgentsPage() {
                     <Eyebrow>{t.healthEyebrow}</Eyebrow>
                     <div className="flex items-center gap-1.5">
                       {agent.activeAlerts ? (
-                        <AlertTriangle className="h-3.5 w-3.5 text-chart-3" />
+                        <AlertTriangle className="h-3.5 w-3.5 text-chart-3-text" />
                       ) : null}
                       <span className={`font-mono text-lg font-medium tabular-nums ${healthTone(agent.healthScore)}`}>
                         {agent.healthScore}
@@ -360,7 +360,7 @@ export default function AgentsPage() {
                   <div className="flex items-center gap-1.5">
                     {missedGoals > 0 ? (
                       <span
-                        className="inline-flex items-center gap-1 rounded-md bg-chart-3/10 px-2 py-0.5 font-mono text-xs font-medium text-chart-3"
+                        className="inline-flex items-center gap-1 rounded-md bg-chart-3/10 px-2 py-0.5 font-mono text-xs font-medium text-chart-3-text"
                         title={t.goalsOffTitle(missedGoals)}
                       >
                         <AlertTriangle className="h-3 w-3" />

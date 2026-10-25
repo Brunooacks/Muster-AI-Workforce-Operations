@@ -58,7 +58,7 @@ function ContractNumbers({ c }: { c: AgentContract }) {
   return (
     <div className="space-y-1.5">
       {row("Métrica", `${c.metricKey} (${c.unit}, ${c.direction === "down" ? "menor é melhor" : "maior é melhor"})`)}
-      {row("Baseline → meta", `${c.baseline} → ${c.target}`)}
+      {row("Linha de base → meta", `${c.baseline} → ${c.target}`)}
       {c.limit !== null && row("Limite", String(c.limit))}
       {row("Prazo", c.deadline)}
       {row("Min. humanos de referência", c.referenceHumanMinutes === null ? "não informado" : String(c.referenceHumanMinutes))}
@@ -85,7 +85,7 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
     <div className="space-y-1">
       <Label htmlFor={`contract-${key}`} className="text-xs">
         {label}
-        {errors[key] && <span className="ml-1 text-destructive">({errors[key]})</span>}
+        {errors[key] && <span className="ml-1 text-destructive-text">({errors[key]})</span>}
       </Label>
       <Input
         id={`contract-${key}`}
@@ -117,7 +117,7 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Carregando contrato…</p>
       ) : isError ? (
-        <p className="text-xs text-destructive">Contrato indisponível.</p>
+        <p className="text-xs text-destructive-text">Contrato indisponível.</p>
       ) : active ? (
         <>
           <div className="flex items-center gap-2">
@@ -198,14 +198,14 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
                 </select>
               </div>
               {field("deadline", "Prazo", { type: "date", min: today })}
-              {field("baseline", "Baseline", { inputMode: "decimal" })}
+              {field("baseline", "Linha de base", { inputMode: "decimal" })}
               {field("target", "Meta", { inputMode: "decimal" })}
               {field("limit", "Limite (opcional)", { inputMode: "decimal" })}
               {field("referenceHumanMinutes", "Min. humanos de referência", { inputMode: "decimal" })}
               <div className="space-y-1 sm:col-span-2">
                 <Label htmlFor="contract-owner" className="text-xs">
-                  Dono
-                  {errors.ownerMemberId && <span className="ml-1 text-destructive">({errors.ownerMemberId})</span>}
+                  Responsável
+                  {errors.ownerMemberId && <span className="ml-1 text-destructive-text">({errors.ownerMemberId})</span>}
                 </Label>
                 <select
                   id="contract-owner"

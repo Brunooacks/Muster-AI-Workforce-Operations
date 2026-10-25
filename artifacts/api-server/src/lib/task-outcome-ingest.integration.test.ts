@@ -235,7 +235,7 @@ describe.skipIf(!runIntegration)("ingest com resultado de tarefa (cunha · C1.3/
     expect(await first.report({ kind: "error", costCents: 4, tokensIn: 900, contextTokens: 600, model: "m-large" })).toBe(true);
     const second = first.retry();
     expect(await second.report({ kind: "execution", success: true, costCents: 2, tokensIn: 400, model: "m-small" })).toBe(true);
-    expect(await second.review({ approved: true, minutes: 3, by: "bruno" })).toBe(true);
+    expect(await second.review({ approved: true, minutes: 3, by: "revisora" })).toBe(true);
 
     const rows = await eventosDaTask(`t-sdk-${suffix}`);
     expect(rows.map((r) => [r.kind, r.attempt, r.retryOf, r.model])).toEqual([
@@ -243,7 +243,7 @@ describe.skipIf(!runIntegration)("ingest com resultado de tarefa (cunha · C1.3/
       ["execution", 2, first.runId, "m-small"],
       ["human_review", 2, null, null],
     ]);
-    expect(rows[2]).toMatchObject({ humanMinutes: 3, acceptedBy: "bruno", success: 1 });
+    expect(rows[2]).toMatchObject({ humanMinutes: 3, acceptedBy: "revisora", success: 1 });
     expect(rows[2]!.acceptedAt).toBeInstanceOf(Date);
   });
 });

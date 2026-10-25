@@ -484,7 +484,7 @@ function TelemetrySection({
             </p>
             <p className="max-w-md text-xs text-muted-foreground/80">
               Sem evidência a plataforma não calcula nota — de propósito. Ligue a telemetria para que
-              as cinco camadas passem a ser medidas.
+              as três camadas passem a ser medidas.
             </p>
             <Button asChild size="sm" className="mt-1">
               <Link href={`/agentes/${agentId}/conectar`}>
@@ -556,7 +556,7 @@ const SNAPSHOT_TONE: Record<string, { heading: string; bar: string }> = {
     bar: "bg-chart-1/20 text-chart-1",
   },
   mentor: {
-    heading: "text-chart-2",
+    heading: "text-chart-2-text",
     bar: "bg-chart-2/90 text-primary-foreground",
   },
   observation: {
@@ -564,7 +564,7 @@ const SNAPSHOT_TONE: Record<string, { heading: string; bar: string }> = {
     bar: "bg-chart-5/20 text-chart-5",
   },
   retire: {
-    heading: "text-chart-4",
+    heading: "text-chart-4-text",
     bar: "bg-primary text-primary-foreground",
   },
 };
@@ -942,7 +942,7 @@ export default function AgentDetailPage() {
                     <ul className="mt-1.5 space-y-1.5">
                       {identity.shouldNotDo.map((item, i) => (
                         <li key={i} className="flex gap-2 text-foreground/90">
-                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-3" />
+                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-3-text" />
                           <span className="text-[13px] leading-snug">{item}</span>
                         </li>
                       ))}
@@ -1079,7 +1079,7 @@ export default function AgentDetailPage() {
           <SectionHeader number="05" title={t.sec04.title} caption={t.sec04.caption} />
           {alertsError ? (
             <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>
-              <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3" />
+              <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3-text" />
               {p.detectorError}
             </div>
           ) : agentAlerts.length > 0 ? (

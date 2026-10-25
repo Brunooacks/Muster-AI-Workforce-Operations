@@ -47,6 +47,12 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  /* Texto de status (chips de risco/atenção): ≥4,5:1 sobre fundo, cartão e tinta de 10–15% */
+  --color-chart-2-text: hsl(var(--chart-2-text));
+  --color-chart-3-text: hsl(var(--chart-3-text));
+  --color-chart-4-text: hsl(var(--chart-4-text));
+  --color-destructive-text: hsl(var(--destructive-text));
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -68,136 +74,138 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* OPS ROOM — Sala de Operações (conceito B): void + phosphor + creme.
-   Supersede a "Trincheira" clara. Serif Spectral e mono IBM Plex permanecem;
-   o chão vira a sala de comando escura da landing. */
-:root {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .06);
+/* ============================================================
+   Muster · Design System "Claro de decisão"
+   Dois perfis: "claro" (site + app modo claro) e "noite" (app modo escuro).
+   Troque com data-profile="claro" | "noite" no <html> ou <body>.
+   ============================================================ */
 
-  --opaque-button-border-intensity: 9;
+/* ---------- CLARO (padrão da home e do app) ---------- */
+[data-profile="claro"], :root {
+  --background: 0 0% 100%;              /* #ffffff */
+  --foreground: 240 3% 12%;             /* #1d1d1f  tinta */
+  --card: 0 0% 100%;
+  --card-foreground: 240 3% 12%;
+  --card-border: 240 5% 90%;            /* #e4e4e8 */
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 3% 12%;
+  --popover-border: 240 5% 90%;
+  --border: 240 5% 90%;
+  --input: 240 5% 90%;
 
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --primary: 240 3% 12%;                /* botão principal = tinta #1d1d1f */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 11% 96%;             /* #f5f5f7  superfície cinza-claro */
+  --secondary-foreground: 240 3% 12%;
+  --muted: 240 11% 96%;
+  --muted-foreground: 240 2% 44%;       /* #6e6e73 */
+  --accent: 189 92% 53%;                /* #19d3f5  ciano: destaque, preenchimento, realce */
+  --accent-foreground: 240 3% 12%;
+  --destructive: 12 54% 46%;            /* #b54f36 */
+  --destructive-foreground: 0 0% 100%;
+  --ring: 189 92% 53%;
 
-  /* Deep green-black void #0e1512 */
-  --background: 160 18% 7%;
-  --foreground: 43 38% 90%; /* warm cream #efe9da */
+  /* Ciano escuro para texto/links no modo claro (contraste ≥4.5:1 sobre branco) */
+  --cyan-text: 189 75% 30%;             /* ciano escuro p/ texto: 5,4:1 no branco, 4,9:1 no cinza */
 
-  --border: 152 12% 18%;
-  --input: 152 12% 18%;
-  --ring: 148 29% 61%; /* phosphor */
+  /* Âmbar escuro para texto/atenção no modo claro (contraste ≥4.5:1 sobre branco) */
+  --chart-2-text: 35 68% 30%;
+  /* Terracota/rosa escuros só para texto: o tom de preenchimento fica 4,4:1 e 3,4:1 em chips */
+  --chart-3-text: 12 60% 38%;
+  --chart-4-text: 340 80% 38%;
+  --destructive-text: 12 60% 38%;
 
-  --card: 158 15% 9%;
-  --card-foreground: 43 38% 90%;
-  --card-border: 152 13% 16%;
+  /* Semântica de dado (status), estável nos dois perfis */
+  --chart-1: 189 92% 53%;               /* positivo / no alvo         #19d3f5 */
+  --chart-2: 40 78% 58%;                /* atenção / corrigir         #e7aa40 */
+  --chart-3: 12 54% 46%;                /* negativo / fora da meta    #b54f36 */
+  --chart-4: 340 100% 62%;              /* crítico                    #ff3d81 */
+  --chart-5: 240 2% 44%;                /* neutro / observação        #6e6e73 */
 
-  --popover: 158 15% 10%;
-  --popover-foreground: 43 38% 90%;
-  --popover-border: 152 12% 18%;
+  --sidebar: 240 11% 96%;
+  --sidebar-foreground: 240 3% 12%;
+  --sidebar-border: 240 5% 90%;
+  --sidebar-primary: 240 3% 12%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 100%;
+  --sidebar-accent-foreground: 240 3% 12%;
+  --sidebar-ring: 189 92% 53%;
 
-  /* Primary: phosphor sage #7fb89a — dark ink on top */
-  --primary: 148 29% 61%;
-  --primary-foreground: 160 18% 8%;
+  --app-font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --app-font-serif: 'Geist', system-ui, sans-serif;
+  --app-font-mono: 'IBM Plex Mono', Menlo, monospace;
+  --radius: 0.75rem;                    /* 12px; cards grandes usam 24–32px; pílulas 999px */
 
-  --secondary: 156 12% 14%;
-  --secondary-foreground: 43 30% 85%;
-
-  --muted: 156 12% 13%;
-  --muted-foreground: 150 8% 57%; /* #8fa094 */
-
-  --accent: 156 12% 14%;
-  --accent-foreground: 43 38% 90%;
-
-  --destructive: 6 55% 50%;
-  --destructive-foreground: 43 38% 95%;
-
-  /* Status palette on void — phosphor / ochre / terracotta / red / steel */
-  --chart-1: 148 32% 60%; /* phosphor — ativo / promover */
-  --chart-2: 38 53% 56%;  /* ochre — probation / mentorar */
-  --chart-3: 10 52% 58%;  /* terracotta — em alerta / aposentar */
-  --chart-4: 4 62% 56%;   /* red — crítico */
-  --chart-5: 205 32% 62%; /* steel blue — observação */
-
-  --sidebar: 160 20% 6%;
-  --sidebar-foreground: 43 38% 88%;
-  --sidebar-border: 152 12% 14%;
-  --sidebar-primary: 148 29% 61%;
-  --sidebar-primary-foreground: 160 18% 8%;
-  --sidebar-accent: 156 12% 13%;
-  --sidebar-accent-foreground: 43 38% 90%;
-  --sidebar-ring: 148 29% 61%;
-
-  --app-font-sans: 'Inter', system-ui, sans-serif;
-  --app-font-serif: 'Spectral', Georgia, serif;
-  --app-font-mono: 'IBM Plex Mono', 'Menlo', 'Monaco', monospace;
-  --radius: 0.625rem;
-
-  --shadow-2xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
-  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3);
-  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-2xl: 0 16px 48px rgba(0, 0, 0, 0.5);
-
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --elevate-1: rgba(0,0,0,.03);
+  --elevate-2: rgba(0,0,0,.07);
+  --button-outline: rgba(0,0,0,.10);
+  --badge-outline: rgba(0,0,0,.07);
+  --shadow-card: 0 50px 100px -30px rgba(0,0,0,.45);
+  --shadow-soft: 0 10px 40px -20px rgba(0,0,0,.2);
 }
 
-/* Ops Room é o tema único — `.dark` espelha :root para que qualquer toggle
-   de tema residual (next-themes) não degrade para o dark antigo. */
-.dark {
-  --background: 160 18% 7%;
-  --foreground: 43 38% 90%;
+/* ---------- NOITE (área logada, modo escuro) ---------- */
+[data-profile="noite"] {
+  --background: 225 37% 4%;             /* #06080d */
+  --foreground: 210 36% 95%;            /* #eef2f7 */
+  --card: 220 33% 7%;                   /* #0c1018 */
+  --card-foreground: 210 36% 95%;
+  --card-border: 220 20% 14%;
+  --popover: 220 33% 8%;
+  --popover-foreground: 210 36% 95%;
+  --popover-border: 220 20% 16%;
+  --border: 220 20% 14%;
+  --input: 220 20% 16%;
 
-  --border: 152 12% 18%;
-  --input: 152 12% 18%;
-  --ring: 148 29% 61%;
+  --primary: 189 92% 53%;               /* no escuro, a ação principal é o ciano */
+  --primary-foreground: 225 37% 4%;
+  --secondary: 220 20% 12%;
+  --secondary-foreground: 210 36% 95%;
+  --muted: 220 20% 11%;
+  --muted-foreground: 221 14% 60%;      /* #8b94a7 */
+  --accent: 189 92% 53%;
+  --accent-foreground: 225 37% 4%;
+  --destructive: 340 100% 62%;          /* #ff3d81 */
+  --destructive-foreground: 225 37% 4%;
+  --ring: 189 92% 53%;
 
-  --card: 158 15% 9%;
-  --card-foreground: 43 38% 90%;
-  --card-border: 152 13% 16%;
+  /* Ciano para texto no modo escuro (já tem bom contraste) */
+  --cyan-text: 189 92% 53%;             /* #19d3f5 */
+  --chart-2-text: 40 100% 66%;          /* #ffb020 - texto de atenção no escuro */
+  --chart-3-text: 340 100% 74%;
+  --chart-4-text: 4 80% 72%;
+  --destructive-text: 340 100% 74%;
 
-  --popover: 158 15% 10%;
-  --popover-foreground: 43 38% 90%;
-  --popover-border: 152 12% 18%;
+  --chart-1: 189 92% 53%;               /* #19d3f5 */
+  --chart-2: 38 100% 56%;               /* #ffb020 */
+  --chart-3: 340 100% 62%;              /* #ff3d81 */
+  --chart-4: 4 62% 56%;                 /* vermelho */
+  --chart-5: 205 32% 62%;               /* azul-aço */
 
-  --primary: 148 29% 61%;
-  --primary-foreground: 160 18% 8%;
+  --sidebar: 225 40% 3%;
+  --sidebar-foreground: 210 36% 92%;
+  --sidebar-border: 220 20% 12%;
+  --sidebar-primary: 189 92% 53%;
+  --sidebar-primary-foreground: 225 37% 4%;
+  --sidebar-accent: 220 20% 11%;
+  --sidebar-accent-foreground: 210 36% 95%;
+  --sidebar-ring: 189 92% 53%;
 
-  --secondary: 156 12% 14%;
-  --secondary-foreground: 43 30% 85%;
+  --elevate-1: rgba(255,255,255,.04);
+  --elevate-2: rgba(255,255,255,.09);
+  --button-outline: rgba(255,255,255,.10);
+  --badge-outline: rgba(255,255,255,.06);
+  --shadow-card: 0 60px 140px -40px rgba(0,0,0,.9), 0 0 120px -40px rgba(25,211,245,.25);
+  --shadow-soft: 0 30px 80px -30px rgba(0,0,0,.8);
+}
 
-  --muted: 156 12% 13%;
-  --muted-foreground: 150 8% 57%;
-
-  --accent: 156 12% 14%;
-  --accent-foreground: 43 38% 90%;
-
-  --destructive: 6 55% 50%;
-  --destructive-foreground: 43 38% 95%;
-
-  --chart-1: 148 32% 60%;
-  --chart-2: 38 53% 56%;
-  --chart-3: 10 52% 58%;
-  --chart-4: 4 62% 56%;
-  --chart-5: 205 32% 62%;
-
-  --sidebar: 160 20% 6%;
-  --sidebar-foreground: 43 38% 88%;
-  --sidebar-border: 152 12% 14%;
-  --sidebar-primary: 148 29% 61%;
-  --sidebar-primary-foreground: 160 18% 8%;
-  --sidebar-accent: 156 12% 13%;
-  --sidebar-accent-foreground: 43 38% 90%;
-  --sidebar-ring: 148 29% 61%;
+/* Fundo da área logada no perfil noite: grade sutil em ciano */
+[data-profile="noite"] body {
+  background-image:
+    radial-gradient(circle at 80% -10%, hsl(var(--accent) / .12), transparent 34rem),
+    linear-gradient(hsl(var(--accent) / .05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--accent) / .035) 1px, transparent 1px);
+  background-size: auto, 56px 56px, 56px 56px;
 }
 
 @layer base {
@@ -207,15 +215,22 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at 76% -10%, hsl(var(--primary) / 0.12), transparent 30rem),
-      linear-gradient(hsl(var(--primary) / 0.035) 1px, transparent 1px);
-    background-size: auto, 100% 34px;
     min-width: 320px;
+  }
+
+  /* Tipografia Geist + IBM Plex Mono */
+  html {
+    font-family: var(--app-font-sans);
+  }
+
+  /* text-wrap balance em títulos */
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
   }
 }
 
 @layer components {
+  /* Superfície da landing (gradientes sutis) */
   .landing-surface {
     background-image:
       radial-gradient(circle at 12% 4%, hsl(var(--primary) / 0.18), transparent 31rem),
@@ -254,8 +269,79 @@
     background: linear-gradient(145deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.8));
     box-shadow: 0 18px 48px hsl(160 30% 2% / 0.14);
   }
+
+  /* Botão primário: pílula tinta/branco (claro) ou ciano/escuro (noite) */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+  .btn-primary:hover {
+    @apply opacity-90;
+  }
+
+  /* Botão secundário: texto tinta com seta */
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:text-primary;
+  }
+
+  /* Seletor segmentado */
+  .segmented {
+    @apply inline-flex items-center gap-1 rounded-full p-1;
+    background: rgba(0,0,0,.06);
+  }
+  [data-profile="noite"] .segmented {
+    background: rgba(255,255,255,.08);
+  }
+  .segmented-item {
+    @apply rounded-full px-4 py-2 text-sm font-medium transition-all;
+  }
+  .segmented-item.active {
+    @apply bg-white text-foreground shadow-sm;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  }
+  [data-profile="noite"] .segmented-item.active {
+    @apply bg-card text-card-foreground;
+    box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  .segmented-item:not(.active) {
+    @apply text-muted-foreground hover:text-foreground;
+  }
+
+  /* Selo "Dados ilustrativos" */
+  .badge-illustrative {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em];
+    border-color: hsl(var(--chart-2));
+    background: hsl(var(--chart-2) / 0.1);
+    color: hsl(var(--chart-2-text));
+  }
+  [data-profile="noite"] .badge-illustrative {
+    border-color: hsl(var(--chart-2));
+    background: hsl(var(--chart-2) / 0.15);
+    color: hsl(var(--chart-2));
+  }
+
+  /* Selo "Em breve" */
+  .badge-soon {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em];
+    border-color: hsl(var(--chart-2));
+    background: hsl(var(--chart-2) / 0.1);
+    color: hsl(var(--chart-2-text));
+  }
+
+  /* Cards de preço */
+  .pricing-card {
+    @apply rounded-2xl border p-6 lg:p-8 flex flex-col gap-4;
+  }
+  .pricing-card.popular {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+  .pricing-card.popular .pricing-btn {
+    @apply bg-accent text-accent-foreground;
+  }
 }
 
+/* Estilos do Clerk */
 @layer clerk {
   .cl-formFieldInput {
     color: hsl(var(--foreground)) !important;
@@ -287,243 +373,7 @@
   }
 }
 
-/* ── Ops Room: keyframes compartilhados (landing + esquema) ── */
-@keyframes ops-reel {
-  to { transform: translateX(-50%); }
-}
-@keyframes ops-blink {
-  50% { opacity: 0.25; }
-}
-@keyframes ops-flowdash {
-  to { stroke-dashoffset: -9; }
-}
-.ops-flow {
-  fill: none;
-  stroke: hsl(var(--primary) / 0.32);
-  stroke-width: 1.2;
-  stroke-dasharray: 3 6;
-  animation: ops-flowdash 1.1s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ops-flow { animation: none; }
-  .ops-reel-anim { animation: none !important; }
-  .ops-flow-dot, .ops-scan { display: none; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Perfis de cor — na linha dos perfis do Terminal do macOS.
-   
-   Cada perfil troca apenas os tokens de base; toda a interface é construída
-   sobre eles, então nenhum componente precisa saber que o tema mudou. A regra
-   de harmonia que mantém os perfis coerentes entre si:
-     · um fundo escuro de matiz definida, não cinza puro;
-     · a superfície um passo acima do fundo, na mesma matiz;
-     · um acento só, que também é o anel de foco;
-     · a paleta semântica (estável / atenção / crítico / observação) preservada
-       em função, com a matiz ajustada para não brigar com o acento.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Âmbar — fósforo de terminal antigo, quente e de alto contraste. */
-[data-profile="ambar"] {
-  --background: 30 14% 6%;
-  --foreground: 38 44% 88%;
-  --border: 32 12% 18%;
-  --input: 32 12% 18%;
-  --ring: 38 78% 58%;
-  --card: 28 13% 8%;
-  --card-foreground: 38 44% 88%;
-  --card-border: 32 13% 16%;
-  --popover: 28 13% 9%;
-  --popover-foreground: 38 44% 88%;
-  --popover-border: 32 12% 18%;
-  --primary: 38 78% 58%;
-  --primary-foreground: 30 20% 8%;
-  --secondary: 32 11% 14%;
-  --secondary-foreground: 38 36% 84%;
-  --muted: 32 11% 13%;
-  --muted-foreground: 36 10% 58%;
-  --accent: 32 11% 14%;
-  --accent-foreground: 38 44% 88%;
-  --destructive: 6 58% 52%;
-  --destructive-foreground: 38 44% 94%;
-  --chart-1: 38 70% 58%;
-  --chart-2: 24 62% 56%;
-  --chart-3: 8 55% 58%;
-  --chart-4: 2 62% 56%;
-  --chart-5: 190 28% 58%;
-  --sidebar: 30 16% 5%;
-  --sidebar-foreground: 38 44% 86%;
-  --sidebar-border: 32 12% 14%;
-  --sidebar-primary: 38 78% 58%;
-  --sidebar-primary-foreground: 30 20% 8%;
-  --sidebar-accent: 32 11% 13%;
-  --sidebar-accent-foreground: 38 44% 88%;
-  --sidebar-ring: 38 78% 58%;
-}
-
-/* Ardósia — azul-cinza sóbrio, o mais neutro dos perfis escuros. */
-[data-profile="ardosia"] {
-  --background: 215 22% 9%;
-  --foreground: 210 24% 90%;
-  --border: 214 16% 21%;
-  --input: 214 16% 21%;
-  --ring: 205 62% 62%;
-  --card: 215 20% 11%;
-  --card-foreground: 210 24% 90%;
-  --card-border: 214 16% 19%;
-  --popover: 215 20% 12%;
-  --popover-foreground: 210 24% 90%;
-  --popover-border: 214 16% 21%;
-  --primary: 205 62% 62%;
-  --primary-foreground: 215 26% 10%;
-  --secondary: 214 15% 17%;
-  --secondary-foreground: 210 20% 86%;
-  --muted: 214 15% 16%;
-  --muted-foreground: 212 12% 62%;
-  --accent: 214 15% 17%;
-  --accent-foreground: 210 24% 90%;
-  --destructive: 358 58% 56%;
-  --destructive-foreground: 210 24% 95%;
-  --chart-1: 158 44% 56%;
-  --chart-2: 40 60% 60%;
-  --chart-3: 14 58% 60%;
-  --chart-4: 358 62% 60%;
-  --chart-5: 205 62% 66%;
-  --sidebar: 215 24% 8%;
-  --sidebar-foreground: 210 24% 88%;
-  --sidebar-border: 214 16% 17%;
-  --sidebar-primary: 205 62% 62%;
-  --sidebar-primary-foreground: 215 26% 10%;
-  --sidebar-accent: 214 15% 16%;
-  --sidebar-accent-foreground: 210 24% 90%;
-  --sidebar-ring: 205 62% 62%;
-}
-
-/* Solarizado — a paleta de Ethan Schoonover, de baixo contraste e olhos calmos. */
-[data-profile="solarizado"] {
-  --background: 192 100% 8%;
-  --foreground: 186 22% 74%;
-  --border: 192 44% 17%;
-  --input: 192 44% 17%;
-  --ring: 175 59% 40%;
-  --card: 192 81% 10%;
-  --card-foreground: 186 22% 74%;
-  --card-border: 192 44% 16%;
-  --popover: 192 81% 11%;
-  --popover-foreground: 186 22% 74%;
-  --popover-border: 192 44% 17%;
-  --primary: 175 59% 40%;
-  --primary-foreground: 192 100% 8%;
-  --secondary: 192 55% 14%;
-  --secondary-foreground: 186 22% 80%;
-  --muted: 192 55% 13%;
-  --muted-foreground: 186 14% 56%;
-  --accent: 192 55% 14%;
-  --accent-foreground: 186 22% 78%;
-  --destructive: 1 71% 52%;
-  --destructive-foreground: 44 87% 94%;
-  --chart-1: 175 59% 44%;
-  --chart-2: 45 100% 35%;
-  --chart-3: 18 80% 44%;
-  --chart-4: 1 71% 52%;
-  --chart-5: 205 69% 49%;
-  --sidebar: 192 100% 7%;
-  --sidebar-foreground: 186 22% 72%;
-  --sidebar-border: 192 44% 14%;
-  --sidebar-primary: 175 59% 40%;
-  --sidebar-primary-foreground: 192 100% 8%;
-  --sidebar-accent: 192 55% 13%;
-  --sidebar-accent-foreground: 186 22% 76%;
-  --sidebar-ring: 175 59% 40%;
-}
-
-/* Grafite — neutro quase puro, para quem quer a cor toda no dado. */
-[data-profile="grafite"] {
-  --background: 240 6% 8%;
-  --foreground: 240 8% 90%;
-  --border: 240 5% 20%;
-  --input: 240 5% 20%;
-  --ring: 240 10% 70%;
-  --card: 240 6% 10%;
-  --card-foreground: 240 8% 90%;
-  --card-border: 240 5% 18%;
-  --popover: 240 6% 11%;
-  --popover-foreground: 240 8% 90%;
-  --popover-border: 240 5% 20%;
-  --primary: 240 10% 76%;
-  --primary-foreground: 240 8% 10%;
-  --secondary: 240 5% 16%;
-  --secondary-foreground: 240 8% 86%;
-  --muted: 240 5% 15%;
-  --muted-foreground: 240 5% 60%;
-  --accent: 240 5% 16%;
-  --accent-foreground: 240 8% 90%;
-  --destructive: 0 55% 55%;
-  --destructive-foreground: 240 8% 95%;
-  --chart-1: 152 34% 58%;
-  --chart-2: 42 54% 60%;
-  --chart-3: 16 52% 58%;
-  --chart-4: 0 55% 58%;
-  --chart-5: 220 26% 66%;
-  --sidebar: 240 6% 6%;
-  --sidebar-foreground: 240 8% 88%;
-  --sidebar-border: 240 5% 16%;
-  --sidebar-primary: 240 10% 76%;
-  --sidebar-primary-foreground: 240 8% 10%;
-  --sidebar-accent: 240 5% 15%;
-  --sidebar-accent-foreground: 240 8% 90%;
-  --sidebar-ring: 240 10% 70%;
-}
-
-/* Papel — o único perfil claro, para sala com projetor ou luz forte. */
-[data-profile="papel"] {
-  --background: 60 20% 97%;
-  --foreground: 160 14% 14%;
-  --border: 150 10% 86%;
-  --input: 150 10% 86%;
-  --ring: 152 34% 38%;
-  --card: 0 0% 100%;
-  --card-foreground: 160 14% 14%;
-  --card-border: 150 10% 88%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 160 14% 14%;
-  --popover-border: 150 10% 86%;
-  --primary: 152 34% 34%;
-  --primary-foreground: 60 20% 97%;
-  --secondary: 150 14% 93%;
-  --secondary-foreground: 160 14% 20%;
-  --muted: 150 14% 94%;
-  --muted-foreground: 155 8% 42%;
-  --accent: 150 14% 93%;
-  --accent-foreground: 160 14% 16%;
-  --destructive: 6 58% 46%;
-  --destructive-foreground: 60 20% 98%;
-  --chart-1: 152 38% 36%;
-  --chart-2: 36 58% 42%;
-  --chart-3: 12 54% 46%;
-  --chart-4: 2 60% 48%;
-  --chart-5: 205 40% 44%;
-  --sidebar: 150 16% 95%;
-  --sidebar-foreground: 160 14% 18%;
-  --sidebar-border: 150 10% 87%;
-  --sidebar-primary: 152 34% 34%;
-  --sidebar-primary-foreground: 60 20% 97%;
-  --sidebar-accent: 150 14% 91%;
-  --sidebar-accent-foreground: 160 14% 16%;
-  --sidebar-ring: 152 34% 38%;
-
-  /* No claro, o realce por sobreposição precisa escurecer, não clarear. */
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .07);
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .07);
-}
-
-/* ── Barra de rolagem ──────────────────────────────────────────────────────
-   A barra padrão do sistema aparecia larga e clara demais sobre o fundo escuro,
-   cortando a lateral da sidebar. Fica fina, na cor da borda, e só ganha
-   contraste sob o cursor — presente quando se precisa dela, silenciosa quando
-   não. Vale para todos os perfis, porque deriva dos tokens. */
+/* Barra de rolagem fina */
 * {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--border)) transparent;
@@ -533,8 +383,6 @@
 ::-webkit-scrollbar-thumb {
   background-color: hsl(var(--border));
   border-radius: 999px;
-  /* A borda transparente encolhe o polegar visualmente sem reduzir a área de
-     clique — mais discreto, mesma facilidade de pegar. */
   border: 3px solid transparent;
   background-clip: content-box;
 }

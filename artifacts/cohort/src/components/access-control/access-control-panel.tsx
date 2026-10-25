@@ -946,7 +946,7 @@ export function AccessControlPanel({ onInvite }: { onInvite: () => void }) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 text-destructive"
+                      className="h-8 w-8 text-destructive-text"
                       onClick={() => setGroupToDelete(group)}
                       disabled={!canManage}
                       aria-label={`Excluir grupo ${group.name}`}

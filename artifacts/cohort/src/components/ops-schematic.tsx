@@ -1,6 +1,6 @@
 /**
  * OpsSchematic — o esquema animado "a plataforma operando por dentro".
- * Pipeline: conectores → admissão (carteira) → avaliação 5 camadas (feixe de
+ * Pipeline: conectores → admissão (carteira) → avaliação 3 camadas (feixe de
  * varredura + detector de vitória ilusória) → veredito do comitê.
  *
  * SVG puro com animações nativas (SMIL) — sem dependências. Cores fixas da
@@ -66,7 +66,7 @@ export const OPS_LABELS_PT: OpsSchematicLabels = {
   verdictTitle: "VEREDITO DO COMITÊ",
   layers: ["EFICÁCIA", "EFICIÊNCIA", "ADOÇÃO", "GOVERNANÇA", "VALOR"],
   verdicts: ["PROMOVER", "MENTORAR", "APOSENTAR"],
-  aria: "Esquema animado do pipeline do Muster: conectores alimentam a admissão, agentes atravessam a avaliação em cinco camadas sob o detector de vitória ilusória e saem com veredito de promover, mentorar ou aposentar.",
+  aria: "Esquema animado do pipeline do Muster: conectores alimentam a admissão, agentes atravessam a avaliação em três camadas sob o detector de vitória ilusória e saem com veredito de promover, mentorar ou aposentar.",
 };
 
 const DOTS: Array<{ path: string; color: string; dur: string; begin: string; opacity?: number }> = [
@@ -138,7 +138,7 @@ export function OpsSchematic({
         </circle>
       </g>
 
-      {/* ── Núcleo: avaliação 5 camadas ── */}
+      {/* ── Núcleo: avaliação 3 camadas ── */}
       <rect x="440" y="80" width="300" height="260" fill={box.fill} stroke="rgba(127,184,154,.55)" rx={5} />
       <text x="456" y="103" fill={CREAM} fontSize="10.5" letterSpacing=".16em">
         {labels.evaluation}

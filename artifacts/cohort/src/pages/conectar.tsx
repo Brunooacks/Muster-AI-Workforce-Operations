@@ -71,7 +71,7 @@ const PT: Dict = {
   eyebrow: "INTEGRAÇÃO",
   title: (nome) => `Ligar a telemetria de ${nome}`,
   subtitle:
-    "Sem evidência, a plataforma não dá nota. São três passos e o último acontece sozinho.",
+    "Sem prova, a plataforma não dá nota. São três passos e o último acontece sozinho.",
   stepKey: "A credencial deste agente",
   stepKeyHelp:
     "Vale só para ele: uma credencial do agente A não consegue reportar pelo agente B. Aparece uma única vez.",
@@ -448,7 +448,7 @@ export default function ConectarPage({ embedded = false }: { embedded?: boolean 
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-chart-2/20">
-                  <Check className="h-3.5 w-3.5 text-chart-2" />
+                  <Check className="h-3.5 w-3.5 text-chart-2-text" />
                 </span>
                 <div>
                   <p className="font-medium text-foreground">{t.arrived}</p>

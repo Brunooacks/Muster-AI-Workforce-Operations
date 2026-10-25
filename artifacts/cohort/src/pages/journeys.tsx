@@ -703,7 +703,7 @@ function KpiCard({
     <div className={cn("rounded-xl border bg-card/90 p-4", attention ? "border-chart-2/50" : "border-card-border/90")}>
       <div className="mb-3 flex items-center justify-between">
         <Eyebrow>{label}</Eyebrow>
-        <Icon className={cn("h-4 w-4", attention ? "text-chart-2" : "text-muted-foreground")} />
+        <Icon className={cn("h-4 w-4", attention ? "text-chart-2-text" : "text-muted-foreground")} />
       </div>
       <p className="font-serif text-2xl font-medium text-foreground">{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
@@ -763,7 +763,7 @@ function RecommendationCard({
       label: "Humano decide/executa",
       description: "Decisões, exceções e ações que exigem responsabilidade humana.",
       icon: UserCheck,
-      iconClassName: "bg-chart-2/15 text-chart-2",
+      iconClassName: "bg-chart-2/15 text-chart-2-text",
       summary: recommendation.autonomySummary.human,
     },
   ];
@@ -779,7 +779,7 @@ function RecommendationCard({
               <span className={cn(
                 "flex items-center gap-1.5 text-xs",
                 new Date(recommendation.reviewDueAt).getTime() < Date.now() && awaitingDecision
-                  ? "font-medium text-destructive"
+                  ? "font-medium text-destructive-text"
                   : "text-muted-foreground",
               )}>
                 <Clock className="h-3.5 w-3.5" />
@@ -826,7 +826,7 @@ function RecommendationCard({
             <div className="flex items-start gap-3">
               <span className={cn(
                 "rounded-lg p-2",
-                decisionDraft.decision === "approved" ? "bg-chart-1/15 text-chart-1" : "bg-destructive/10 text-destructive",
+                decisionDraft.decision === "approved" ? "bg-chart-1/15 text-chart-1" : "bg-destructive/10 text-destructive-text",
               )}>
                 {decisionDraft.decision === "approved" ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
               </span>
@@ -1665,7 +1665,7 @@ export default function JourneysPage({ embedded = false }: { embedded?: boolean 
             ) : detail.isError || !selectedJourney ? (
               <Card className="border-destructive/30 bg-card">
                 <CardContent className="flex min-h-64 flex-col items-center justify-center p-8 text-center">
-                  <XCircle className="mb-3 h-8 w-8 text-destructive" />
+                  <XCircle className="mb-3 h-8 w-8 text-destructive-text" />
                   <p className="font-medium text-foreground">Não foi possível abrir esta jornada</p>
                   <Button variant="outline" className="mt-4" onClick={() => detail.refetch()}>Tentar novamente</Button>
                 </CardContent>
@@ -1887,7 +1887,7 @@ export default function JourneysPage({ embedded = false }: { embedded?: boolean 
                         <Card className={cn("border bg-card", monitor.illusoryVictory ? "border-chart-3/50" : "border-chart-2/40")}>
                           <CardContent className="p-5">
                             <div className="flex items-start gap-3">
-                              <span className={cn("rounded-lg p-2", monitor.illusoryVictory ? "bg-chart-3/15 text-chart-3" : "bg-chart-2/15 text-chart-2")}><AlertTriangle className="h-5 w-5" /></span>
+                              <span className={cn("rounded-lg p-2", monitor.illusoryVictory ? "bg-chart-3/15 text-chart-3-text" : "bg-chart-2/15 text-chart-2-text")}><AlertTriangle className="h-5 w-5" /></span>
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2"><p className="font-medium text-foreground">{monitor.illusoryVictory ? "Possível vitória ilusória" : "Avisos de supervisão"}</p>{monitor.illusoryVictory && <Pill tone="terracotta">Requer decisão</Pill>}</div>
                                 <p className="mt-1 text-sm text-muted-foreground">{monitor.illusoryVictory ? "Há sucesso local em etapas da frota sem confirmação equivalente no resultado end-to-end." : "A telemetria identificou condições que merecem acompanhamento."}</p>
@@ -1999,7 +1999,7 @@ export default function JourneysPage({ embedded = false }: { embedded?: boolean 
                               return (
                                 <div key={run.runId} className="rounded-xl border border-border/70 bg-secondary/15 p-3">
                                   <div className="flex items-start justify-between gap-3">
-                                    <div className="flex min-w-0 items-start gap-2.5"><StatusIcon className={cn("mt-0.5 h-4 w-4 shrink-0", run.status === "completed" ? "text-chart-1" : run.status === "failed" ? "text-chart-3" : "text-chart-5")} /><div className="min-w-0"><p className="truncate font-mono text-xs text-foreground" title={run.runId}>{run.runId}</p><p className="mt-1 text-xs text-muted-foreground">{currentStep ? `Em ${currentStep.name}` : `${formatDate(run.startedAt)} → ${formatDate(run.completedAt)}`}</p></div></div>
+                                    <div className="flex min-w-0 items-start gap-2.5"><StatusIcon className={cn("mt-0.5 h-4 w-4 shrink-0", run.status === "completed" ? "text-chart-1" : run.status === "failed" ? "text-chart-3-text" : "text-chart-5")} /><div className="min-w-0"><p className="truncate font-mono text-xs text-foreground" title={run.runId}>{run.runId}</p><p className="mt-1 text-xs text-muted-foreground">{currentStep ? `Em ${currentStep.name}` : `${formatDate(run.startedAt)} → ${formatDate(run.completedAt)}`}</p></div></div>
                                     <Pill tone={statusTone(run.status)}>{statusLabel(run.status)}</Pill>
                                   </div>
                                   <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2 text-xs text-muted-foreground"><span>{formatDuration(run.durationMs)}</span><span>{formatCost(run.totalCostCents)}</span></div>
@@ -2017,7 +2017,7 @@ export default function JourneysPage({ embedded = false }: { embedded?: boolean 
                   <CardContent className="grid gap-4 p-5 sm:grid-cols-3">
                     <div className="flex items-center gap-3"><span className="rounded-lg bg-chart-1/15 p-2 text-chart-1"><Users className="h-4 w-4" /></span><div><p className="text-xs text-muted-foreground">Participantes</p><p className="font-medium text-foreground">{selectedJourney.agentCount} agentes · {orderedSteps.filter((step) => step.stepType === "human").length} etapas humanas</p></div></div>
                     <div className="flex items-center gap-3"><span className="rounded-lg bg-chart-5/15 p-2 text-chart-5"><GitBranch className="h-4 w-4" /></span><div><p className="text-xs text-muted-foreground">Cobertura de handoff</p><p className="font-medium text-foreground">{selectedJourney.handoffs.length}/{Math.max(orderedSteps.length - 1, 0)} conexões sequenciais</p></div></div>
-                    <div className="flex items-center gap-3"><span className="rounded-lg bg-chart-2/15 p-2 text-chart-2"><Clock className="h-4 w-4" /></span><div><p className="text-xs text-muted-foreground">Compromisso</p><p className="font-medium text-foreground">SLA de {selectedJourney.slaMinutes} min · owner {selectedJourney.owner || "pendente"}</p></div></div>
+                    <div className="flex items-center gap-3"><span className="rounded-lg bg-chart-2/15 p-2 text-chart-2-text"><Clock className="h-4 w-4" /></span><div><p className="text-xs text-muted-foreground">Compromisso</p><p className="font-medium text-foreground">SLA de {selectedJourney.slaMinutes} min · owner {selectedJourney.owner || "pendente"}</p></div></div>
                   </CardContent>
                 </Card>
               </>

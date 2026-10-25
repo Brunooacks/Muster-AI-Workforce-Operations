@@ -147,7 +147,7 @@ export function RatesSettings() {
 
       {rates.data && rates.data.length === 0 && (
         <div role="status" className="flex items-start gap-2 rounded-lg border border-chart-2/40 bg-chart-2/10 px-4 py-3 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-chart-2" />
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-chart-2-text" />
           <span>Sem custo-hora cadastrado: o custo por resultado dos agentes aparece como “indisponível”. Não usamos valor padrão.</span>
         </div>
       )}
@@ -192,7 +192,7 @@ export function RatesSettings() {
           <div className="space-y-1"><Label htmlFor="rate-to" className="text-xs">Fim (opcional)</Label><Input id="rate-to" type="date" value={rate.validTo} onChange={(e) => setRate({ ...rate, validTo: e.target.value })} /></div>
           <div className="flex items-end"><Button className="w-full" onClick={saveRate} disabled={createRate.isPending}>Adicionar custo-hora</Button></div>
         </div>
-        {rateErrors.length > 0 && <p className="text-xs text-destructive">{rateErrors.join(" ")}</p>}
+        {rateErrors.length > 0 && <p className="text-xs text-destructive-text">{rateErrors.join(" ")}</p>}
       </Card>
 
       <Card className="space-y-4 p-5">
