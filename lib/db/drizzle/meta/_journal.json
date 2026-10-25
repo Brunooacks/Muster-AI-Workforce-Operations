@@ -162,6 +162,34 @@
       "when": 1792887114875,
       "tag": "0022_projects_envs",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792889358830,
+      "tag": "0023_agent_events_outcome",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792890019675,
+      "tag": "0024_agent_contracts",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792899094881,
+      "tag": "0025_rates_offinvoice",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792899833796,
+      "tag": "0026_outcome_snapshots",
+      "breakpoints": true
     }
   ]
 }

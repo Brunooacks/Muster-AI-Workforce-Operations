@@ -119,6 +119,8 @@ export function toVerdict(v: VerdictRow) {
     decision: v.decision,
     decidedBy: v.decidedBy ?? null,
     decidedAt: v.decidedAt ? v.decidedAt.toISOString() : null,
+    contractId: v.contractId ?? null,
+    contractVersion: v.contractVersion ?? null,
     createdAt: v.createdAt.toISOString(),
   };
 }

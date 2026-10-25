@@ -27,6 +27,14 @@ import LandingDemo from "@/components/landing-demo";
 import { WorkforceOverview, WORKFORCE_OVERVIEW_PT, type WorkforceOverviewLabels } from "@/components/workforce-overview";
 import { LangSwitcher } from "@/components/lang-switcher";
 import { useLang, type Lang } from "@/lib/i18n";
+import {
+  BRIEF_EXAMPLE,
+  EXAMPLE_HINT,
+  EXAMPLE_LABEL,
+  MONTHLY_CLOSE_EXAMPLE,
+  OVERVIEW_EXAMPLE,
+  TICKER_EXAMPLE,
+} from "./landing-examples";
 
 type LandingPaletteId = "graphite" | "dracula" | "mocha";
 
@@ -162,7 +170,6 @@ interface LandingDict {
   finalSub: string;
   finalCta: string;
   footerRight: string;
-  ticker: Array<[string, string, string, string]>;
   mvpEyebrow: string;
   mvpTitle: string;
   mvpSub: string;
@@ -284,16 +291,6 @@ const L: Record<Lang, LandingDict> = {
     finalSub: "Comece com um assessment objetivo: conecte uma execução real, estabeleça o contrato de performance e produza a primeira revisão executiva.",
     finalCta: "Iniciar avaliação enterprise",
     footerRight: "Identidade · Evidência · Decisão · Accountability",
-    ticker: [
-      ["text-chart-1", "● CONTRATO CUMPRIDO", "Vega · entrega contínua", "91%"],
-      ["text-chart-2", "◆ REVIEW NECESSÁRIO", "Sofia · suporte N1", "42 min"],
-      ["text-chart-1", "↗ JORNADA A2A", "Entrega contínua segura", "94% e2e"],
-      ["text-chart-1", "● EVIDÊNCIA", "traces correlacionados", "97%"],
-      ["text-chart-2", "◆ BENCHMARK", "Revisor PR · pares equivalentes", "mediana"],
-      ["text-chart-1", "● EQUIPE MISTA", "7 pessoas · 4 agentes", "saudável"],
-      ["text-chart-3", "▼ GUARDRAIL", "mudança fora do escopo", "bloqueada"],
-      ["text-chart-1", "● CLOUD + LOCAL", "fallback por política", "pronto"],
-    ],
     mvpEyebrow: "O modelo operacional completo",
     mvpTitle: "Do portfólio profissional à jornada completa.",
     mvpSub: "Modele a função, componha equipes, conecte a execução e mantenha um ciclo contínuo de evidência, decisão e desenvolvimento.",
@@ -376,16 +373,6 @@ const L: Record<Lang, LandingDict> = {
     finalSub: "Start with an objective assessment: connect a real execution, establish the performance contract and produce the first executive review.",
     finalCta: "Start enterprise assessment",
     footerRight: "Identity · Evidence · Decision · Accountability",
-    ticker: [
-      ["text-chart-1", "● CONTRACT FULFILLED", "Vega · continuous delivery", "91%"],
-      ["text-chart-2", "◆ REVIEW REQUIRED", "Sofia · tier-1 support", "42 min"],
-      ["text-chart-1", "↗ A2A JOURNEY", "Safe continuous delivery", "94% e2e"],
-      ["text-chart-1", "● EVIDENCE", "correlated traces", "97%"],
-      ["text-chart-2", "◆ BENCHMARK", "PR Reviewer · equivalent peers", "median"],
-      ["text-chart-1", "● MIXED TEAM", "7 people · 4 agents", "healthy"],
-      ["text-chart-3", "▼ GUARDRAIL", "out-of-scope change", "blocked"],
-      ["text-chart-1", "● CLOUD + LOCAL", "policy-based fallback", "ready"],
-    ],
     mvpEyebrow: "The complete operating model",
     mvpTitle: "From professional portfolio to complete journey.",
     mvpSub: "Model the role, compose teams, connect execution and sustain a continuous evidence, decision and development loop.",
@@ -468,16 +455,6 @@ const L: Record<Lang, LandingDict> = {
     finalSub: "Comienza con un assessment objetivo: conecta una ejecución real, establece el contrato de desempeño y produce la primera revisión ejecutiva.",
     finalCta: "Iniciar evaluación enterprise",
     footerRight: "Identidad · Evidencia · Decisión · Accountability",
-    ticker: [
-      ["text-chart-1", "● CONTRATO CUMPLIDO", "Vega · entrega continua", "91%"],
-      ["text-chart-2", "◆ REVISIÓN NECESARIA", "Sofia · soporte N1", "42 min"],
-      ["text-chart-1", "↗ JORNADA A2A", "Entrega continua segura", "94% e2e"],
-      ["text-chart-1", "● EVIDENCIA", "traces correlacionados", "97%"],
-      ["text-chart-2", "◆ BENCHMARK", "Revisor PR · pares equivalentes", "mediana"],
-      ["text-chart-1", "● EQUIPO MIXTO", "7 personas · 4 agentes", "saludable"],
-      ["text-chart-3", "▼ GUARDRAIL", "cambio fuera de alcance", "bloqueado"],
-      ["text-chart-1", "● CLOUD + LOCAL", "fallback por política", "listo"],
-    ],
     mvpEyebrow: "El modelo operativo completo",
     mvpTitle: "Del portafolio profesional a la jornada completa.",
     mvpSub: "Modela la función, compone equipos, conecta la ejecución y mantiene un ciclo continuo de evidencia, decisión y desarrollo.",
@@ -494,13 +471,16 @@ const L: Record<Lang, LandingDict> = {
 };
 
 /* ── Ticker de vereditos (pregão da frota) ─────────────────── */
-function VerdictTicker({ items }: { items: LandingDict["ticker"] }) {
+function VerdictTicker({ items, example }: { items: Array<[string, string, string, string]>; example: string }) {
   const reel = [...items, ...items]; // duas cópias → -50% loopa sem emenda
   return (
     <div
       aria-hidden="true"
       className="relative h-10 w-full overflow-hidden whitespace-nowrap border-b border-primary/25 font-mono text-xs tracking-wide"
     >
+      <span className="absolute left-0 top-0 z-10 flex h-full items-center bg-background/95 px-3 text-[10px] uppercase tracking-[0.14em] text-chart-2">
+        {example}
+      </span>
       <div
         className="ops-reel-anim absolute left-0 top-2.5 inline-flex gap-11 pr-11"
         style={{ animation: "ops-reel 36s linear infinite" }}
@@ -523,9 +503,18 @@ const PROOF_ICONS = [Plug, ScanSearch, Activity, Gavel];
 const AI_ICONS = [ScanSearch, DatabaseZap, Target, FileCheck2];
 const ENTERPRISE_ICONS = [Building2, CloudCog, LockKeyhole, Network];
 
-function ExecutiveBriefPreview({ t }: { t: LandingDict }) {
-  const values = ["92%", "86%", "94%"];
-  const deltas = ["+4 pp", "+2 pp", "+7 pp"];
+function ExampleBadge({ lang }: { lang: Lang }) {
+  return (
+    <span
+      title={EXAMPLE_HINT[lang]}
+      className="inline-flex items-center rounded-full border border-chart-2/50 bg-chart-2/10 px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-chart-2"
+    >
+      {EXAMPLE_LABEL[lang]}
+    </span>
+  );
+}
+
+function ExecutiveBriefPreview({ t, lang }: { t: LandingDict; lang: Lang }) {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card shadow-[0_32px_100px_hsl(var(--background)/0.75)]">
       <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-primary/12 to-transparent" />
@@ -535,8 +524,11 @@ function ExecutiveBriefPreview({ t }: { t: LandingDict }) {
             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-primary">Board Brief · monthly snapshot</span>
             <h2 className="mt-1 font-serif text-xl font-medium">AI Workforce Review</h2>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.08em] text-primary">
-            <CheckCircle2 className="h-3 w-3" /> decision ready
+          <span className="flex flex-col items-end gap-1.5">
+            <ExampleBadge lang={lang} />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.08em] text-primary">
+              <CheckCircle2 className="h-3 w-3" /> {BRIEF_EXAMPLE.status}
+            </span>
           </span>
         </div>
       </div>
@@ -545,8 +537,8 @@ function ExecutiveBriefPreview({ t }: { t: LandingDict }) {
           {t.reportMetrics.map((metric, index) => (
             <div key={metric} className="rounded-xl border border-card-border bg-background/55 p-3">
               <span className="block text-[9px] leading-tight text-muted-foreground">{metric}</span>
-              <strong className="mt-2 block font-mono text-xl font-medium text-foreground">{values[index]}</strong>
-              <span className="mt-1 block font-mono text-[8px] text-primary">{deltas[index]} MoM</span>
+              <strong className="mt-2 block font-mono text-xl font-medium text-foreground">{BRIEF_EXAMPLE.metrics[index]!.value}%</strong>
+              <span className="mt-1 block font-mono text-[8px] text-primary">{BRIEF_EXAMPLE.metrics[index]!.delta} MoM</span>
             </div>
           ))}
         </div>
@@ -649,7 +641,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <VerdictTicker items={t.ticker} />
+      <VerdictTicker items={TICKER_EXAMPLE[lang]} example={EXAMPLE_LABEL[lang]} />
 
       {/* ── Hero ── */}
       <section id="visao" className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-16 sm:pt-24">
@@ -678,7 +670,7 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
-          <ExecutiveBriefPreview t={t} />
+          <ExecutiveBriefPreview t={t} lang={lang} />
         </div>
 
         <div className="mt-16 border-y border-primary/20 py-5">
@@ -702,7 +694,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/25 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             <span>{t.schematicHeader}</span><span className="text-primary"><span style={{ animation: "ops-blink 1.6s steps(1) infinite" }}>●</span> {t.live}</span>
           </div>
-          <WorkforceOverview labels={t.overview} />
+          <WorkforceOverview labels={t.overview} example={{ label: EXAMPLE_LABEL[lang], hint: EXAMPLE_HINT[lang], ...OVERVIEW_EXAMPLE }} />
         </div>
       </section>
 
@@ -757,11 +749,11 @@ export default function LandingPage() {
             </div>
             <div className="relative bg-[radial-gradient(circle_at_80%_0%,hsl(var(--primary)/0.16),transparent_38%)] p-7 sm:p-10">
               <div className="flex items-center justify-between gap-3">
-                <div><span className="font-mono text-[8px] uppercase tracking-[0.12em] text-primary">monthly close · v3</span><strong className="mt-1 block font-serif text-xl font-medium">Agosto 2026</strong></div>
-                <span className="rounded-full bg-primary/10 px-3 py-1.5 font-mono text-[8px] uppercase tracking-[0.1em] text-primary">decision ready</span>
+                <div><span className="font-mono text-[8px] uppercase tracking-[0.12em] text-primary">monthly close · v3</span><strong className="mt-1 block font-serif text-xl font-medium">{MONTHLY_CLOSE_EXAMPLE.month[lang]}</strong></div>
+                <span className="flex flex-col items-end gap-1.5"><ExampleBadge lang={lang} /><span className="rounded-full bg-primary/10 px-3 py-1.5 font-mono text-[8px] uppercase tracking-[0.1em] text-primary">{MONTHLY_CLOSE_EXAMPLE.status}</span></span>
               </div>
               <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                {[{ label: t.reportMetrics[0], value: 92, delta: "+4 pp" }, { label: t.reportMetrics[1], value: 86, delta: "+2 pp" }, { label: t.reportMetrics[2], value: 94, delta: "+7 pp" }, { label: "Governança", value: 78, delta: "-3 pp" }].map((metric) => (
+                {[...t.reportMetrics, MONTHLY_CLOSE_EXAMPLE.governanceLabel[lang]].map((label, index) => ({ label, ...MONTHLY_CLOSE_EXAMPLE.metrics[index]! })).map((metric) => (
                   <div key={metric.label} className="rounded-xl border border-card-border bg-background/60 p-4">
                     <div className="flex items-center justify-between text-[9px] text-muted-foreground"><span>{metric.label}</span><span className={metric.delta.startsWith("-") ? "text-chart-2" : "text-primary"}>{metric.delta}</span></div>
                     <div className="mt-3 flex items-end gap-3"><strong className="font-mono text-2xl font-medium">{metric.value}%</strong><div className="mb-1.5 h-1.5 flex-1 overflow-hidden rounded-full bg-border"><div className="h-full rounded-full bg-primary" style={{ width: `${metric.value}%` }} /></div></div>
@@ -769,7 +761,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <div className="mt-3 rounded-xl border border-primary/25 bg-primary/[0.055] p-4">
-                <div className="flex items-center gap-2 font-mono text-[8px] uppercase tracking-[0.1em] text-primary"><Sparkles className="h-3.5 w-3.5" /> insight priorizado · 91% confiança</div>
+                <div className="flex items-center gap-2 font-mono text-[8px] uppercase tracking-[0.1em] text-primary"><Sparkles className="h-3.5 w-3.5" /> {MONTHLY_CLOSE_EXAMPLE.insight[lang]}</div>
                 <p className="mt-2 text-xs leading-relaxed text-foreground/85">{t.reportSummary}</p>
                 <div className="mt-3 flex flex-wrap gap-1.5">{["agent_events", "metric_points", "evaluations", "alerts"].map((source) => <span key={source} className="rounded-md bg-background/70 px-2 py-1 font-mono text-[7px] text-muted-foreground">{source}</span>)}</div>
               </div>

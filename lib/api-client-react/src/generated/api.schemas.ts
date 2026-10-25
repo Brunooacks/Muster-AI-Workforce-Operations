@@ -716,6 +716,48 @@ export const VerdictDecision = {
   exported: 'exported',
 } as const;
 
+export type AgentContractDirection = typeof AgentContractDirection[keyof typeof AgentContractDirection];
+
+
+export const AgentContractDirection = {
+  up: 'up',
+  down: 'down',
+} as const;
+
+export type AgentContractStatus = typeof AgentContractStatus[keyof typeof AgentContractStatus];
+
+
+export const AgentContractStatus = {
+  draft: 'draft',
+  active: 'active',
+  superseded: 'superseded',
+} as const;
+
+export interface AgentContract {
+  id: string;
+  agentId: string;
+  version: number;
+  metricKey: string;
+  unit: string;
+  direction: AgentContractDirection;
+  baseline: number;
+  target: number;
+  /** @nullable */
+  limit: number | null;
+  deadline: string;
+  ownerMemberId: string;
+  status: AgentContractStatus;
+  createdBy: string;
+  createdAt: string;
+  /** @nullable */
+  supersededAt: string | null;
+  /** @nullable */
+  referenceHumanMinutes: number | null;
+  requireHumanAccept: boolean;
+  /** @nullable */
+  referenceModel: string | null;
+}
+
 export interface Verdict {
   id: string;
   agentId: string;
@@ -730,6 +772,15 @@ export interface Verdict {
   decidedBy?: string | null;
   /** @nullable */
   decidedAt?: string | null;
+  /**
+     * Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)
+     * @nullable
+     */
+  contractId?: string | null;
+  /** @nullable */
+  contractVersion?: number | null;
+  /** A versão do contrato à qual o veredito se refere (regra R3) */
+  contract?: AgentContract | null;
   createdAt: string;
 }
 
@@ -2319,6 +2370,283 @@ export const EnvironmentKind = {
   prod: 'prod',
 } as const;
 
+export type AgentContractInputDirection = typeof AgentContractInputDirection[keyof typeof AgentContractInputDirection];
+
+
+export const AgentContractInputDirection = {
+  up: 'up',
+  down: 'down',
+} as const;
+
+export interface AgentContractInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  metricKey: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  unit: string;
+  direction: AgentContractInputDirection;
+  baseline: number;
+  target: number;
+  /** @nullable */
+  limit?: number | null;
+  /** Data futura YYYY-MM-DD */
+  deadline: string;
+  /** organization_members.id do dono (membro da conta) */
+  ownerMemberId: string;
+  /**
+     * Minutos humanos de referência por tarefa (D-C2)
+     * @minimum 0
+     * @nullable
+     */
+  referenceHumanMinutes?: number | null;
+  /** Aceite automático não conta como tarefa aceita (D-C3) */
+  requireHumanAccept?: boolean;
+  /**
+     * Modelo de referência fixado pela conta (D-C1)
+     * @maxLength 120
+     * @nullable
+     */
+  referenceModel?: string | null;
+}
+
+export interface AgentContractOwnerCandidate {
+  id: string;
+  userId: string;
+  role: string;
+}
+
+export interface AgentContractHistory {
+  agentId: string;
+  active: AgentContract | null;
+  versions: AgentContract[];
+  ownerCandidates: AgentContractOwnerCandidate[];
+}
+
+export type RoleRateInputCurrency = typeof RoleRateInputCurrency[keyof typeof RoleRateInputCurrency];
+
+
+export const RoleRateInputCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export interface RoleRateInput {
+  /** @nullable */
+  areaId?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  role: string;
+  /** @minimum 0 */
+  hourlyCostCents: number;
+  currency: RoleRateInputCurrency;
+  validFrom: string;
+  /** @nullable */
+  validTo?: string | null;
+}
+
+export type RoleRateCurrency = typeof RoleRateCurrency[keyof typeof RoleRateCurrency];
+
+
+export const RoleRateCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export interface RoleRate {
+  id: string;
+  /** @nullable */
+  areaId: string | null;
+  role: string;
+  hourlyCostCents: number;
+  currency: RoleRateCurrency;
+  validFrom: string;
+  /** @nullable */
+  validTo: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export type OffInvoiceCostInputCategory = typeof OffInvoiceCostInputCategory[keyof typeof OffInvoiceCostInputCategory];
+
+
+export const OffInvoiceCostInputCategory = {
+  license: 'license',
+  infra: 'infra',
+  integration: 'integration',
+  other: 'other',
+} as const;
+
+export type OffInvoiceCostInputCurrency = typeof OffInvoiceCostInputCurrency[keyof typeof OffInvoiceCostInputCurrency];
+
+
+export const OffInvoiceCostInputCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type OffInvoiceCostInputAllocation = typeof OffInvoiceCostInputAllocation[keyof typeof OffInvoiceCostInputAllocation];
+
+
+export const OffInvoiceCostInputAllocation = {
+  agent: 'agent',
+  project: 'project',
+  per_task: 'per_task',
+} as const;
+
+export interface OffInvoiceCostInput {
+  /** @nullable */
+  projectId?: string | null;
+  /** @nullable */
+  agentId?: string | null;
+  category: OffInvoiceCostInputCategory;
+  /** @minimum 0 */
+  amountCents: number;
+  currency: OffInvoiceCostInputCurrency;
+  periodStart: string;
+  periodEnd: string;
+  allocation: OffInvoiceCostInputAllocation;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  description?: string | null;
+}
+
+export type OffInvoiceCostCategory = typeof OffInvoiceCostCategory[keyof typeof OffInvoiceCostCategory];
+
+
+export const OffInvoiceCostCategory = {
+  license: 'license',
+  infra: 'infra',
+  integration: 'integration',
+  other: 'other',
+} as const;
+
+export type OffInvoiceCostCurrency = typeof OffInvoiceCostCurrency[keyof typeof OffInvoiceCostCurrency];
+
+
+export const OffInvoiceCostCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type OffInvoiceCostAllocation = typeof OffInvoiceCostAllocation[keyof typeof OffInvoiceCostAllocation];
+
+
+export const OffInvoiceCostAllocation = {
+  agent: 'agent',
+  project: 'project',
+  per_task: 'per_task',
+} as const;
+
+export interface OffInvoiceCost {
+  id: string;
+  /** @nullable */
+  projectId: string | null;
+  /** @nullable */
+  agentId: string | null;
+  category: OffInvoiceCostCategory;
+  amountCents: number;
+  currency: OffInvoiceCostCurrency;
+  periodStart: string;
+  periodEnd: string;
+  allocation: OffInvoiceCostAllocation;
+  /** @nullable */
+  description: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export type OutcomeNumberStatus = typeof OutcomeNumberStatus[keyof typeof OutcomeNumberStatus];
+
+
+export const OutcomeNumberStatus = {
+  ok: 'ok',
+  unavailable: 'unavailable',
+} as const;
+
+/**
+ * Número com status: ok traz value; unavailable traz reason (nunca um valor neutro).
+ */
+export interface OutcomeNumber {
+  status: OutcomeNumberStatus;
+  value?: unknown;
+  reason?: string;
+}
+
+export type AgentOutcomeSource = typeof AgentOutcomeSource[keyof typeof AgentOutcomeSource];
+
+
+export const AgentOutcomeSource = {
+  live: 'live',
+  snapshot: 'snapshot',
+} as const;
+
+/**
+ * cost, decomposition {retry, context, model}, referenceModel — cada um OutcomeNumber
+ */
+export type AgentOutcomeLayer1 = { [key: string]: unknown };
+
+/**
+ * tasks, acceptanceRate, interventionRate, autoAcceptShare, expectedMatchRate, contract
+ */
+export type AgentOutcomeLayer2 = { [key: string]: unknown };
+
+/**
+ * provenance, trail, ownerCoverage, credentialCoverage, snapshot
+ */
+export type AgentOutcomeLayer3 = { [key: string]: unknown };
+
+/**
+ * adoption, illusoryWin, tokenAnomaly
+ */
+export type AgentOutcomeSignals = { [key: string]: unknown };
+
+export type AgentOutcomeVerdictStatus = typeof AgentOutcomeVerdictStatus[keyof typeof AgentOutcomeVerdictStatus];
+
+
+export const AgentOutcomeVerdictStatus = {
+  coming_soon: 'coming_soon',
+} as const;
+
+export type AgentOutcomeVerdict = {
+  status: AgentOutcomeVerdictStatus;
+};
+
+export interface AgentOutcome {
+  agentId: string;
+  period: string;
+  source: AgentOutcomeSource;
+  calcVersion: string;
+  coverage: OutcomeNumber;
+  /** cost, decomposition {retry, context, model}, referenceModel — cada um OutcomeNumber */
+  layer1: AgentOutcomeLayer1;
+  /** tasks, acceptanceRate, interventionRate, autoAcceptShare, expectedMatchRate, contract */
+  layer2: AgentOutcomeLayer2;
+  /** provenance, trail, ownerCoverage, credentialCoverage, snapshot */
+  layer3: AgentOutcomeLayer3;
+  /** adoption, illusoryWin, tokenAnomaly */
+  signals: AgentOutcomeSignals;
+  contract: AgentContract | null;
+  verdict: AgentOutcomeVerdict;
+}
+
+export interface OutcomeSnapshotRef {
+  id: string;
+  agentId: string;
+  period: string;
+  calcVersion: string;
+  inputsHash: string;
+  created: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -2408,9 +2736,29 @@ export const AgentEventInputKind = {
   escalation: 'escalation',
   feedback: 'feedback',
   heartbeat: 'heartbeat',
+  human_review: 'human_review',
 } as const;
 
 export type AgentEventInputMetadata = { [key: string]: unknown };
+
+export type AgentEventInputAcceptedByKind = typeof AgentEventInputAcceptedByKind[keyof typeof AgentEventInputAcceptedByKind];
+
+
+export const AgentEventInputAcceptedByKind = {
+  human: 'human',
+  auto: 'auto',
+} as const;
+
+/**
+ * Capabilities que a tarefa usou (base do modelo de referência).
+ */
+export interface TaskCapabilities {
+  tools?: boolean;
+  vision?: boolean;
+  /** @minimum 0 */
+  contextWindow?: number;
+  [key: string]: unknown;
+ }
 
 export interface AgentEventInput {
   environment?: EnvironmentKind;
@@ -2426,8 +2774,66 @@ export interface AgentEventInput {
   costCents?: number;
   tokensIn?: number;
   tokensOut?: number;
+  /** Em human_review, a decisão (true = aprovado, false = rejeitado). */
   success?: boolean;
   metadata?: AgentEventInputMetadata;
+  /**
+     * Tarefa (x-veltrix-task).
+     * @minLength 1
+     * @maxLength 200
+     */
+  taskId?: string;
+  /**
+     * Execução/tentativa da tarefa (x-veltrix-run).
+     * @minLength 1
+     * @maxLength 200
+     */
+  runId?: string;
+  /**
+     * Ordinal do run dentro da task. Sem valor = 1, ou anterior + 1 quando há retryOf. attempt > 1 exige retryOf.
+     * @minimum 1
+     */
+  attempt?: number;
+  /**
+     * runId da tentativa anterior da mesma task.
+     * @minLength 1
+     * @maxLength 200
+     */
+  retryOf?: string;
+  /** Resultado esperado (camada 2). */
+  expected?: unknown;
+  /** Resultado obtido (camada 2). */
+  actual?: unknown;
+  /**
+     * Quem decidiu (pessoa ou regra). Em human_review, o revisor.
+     * @minLength 1
+     * @maxLength 200
+     */
+  acceptedBy?: string;
+  acceptedByKind?: AgentEventInputAcceptedByKind;
+  /**
+     * Obrigatório quando acceptedByKind = auto.
+     * @minLength 1
+     * @maxLength 100
+     */
+  acceptedRuleVersion?: string;
+  acceptedAt?: string;
+  capabilities?: TaskCapabilities;
+  /** @minimum 0 */
+  reworkCount?: number;
+  /**
+     * Minutos humanos reais (revisão em human_review; retrabalho nos demais).
+     * @minimum 0
+     * @maximum 999999.99
+     */
+  humanMinutes?: number;
+  /** @minimum 0 */
+  contextTokens?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  model?: string;
 }
 
 export type AgentHeartbeatInputStatus = typeof AgentHeartbeatInputStatus[keyof typeof AgentHeartbeatInputStatus];
@@ -2868,5 +3274,16 @@ export type IngestAgentEvent202 = {
   accepted: boolean;
   /** True when this idempotency key was already accepted for this agent. */
   duplicate?: boolean;
+};
+
+export type GetAgentOutcomeParams = {
+/**
+ * YYYY-MM (padrão = mês corrente)
+ */
+period?: string;
+};
+
+export type CloseAgentOutcomePeriodParams = {
+period: string;
 };
 

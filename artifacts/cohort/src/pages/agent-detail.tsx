@@ -85,6 +85,8 @@ import {
   RefreshStatusBar,
 } from "@/components/mission-control/operational-status";
 import { relativeAge } from "@/components/mission-control/presentation";
+import { AgentContractPanel } from "@/components/agent-contract";
+import { AgentOutcomePanel } from "@/components/agent-outcome";
 
 const AUTONOMY_LABEL: Record<Lang, Record<string, string>> = {
   pt: {
@@ -872,6 +874,9 @@ export default function AgentDetailPage() {
           </div>
         </section>
 
+        {/* ===== Cunha · três camadas (custo, qualidade, prova) ===== */}
+        <AgentOutcomePanel agentId={agent.id} />
+
         {/* ===== 01 · Carteira de Trabalho ===== */}
         <section>
           <SectionHeader number="01" title={t.sec01.title} caption={t.sec01.caption} />
@@ -990,27 +995,7 @@ export default function AgentDetailPage() {
               </Pillar>
 
               <Pillar icon={Sparkles} title={t.origin}>
-                <div className="space-y-3 text-sm">
-                  {identity.businessCase.description && (
-                    <p className="text-[13px] italic leading-snug text-foreground/80">
-                      {identity.businessCase.description}
-                    </p>
-                  )}
-                  <div className="space-y-2 border-t border-card-border pt-3">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{t.baseline}</span>
-                      <span className="font-mono text-foreground/90">{identity.businessCase.baseline || "—"}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{t.paybackTarget}</span>
-                      <span className="font-mono text-foreground/90">{identity.businessCase.targetPayback || "—"}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{t.paybackReal}</span>
-                      <span className="font-mono font-semibold text-primary">{identity.businessCase.actualPayback || "—"}</span>
-                    </div>
-                  </div>
-                </div>
+                <AgentContractPanel agentId={agent.id} legacy={identity.businessCase} />
               </Pillar>
             </div>
           </div>

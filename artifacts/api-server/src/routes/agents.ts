@@ -69,6 +69,7 @@ import {
   InvalidAdmissionProjectError,
   MissingConnectorExternalIdError,
 } from "../lib/admission";
+import { agentInOrg, listContracts, toAgentContract } from "../lib/agent-contracts";
 
 const router: IRouter = Router();
 
@@ -435,12 +436,27 @@ router.get(
 
 router.get("/agents/:agentId/verdicts", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = ListAgentVerdictsParams.parse(req.params);
+  // verdicts é tabela-filha: o escopo vem do agente (antes, conhecer o id
+  // bastava para ler o histórico de outra conta).
+  if (!(await agentInOrg(req.orgId!, agentId))) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
   const rows = await db
     .select()
     .from(verdicts)
     .where(eq(verdicts.agentId, agentId))
     .orderBy(desc(verdicts.createdAt));
-  const data = ListAgentVerdictsResponse.parse(rows.map(toVerdict));
+  // Cada veredito lê a versão do contrato que vigorava quando foi gravado (R3).
+  const contracts = new Map(
+    (await listContracts(req.orgId!, agentId)).map((c) => [`${c.id}:${c.version}`, toAgentContract(c)]),
+  );
+  const data = ListAgentVerdictsResponse.parse(
+    rows.map((row) => ({
+      ...toVerdict(row),
+      contract: row.contractId ? (contracts.get(`${row.contractId}:${row.contractVersion}`) ?? null) : null,
+    })),
+  );
   res.json(data);
 });
 

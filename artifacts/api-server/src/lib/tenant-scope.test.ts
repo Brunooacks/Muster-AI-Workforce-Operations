@@ -257,6 +257,7 @@ function acessosSemProjeto(fonte: string): string[] {
  */
 const ORG_WIDE_PENDENTES: Record<string, number> = {
   "lib/admission.ts": 2,
+  "lib/agent-contracts.ts": 1,
   "lib/agent-telemetry-reevaluation.ts": 2,
   "lib/continuous-telemetry-worker.ts": 1,
   "lib/professional-plan-service.ts": 1,

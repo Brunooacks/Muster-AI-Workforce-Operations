@@ -62,12 +62,23 @@ export const WORKFORCE_OVERVIEW_PT: WorkforceOverviewLabels = {
 const environmentIcons = [Cloud, Server, Laptop];
 const teamIcons = [Bot, ShieldCheck, UserCheck];
 
-export function WorkforceOverview({ labels = WORKFORCE_OVERVIEW_PT }: { labels?: WorkforceOverviewLabels }) {
+export interface WorkforceOverviewExample {
+  label: string;
+  hint: string;
+  evidenceCoverage: string;
+  journey: string;
+}
+
+/** Os números do diagrama são exemplo (cunha · C14.1): vêm de fora, com selo. */
+export function WorkforceOverview({ labels = WORKFORCE_OVERVIEW_PT, example }: { labels?: WorkforceOverviewLabels; example: WorkforceOverviewExample }) {
   return (
     <div role="img" aria-label={labels.aria} className="relative overflow-hidden bg-[radial-gradient(circle_at_50%_0%,hsl(var(--primary)/0.14),transparent_52%)] p-4 sm:p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
         <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" /> Muster Workforce OS</span>
-        <span className="flex items-center gap-2 text-primary"><Activity className="h-3.5 w-3.5" /> {labels.live}</span>
+        <span className="flex items-center gap-2">
+          <span title={example.hint} className="rounded-full border border-chart-2/50 bg-chart-2/10 px-2 py-0.5 text-[8px] text-chart-2">{example.label}</span>
+          <span className="flex items-center gap-2 text-primary"><Activity className="h-3.5 w-3.5" /> {labels.live}</span>
+        </span>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[.7fr_1.4fr_.75fr]">
@@ -116,12 +127,12 @@ export function WorkforceOverview({ labels = WORKFORCE_OVERVIEW_PT }: { labels?:
           <div className="mt-3 space-y-2">
             {labels.loopItems.map((item, index) => <div key={item} className="flex items-center gap-3 rounded-lg border border-card-border bg-card/75 px-3 py-2.5"><span className="grid h-6 w-6 place-items-center rounded-full bg-primary/10 font-mono text-[9px] text-primary">0{index + 1}</span><strong className="text-[10px] font-medium text-foreground">{item}</strong>{index < labels.loopItems.length - 1 && <span className="ml-auto h-4 w-px bg-primary/20" />}</div>)}
           </div>
-          <div className="mt-3 rounded-lg border border-primary/20 bg-primary/[0.06] p-3 text-[9px] leading-relaxed text-muted-foreground"><strong className="text-primary">100%</strong> traces, decisões e ações ligados ao contrato.</div>
+          <div className="mt-3 rounded-lg border border-primary/20 bg-primary/[0.06] p-3 text-[9px] leading-relaxed text-muted-foreground"><strong className="text-primary">{example.evidenceCoverage}</strong> traces, decisões e ações ligados ao contrato.</div>
         </section>
       </div>
 
       <section className="mt-3 rounded-xl border border-primary/20 bg-background/70 p-3 sm:p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground"><Waypoints className="h-3.5 w-3.5 text-primary" /> {labels.journey}</div><strong className="mt-1 block text-xs font-medium text-foreground">{labels.journeyName}</strong></div><span className="font-mono text-[9px] text-primary">94% end-to-end · p95 42 min</span></div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground"><Waypoints className="h-3.5 w-3.5 text-primary" /> {labels.journey}</div><strong className="mt-1 block text-xs font-medium text-foreground">{labels.journeyName}</strong></div><span className="font-mono text-[9px] text-primary">{example.journey}</span></div>
         <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">{labels.stages.map((stage, index) => <div key={stage} className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-[112px] flex-1 rounded-lg border border-card-border bg-card/80 px-3 py-2 text-center"><span className="block font-mono text-[8px] text-muted-foreground">0{index + 1}</span><strong className="mt-1 block text-[9px] font-medium text-foreground">{stage}</strong></div>{index < labels.stages.length - 1 && <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary" />}</div>)}</div>
       </section>
     </div>
