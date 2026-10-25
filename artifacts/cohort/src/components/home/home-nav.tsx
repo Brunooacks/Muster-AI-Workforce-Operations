@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { MusterMark } from "@/components/logo";
+import { LangSwitcher } from "@/components/lang-switcher";
 import { useLang, type Lang } from "@/lib/i18n";
 
 const pt = {
@@ -40,7 +41,8 @@ export function HomeNav() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 lg:gap-4">
+          <LangSwitcher className="hidden sm:inline-flex" />
           <Link
             href="/sign-in"
             className="text-[13px] text-foreground transition-colors hover:text-muted-foreground"

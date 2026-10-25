@@ -114,7 +114,7 @@ const L: Record<Lang, FrotaDict> = {
     eyebrow: "Operação",
     title: "Painel da Frota",
     subtitle:
-      "Desempenho consolidado em 5 camadas, retorno sobre investimento e alertas do Detector de Vitória Ilusória.",
+      "Desempenho consolidado em 3 camadas, retorno sobre investimento e alertas do Detector de Vitória Ilusória.",
     errorTitle: "Não foi possível carregar a frota",
     errorDesc: "Tente novamente em instantes.",
     statAgents: "Total de agentes",
@@ -129,7 +129,7 @@ const L: Record<Lang, FrotaDict> = {
     statAlerts: "Alertas ativos",
     alertsDelta: "Padrões ilusórios detectados",
     perfTitle: "Perfil de Desempenho",
-    perfDesc: "Média da frota nas 5 camadas de avaliação",
+    perfDesc: "Média da frota nas 3 camadas de avaliação",
     fleet: "Frota",
     layersTitle: "Camadas de Avaliação",
     layersDesc: "Pontuação, variação no período e agentes em risco",

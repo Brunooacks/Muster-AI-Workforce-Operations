@@ -421,7 +421,7 @@ export default function LandingDemo() {
                 <div>
                   <div className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                     <Layers className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    Avaliação em 5 camadas
+                    Avaliação em 3 camadas
                   </div>
                   <div className="space-y-3">
                     {scenario.layers.map((l, i) => (

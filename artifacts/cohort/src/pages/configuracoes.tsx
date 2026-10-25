@@ -138,7 +138,7 @@ const PT = {
     {
       name: "Início",
       price: "Grátis",
-      features: ["Até 5 agentes", "Análise de 5 camadas", "1 conector"],
+      features: ["Até 5 agentes", "Análise de 3 camadas", "1 conector"],
       current: false,
     },
     {

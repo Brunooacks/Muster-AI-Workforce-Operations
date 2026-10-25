@@ -95,7 +95,7 @@ const carteiraPt: Record<Audience, Dict> = {
     },
     sec02: {
       title: "Avaliação de Desempenho",
-      caption: "Cinco camadas de desempenho · janela atual",
+      caption: "Três camadas de desempenho · janela atual",
     },
     sec03: {
       title: "Histórico de Avaliações",
@@ -172,7 +172,7 @@ const carteiraPt: Record<Audience, Dict> = {
     },
     sec02: {
       title: "Dashboard de Métricas",
-      caption: "Framework de KPI em 5 camadas · janela atual",
+      caption: "Framework de KPI em 3 camadas · janela atual",
     },
     sec03: {
       title: "Trajetória de Desempenho",

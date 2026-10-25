@@ -484,7 +484,7 @@ function TelemetrySection({
             </p>
             <p className="max-w-md text-xs text-muted-foreground/80">
               Sem evidência a plataforma não calcula nota — de propósito. Ligue a telemetria para que
-              as cinco camadas passem a ser medidas.
+              as três camadas passem a ser medidas.
             </p>
             <Button asChild size="sm" className="mt-1">
               <Link href={`/agentes/${agentId}/conectar`}>

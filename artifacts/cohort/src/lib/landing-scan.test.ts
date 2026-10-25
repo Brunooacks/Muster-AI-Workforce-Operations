@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
 /**
- * Varredura da landing (cunha · C14.1/C14.2, MUS-179).
- * 1. Card de métrica não pode ter número literal: exemplos ficam em
- *    pages/landing-examples.ts e aparecem com selo "Exemplo".
- * 2. Os três dados da regra R6 (sem fonte pública) não voltam a nenhum texto
+ * Varredura da landing (cunha · C14.1/C14.2, MUS-179 + redesign T3).
+ * 1. A landing (composição) não tem número literal em card de métrica:
+ *    os números moram em components/home/* e vêm com selo "Dados
+ *    ilustrativos" ou com fonte pública linkada.
+ * 2. Os dados da regra R6 sem fonte pública não voltam a nenhum texto
  *    público: landing, componentes da landing, i18n e index.html.
+ *    Gartner saiu da lista: o comunicado público é linkado na home.
  */
 
 const SRC = join(import.meta.dirname, "..");
@@ -38,9 +40,8 @@ const METRIC_LITERALS: Array<[string, RegExp]> = [
   ["selo de decisão fixo", /decision ready/i],
 ];
 
-// Os três dados da R6, em pt/en/es. Mantidos só aqui (o teste precisa deles).
+// Dados da R6 sem fonte pública, em pt/en/es. Mantidos só aqui (teste).
 const R6_TERMS: RegExp[] = [
-  /gartner/i,
   /\b1\s*(?:em|in|de cada|out of)\s*5\b/i,
   /\b(?:one in five|um em cada cinco|uno de cada cinco)\b/i,
   /\b100\s*(?:x|×|vezes|times|veces)\b/i,
@@ -74,12 +75,32 @@ test("landing e visão geral sem número literal em card de métrica", () => {
   }
 });
 
-test("os exemplos existem e a landing mostra o selo Exemplo em pt/en/es", () => {
+test("os exemplos existem e a landing compõe as seções do handoff", () => {
   const exemplos = read(SRC, "pages/landing-examples.ts");
   for (const selo of ['pt: "Exemplo"', 'en: "Example"', 'es: "Ejemplo"']) assert.ok(exemplos.includes(selo), selo);
   const landing = read(SRC, "pages/landing.tsx");
-  assert.ok(landing.includes("<ExampleBadge"), "selo no brief e no fechamento");
-  assert.ok(landing.includes("EXAMPLE_LABEL[lang]"), "selo no ticker e na visão geral");
+  for (const secao of ["HomeNav", "HomeHero", "HomeMercado", "HomeResolvemos", "HomeFicha", "HomeAcompanhamento", "HomeDecisao", "HomeIntegracoes", "HomeCobertura", "HomePrecos", "HomeFechamento"]) {
+    assert.ok(landing.includes(`<${secao}`), `seção ${secao}`);
+  }
+  assert.ok(!landing.includes("video") && !landing.includes("iframe"), "sem vídeo publicado");
+});
+
+test("home: número ilustrativo vem com selo; Gartner vem com fonte pública", () => {
+  const dir = join(SRC, "components", "home");
+  for (const arquivo of readdirSync(dir)) {
+    if (!arquivo.endsWith(".tsx")) continue;
+    const texto = semComentarios(readFileSync(join(dir, arquivo), "utf8"));
+    if (!/\d+%/.test(texto)) continue;
+    const selo = texto.includes("Dados ilustrativos");
+    const fonte = texto.includes("Gartner") || texto.includes("Preços pendentes de decisão");
+    assert.ok(selo || fonte, `${arquivo}: número de exemplo sem selo "Dados ilustrativos" e sem fonte`);
+  }
+  const mercado = readFileSync(join(SRC, "components", "home", "home-mercado.tsx"), "utf8");
+  assert.ok(mercado.includes("gartner.com/en/newsroom/press-releases/2025-06-25"), "link do comunicado");
+  assert.ok(mercado.includes("ao menos"), "15% é \"ao menos 15%\"");
+  const precos = readFileSync(join(SRC, "components", "home", "home-precos.tsx"), "utf8");
+  assert.ok(!precos.includes("MAIS ESCOLHIDO") && !precos.includes("Mais escolhido"), "selo removido");
+  assert.ok(precos.includes("Preços pendentes de decisão"), "aviso de preços");
 });
 
 test("R6: nenhum dos três dados sem fonte em texto público", () => {
