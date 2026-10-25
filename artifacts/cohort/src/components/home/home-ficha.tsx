@@ -23,13 +23,13 @@ const METRICS = [
 ];
 
 const CALLOUTS_LEFT = [
-  { title: "Identidade", desc: "Nome, função e onde roda.", at: 0 },
-  { title: "Objetivo e limite", desc: "O que deve entregar e até onde vai sozinho.", at: 1 },
+  { title: "Identidade", desc: "Nome, função e onde roda.", abas: [0] },
+  { title: "Objetivo e limite", desc: "O que deve entregar e até onde vai sozinho.", abas: [1] },
 ];
 
 const CALLOUTS_RIGHT = [
-  { title: "Responsável", desc: "Uma pessoa com nome responde por ele.", at: 1 },
-  { title: "Indicadores e prova", desc: "Como está indo, com a origem de cada número.", at: 2 },
+  { title: "Responsável", desc: "Uma pessoa com nome responde por ele.", abas: [1] },
+  { title: "Indicadores e prova", desc: "Como está indo, com a origem de cada número.", abas: [2, 3] },
 ];
 
 const pt = {
@@ -49,14 +49,15 @@ const pt = {
 
 const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
 
+// Como no protótipo: OBJETIVO acende em Identidade e Objetivos; LIMITE e
+// RESPONSÁVEL só em Objetivos e KPIs; os KPIs em Acompanhamento e Decisão.
 function fieldOpacity(tab: number, index: number): number {
   if (index === 0) return tab === 0 || tab === 1 ? 1 : 0.45;
-  if (index === 1) return tab === 1 ? 1 : 0.45;
-  return tab >= 2 ? 1 : 0.45;
+  return tab === 1 ? 1 : 0.45;
 }
 
-function calloutOpacity(tab: number, at: number): number {
-  return tab === at ? 1 : 0.35;
+function calloutOpacity(tab: number, abas: readonly number[]): number {
+  return abas.includes(tab) ? 1 : 0.35;
 }
 
 export function HomeFicha() {
@@ -157,7 +158,7 @@ export function HomeFicha() {
                 {FIELDS.map((field, index) => (
                   <div
                     key={field.label}
-                    className="flex flex-col gap-1 transition-opacity duration-300"
+                    className="flex flex-col gap-1 transition-opacity duration-[400ms]"
                     style={{ opacity: fieldOpacity(tab, index) }}
                   >
                     <span className="font-mono text-[10px] font-medium tracking-[0.14em] text-[#f5f5f7]/50">
@@ -168,7 +169,7 @@ export function HomeFicha() {
                 ))}
               </div>
 
-              <div className="flex flex-col gap-4 border-t border-white/12 pt-[18px] transition-opacity duration-300"
+              <div className="flex flex-col gap-4 border-t border-white/12 pt-[18px] transition-opacity duration-[400ms]"
                 style={{ opacity: tab >= 2 ? 1 : 0.45 }}
               >
                 <Badge variant="illustrative" className="self-start">
@@ -199,7 +200,7 @@ export function HomeFicha() {
               <div
                 key={item.title}
                 className="flex max-w-[230px] flex-col gap-1 transition-opacity duration-300"
-                style={{ opacity: calloutOpacity(tab, item.at) }}
+                style={{ opacity: calloutOpacity(tab, item.abas) }}
               >
                 <span className="text-[15px] font-semibold text-foreground">{item.title}</span>
                 <span className="text-[14px] leading-[1.45] text-muted-foreground">{item.desc}</span>
@@ -210,7 +211,7 @@ export function HomeFicha() {
               <div
                 key={item.title}
                 className="flex max-w-[230px] flex-col gap-1 transition-opacity duration-300"
-                style={{ opacity: calloutOpacity(tab, item.at) }}
+                style={{ opacity: calloutOpacity(tab, item.abas) }}
               >
                 <span className="mb-1.5 h-px w-10 bg-foreground" />
                 <span className="text-[15px] font-semibold text-foreground">{item.title}</span>
