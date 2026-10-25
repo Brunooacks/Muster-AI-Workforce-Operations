@@ -439,6 +439,14 @@ function DemoRoutes() {
       <Route path="/" component={LandingPage} />
       <Route path="/design-system" component={DesignSystemPage} />
       <Route path="/calculadora" component={CalculadoraPage} />
+      {WORKFORCE_STATIC_PATHS.map((path) => (
+        <Route key={path} path={path}>
+          <WorkforceOsLabPage labMode={false} demo />
+        </Route>
+      ))}
+      <Route path="/agentes/:id">
+        <WorkforceOsLabPage labMode={false} demo />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,5 +1,7 @@
 export type WorkforceScreen =
   | "today"
+  | "entregas"
+  | "mapa"
   | "onboarding"
   | "reports"
   | "portfolio"
@@ -41,6 +43,8 @@ export const WORKFORCE_NAV_ITEMS: WorkforceNavItem[] = [
 ];
 
 export const WORKFORCE_SPECIALIZED_ROUTES: WorkforceNavItem[] = [
+  { screen: "entregas", label: "Entregas", path: "/entregas", group: "Gestão" },
+  { screen: "mapa", label: "Mapa do menu", path: "/mapa", group: "Gestão" },
   { screen: "onboarding", label: "Central de adoção", path: "/guia", group: "Gestão" },
   { screen: "admission", label: "Admissão", path: "/admissao", group: "Plataforma" },
   { screen: "alerts", label: "Alertas", path: "/alertas", group: "Operação" },
@@ -57,6 +61,7 @@ export const WORKFORCE_STATIC_PATHS = [
   ...WORKFORCE_NAV_ITEMS.filter((item) => item.screen !== "professional").map((item) => item.path),
   ...WORKFORCE_SPECIALIZED_ROUTES.map((item) => item.path),
   "/frota",
+  "/pendencias",
   "/guia/novidades",
   "/guia/radar",
 ] as const;
@@ -104,6 +109,7 @@ export function navigationScreenForWorkforceScreen(screen: WorkforceScreen): Wor
 export function resolveWorkforceRoute(location: string): ResolvedWorkforceRoute | null {
   const pathname = location.split(/[?#]/, 1)[0] || "/";
   if (pathname === "/frota") return { screen: "portfolio" };
+  if (pathname === "/pendencias") return { screen: "alerts" };
   if (pathname === "/guia/novidades" || pathname === "/guia/radar") return { screen: "onboarding" };
   const connectionMatch = pathname.match(/^\/agentes\/([^/]+)\/conectar$/);
   if (connectionMatch) {

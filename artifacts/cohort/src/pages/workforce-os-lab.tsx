@@ -30,7 +30,9 @@ import {
   Goal,
   House,
   Layers3,
+  ListChecks,
   LogOut,
+  Map as MapIcon,
   Palette,
   Radar,
   Radio,
@@ -47,6 +49,12 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntregasScreen } from "@/pages/entregas";
+import { PendenciasScreen } from "@/pages/pendencias";
+import { MapaScreen } from "@/pages/mapa";
+import { SHELL_NAV, SHELL_RODAPE, shellItemAtivo, seloDaTela, classeSelo } from "@/lib/shell-nav";
+import { ShellBottomBar } from "@/components/shell/bottom-bar";
+import { ContaBoundary, useConta } from "@/components/shell/conta";
 import { PlatformStack, platformIdsFromSource } from "@/components/platform-badge";
 import { MusterMark } from "@/components/logo";
 import {
@@ -496,6 +504,7 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 }
 
 function AppHeader({ palette, setPalette, labMode, screen }: { palette: PaletteId; setPalette: (palette: PaletteId) => void; labMode: boolean; screen: Screen }) {
+  const selo = seloDaTela(screen);
   const paletteOptions: Array<{ id: PaletteId; color: string; label: string }> = [
     { id: "mineral", color: "#0f766e", label: "Mineral" },
     { id: "graphite", color: "#55c2ff", label: "Graphite" },
@@ -510,7 +519,20 @@ function AppHeader({ palette, setPalette, labMode, screen }: { palette: PaletteI
           <ArrowLeft className="h-4 w-4" /> {labMode ? "Laboratório" : "Operação"}
         </Link>
         <span className="hidden h-4 w-px bg-[var(--wo-line)] sm:block" />
-        <span className="truncate text-sm font-medium text-[var(--wo-text)]">Muster Workforce OS</span>
+        <span className="truncate text-sm font-medium text-[var(--wo-text)]">
+          <span className="sm:hidden">Muster</span>
+          <span className="hidden sm:inline">Muster Workforce OS</span>
+        </span>
+        {selo && (
+          <span
+            className={cn(
+              "rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]",
+              classeSelo(selo),
+            )}
+          >
+            {selo}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <span className="hidden items-center gap-2 text-[11px] text-[var(--wo-accent)] sm:flex">
@@ -536,7 +558,7 @@ function AppHeader({ palette, setPalette, labMode, screen }: { palette: PaletteI
             <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--wo-accent)]" aria-hidden="true" />
           </Link>
         </div>
-        <div className="flex items-center gap-1 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-1" aria-label="Direção visual">
+        <div className="hidden items-center gap-1 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-1 md:flex" aria-label="Direção visual">
           <Palette className="mx-1 h-3.5 w-3.5 text-[var(--wo-muted)]" />
           {paletteOptions.map((option) => (
             <button
@@ -559,6 +581,8 @@ function AppHeader({ palette, setPalette, labMode, screen }: { palette: PaletteI
 
 const workforceNavIcons: Record<Screen, typeof House> = {
   today: House,
+  entregas: ListChecks,
+  mapa: MapIcon,
   onboarding: ClipboardCheck,
   reports: FileCheck2,
   portfolio: Layers3,
@@ -581,102 +605,90 @@ function NavigationRail({
   screen,
   navigate,
   labMode,
-  selectedAgentId,
 }: {
   screen: Screen;
   navigate: (screen: Screen) => void;
   labMode: boolean;
-  selectedAgentId: string;
 }) {
-  const { signOut } = useClerk();
-  const { orgRole } = useAuth();
-  const { user } = useUser();
-  const displayName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress || "Conta";
-  const initials = displayName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "US";
-  let currentGroup = "";
+  const conta = useConta();
+  const ativo = shellItemAtivo(screen);
+
   return (
-    <aside className="sticky top-0 flex h-screen w-[68px] shrink-0 flex-col items-center overflow-y-auto border-r border-[var(--wo-line)] bg-[var(--wo-shell)] py-3 xl:w-[220px] xl:items-stretch">
-      <div className="flex items-center justify-center gap-3 px-2 xl:justify-start xl:px-4">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]" data-testid="muster-brand-mark"><MusterMark className="h-7 w-7" /></span>
-        <span className="hidden xl:block"><strong className="block text-sm font-medium text-[var(--wo-text)]">Muster</strong><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Workforce OS</span></span>
+    <aside className="sticky top-0 hidden h-screen w-[68px] shrink-0 flex-col overflow-y-auto border-r border-border bg-background md:flex xl:w-[220px]">
+      <div className="flex items-center justify-center gap-3 px-2 py-3 xl:justify-start xl:px-4">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary" data-testid="muster-brand-mark"><MusterMark className="h-7 w-7" /></span>
+        <span className="hidden xl:block"><strong className="block text-sm font-medium text-foreground">Muster</strong><span className="text-[9px] uppercase tracking-[0.08em] text-muted-foreground">AI Workforce</span></span>
       </div>
-      <nav className="mt-5 grid w-full gap-1 px-2">
-        {WORKFORCE_NAV_ITEMS.filter((item) => item.screen !== "admin" || labMode || orgRole === "org:admin").map((item) => {
-          const showGroup = item.group !== currentGroup;
-          currentGroup = item.group;
+
+      <nav className="mt-4 flex flex-1 flex-col gap-1 px-2 xl:px-3" aria-label="Menu principal">
+        {SHELL_NAV.map((item) => {
           const Icon = workforceNavIcons[item.screen];
-          const active = navigationScreenForWorkforceScreen(screen) === item.screen;
-          const href = item.screen === "professional"
-            ? selectedAgentId
-              ? routeForWorkforceScreen(item.screen, selectedAgentId)
-              : "/admissao"
-            : item.path;
-          const controlClassName = cn("grid min-h-10 w-full place-items-center rounded-xl text-[var(--wo-muted)] transition-colors xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3", active ? "bg-[var(--wo-primary-soft)] text-[var(--wo-text)]" : "hover:bg-[var(--wo-card-2)] hover:text-[var(--wo-text)]");
-          return (
-            <div key={item.screen}>
-              {showGroup && <div className="my-2 hidden px-3 pt-1 text-[8px] font-medium uppercase tracking-[0.12em] text-[var(--wo-muted)] xl:block">{item.group}</div>}
-              {showGroup && <div className="mx-auto my-2 h-px w-7 bg-[var(--wo-line)] xl:hidden" />}
-              {labMode ? (
-                <button type="button" title={item.label} aria-label={item.label} aria-pressed={active} onClick={() => navigate(item.screen)} className={controlClassName}>
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden text-[11px] xl:block">{item.label}</span>
-                </button>
-              ) : (
-                <Link href={href} title={item.label} aria-label={item.label} aria-current={active ? "page" : undefined} className={controlClassName}>
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden text-[11px] xl:block">{item.label}</span>
-                </Link>
+          const active = ativo?.screen === item.screen;
+          const classes = cn(
+            "relative flex min-h-10 items-center gap-3 rounded-xl px-3 text-[13px] transition-colors",
+            active
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+          );
+          const conteudo = (
+            <>
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="hidden xl:block">{item.label}</span>
+              {active && (
+                <span className="absolute right-2 hidden h-1.5 w-1.5 rounded-full bg-primary xl:block" aria-hidden="true" />
               )}
-            </div>
+            </>
+          );
+          return labMode ? (
+            <button
+              key={item.screen}
+              type="button"
+              title={item.label}
+              aria-label={item.label}
+              aria-pressed={active}
+              onClick={() => navigate(item.screen)}
+              className={classes}
+            >
+              {conteudo}
+            </button>
+          ) : (
+            <Link
+              key={item.screen}
+              href={item.path}
+              title={item.label}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
+              className={classes}
+            >
+              {conteudo}
+            </Link>
           );
         })}
       </nav>
-      <div className="mt-auto border-t border-[var(--wo-line)] px-2 pt-3">
-        {labMode ? (
-          <button
-            type="button"
-            onClick={() => navigate("onboarding")}
-            aria-label="Central de adoção e novidades"
-            title="Central de adoção e novidades"
-            className="mb-2 grid min-h-10 w-full place-items-center rounded-xl text-[var(--wo-muted)] transition-colors hover:bg-[var(--wo-card-2)] hover:text-[var(--wo-text)] xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
-          >
-            <BookOpenCheck className="h-4 w-4" />
-            <span className="hidden text-[11px] xl:block">Adoção e novidades</span>
-          </button>
-        ) : (
-          <Link
-            href="/guia"
-            aria-label="Central de adoção e novidades"
-            title="Central de adoção e novidades"
-            className="mb-2 grid min-h-10 w-full place-items-center rounded-xl text-[var(--wo-muted)] transition-colors hover:bg-[var(--wo-card-2)] hover:text-[var(--wo-text)] xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
-          >
-            <BookOpenCheck className="h-4 w-4" />
-            <span className="hidden text-[11px] xl:block">Adoção e novidades</span>
-          </Link>
-        )}
-        <Link href="/perfil" aria-label="Abrir perfil" className="flex items-center justify-center gap-3 rounded-xl px-1 py-1 transition-colors hover:bg-[var(--wo-card-2)] xl:justify-start xl:px-2">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--wo-line)] bg-[var(--wo-card-2)] text-[10px] font-medium text-[var(--wo-text)]">{initials}</div>
-          <span className="hidden min-w-0 flex-1 xl:block"><strong className="block truncate text-[10px] font-medium text-[var(--wo-text)]">{displayName}</strong><span className="mt-0.5 block text-[9px] text-[var(--wo-muted)]">Sessão autenticada</span></span>
-        </Link>
+
+      <div className="mt-auto border-t border-border px-2 py-3 xl:px-3">
         <Link
-          href="/configuracoes"
-          aria-label="Configurações da conta"
-          title="Configurações da conta"
-          className="mt-2 grid min-h-10 w-full place-items-center rounded-xl text-[var(--wo-muted)] transition-colors hover:bg-[var(--wo-card-2)] hover:text-[var(--wo-text)] xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
+          href={SHELL_RODAPE.path}
+          aria-label={SHELL_RODAPE.label}
+          title={SHELL_RODAPE.label}
+          className="grid min-h-10 w-full place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
         >
           <Settings className="h-4 w-4" />
-          <span className="hidden text-[11px] xl:block">Configurações da conta</span>
+          <span className="hidden text-[11px] xl:block">{SHELL_RODAPE.label}</span>
+          <span className="hidden rounded-full border border-primary/50 px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.1em] text-primary xl:ml-auto xl:block">
+            {SHELL_RODAPE.selo}
+          </span>
+        </Link>
+        <Link href="/perfil" aria-label="Abrir perfil" className="mt-2 flex items-center justify-center gap-3 rounded-xl px-1 py-1 transition-colors hover:bg-secondary/60 xl:justify-start xl:px-2">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-secondary text-[10px] font-medium text-foreground">{conta.iniciais}</div>
+          <span className="hidden min-w-0 flex-1 xl:block"><strong className="block truncate text-[10px] font-medium text-foreground">{conta.nome}</strong><span className="mt-0.5 block text-[9px] text-muted-foreground">Sessão autenticada</span></span>
         </Link>
         <button
           type="button"
           aria-label="Sair e voltar para a página inicial"
           title="Sair e voltar para a página inicial"
-          onClick={() => void signOut({ redirectUrl: import.meta.env.BASE_URL || "/" })}
-          className="mt-2 grid min-h-10 w-full place-items-center rounded-xl text-[var(--wo-muted)] transition-colors hover:bg-[color-mix(in_srgb,var(--wo-danger)_12%,var(--wo-card))] hover:text-[var(--wo-danger)] xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
+          onClick={conta.sair}
+          className="mt-2 grid min-h-10 w-full place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive xl:grid-cols-[28px_1fr] xl:justify-items-start xl:px-3"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden text-[11px] xl:block">Sair para a página inicial</span>
@@ -1215,7 +1227,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
   );
 }
 
-export default function WorkforceOsLabPage({ defaultScreen, labMode = true }: { defaultScreen?: Screen; labMode?: boolean } = {}) {
+export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo = false }: { defaultScreen?: Screen; labMode?: boolean; demo?: boolean } = {}) {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const initialScreen = searchParams.get("screen");
@@ -1236,36 +1248,38 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true }: { 
         ? storedPalette as PaletteId
       : "mineral",
   );
+  const semApi = labMode || demo;
+  const navegaPorRota = !labMode || demo;
   const agentsQuery = useListAgents(undefined, {
-    query: { queryKey: getListAgentsQueryKey(), enabled: !labMode },
+    query: { queryKey: getListAgentsQueryKey(), enabled: !semApi },
   });
   const operationalAgents = useMemo(
     () => (agentsQuery.data ?? []).map((agent) => adaptApiAgent(agent)),
     [agentsQuery.data],
   );
-  const visibleAgents = labMode ? demoAgents : operationalAgents;
+  const visibleAgents = semApi ? demoAgents : operationalAgents;
   const [selectedAgentId, setSelectedAgentId] = useState(resolvedRoute?.agentId ?? (labMode ? "sofia" : ""));
   const selectedAgentDetailQuery = useGetAgent(selectedAgentId, {
     query: {
       queryKey: getGetAgentQueryKey(selectedAgentId),
-      enabled: !labMode && Boolean(selectedAgentId),
+      enabled: !semApi && Boolean(selectedAgentId),
     },
   });
   const selectedAgent = useMemo(() => {
     const baseAgent = visibleAgents.find((agent) => agent.id === selectedAgentId)
       ?? visibleAgents[0]
       ?? null;
-    if (labMode || !baseAgent || !selectedAgentDetailQuery.data) return baseAgent;
+    if (semApi || !baseAgent || !selectedAgentDetailQuery.data) return baseAgent;
     return adaptApiAgent(selectedAgentDetailQuery.data.agent, selectedAgentDetailQuery.data);
   }, [labMode, selectedAgentDetailQuery.data, selectedAgentId, visibleAgents]);
 
   useEffect(() => {
-    if (labMode) return;
+    if (!navegaPorRota) return;
     const nextRoute = resolveWorkforceRoute(location);
     if (!nextRoute) return;
     setScreen(nextRoute.screen);
     if (nextRoute.agentId) setSelectedAgentId(nextRoute.agentId);
-  }, [labMode, location]);
+  }, [navegaPorRota, location]);
 
   useEffect(() => {
     if (visibleAgents.length === 0) return;
@@ -1274,7 +1288,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true }: { 
   }, [selectedAgentId, visibleAgents]);
 
   function navigate(nextScreen: Screen) {
-    if (labMode) {
+    if (!navegaPorRota) {
       setScreen(nextScreen);
       return;
     }
@@ -1283,7 +1297,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true }: { 
 
   function openProfessional(agentId: string) {
     setSelectedAgentId(agentId);
-    if (labMode) setScreen("professional");
+    if (!navegaPorRota) setScreen("professional");
     else setLocation(routeForWorkforceScreen("professional", agentId));
   }
 
@@ -1296,32 +1310,38 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true }: { 
   }
 
   return (
+    <ContaBoundary demo={demo}>
     <div className="min-h-screen bg-[var(--wo-bg)] text-[var(--wo-text)] transition-colors duration-300" style={workforcePalettes[palette]} data-workforce-theme={palette} data-workforce-shell="true" data-workforce-screen={screen}>
       <div className="flex min-h-screen">
-        <NavigationRail screen={screen} navigate={navigate} labMode={labMode} selectedAgentId={selectedAgent?.id ?? ""} />
+        <NavigationRail screen={screen} navigate={navigate} labMode={labMode} />
         <div className="min-w-0 flex-1">
           <AppHeader palette={palette} setPalette={setPalette} labMode={labMode} screen={screen} />
-          <main>
-            {screen === "today" && <ManagerScreen selectAgent={openProfessional} navigate={navigate} agents={visibleAgents} operational={!labMode} />}
+          <main className="pb-16 md:pb-0">
+            {screen === "today" && <ManagerScreen selectAgent={openProfessional} navigate={navigate} agents={visibleAgents} operational={!semApi} />}
             {screen === "onboarding" && <OnboardingScreen navigate={navigate} />}
             {screen === "reports" && <ExecutiveReportsScreen />}
-            {screen === "portfolio" && <PortfolioScreen agents={visibleAgents} selectedAgent={selectedAgent} onSelect={setSelectedAgentId} openProfessional={openProfessional} isLoading={!labMode && agentsQuery.isLoading} isError={!labMode && agentsQuery.isError} />}
-            {screen === "professional" && (selectedAgent ? <ProfessionalScreen key={selectedAgent.id} agent={selectedAgent} operational={!labMode} /> : <div className="p-6"><Panel className="p-8"><h1 className="text-xl font-medium text-[var(--wo-text)]">Profissional não encontrado</h1><p className="mt-2 text-sm text-[var(--wo-muted)]">Admitir e conectar o agente é obrigatório antes de abrir seu prontuário operacional.</p><Link href="/admissao" className="mt-5 inline-flex rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir admissão</Link></Panel></div>)}
-            {screen === "metrics" && (labMode ? <MetricsScreen /> : <MetricasPage embedded />)}
-            {screen === "teams" && (labMode ? <MixedTeamsScreen /> : <OperationalMixedTeamsScreen />)}
-            {screen === "journeys" && (labMode ? <JourneysScreen /> : <JourneysPage embedded />)}
-            {screen === "benchmarks" && (labMode ? <BenchmarksScreen /> : <BenchmarksPage embedded />)}
+            {screen === "portfolio" && <PortfolioScreen agents={visibleAgents} selectedAgent={selectedAgent} onSelect={setSelectedAgentId} openProfessional={openProfessional} isLoading={!semApi && agentsQuery.isLoading} isError={!semApi && agentsQuery.isError} />}
+            {screen === "professional" && (selectedAgent ? <ProfessionalScreen key={selectedAgent.id} agent={selectedAgent} operational={!semApi} /> : <div className="p-6"><Panel className="p-8"><h1 className="text-xl font-medium text-[var(--wo-text)]">Profissional não encontrado</h1><p className="mt-2 text-sm text-[var(--wo-muted)]">Admitir e conectar o agente é obrigatório antes de abrir seu prontuário operacional.</p><Link href="/admissao" className="mt-5 inline-flex rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir admissão</Link></Panel></div>)}
+            {screen === "metrics" && (semApi ? <MetricsScreen /> : <MetricasPage embedded />)}
+            {screen === "teams" && (semApi ? <MixedTeamsScreen /> : <OperationalMixedTeamsScreen />)}
+            {screen === "journeys" && (semApi ? <JourneysScreen /> : <JourneysPage embedded />)}
+            {screen === "benchmarks" && (semApi ? <BenchmarksScreen /> : <BenchmarksPage embedded />)}
             {screen === "connectors" && <ConnectorsScreen />}
-            {screen === "settings" && (labMode ? <SettingsScreen /> : <GovernancePage embedded />)}
+            {screen === "settings" && (semApi ? <SettingsScreen /> : <GovernancePage embedded />)}
             {screen === "admission" && <AdmissionPage embedded />}
-            {screen === "alerts" && <AlertsPage embedded />}
+            {screen === "alerts" &&
+              (location === "/pendencias" ? <PendenciasScreen /> : <AlertsPage embedded />)}
             {screen === "admin" && <AdminConsolePage />}
             {screen === "accountSettings" && <AccountSettingsPage embedded />}
             {screen === "profile" && <ProfilePage embedded />}
             {screen === "connection" && <ConectarPage embedded />}
+            {screen === "entregas" && <EntregasScreen />}
+            {screen === "mapa" && <MapaScreen />}
           </main>
+          <ShellBottomBar screen={screen} labMode={!navegaPorRota} navigate={navigate} />
         </div>
       </div>
     </div>
+    </ContaBoundary>
   );
 }

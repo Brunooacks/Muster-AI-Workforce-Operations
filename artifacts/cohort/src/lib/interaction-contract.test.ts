@@ -194,8 +194,8 @@ test("equipes e jornadas produtivas usam API e isolam cenários no laboratório"
   const teams = readFileSync(teamsPath, "utf8");
   const journeys = readFileSync(journeysPath, "utf8");
 
-  assert.match(shell, /labMode \? <MixedTeamsScreen \/> : <OperationalMixedTeamsScreen \/>/);
-  assert.match(shell, /labMode \? <JourneysScreen \/> : <JourneysPage embedded \/>/);
+  assert.match(shell, /semApi \? <MixedTeamsScreen \/> : <OperationalMixedTeamsScreen \/>/);
+  assert.match(shell, /semApi \? <JourneysScreen \/> : <JourneysPage embedded \/>/);
   assert.match(teams, /data-operational-source="api"/);
   assert.match(teams, /customFetch/);
   assert.doesNotMatch(teams, /teamOperatingScenarios/);
@@ -220,7 +220,9 @@ test("comando produtivo evolui a experiência nova com telemetria da API", () =>
   const shell = readFileSync(shellPath, "utf8");
   const modules = readFileSync(modulesPath, "utf8");
 
-  assert.match(shell, /<ManagerScreen[^>]+operational=\{!labMode\}/);
+  assert.match(shell, /const semApi = labMode \|\| demo;/);
+  assert.match(shell, /<ManagerScreen[^>]+operational=\{!semApi\}/);
+  assert.match(shell, /enabled: !semApi\b/);
   assert.doesNotMatch(shell, /DashboardPage/);
   assert.match(modules, /data-operational-source=\{operational \? "api" : "scenario"\}/);
   assert.match(modules, /useGetFleetSummary/);
@@ -237,8 +239,8 @@ test("métricas, benchmarks e governança produtivos usam API", () => {
     readFileSync(fileURLToPath(new URL(`../pages/${name}`, import.meta.url)), "utf8"),
   );
 
-  assert.match(shell, /labMode \? <MetricsScreen \/> : <MetricasPage embedded \/>/);
-  assert.match(shell, /labMode \? <BenchmarksScreen \/> : <BenchmarksPage embedded \/>/);
-  assert.match(shell, /labMode \? <SettingsScreen \/> : <GovernancePage embedded \/>/);
+  assert.match(shell, /semApi \? <MetricsScreen \/> : <MetricasPage embedded \/>/);
+  assert.match(shell, /semApi \? <BenchmarksScreen \/> : <BenchmarksPage embedded \/>/);
+  assert.match(shell, /semApi \? <SettingsScreen \/> : <GovernancePage embedded \/>/);
   for (const page of pages) assert.match(page, /data-operational-source="api"/);
 });
