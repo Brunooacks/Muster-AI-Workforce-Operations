@@ -100,6 +100,9 @@ test("validação cobre campos vazios, negativos, faixa e não-inteiros", () => 
 test("parse de entrada aceita vírgula decimal e vazio vira NaN", () => {
   assert.equal(parseEntrada("1.500,5"), 1500.5);
   assert.equal(parseEntrada("4800"), 4800);
+  assert.equal(parseEntrada("4.800"), 4800);
+  assert.equal(parseEntrada("1.500.000"), 1500000);
+  assert.equal(parseEntrada("1.5"), 1.5);
   assert.ok(Number.isNaN(parseEntrada("")));
 });
 

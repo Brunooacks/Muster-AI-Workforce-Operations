@@ -46,6 +46,7 @@ const pt = {
   resultHumano: "no time humano",
   deltaBarato: (p: string) => `${p}% mais barato por resultado`,
   deltaCaro: (p: string) => `${p}% mais caro por resultado`,
+  mediaAgente: (valor: string) => `Gasto médio por agente: ${valor} por mês`,
   stats: {
     resultados: "Resultados validados por mês",
     humanoMes: "Custo humano estimado por mês",
@@ -95,7 +96,7 @@ export default function CalculadoraPage() {
 
   const humano = r.custoPorResultadoHumano ?? 0;
   const delta =
-    semResultado || !r.agenteMaisBarato || humano <= 0
+    semResultado || humano <= 0
       ? null
       : ((humano - (r.custoPorResultadoAgente ?? 0)) / humano) * 100;
 
@@ -139,7 +140,7 @@ export default function CalculadoraPage() {
                         inputMode="decimal"
                         value={bruto[campo]}
                         aria-invalid={erro ? true : undefined}
-                        aria-describedby={erro ? `calc-${campo}-erro` : undefined}
+                        aria-describedby={`calc-${campo}-erro`}
                         onChange={(e) => setBruto((atual) => ({ ...atual, [campo]: e.target.value }))}
                         className={`h-11 rounded-xl text-[16px] ${erro ? "border-destructive" : ""}`}
                       />
@@ -172,15 +173,23 @@ export default function CalculadoraPage() {
                 </span>
               </div>
               <span className="text-[15px] text-background/70">{t.resultAgente}</span>
-              {delta !== null && (
-                <span className="self-start rounded-full bg-chart-2 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[hsl(var(--chart-2-text))]">
+              {delta !== null && delta >= 0 && (
+                <span className="self-start rounded-full bg-accent px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-accent-foreground">
                   {t.deltaBarato(formatNumero(delta))}
+                </span>
+              )}
+              {delta !== null && delta < 0 && (
+                <span className="self-start rounded-full bg-destructive px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-destructive-foreground">
+                  {t.deltaCaro(formatNumero(-delta))}
                 </span>
               )}
               <span className="text-[17px] font-medium">
                 {t.resultHumano}:{" "}
                 {semResultado ? "—" : formatBRL(r.custoPorResultadoHumano ?? 0)}
               </span>
+              {!semResultado && r.custoMedioPorAgente !== null && (
+                <span className="text-[14px] text-background/70">{t.mediaAgente(formatBRL(r.custoMedioPorAgente, false))}</span>
+              )}
               {semResultado && <span className="text-[14px] text-background/70">{t.semDados}</span>}
             </div>
 
@@ -190,7 +199,7 @@ export default function CalculadoraPage() {
                   {t.stats.resultados}
                 </dt>
                 <dd className="text-[22px] font-semibold tracking-[-0.02em]">
-                  {formatNumero(r.resultadosValidados)}
+                  {semResultado ? "—" : formatNumero(r.resultadosValidados)}
                 </dd>
               </div>
               <div className="flex flex-col gap-1 bg-foreground p-4">
@@ -198,7 +207,7 @@ export default function CalculadoraPage() {
                   {t.stats.humanoMes}
                 </dt>
                 <dd className="text-[22px] font-semibold tracking-[-0.02em]">
-                  {formatBRL(r.custoHumanoMensal, false)}
+                  {semResultado ? "—" : formatBRL(r.custoHumanoMensal, false)}
                 </dd>
               </div>
               <div className="flex flex-col gap-1 bg-foreground p-4">
@@ -206,8 +215,8 @@ export default function CalculadoraPage() {
                   {t.stats.economia}
                 </dt>
                 <dd className="text-[22px] font-semibold tracking-[-0.02em]">
-                  {r.economiaMensal === null ? "—" : formatBRL(r.economiaMensal, false)}
-                  {r.economiaMensal !== null && r.economiaMensal < 0 && (
+                  {semResultado || r.economiaMensal === null ? "—" : formatBRL(r.economiaMensal, false)}
+                  {!semResultado && r.economiaMensal !== null && r.economiaMensal < 0 && (
                     <span className="block text-[12px] font-normal text-background/70">{t.stats.negativa}</span>
                   )}
                 </dd>

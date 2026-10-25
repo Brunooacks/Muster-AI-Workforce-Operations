@@ -143,8 +143,9 @@ export function formatNumero(valor: number, casas = 0): string {
 export function parseEntrada(valor: string): number {
   const semEspacos = String(valor).replace(/\s/g, "");
   if (semEspacos === "") return Number.NaN;
-  // aceita vírgula decimal no padrão pt-BR: "1.500,5" → 1500.5
-  const normalizado = semEspacos.includes(",")
+  // padrão pt-BR: "1.500,5" → 1500.5 e "4.800" (só milhar) → 4800
+  const soMilhar = /^-?\d{1,3}(?:\.\d{3})+$/.test(semEspacos);
+  const normalizado = semEspacos.includes(",") || soMilhar
     ? semEspacos.replace(/\./g, "").replace(",", ".")
     : semEspacos;
   return Number(normalizado);
