@@ -17,6 +17,7 @@ const productionPages = [
   "../pages/connectors-workforce.tsx",
   "../pages/executive-reports-workforce.tsx",
   "../pages/admission.tsx",
+  "../pages/adicionar-agente.tsx",
   "../pages/alerts.tsx",
   "../pages/configuracoes.tsx",
   "../pages/perfil.tsx",

@@ -8,6 +8,7 @@ import {
   Bell,
   ShieldCheck,
   CreditCard,
+  Palette,
   Webhook,
   Calculator,
   ArrowRight,
@@ -34,7 +35,8 @@ type SectionId =
   | "seguranca"
   | "faturamento"
   | "custos"
-  | "webhooks";
+  | "webhooks"
+  | "aparencia";
 
 const SECTIONS: { id: SectionId; icon: typeof Building2 }[] = [
   { id: "workspace", icon: Building2 },
@@ -45,6 +47,7 @@ const SECTIONS: { id: SectionId; icon: typeof Building2 }[] = [
   { id: "faturamento", icon: CreditCard },
   { id: "custos", icon: Calculator },
   { id: "webhooks", icon: Webhook },
+  { id: "aparencia", icon: Palette },
 ];
 
 const NOTIFICATION_PREF_IDS = [
@@ -73,6 +76,7 @@ const PT = {
     faturamento: "Faturamento",
     custos: "Custo-hora e custos",
     webhooks: "API · Webhooks",
+    aparencia: "Aparência",
   } as Record<SectionId, string>,
   wsTitle: "Workspace",
   wsDesc: "Identidade e configurações gerais do espaço de trabalho da sua frota.",
@@ -165,6 +169,9 @@ const PT = {
   events: "Eventos",
   apiKey: "Chave de API",
   genKey: "Gerar nova chave",
+  apTitle: "Aparência",
+  apDesc: "Como o Muster aparece para você. O tema vale para todas as telas desta pessoa.",
+  apHint: "Guardado neste navegador. Não muda o que as outras pessoas veem.",
 };
 
 type Dict = typeof PT;
@@ -186,6 +193,7 @@ const L: Record<Lang, Dict> = {
       faturamento: "Billing",
       custos: "Hourly and off-invoice costs",
       webhooks: "API · Webhooks",
+      aparencia: "Appearance",
     },
     wsTitle: "Workspace",
     wsDesc: "Identity and general settings of your fleet's workspace.",
@@ -278,6 +286,9 @@ const L: Record<Lang, Dict> = {
     events: "Events",
     apiKey: "API key",
     genKey: "Generate new key",
+    apTitle: "Appearance",
+    apDesc: "How Muster looks to you. The theme applies to every screen for this person.",
+    apHint: "Stored in this browser. It does not change what other people see.",
   },
   es: {
     bcAccount: "Cuenta",
@@ -294,6 +305,7 @@ const L: Record<Lang, Dict> = {
       faturamento: "Facturación",
       custos: "Costo-hora y costos",
       webhooks: "API · Webhooks",
+      aparencia: "Apariencia",
     },
     wsTitle: "Workspace",
     wsDesc: "Identidad y configuraciones generales del espacio de trabajo de tu flota.",
@@ -387,6 +399,9 @@ const L: Record<Lang, Dict> = {
     events: "Eventos",
     apiKey: "Clave de API",
     genKey: "Generar nueva clave",
+    apTitle: "Apariencia",
+    apDesc: "Cómo se ve Muster para ti. El tema se aplica a todas las pantallas de esta persona.",
+    apHint: "Guardado en este navegador. No cambia lo que ven las demás personas.",
   },
 };
 
@@ -709,8 +724,54 @@ function WebhooksSection() {
   );
 }
 
-const SECTION_CONTENT: Record<SectionId, React.FC> = {
+type PaletaId = "mineral" | "graphite" | "dracula" | "mocha";
+
+type AparenciaProps = { palette: PaletaId; setPalette: (palette: PaletaId) => void };
+
+const DIRECOES_VISUAIS: Array<{ id: PaletaId; cor: string; nome: string }> = [
+  { id: "mineral", cor: "#0f766e", nome: "Mineral" },
+  { id: "graphite", cor: "#55c2ff", nome: "Graphite" },
+  { id: "dracula", cor: "#bd93f9", nome: "Dracula" },
+  { id: "mocha", cor: "#89b4fa", nome: "Mocha" },
+];
+
+function AparenciaSection({ palette, setPalette }: AparenciaProps) {
+  const { lang } = useLang();
+  const t = L[lang];
+  return (
+    <SectionShell title={t.apTitle} description={t.apDesc}>
+      <Card className="divide-y divide-card-border">
+        <div className="px-5 py-5">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Direção visual">
+            {DIRECOES_VISUAIS.map((opcao) => (
+              <button
+                key={opcao.id}
+                type="button"
+                aria-label={`Tema ${opcao.nome}`}
+                aria-pressed={palette === opcao.id}
+                onClick={() => setPalette(opcao.id)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                  palette === opcao.id
+                    ? "border-primary bg-secondary font-medium text-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span className="h-3 w-3 rounded-full border border-white/20" style={{ background: opcao.cor }} />
+                {opcao.nome}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">{t.apHint}</p>
+        </div>
+      </Card>
+    </SectionShell>
+  );
+}
+
+const SECTION_CONTENT: Record<SectionId, React.FC<AparenciaProps>> = {
   workspace: WorkspaceSection,
+  aparencia: AparenciaSection,
   integracoes: IntegrationsSection,
   equipe: TeamSection,
   notificacoes: NotificationsSection,
@@ -720,7 +781,7 @@ const SECTION_CONTENT: Record<SectionId, React.FC> = {
   webhooks: WebhooksSection,
 };
 
-export default function SettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
+export default function SettingsPage({ embedded = false, palette, setPalette }: { embedded?: boolean; palette: PaletaId; setPalette: (palette: PaletaId) => void }) {
   const [section, setSection] = useState<SectionId>(readInitialSection);
   const { lang } = useLang();
   const t = L[lang];
@@ -762,7 +823,7 @@ export default function SettingsPage({ embedded = false }: { embedded?: boolean 
           </nav>
 
           <div className="min-w-0 flex-1">
-            <Content />
+            <Content palette={palette} setPalette={setPalette} />
           </div>
         </div>
       </div>

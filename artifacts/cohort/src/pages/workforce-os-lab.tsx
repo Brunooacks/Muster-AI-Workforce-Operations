@@ -33,7 +33,6 @@ import {
   ListChecks,
   LogOut,
   Map as MapIcon,
-  Palette,
   Radar,
   Radio,
   RefreshCw,
@@ -49,6 +48,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdicionarAgenteScreen } from "@/pages/adicionar-agente";
 import { EntregasScreen } from "@/pages/entregas";
 import { PendenciasScreen } from "@/pages/pendencias";
 import { MapaScreen } from "@/pages/mapa";
@@ -505,14 +505,8 @@ function Panel({ children, className, ...rest }: ComponentPropsWithoutRef<"secti
   );
 }
 
-function AppHeader({ palette, setPalette, labMode, screen }: { palette: PaletteId; setPalette: (palette: PaletteId) => void; labMode: boolean; screen: Screen }) {
+function AppHeader({ labMode, screen }: { labMode: boolean; screen: Screen }) {
   const selo = seloDaTela(screen);
-  const paletteOptions: Array<{ id: PaletteId; color: string; label: string }> = [
-    { id: "mineral", color: "#0f766e", label: "Mineral" },
-    { id: "graphite", color: "#55c2ff", label: "Graphite" },
-    { id: "dracula", color: "#bd93f9", label: "Dracula" },
-    { id: "mocha", color: "#89b4fa", label: "Mocha" },
-  ];
 
   return (
     <header className="flex min-h-14 items-center justify-between gap-4 border-b border-[var(--wo-line)] bg-[var(--wo-shell)] px-4">
@@ -559,22 +553,6 @@ function AppHeader({ palette, setPalette, labMode, screen }: { palette: PaletteI
             <BellRing className="h-3.5 w-3.5" /> Novidades
             <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--wo-accent)]" aria-hidden="true" />
           </Link>
-        </div>
-        <div className="hidden items-center gap-1 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] p-1 md:flex" aria-label="Direção visual">
-          <Palette className="mx-1 h-3.5 w-3.5 text-[var(--wo-muted)]" />
-          {paletteOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-label={`Tema ${option.label}`}
-              aria-pressed={palette === option.id}
-              onClick={() => setPalette(option.id)}
-              className={cn("inline-flex items-center gap-1.5 rounded-lg border px-1.5 py-1 text-[9px] transition-colors", palette === option.id ? "border-[var(--wo-primary)] bg-[var(--wo-primary-soft)] text-[var(--wo-text)]" : "border-transparent text-[var(--wo-muted)] hover:text-[var(--wo-text)]")}
-            >
-              <span className="h-3 w-3 rounded-full border border-white/20" style={{ background: option.color }} />
-              <span className="hidden lg:inline">{option.label}</span>
-            </button>
-          ))}
         </div>
       </div>
     </header>
@@ -1479,7 +1457,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
       <div className="flex min-h-screen">
         <NavigationRail screen={screen} navigate={navigate} labMode={labMode} />
         <div className="min-w-0 flex-1">
-          <AppHeader palette={palette} setPalette={setPalette} labMode={labMode} screen={screen} />
+          <AppHeader labMode={labMode} screen={screen} />
           <main className="pb-16 md:pb-0">
             {screen === "today" && <ManagerScreen selectAgent={openProfessional} navigate={navigate} agents={visibleAgents} operational={!semApi} />}
             {screen === "onboarding" && <OnboardingScreen navigate={navigate} />}
@@ -1492,12 +1470,12 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "benchmarks" && (semApi ? <BenchmarksScreen /> : <BenchmarksPage embedded />)}
             {screen === "connectors" && <ConnectorsScreen />}
             {screen === "settings" && (semApi ? <SettingsScreen /> : <GovernancePage embedded />)}
-            {screen === "admission" && <AdmissionPage embedded />}
+            {screen === "admission" && (semApi ? <AdicionarAgenteScreen /> : <AdmissionPage embedded />)}
             {screen === "alerts" &&
               (location === "/pendencias" ? <PendenciasScreen /> : <AlertsPage embedded />)}
             {screen === "admin" && <AdminConsolePage />}
-            {screen === "accountSettings" && <AccountSettingsPage embedded />}
-            {screen === "profile" && <ProfilePage embedded />}
+            {screen === "accountSettings" && <AccountSettingsPage embedded palette={palette} setPalette={setPalette} />}
+            {screen === "profile" && <ProfilePage embedded demo={demo} />}
             {screen === "connection" && <ConectarPage embedded />}
             {screen === "entregas" && <EntregasScreen />}
             {screen === "mapa" && <MapaScreen />}

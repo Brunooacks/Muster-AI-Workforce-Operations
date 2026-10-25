@@ -60,7 +60,7 @@ test("parâmetro de protótipo aceita somente telas declaradas", () => {
 });
 
 test("fluxos especializados mantêm contexto no item principal", () => {
-  assert.equal(navigationScreenForWorkforceScreen("admission"), "connectors");
+  assert.equal(navigationScreenForWorkforceScreen("admission"), "admission");
   assert.equal(navigationScreenForWorkforceScreen("connection"), "connectors");
   assert.equal(navigationScreenForWorkforceScreen("alerts"), "today");
   assert.equal(navigationScreenForWorkforceScreen("profile"), "settings");

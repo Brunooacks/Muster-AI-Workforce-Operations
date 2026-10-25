@@ -101,7 +101,8 @@ export function routeForWorkforceScreen(
 }
 
 export function navigationScreenForWorkforceScreen(screen: WorkforceScreen): WorkforceScreen {
-  if (screen === "admission" || screen === "connection") return "connectors";
+  if (screen === "admission") return "admission";
+  if (screen === "connection") return "connectors";
   if (screen === "alerts") return "today";
   if (screen === "accountSettings" || screen === "profile") return "settings";
   return screen;

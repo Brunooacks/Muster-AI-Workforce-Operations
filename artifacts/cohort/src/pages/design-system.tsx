@@ -33,8 +33,8 @@ import { cn } from "@/lib/utils";
 function ComparativeBarChart() {
   const data = [
     { label: "Custo por resultado", value: 68, target: 55, unit: "R$", color: "chart-1" },
-    { label: "Qualidade vs baseline", value: 91, target: 85, unit: "%", color: "chart-1" },
-    { label: "Cobertura de evidência", value: 76, target: 90, unit: "%", color: "chart-2" },
+    { label: "Qualidade vs linha de base", value: 91, target: 85, unit: "%", color: "chart-1" },
+    { label: "Cobertura de prova", value: 76, target: 90, unit: "%", color: "chart-2" },
     { label: "Autonomia efetiva", value: 42, target: 70, unit: "%", color: "chart-3" },
   ];
 
@@ -642,7 +642,7 @@ function EmptyStates() {
     },
     {
       title: "Nenhuma entrega registrada",
-      description: "As entregas aparecem aqui quando o agente conclui uma tarefa com evidência.",
+      description: "As entregas aparecem aqui quando o agente conclui uma tarefa com prova.",
       icon: FileText,
       action: "Ver agentes",
       secondary: null,

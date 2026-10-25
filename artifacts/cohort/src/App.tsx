@@ -435,7 +435,8 @@ function MissingClerkConfiguration() {
 
 function DemoRoutes() {
   return (
-    <Switch>
+    <AppShellProvider>
+      <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/design-system" component={DesignSystemPage} />
       <Route path="/calculadora" component={CalculadoraPage} />
@@ -447,8 +448,9 @@ function DemoRoutes() {
       <Route path="/agentes/:id">
         <WorkforceOsLabPage labMode={false} demo />
       </Route>
-      <Route component={NotFound} />
-    </Switch>
+        <Route component={NotFound} />
+      </Switch>
+    </AppShellProvider>
   );
 }
 
