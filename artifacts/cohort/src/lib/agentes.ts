@@ -46,13 +46,14 @@ export function numeroDe(valor: string | null | undefined): { valor: number; uni
     if (!Number.isFinite(atual) || !Number.isFinite(total) || total === 0) return null;
     return { valor: (atual / total) * 100, unidade: "%" };
   }
-  const limpo = texto.replace(/^(?:≥|≤|>|<|>=|<=)\s*/, "");
+  // ">=" antes de ">": senão sobra "= 75%" e o número se perde.
+  const limpo = texto.replace(/^(?:>=|<=|≥|≤|>|<)\s*/, "");
   const percentual = limpo.match(/^([0-9]+(?:[.,][0-9]+)?)\s*%/);
   if (percentual) return { valor: Number(percentual[1]!.replace(",", ".")), unidade: "%" };
   const tempo = limpo.match(/^([0-9]+(?:[.,][0-9]+)?)\s*(min|s|h|hora|horas|dia|dias)$/i);
   if (tempo) return { valor: Number(tempo[1]!.replace(",", ".")), unidade: tempo[2]!.toLowerCase() };
-  const moeda = limpo.match(/^R\$\s*([0-9]+(?:[.,][0-9]+)?)/);
-  if (moeda) return { valor: Number(moeda[1]!.replace(".", "").replace(",", ".")), unidade: "R$" };
+  const moeda = limpo.match(/^R\$\s*([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]+)?|[0-9]+(?:,[0-9]+)?)/);
+  if (moeda) return { valor: Number(moeda[1]!.replace(/\./g, "").replace(",", ".")), unidade: "R$" };
   if (/^\d{1,3}(?:\.\d{3})+$/.test(limpo)) {
     return { valor: Number(limpo.replace(/\./g, "")), unidade: null };
   }
@@ -179,13 +180,24 @@ export function friccaoEmpilhada(
   const validos = segmentos.filter((segmento) => segmento.quantidade > 0);
   const total = validos.reduce((soma, segmento) => soma + segmento.quantidade, 0);
   if (total === 0) return [];
-  let resto = 100;
-  return validos.map((segmento, index) => {
-    const ultimo = index === validos.length - 1;
-    const percentual = ultimo ? resto : Math.round((segmento.quantidade / total) * 100);
-    resto -= percentual;
-    return { tipo: segmento.tipo, quantidade: segmento.quantidade, percentual };
-  });
+  // Maior resto: arredonda para baixo e distribui os pontos que faltam para os
+  // maiores restos. Soma sempre 100 e nenhum segmento fica negativo.
+  const brutos = validos.map((segmento) => (segmento.quantidade / total) * 100);
+  const percentuais = brutos.map(Math.floor);
+  let faltam = 100 - percentuais.reduce((soma, valor) => soma + valor, 0);
+  const porResto = brutos
+    .map((bruto, index) => ({ index, resto: bruto - Math.floor(bruto) }))
+    .sort((a, b) => b.resto - a.resto);
+  for (const { index } of porResto) {
+    if (faltam <= 0) break;
+    percentuais[index]! += 1;
+    faltam -= 1;
+  }
+  return validos.map((segmento, index) => ({
+    tipo: segmento.tipo,
+    quantidade: segmento.quantidade,
+    percentual: percentuais[index]!,
+  }));
 }
 
 /** Dados ilustrativos da fricção no período (312 entregas do mês, 50 com atrito). */

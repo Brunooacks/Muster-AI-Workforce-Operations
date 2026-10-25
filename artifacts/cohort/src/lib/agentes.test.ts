@@ -72,6 +72,13 @@ test("numeroDe entende porcentagem, razão, tempo e moeda", () => {
   assert.equal(numeroDe(undefined), null);
 });
 
+test("numeroDe aceita >= e <= e moeda com milhar e centavos", () => {
+  assert.deepEqual(numeroDe(">= 75%"), { valor: 75, unidade: "%" });
+  assert.deepEqual(numeroDe("<= 7 min"), { valor: 7, unidade: "min" });
+  assert.deepEqual(numeroDe("R$ 1.234,56"), { valor: 1234.56, unidade: "R$" });
+  assert.deepEqual(numeroDe("R$ 12.000"), { valor: 12000, unidade: "R$" });
+});
+
 test("statusDoAgente usa quatro rótulos em linguagem comum", () => {
   assert.equal(statusDoAgente(agente({ contractFulfillment: 61 })), "fora");
   assert.equal(statusDoAgente(agente({ contractFulfillment: 72 })), "atencao");
@@ -209,4 +216,12 @@ test("métrica sem meta combinada vira estimado e não conta como meta", () => {
     ],
   });
   assert.deepEqual(metasDoAgente(misto), { total: 2, atingidas: 1, rotulo: "1 de 2 metas" });
+});
+
+test("friccaoEmpilhada soma 100 sem segmento negativo com muitos tipos pequenos", () => {
+  const segmentos = Array.from({ length: 39 }, (_, i) => ({ tipo: `t${i}`, quantidade: 1 }));
+  segmentos.push({ tipo: "grande", quantidade: 61 });
+  const resultado = friccaoEmpilhada(segmentos);
+  assert.equal(resultado.reduce((soma, s) => soma + s.percentual, 0), 100);
+  assert.ok(resultado.every((s) => s.percentual >= 0));
 });
