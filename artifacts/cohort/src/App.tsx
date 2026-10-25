@@ -52,6 +52,8 @@ import {
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
+/** Modo demonstração: build estático sem API e sem Clerk (previews e demo). */
+export const demoMode = String(import.meta.env.VITE_DEMO ?? "") === "1";
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
@@ -429,7 +431,30 @@ function MissingClerkConfiguration() {
   );
 }
 
+function DemoRoutes() {
+  return (
+    <Switch>
+      <Route path="/" component={LandingPage} />
+      <Route path="/design-system" component={DesignSystemPage} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
 function App() {
+  if (demoMode) {
+    return (
+      <LangProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={basePath}>
+              <DemoRoutes />
+            </WouterRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LangProvider>
+    );
+  }
   if (!clerkPubKey) return <MissingClerkConfiguration />;
   return (
     <LangProvider>

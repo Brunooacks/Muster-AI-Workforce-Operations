@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { MusterMark } from "@/components/logo";
+import { LangSwitcher } from "@/components/lang-switcher";
 import { useLang, type Lang } from "@/lib/i18n";
 
 const pt = {
@@ -44,7 +45,10 @@ export function HomeFechamento() {
           <span className="flex items-center gap-2">
             <MusterMark className="h-4 w-4" /> {t.brand}
           </span>
-          <span>{t.tagline}</span>
+          <span className="flex items-center gap-3">
+            <span>{t.tagline}</span>
+            <LangSwitcher />
+          </span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
