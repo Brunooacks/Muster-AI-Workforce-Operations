@@ -34,6 +34,8 @@ const pt = {
   ],
   disclaimer:
     "Gartner é marca registrada da Gartner, Inc. Previsões de comunicados públicos (jun/2025). Não há endosso do Muster.",
+  fonteLink: "Fonte: comunicado de imprensa da Gartner, 25/06/2025",
+  novaAba: "abre em nova aba",
 };
 
 const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
@@ -62,7 +64,7 @@ export function HomeMercado() {
               target="_blank"
               rel="noreferrer"
               className="inline-flex w-fit flex-col items-start transition-opacity hover:opacity-75"
-              aria-label={`${card.number} — fonte: Gartner (abre em nova aba)`}
+              aria-label={`${card.number} — fonte: Gartner (${t.novaAba})`}
             >
               {card.lead && (
                 <span className="mb-1 font-mono text-[12px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -81,15 +83,30 @@ export function HomeMercado() {
               {card.title}
             </span>
             <span className="text-[15px] leading-[1.5] text-muted-foreground">{card.detail}</span>
-            <span className="mt-auto pt-3 font-mono text-[12px] text-muted-foreground">
+            <a
+              href={GARTNER_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-auto w-fit pt-3 font-mono text-[12px] text-muted-foreground underline decoration-black/20 underline-offset-4 transition-colors hover:text-foreground"
+            >
               {card.source}
-            </span>
+              <span className="sr-only"> ({t.novaAba})</span>
+            </a>
           </div>
         ))}
       </div>
 
       <p className="max-w-[760px] text-[13px] leading-[1.5] text-muted-foreground">
-        {t.disclaimer}
+        {t.disclaimer}{" "}
+        <a
+          href={GARTNER_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-black/20 underline-offset-4 transition-colors hover:text-foreground"
+        >
+          {t.fonteLink}
+          <span className="sr-only"> ({t.novaAba})</span>
+        </a>
       </p>
     </section>
   );

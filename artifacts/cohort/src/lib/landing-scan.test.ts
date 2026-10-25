@@ -103,6 +103,11 @@ test("home: número ilustrativo vem com selo; Gartner vem com fonte pública", (
   const mercado = readFileSync(join(SRC, "components", "home", "home-mercado.tsx"), "utf8");
   assert.ok(mercado.includes("gartner.com/en/newsroom/press-releases/2025-06-25"), "link do comunicado");
   assert.ok(mercado.includes("ao menos"), "15% é \"ao menos 15%\"");
+  assert.ok(mercado.includes("marca registrada da Gartner, Inc."), "aviso de marca registrada");
+  assert.ok(
+    (mercado.match(/href=\{GARTNER_URL\}/g) ?? []).length >= 3,
+    "fonte pública linkada no número, na linha de fonte e no aviso",
+  );
   const precos = readFileSync(join(SRC, "components", "home", "home-precos.tsx"), "utf8");
   assert.ok(!precos.includes("MAIS ESCOLHIDO") && !precos.includes("Mais escolhido"), "selo removido");
   assert.ok(precos.includes("Preços pendentes de decisão"), "aviso de preços");
