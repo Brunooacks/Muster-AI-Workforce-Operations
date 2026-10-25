@@ -102,6 +102,9 @@
   /* Ciano escuro para texto/links no modo claro (contraste ≥4.5:1 sobre branco) */
   --cyan-text: 189 75% 32%;             /* #0d8a9e - usado para links/texto ciano */
 
+  /* Âmbar escuro para texto/atenção no modo claro (contraste ≥4.5:1 sobre branco) */
+  --chart-2-text: 35 68% 30%;
+
   /* Semântica de dado (status), estável nos dois perfis */
   --chart-1: 189 92% 53%;               /* positivo / no alvo         #19d3f5 */
   --chart-2: 40 78% 58%;                /* atenção / corrigir         #e7aa40 */
@@ -158,6 +161,7 @@
 
   /* Ciano para texto no modo escuro (já tem bom contraste) */
   --cyan-text: 189 92% 53%;             /* #19d3f5 */
+  --chart-2-text: 40 100% 66%;          /* #ffb020 - texto de atenção no escuro */
 
   --chart-1: 189 92% 53%;               /* #19d3f5 */
   --chart-2: 38 100% 56%;               /* #ffb020 */
@@ -296,7 +300,7 @@
     @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em];
     border-color: hsl(var(--chart-2));
     background: hsl(var(--chart-2) / 0.1);
-    color: hsl(var(--chart-2));
+    color: hsl(var(--chart-2-text));
   }
   [data-profile="noite"] .badge-illustrative {
     border-color: hsl(var(--chart-2));
@@ -309,7 +313,7 @@
     @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em];
     border-color: hsl(var(--chart-2));
     background: hsl(var(--chart-2) / 0.1);
-    color: hsl(var(--chart-2));
+    color: hsl(var(--chart-2-text));
   }
 
   /* Cards de preço */

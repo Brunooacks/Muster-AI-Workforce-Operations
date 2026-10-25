@@ -12,8 +12,8 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         destructive: "border-transparent bg-destructive text-destructive-foreground",
         outline: "text-foreground border-[var(--badge-outline)]",
-        illustrative: "border-chart-2 bg-chart-2/10 text-chart-2",
-        soon: "border-chart-2 bg-chart-2/10 text-chart-2",
+        illustrative: "border-chart-2 bg-chart-2/10 text-[hsl(var(--chart-2-text))]",
+        soon: "border-chart-2 bg-chart-2/10 text-[hsl(var(--chart-2-text))]",
       },
     },
     defaultVariants: {
