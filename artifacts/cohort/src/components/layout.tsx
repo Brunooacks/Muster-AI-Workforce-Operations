@@ -66,7 +66,7 @@ export const NAV_LABELS: Record<
   pt: {
     groups: ["Operação", "Governança", "Conta", "Administração"],
     items: {
-      "/comando": "Visão geral",
+      "/visao-geral": "Visão geral",
       "/agentes": "Agentes",
       "/frota": "Frota",
       "/alertas": "Alertas de qualidade",
@@ -90,7 +90,7 @@ export const NAV_LABELS: Record<
   en: {
     groups: ["Operations", "Governance", "Account", "Administration"],
     items: {
-      "/comando": "Overview",
+      "/visao-geral": "Overview",
       "/agentes": "Agents",
       "/frota": "Fleet",
       "/alertas": "Quality alerts",
@@ -114,7 +114,7 @@ export const NAV_LABELS: Record<
   es: {
     groups: ["Operación", "Gobernanza", "Cuenta", "Administración"],
     items: {
-      "/comando": "Visión general",
+      "/visao-geral": "Visión general",
       "/agentes": "Agentes",
       "/frota": "Flota",
       "/alertas": "Alertas de calidad",
@@ -153,7 +153,7 @@ function navGroups(lang: Lang): NavGroup[] {
     {
       label: l.groups[0],
       items: [
-        item("/comando", Compass),
+        item("/visao-geral", Compass),
         item("/agentes", Users),
         item("/frota", LayoutGrid),
         item("/jornadas", RouteIcon),

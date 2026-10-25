@@ -61,7 +61,11 @@ export const WORKFORCE_STATIC_PATHS = [
   "/guia/radar",
 ] as const;
 
+/** Telas novas (fase 2) com o visual do protótipo aprovado. */
+export const MUSTER_SCREEN_PATHS = ["/visao-geral", "/direcionamento", "/baseline", "/historico"] as const;
+
 export const APP_STATIC_PATHS = [
+  ...MUSTER_SCREEN_PATHS,
   "/",
   "/sign-in",
   "/sign-up",
