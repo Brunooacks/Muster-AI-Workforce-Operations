@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  DOWN_0022,
   backfill0022Statements,
   createScratchDb,
+  schemaSnapshot,
   type ScratchDb,
 } from "./scratch-db.test.support";
 
@@ -225,5 +227,67 @@ describe.skipIf(!runIntegration)("0022 · backfill de projeto e ambiente", () =>
       `SELECT calls FROM ai_usage_daily WHERE org_id = 'org_bf_3' AND day = '2026-10-24'`,
     );
     expect(rows).toEqual([{ calls: 2 }]);
+  });
+});
+
+describe.skipIf(!runIntegration)("0022 · up → down → up", () => {
+  let db: ScratchDb;
+  let schema0021: string[];
+  let schema0022: string[];
+
+  async function dadosPreservados() {
+    return {
+      agents: await db.query(`SELECT id, org_id, name, slug FROM agents ORDER BY id`),
+      keys: await db.query(`SELECT id, org_id, agent_id, prefix, key_hash, revoked_at FROM agent_api_keys ORDER BY id`),
+      outbox: await db.query(`SELECT id, org_id, status FROM event_outbox ORDER BY id`),
+      usage: await usagePorOrg(db),
+    };
+  }
+
+  beforeAll(async () => {
+    db = await createScratchDb("muster_down0022");
+    await db.migrateUntil("0021_premium_molten_man");
+    await seed0021(db);
+    schema0021 = await schemaSnapshot(db);
+    await db.migrateUntil();
+    schema0022 = await schemaSnapshot(db);
+  }, 120_000);
+
+  afterAll(async () => {
+    if (db) await db.drop();
+  });
+
+  it("down volta o schema exatamente ao da 0021 e preserva agentes, chaves e uso", async () => {
+    // Uso por projeto no mesmo (org, dia, feature): o down precisa juntar.
+    const [prj] = await db.query<{ id: string }>(
+      `SELECT id FROM projects WHERE org_id = 'org_bf_1' AND is_default`,
+    );
+    await db.query(
+      `INSERT INTO ai_usage_daily (org_id, project_id, day, feature, calls, est_cost_usd)
+       VALUES ('org_bf_1', $1, '2026-10-01', 'agent-analysis', 2, 0.5)`,
+      [prj!.id],
+    );
+    const antes = await dadosPreservados();
+
+    await db.runSqlFile(DOWN_0022);
+
+    expect(await schemaSnapshot(db)).toEqual(schema0021);
+    const depois = await dadosPreservados();
+    expect(depois.agents).toEqual(antes.agents);
+    expect(depois.keys).toEqual(antes.keys);
+    expect(depois.outbox).toEqual(antes.outbox);
+    expect(depois.usage).toEqual([
+      { org_id: "org_bf_1", total: 2.5, linhas: 2 },
+      { org_id: "org_bf_2", total: 3.5, linhas: 1 },
+    ]);
+  });
+
+  it("up de novo reaplica a 0022 com o mesmo schema e chaves em prod", async () => {
+    await db.migrateUntil();
+    expect(await schemaSnapshot(db)).toEqual(schema0022);
+    const [row] = await db.query<{ total: number; prod: number }>(`
+      SELECT count(*)::int AS total, count(*) FILTER (WHERE e.kind = 'prod')::int AS prod
+        FROM agent_api_keys k JOIN environments e ON e.id = k.environment_id`);
+    expect(row).toEqual({ total: 5, prod: 5 });
   });
 });
