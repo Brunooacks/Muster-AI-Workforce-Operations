@@ -31,6 +31,9 @@ import type {
   AgentApiKeyCreated,
   AgentApiKeyInput,
   AgentAreaInput,
+  AgentContract,
+  AgentContractHistory,
+  AgentContractInput,
   AgentDetail,
   AgentDraft,
   AgentDraftRecord,
@@ -6896,4 +6899,153 @@ export function useGetRealtimeGovernance<TData = Awaited<ReturnType<typeof getRe
 
 
 
+
+export const getListAgentContractsUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/contracts`
+}
+
+/**
+ * @summary Histórico de versões do contrato numérico do agente (cunha · C2.2)
+ */
+export const listAgentContracts = async (agentId: string, options?: RequestInit): Promise<AgentContractHistory> => {
+
+  return customFetch<AgentContractHistory>(getListAgentContractsUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentContractsQueryKey = (agentId: string,) => {
+    return [
+    `/api/agents/${agentId}/contracts`
+    ] as const;
+    }
+
+
+export const getListAgentContractsQueryOptions = <TData = Awaited<ReturnType<typeof listAgentContracts>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentContracts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentContractsQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentContracts>>> = ({ signal }) => listAgentContracts(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentContracts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentContractsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentContracts>>>
+export type ListAgentContractsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Histórico de versões do contrato numérico do agente (cunha · C2.2)
+ */
+
+export function useListAgentContracts<TData = Awaited<ReturnType<typeof listAgentContracts>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentContracts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentContractsQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAgentContractUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/contracts`
+}
+
+/**
+ * @summary Cria a próxima versão do contrato (nunca edita a anterior)
+ */
+export const createAgentContract = async (agentId: string,
+    agentContractInput: AgentContractInput, options?: RequestInit): Promise<AgentContract> => {
+
+  return customFetch<AgentContract>(getCreateAgentContractUrl(agentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentContractInput,)
+  }
+);}
+
+
+
+
+export const getCreateAgentContractMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentContract>>, TError,{agentId: string;data: BodyType<AgentContractInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgentContract>>, TError,{agentId: string;data: BodyType<AgentContractInput>}, TContext> => {
+
+const mutationKey = ['createAgentContract'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgentContract>>, {agentId: string;data: BodyType<AgentContractInput>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  createAgentContract(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgentContractMutationResult = NonNullable<Awaited<ReturnType<typeof createAgentContract>>>
+    export type CreateAgentContractMutationBody = BodyType<AgentContractInput>
+    export type CreateAgentContractMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cria a próxima versão do contrato (nunca edita a anterior)
+ */
+export const useCreateAgentContract = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentContract>>, TError,{agentId: string;data: BodyType<AgentContractInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgentContract>>,
+        TError,
+        {agentId: string;data: BodyType<AgentContractInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAgentContractMutationOptions(options));
+    }
 

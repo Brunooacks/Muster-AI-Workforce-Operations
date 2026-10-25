@@ -2139,6 +2139,66 @@ paths:
               schema:
                 $ref: "#/components/schemas/RealtimeGovernanceResponse"
 
+  /agents/{agentId}/contracts:
+    get:
+      operationId: listAgentContracts
+      tags: [agents]
+      summary: Histórico de versões do contrato numérico do agente (cunha · C2.2)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Versão ativa (nula = contrato pendente) e histórico
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentContractHistory"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createAgentContract
+      tags: [agents]
+      summary: Cria a próxima versão do contrato (nunca edita a anterior)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentContractInput"
+      responses:
+        "201":
+          description: Versão criada e ativa; a anterior vira superseded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentContract"
+        "400":
+          description: Validação (números, deadline futura, dono membro da conta)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -3228,6 +3288,16 @@ components:
           type: ["string", "null"]
         decidedAt:
           type: ["string", "null"]
+        contractId:
+          type: ["string", "null"]
+          description: Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)
+        contractVersion:
+          type: ["integer", "null"]
+        contract:
+          description: A versão do contrato à qual o veredito se refere (regra R3)
+          oneOf:
+            - $ref: "#/components/schemas/AgentContract"
+            - type: "null"
         createdAt:
           type: string
 
@@ -5284,6 +5354,114 @@ components:
       enum: [sandbox, prod]
       description: Ambiente de um projeto. Chave sandbox nunca alcança prod.
 
+    AgentContractInput:
+      type: object
+      required: [metricKey, unit, direction, baseline, target, deadline, ownerMemberId]
+      properties:
+        metricKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 40
+        direction:
+          type: string
+          enum: [up, down]
+        baseline:
+          type: number
+        target:
+          type: number
+        limit:
+          type: ["number", "null"]
+        deadline:
+          type: string
+          description: Data futura YYYY-MM-DD
+        ownerMemberId:
+          type: string
+          description: organization_members.id do dono (membro da conta)
+        referenceHumanMinutes:
+          type: ["number", "null"]
+          minimum: 0
+          description: Minutos humanos de referência por tarefa (D-C2)
+        requireHumanAccept:
+          type: boolean
+          description: Aceite automático não conta como tarefa aceita (D-C3)
+        referenceModel:
+          type: ["string", "null"]
+          maxLength: 120
+          description: Modelo de referência fixado pela conta (D-C1)
+    AgentContract:
+      type: object
+      required: [id, agentId, version, metricKey, unit, direction, baseline, target, limit, deadline, ownerMemberId, status, createdBy, createdAt, supersededAt, referenceHumanMinutes, requireHumanAccept, referenceModel]
+      properties:
+        id:
+          type: string
+        agentId:
+          type: string
+        version:
+          type: integer
+        metricKey:
+          type: string
+        unit:
+          type: string
+        direction:
+          type: string
+          enum: [up, down]
+        baseline:
+          type: number
+        target:
+          type: number
+        limit:
+          type: ["number", "null"]
+        deadline:
+          type: string
+        ownerMemberId:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, superseded]
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+        supersededAt:
+          type: ["string", "null"]
+        referenceHumanMinutes:
+          type: ["number", "null"]
+        requireHumanAccept:
+          type: boolean
+        referenceModel:
+          type: ["string", "null"]
+    AgentContractOwnerCandidate:
+      type: object
+      required: [id, userId, role]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+    AgentContractHistory:
+      type: object
+      required: [agentId, active, versions, ownerCandidates]
+      properties:
+        agentId:
+          type: string
+        active:
+          oneOf:
+            - $ref: "#/components/schemas/AgentContract"
+            - type: "null"
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentContract"
+        ownerCandidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentContractOwnerCandidate"
     Project:
       type: object
       required: [id, name, slug, isDefault, createdAt]

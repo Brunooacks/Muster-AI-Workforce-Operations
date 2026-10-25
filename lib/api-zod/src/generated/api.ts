@@ -1447,6 +1447,28 @@ export const GetAgentResponse = zod.object({
   "decision": zod.enum(['pending', 'approved', 'disagreed', 'exported']),
   "decidedBy": zod.string().nullish(),
   "decidedAt": zod.string().nullish(),
+  "contractId": zod.string().nullish().describe('Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)'),
+  "contractVersion": zod.number().nullish(),
+  "contract": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]).optional().describe('A versão do contrato à qual o veredito se refere (regra R3)'),
   "createdAt": zod.string()
 }).optional()
 })
@@ -1581,6 +1603,28 @@ export const UpdateAgentResponse = zod.object({
   "decision": zod.enum(['pending', 'approved', 'disagreed', 'exported']),
   "decidedBy": zod.string().nullish(),
   "decidedAt": zod.string().nullish(),
+  "contractId": zod.string().nullish().describe('Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)'),
+  "contractVersion": zod.number().nullish(),
+  "contract": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]).optional().describe('A versão do contrato à qual o veredito se refere (regra R3)'),
   "createdAt": zod.string()
 }).optional()
 })
@@ -1727,6 +1771,28 @@ export const UpdateAgentIdentityResponse = zod.object({
   "decision": zod.enum(['pending', 'approved', 'disagreed', 'exported']),
   "decidedBy": zod.string().nullish(),
   "decidedAt": zod.string().nullish(),
+  "contractId": zod.string().nullish().describe('Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)'),
+  "contractVersion": zod.number().nullish(),
+  "contract": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]).optional().describe('A versão do contrato à qual o veredito se refere (regra R3)'),
   "createdAt": zod.string()
 }).optional()
 })
@@ -1808,6 +1874,28 @@ export const ListAgentVerdictsResponseItem = zod.object({
   "decision": zod.enum(['pending', 'approved', 'disagreed', 'exported']),
   "decidedBy": zod.string().nullish(),
   "decidedAt": zod.string().nullish(),
+  "contractId": zod.string().nullish().describe('Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)'),
+  "contractVersion": zod.number().nullish(),
+  "contract": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]).optional().describe('A versão do contrato à qual o veredito se refere (regra R3)'),
   "createdAt": zod.string()
 })
 export const ListAgentVerdictsResponse = zod.array(ListAgentVerdictsResponseItem)
@@ -1842,6 +1930,28 @@ export const DecideVerdictResponse = zod.object({
   "decision": zod.enum(['pending', 'approved', 'disagreed', 'exported']),
   "decidedBy": zod.string().nullish(),
   "decidedAt": zod.string().nullish(),
+  "contractId": zod.string().nullish().describe('Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)'),
+  "contractVersion": zod.number().nullish(),
+  "contract": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]).optional().describe('A versão do contrato à qual o veredito se refere (regra R3)'),
   "createdAt": zod.string()
 })
 
@@ -1974,6 +2084,28 @@ export const UpdateEvaluationMetricResponse = zod.object({
   "decision": zod.enum(['pending', 'approved', 'disagreed', 'exported']),
   "decidedBy": zod.string().nullish(),
   "decidedAt": zod.string().nullish(),
+  "contractId": zod.string().nullish().describe('Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)'),
+  "contractVersion": zod.number().nullish(),
+  "contract": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]).optional().describe('A versão do contrato à qual o veredito se refere (regra R3)'),
   "createdAt": zod.string()
 }).optional()
 })
@@ -3067,6 +3199,95 @@ export const GetRealtimeGovernanceResponse = zod.object({
   "sourceEventCount": zod.number(),
   "assessedAt": zod.coerce.date().nullable()
 }))
+})
+
+
+/**
+ * @summary Histórico de versões do contrato numérico do agente (cunha · C2.2)
+ */
+export const ListAgentContractsParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ListAgentContractsResponse = zod.object({
+  "agentId": zod.string(),
+  "active": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]),
+  "versions": zod.array(zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+})),
+  "ownerCandidates": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "role": zod.string()
+}))
+})
+
+
+/**
+ * @summary Cria a próxima versão do contrato (nunca edita a anterior)
+ */
+export const CreateAgentContractParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const createAgentContractBodyMetricKeyMax = 120;
+
+export const createAgentContractBodyUnitMax = 40;
+
+export const createAgentContractBodyReferenceHumanMinutesMin = 0;
+
+export const createAgentContractBodyReferenceModelMax = 120;
+
+
+
+export const CreateAgentContractBody = zod.object({
+  "metricKey": zod.string().min(1).max(createAgentContractBodyMetricKeyMax),
+  "unit": zod.string().min(1).max(createAgentContractBodyUnitMax),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullish(),
+  "deadline": zod.string().describe('Data futura YYYY-MM-DD'),
+  "ownerMemberId": zod.string().describe('organization_members.id do dono (membro da conta)'),
+  "referenceHumanMinutes": zod.number().min(createAgentContractBodyReferenceHumanMinutesMin).nullish().describe('Minutos humanos de referência por tarefa (D-C2)'),
+  "requireHumanAccept": zod.boolean().optional().describe('Aceite automático não conta como tarefa aceita (D-C3)'),
+  "referenceModel": zod.string().max(createAgentContractBodyReferenceModelMax).nullish().describe('Modelo de referência fixado pela conta (D-C1)')
 })
 
 

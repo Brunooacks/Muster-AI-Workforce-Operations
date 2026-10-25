@@ -716,6 +716,48 @@ export const VerdictDecision = {
   exported: 'exported',
 } as const;
 
+export type AgentContractDirection = typeof AgentContractDirection[keyof typeof AgentContractDirection];
+
+
+export const AgentContractDirection = {
+  up: 'up',
+  down: 'down',
+} as const;
+
+export type AgentContractStatus = typeof AgentContractStatus[keyof typeof AgentContractStatus];
+
+
+export const AgentContractStatus = {
+  draft: 'draft',
+  active: 'active',
+  superseded: 'superseded',
+} as const;
+
+export interface AgentContract {
+  id: string;
+  agentId: string;
+  version: number;
+  metricKey: string;
+  unit: string;
+  direction: AgentContractDirection;
+  baseline: number;
+  target: number;
+  /** @nullable */
+  limit: number | null;
+  deadline: string;
+  ownerMemberId: string;
+  status: AgentContractStatus;
+  createdBy: string;
+  createdAt: string;
+  /** @nullable */
+  supersededAt: string | null;
+  /** @nullable */
+  referenceHumanMinutes: number | null;
+  requireHumanAccept: boolean;
+  /** @nullable */
+  referenceModel: string | null;
+}
+
 export interface Verdict {
   id: string;
   agentId: string;
@@ -730,6 +772,15 @@ export interface Verdict {
   decidedBy?: string | null;
   /** @nullable */
   decidedAt?: string | null;
+  /**
+     * Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)
+     * @nullable
+     */
+  contractId?: string | null;
+  /** @nullable */
+  contractVersion?: number | null;
+  /** A versão do contrato à qual o veredito se refere (regra R3) */
+  contract?: AgentContract | null;
   createdAt: string;
 }
 
@@ -2318,6 +2369,63 @@ export const EnvironmentKind = {
   sandbox: 'sandbox',
   prod: 'prod',
 } as const;
+
+export type AgentContractInputDirection = typeof AgentContractInputDirection[keyof typeof AgentContractInputDirection];
+
+
+export const AgentContractInputDirection = {
+  up: 'up',
+  down: 'down',
+} as const;
+
+export interface AgentContractInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  metricKey: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  unit: string;
+  direction: AgentContractInputDirection;
+  baseline: number;
+  target: number;
+  /** @nullable */
+  limit?: number | null;
+  /** Data futura YYYY-MM-DD */
+  deadline: string;
+  /** organization_members.id do dono (membro da conta) */
+  ownerMemberId: string;
+  /**
+     * Minutos humanos de referência por tarefa (D-C2)
+     * @minimum 0
+     * @nullable
+     */
+  referenceHumanMinutes?: number | null;
+  /** Aceite automático não conta como tarefa aceita (D-C3) */
+  requireHumanAccept?: boolean;
+  /**
+     * Modelo de referência fixado pela conta (D-C1)
+     * @maxLength 120
+     * @nullable
+     */
+  referenceModel?: string | null;
+}
+
+export interface AgentContractOwnerCandidate {
+  id: string;
+  userId: string;
+  role: string;
+}
+
+export interface AgentContractHistory {
+  agentId: string;
+  active: AgentContract | null;
+  versions: AgentContract[];
+  ownerCandidates: AgentContractOwnerCandidate[];
+}
 
 export interface Project {
   id: string;

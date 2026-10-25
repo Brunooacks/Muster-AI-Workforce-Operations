@@ -169,6 +169,13 @@
       "when": 1792889358830,
       "tag": "0023_agent_events_outcome",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792890019675,
+      "tag": "0024_agent_contracts",
+      "breakpoints": true
     }
   ]
 }

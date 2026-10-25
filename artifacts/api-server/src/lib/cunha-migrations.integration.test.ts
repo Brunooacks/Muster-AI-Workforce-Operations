@@ -16,6 +16,7 @@ const runIntegration = process.env.RUN_TENANT_DB_TESTS === "true";
 
 const M0022 = "0022_projects_envs";
 const M0023 = "0023_agent_events_outcome";
+const M0024 = "0024_agent_contracts";
 
 // ag_c_3 fica num segundo projeto da org_c_1: o backfill precisa seguir o
 // projeto do agente, não o Padrão da conta.
@@ -163,11 +164,92 @@ describe.skipIf(!runIntegration)("0023 · agent_events no formato do envelope", 
   });
 });
 
+describe.skipIf(!runIntegration)("0024 · agent_contracts imutável e veredito com versão", () => {
+  let db: ScratchDb;
+
+  async function contrato(id: string, version: number, status: string, target: number) {
+    await db.query(
+      `INSERT INTO agent_contracts (id, org_id, project_id, agent_id, version, metric_key, unit, direction, baseline, target, deadline, owner_member_id, status, created_by, reference_human_minutes)
+       SELECT $1, a.org_id, a.project_id, a.id, $2, 'custo', 'BRL', 'down', 10, $4, '2027-01-31', 'mem', $3, 'user', 15
+         FROM agents a WHERE a.id = 'ag_c_1'`,
+      [id, version, status, target],
+    );
+  }
+
+  beforeAll(async () => {
+    db = await createScratchDb("muster_c0024");
+    await db.migrateUntil(M0022);
+    await seed0022(db);
+    await db.migrateUntil(M0024);
+  }, 120_000);
+
+  afterAll(async () => {
+    if (db) await db.drop();
+  });
+
+  it("agentes existentes começam sem contrato (contrato pendente) e business_case não muda", async () => {
+    const [n] = await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM agent_contracts`);
+    expect(n!.n).toBe(0);
+  });
+
+  it("UPDATE em target ou reference_human_minutes falha; DELETE direto falha", async () => {
+    await contrato("ct_1", 1, "active", 8);
+    await expect(db.query(`UPDATE agent_contracts SET target = 7 WHERE id = 'ct_1'`)).rejects.toThrow(/imutável/);
+    await expect(
+      db.query(`UPDATE agent_contracts SET reference_human_minutes = 1 WHERE id = 'ct_1'`),
+    ).rejects.toThrow(/imutável/);
+    await expect(db.query(`DELETE FROM agent_contracts WHERE id = 'ct_1'`)).rejects.toThrow(/não pode ser apagada/);
+  });
+
+  it("veredito gravado herda a versão ativa; nova versão (mesma transação) não reescreve o antigo", async () => {
+    await db.query(`INSERT INTO verdicts (id, agent_id) VALUES ('vd_1', 'ag_c_1')`);
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `UPDATE agent_contracts SET status = 'superseded', superseded_at = now() WHERE agent_id = 'ag_c_1' AND status = 'active'`,
+      );
+      await client.query(
+        `INSERT INTO agent_contracts (id, org_id, project_id, agent_id, version, metric_key, unit, direction, baseline, target, deadline, owner_member_id, status, created_by)
+         SELECT 'ct_2', a.org_id, a.project_id, a.id, 2, 'custo', 'BRL', 'down', 10, 6, '2027-03-31', 'mem', 'active', 'user'
+           FROM agents a WHERE a.id = 'ag_c_1'`,
+      );
+      await client.query("COMMIT");
+    } finally {
+      client.release();
+    }
+    await db.query(`INSERT INTO verdicts (id, agent_id) VALUES ('vd_2', 'ag_c_1')`);
+    const rows = await db.query(
+      `SELECT v.id, v.contract_version, c.target::float AS target
+         FROM verdicts v JOIN agent_contracts c ON (c.id, c.version) = (v.contract_id, v.contract_version)
+        WHERE v.agent_id = 'ag_c_1' ORDER BY v.id`,
+    );
+    expect(rows).toEqual([
+      { id: "vd_1", contract_version: 1, target: 8 },
+      { id: "vd_2", contract_version: 2, target: 6 },
+    ]);
+  });
+
+  it("dois contratos ativos no mesmo agente violam o único parcial; superseded não volta a active", async () => {
+    await expect(contrato("ct_3", 3, "active", 5)).rejects.toThrow(/agent_contracts_active_idx/);
+    await expect(
+      db.query(`UPDATE agent_contracts SET status = 'active' WHERE id = 'ct_1'`),
+    ).rejects.toThrow(/transição de status inválida/);
+  });
+
+  it("excluir o agente leva os contratos (cascata passa pelo trigger)", async () => {
+    await db.query(`DELETE FROM verdicts WHERE agent_id = 'ag_c_1'`);
+    await db.query(`DELETE FROM agents WHERE id = 'ag_c_1'`);
+    const [n] = await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM agent_contracts`);
+    expect(n!.n).toBe(0);
+  });
+});
+
 /**
  * up → down → up de cada migração da cunha, da mais nova para a mais antiga:
  * o down de N volta o retrato exatamente ao de N−1 e os eventos ficam.
  */
-const CADEIA = [M0023];
+const CADEIA = [M0023, M0024];
 
 describe.skipIf(!runIntegration)("cunha · up → down → up", () => {
   let db: ScratchDb;

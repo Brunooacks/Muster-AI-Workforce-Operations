@@ -12,9 +12,9 @@ Formato Spec Kit. `[x]` = feito e commitado nesta branch (um commit por item).
 
 ## Item 2 · Contrato numérico versionado por agente (MUS-175)
 
-- [ ] **C2.1** Migração 0024 `agent_contracts` + `verdicts.contract_id/version` + down
-- [ ] **C2.2** API `GET/POST /agents/:id/contracts` e formulário no agent-detail
-- [ ] **C2.3** Veredito grava e lê a versão do contrato
+- [x] **C2.1** Migração 0024 `agent_contracts` + `verdicts.contract_id/version` + down
+- [x] **C2.2** API `GET/POST /agents/:id/contracts` (POST só admin) e formulário no agent-detail
+- [x] **C2.3** Veredito grava (trigger `verdicts_contract_trg`) e lê a versão do contrato
 
 ## Item 3 · Custo-hora e custos fora da fatura (MUS-176)
 

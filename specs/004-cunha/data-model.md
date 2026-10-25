@@ -47,7 +47,8 @@ Restrições e índices:
 
 `id, org_id, project_id, agent_id, version, metric_key, unit, direction
 ('up'|'down'), baseline numeric, target numeric, "limit" numeric?, deadline
-date, owner_member_id → organization_members, status ('draft'|'active'|
+date, owner_member_id (organization_members.id validado pela API, sem FK:
+a versão imutável guarda o dono mesmo depois que ele sai da conta), status ('draft'|'active'|
 'superseded'), created_by, created_at, superseded_at?, reference_human_minutes
 numeric?, require_human_accept bool default false, reference_model text?`.
 
@@ -57,7 +58,11 @@ numeric?, require_human_accept bool default false, reference_model text?`.
   (transições `draft→active`, `draft→superseded`, `active→superseded`); DELETE
   é recusado, exceto em cascata da exclusão do agente/conta.
 - `verdicts` ganha `contract_id → agent_contracts` e `contract_version`,
-  anuláveis (vereditos antigos ficam nulos).
+  anuláveis (vereditos antigos ficam nulos), com FK composta
+  `(contract_id, contract_version) → agent_contracts (id, version)`.
+- Trigger `verdicts_contract_trg` (C2.3): INSERT em `verdicts` sem contrato
+  herda a versão ativa do agente — vale para admissão, conector, reavaliação e
+  seed sem depender de cada chamador lembrar.
 
 ## 0025 · `role_rates` e `off_invoice_costs` (C3.1)
 

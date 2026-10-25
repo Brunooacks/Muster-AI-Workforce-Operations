@@ -693,7 +693,79 @@ export const verdicts = pgTable("verdicts", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+  // Cunha (0024): versão do contrato vigente quando o veredito foi gravado.
+  // Nulos em vereditos anteriores ao contrato numérico (regra R3).
+  contractId: text("contract_id"),
+  contractVersion: integer("contract_version"),
+}, (table) => ({
+  verdictsContractFk: foreignKey({
+    name: "verdicts_contract_fk",
+    columns: [table.contractId, table.contractVersion],
+    foreignColumns: [agentContracts.id, agentContracts.version],
+  }).onDelete("set null"),
+}));
+
+// --- Contrato numérico versionado (cunha · 0024) ------------------------------
+// Substitui as strings de business_case (que ficam só como texto de
+// referência). Cada mudança é uma versão nova; o trigger
+// agent_contracts_immutable só deixa mudar status/superseded_at e recusa
+// DELETE fora da cascata do agente/conta.
+export type ContractDirection = "up" | "down";
+export type ContractStatus = "draft" | "active" | "superseded";
+
+export const agentContracts = pgTable("agent_contracts", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull(),
+  agentId: text("agent_id").notNull(),
+  version: integer("version").notNull(),
+  metricKey: text("metric_key").notNull(),
+  unit: text("unit").notNull(),
+  direction: text("direction").$type<ContractDirection>().notNull(),
+  baseline: numeric("baseline", { mode: "number" }).notNull(),
+  target: numeric("target", { mode: "number" }).notNull(),
+  limit: numeric("limit", { mode: "number" }),
+  deadline: date("deadline").notNull(),
+  /**
+   * organization_members.id do dono, validado pela API. Sem FK de propósito: a
+   * versão é imutável e precisa continuar dizendo quem era o dono mesmo depois
+   * que a pessoa sair da conta.
+   */
+  ownerMemberId: text("owner_member_id").notNull(),
+  status: text("status").$type<ContractStatus>().notNull().default("active"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  /** Minutos humanos de referência por tarefa (D-C2); não é o human_minutes do evento. */
+  referenceHumanMinutes: numeric("reference_human_minutes", { mode: "number" }),
+  /** D-C3: aceite automático não conta como tarefa aceita. */
+  requireHumanAccept: boolean("require_human_accept").notNull().default(false),
+  /** D-C1: modelo de referência fixado pela conta (sem valor = o mais barato aprovado). */
+  referenceModel: text("reference_model"),
+}, (table) => ({
+  agentContractsAgentVersionIdx: uniqueIndex("agent_contracts_agent_version_idx").on(table.agentId, table.version),
+  agentContractsActiveIdx: uniqueIndex("agent_contracts_active_idx")
+    .on(table.agentId)
+    .where(sql`"status" = 'active'`),
+  agentContractsOrgAgentIdx: index("agent_contracts_org_agent_idx").on(table.orgId, table.agentId),
+  // Alvo da FK de verdicts: (id, version) andam juntos.
+  agentContractsIdVersionUnique: unique("agent_contracts_id_version_unique").on(table.id, table.version),
+  agentContractsAgentFk: foreignKey({
+    name: "agent_contracts_agent_project_org_fk",
+    columns: [table.agentId, table.projectId, table.orgId],
+    foreignColumns: [agents.id, agents.projectId, agents.orgId],
+  }).onDelete("cascade"),
+  agentContractsDirectionCheck: check("agent_contracts_direction_check", sql`"direction" IN ('up', 'down')`),
+  agentContractsStatusCheck: check(
+    "agent_contracts_status_check",
+    sql`"status" IN ('draft', 'active', 'superseded')`,
+  ),
+  agentContractsVersionCheck: check("agent_contracts_version_check", sql`"version" >= 1`),
+  agentContractsReferenceMinutesCheck: check(
+    "agent_contracts_reference_minutes_check",
+    sql`"reference_human_minutes" IS NULL OR "reference_human_minutes" >= 0`,
+  ),
+}));
 
 export type AlertSeverity = "critical" | "high" | "medium" | "antecedent";
 export type AlertStatus = "active" | "acknowledged" | "resolved";
