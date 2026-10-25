@@ -71,7 +71,7 @@ export function HomeMercado() {
               )}
               <span
                 className={`text-[clamp(36px,6.3vw,80px)] font-semibold leading-[0.9] tracking-[-0.06em] ${
-                  card.negative ? "text-destructive-text" : "text-foreground"
+                  card.negative ? "text-destructive" : "text-foreground"
                 }`}
               >
                 {card.number}
