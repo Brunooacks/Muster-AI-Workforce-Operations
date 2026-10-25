@@ -3,6 +3,7 @@ import { useAuth, useClerk, useUser } from "@clerk/react";
 import {
   getListAgentsQueryKey,
   getGetAgentQueryKey,
+  getListProfessionalPlanDecisionsQueryKey,
   useGetAgent,
   useListAgents,
   useListProfessionalPlanDecisions,
@@ -1148,7 +1149,9 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
     evidence: string;
   } | null>(null);
 
-  const decisionsQuery = useListProfessionalPlanDecisions(agent.id);
+  const decisionsQuery = useListProfessionalPlanDecisions(agent.id, {
+    query: { queryKey: getListProfessionalPlanDecisionsQueryKey(agent.id), enabled: operational },
+  });
   const reevaluate = useReevaluateAgent();
   const recordDecision = useRecordProfessionalPlanDecision();
   const updatePlanAction = useUpdateProfessionalPlanAction();
@@ -1532,7 +1535,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "settings" && (semApi ? <SettingsScreen /> : <GovernancePage embedded />)}
             {screen === "admission" && (semApi ? <AdicionarAgenteScreen /> : <AdmissionPage embedded />)}
             {screen === "alerts" &&
-              (location === "/pendencias" ? <PendenciasScreen /> : <AlertsPage embedded />)}
+              (semApi || location === "/pendencias" ? <PendenciasScreen /> : <AlertsPage embedded />)}
             {screen === "admin" && (demo ? <SoComLogin titulo="Administração da organização" /> : <AdminConsolePage />)}
             {screen === "accountSettings" && <AccountSettingsPage embedded palette={palette} setPalette={setPalette} />}
             {screen === "profile" && <ProfilePage embedded demo={demo} />}

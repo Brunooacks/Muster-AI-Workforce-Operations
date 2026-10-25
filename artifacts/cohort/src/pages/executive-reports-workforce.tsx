@@ -110,7 +110,11 @@ function ReportEmpty({ generating, onGenerate }: { generating: boolean; onGenera
 }
 
 export function ExecutiveReportsScreen({ operational = true }: { operational?: boolean }) {
-  const listQuery = useListExecutiveReports({ limit: 12 });
+  // Sem API (demo/preview estático) nenhuma consulta sai: a rota responderia HTML.
+  const listQuery = useListExecutiveReports(
+    { limit: 12 },
+    { query: { queryKey: getListExecutiveReportsQueryKey({ limit: 12 }), enabled: operational } },
+  );
   const generateReport = useGenerateExecutiveReport();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod);
   const [aba, setAba] = useState<AbaRelatorio>("resumo");
@@ -118,7 +122,7 @@ export function ExecutiveReportsScreen({ operational = true }: { operational?: b
   const [narrativeMode, setNarrativeMode] = useState<NarrativeMode>("deterministic");
   const [generationMessage, setGenerationMessage] = useState("");
   const reportQuery = useGetExecutiveReport(selectedPeriod, {
-    query: { queryKey: getGetExecutiveReportQueryKey(selectedPeriod), retry: false },
+    query: { queryKey: getGetExecutiveReportQueryKey(selectedPeriod), retry: false, enabled: operational },
   });
 
   useEffect(() => {
@@ -136,6 +140,10 @@ export function ExecutiveReportsScreen({ operational = true }: { operational?: b
   );
 
   function handleGenerate() {
+    if (!operational) {
+      setGenerationMessage("Na demonstração o fechamento não é gerado: os números acima são ilustrativos.");
+      return;
+    }
     generateReport.mutate(
       { data: { period: selectedPeriod, narrativeMode, templateId } },
       {
