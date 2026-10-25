@@ -44,6 +44,9 @@ import VisaoGeralPage from "@/muster/pages/visao-geral";
 import DirecionamentoPage from "@/muster/pages/direcionamento";
 import BaselinePage from "@/muster/pages/baseline";
 import HistoricoPage from "@/muster/pages/historico";
+import SquadsPage from "@/muster/pages/squads";
+import AprendizadosPage from "@/muster/pages/aprendizados";
+import BoardPage from "@/muster/pages/board";
 import {
   authFallbackFromLocation,
   authRoute,
@@ -373,6 +376,9 @@ function ClerkProviderWithRoutes({
                   <Route path="/direcionamento"><ProtectedRoute component={DirecionamentoPage} /></Route>
                   <Route path="/baseline"><ProtectedRoute component={BaselinePage} /></Route>
                   <Route path="/historico"><ProtectedRoute component={HistoricoPage} /></Route>
+                  <Route path="/squads"><ProtectedRoute component={SquadsPage} /></Route>
+                  <Route path="/aprendizados"><ProtectedRoute component={AprendizadosPage} /></Route>
+                  <Route path="/board"><ProtectedRoute component={BoardPage} /></Route>
                   <Route path="/agentes/:id/conectar">
                     <ProtectedRoute component={WorkforceOsProductionPage} />
                   </Route>
