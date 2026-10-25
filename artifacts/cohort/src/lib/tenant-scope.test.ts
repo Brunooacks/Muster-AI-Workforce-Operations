@@ -11,8 +11,9 @@ test("creates a normalized tenant scope only with user and organization", () => 
   assert.deepEqual(createTenantScope(" user_1 ", " org_1 "), {
     userId: "user_1",
     organizationId: "org_1",
+    kind: "company",
   });
-  assert.equal(createTenantScope("user_1", null), null);
+  assert.equal(createTenantScope(null, "org_1"), null);
   assert.equal(createTenantScope(" ", "org_1"), null);
 });
 
@@ -42,7 +43,7 @@ test("scopes onboarding completion by both user and organization", () => {
 
   assert.equal(first, "cohort:onboarding:user_1:org_1");
   assert.notEqual(first, second);
-  assert.equal(createOnboardingStorageKey("user_1", null), null);
+  assert.equal(createOnboardingStorageKey("user_1", null), "cohort:onboarding:user_1:personal%3Auser_1");
 });
 
 test("scopes adoption progress by both user and organization", () => {
@@ -50,5 +51,21 @@ test("scopes adoption progress by both user and organization", () => {
     createAdoptionProgressStorageKey("user_1", "org_1"),
     "cohort:adoption-progress:user_1:org_1",
   );
-  assert.equal(createAdoptionProgressStorageKey("user_1", null), null);
+  assert.equal(createAdoptionProgressStorageKey("user_1", null), "cohort:adoption-progress:user_1:personal%3Auser_1");
+});
+
+test("without an active organization the scope is the user's personal account", () => {
+  assert.deepEqual(createTenantScope("user_1", null), {
+    userId: "user_1",
+    organizationId: "personal:user_1",
+    kind: "personal",
+  });
+});
+
+test("personal and company accounts never share a cache scope", () => {
+  const personal = createTenantScopeKey("user_1", null);
+  const company = createTenantScopeKey("user_1", "org_1");
+  assert.notEqual(personal, company);
+  assert.equal(hasTenantScopeChanged(company, personal), true);
+  assert.notEqual(createTenantScopeKey("user_1", null), createTenantScopeKey("user_2", null));
 });

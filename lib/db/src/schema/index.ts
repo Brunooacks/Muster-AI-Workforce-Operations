@@ -44,6 +44,10 @@ export const organizations = pgTable("organizations", {
   // Identificador da organização no provedor de identidade (Clerk org_id),
   // quando a org nasce de um convite/SSO em vez de cadastro direto.
   externalId: text("external_id").unique(),
+  // Tipo da conta: "company" (organização do cliente) ou "personal" (conta
+  // pessoal de um usuário). A conta pessoal nunca aparece dentro da empresa:
+  // cada uma é um tenant próprio, com o mesmo isolamento por org_id.
+  kind: text("kind").$type<"company" | "personal">().notNull().default("company"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

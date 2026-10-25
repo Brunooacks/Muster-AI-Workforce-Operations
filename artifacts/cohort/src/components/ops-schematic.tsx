@@ -8,12 +8,12 @@
  * `prefers-reduced-motion` esconde pontos/feixe via classes ops-* (index.css).
  */
 
-const PHOSPHOR = "#7fb89a";
-const CREAM = "#efe9da";
-const OCHRE = "#c89b4b";
-const TERRA = "#c86450";
-const MUTED = "#8fa094";
-const EYEBROW = "#5c6f63";
+const PHOSPHOR = "#19d3f5";
+const CREAM = "#1d1d1f";
+const OCHRE = "#e7aa40";
+const TERRA = "#b54f36";
+const MUTED = "#6e6e73";
+const EYEBROW = "#6e6e73";
 
 const box = {
   fill: "rgba(127,184,154,.05)",
