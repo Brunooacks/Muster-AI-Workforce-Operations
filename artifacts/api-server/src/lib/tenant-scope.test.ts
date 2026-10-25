@@ -1,7 +1,19 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ROOT_TABLES, inOrg, ofOrg, byAgentsOf } from "./tenant-scope";
+import { and, eq } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
+import {
+  PROJECT_TABLES,
+  ROOT_TABLES,
+  byAgentsOf,
+  decidirAmbiente,
+  inEnv,
+  inOrg,
+  inProject,
+  ofOrg,
+  tabelaTemProjeto,
+} from "./tenant-scope";
 
 /**
  * Guarda de isolamento.
@@ -29,6 +41,7 @@ import { ROOT_TABLES, inOrg, ofOrg, byAgentsOf } from "./tenant-scope";
 
 const DIR_ROTAS = join(import.meta.dirname, "..", "routes");
 const DIR_LIB = import.meta.dirname;
+const DIR_MIDDLEWARES = join(import.meta.dirname, "..", "middlewares");
 
 /**
  * Acessos que podem, e devem, ignorar a organização — cada um com o motivo.
@@ -210,3 +223,140 @@ describe("helpers de escopo", () => {
     expect(byAgentsOf(ROOT_TABLES.agents.id, ["a1"])).toBeDefined();
   });
 });
+
+// --- Projeto e ambiente (E1 · T1.5) ------------------------------------------
+
+function temEscopoDeProjeto(bloco: string): boolean {
+  return bloco.includes("inProject(") || bloco.includes("inEnv(") || bloco.includes("projectId");
+}
+
+/**
+ * Acessos a tabela com projeto (agents, agentApiKeys, eventOutbox) que não
+ * mencionam projeto. Exportável para a fixture abaixo provar que o scanner pega.
+ */
+function acessosSemProjeto(fonte: string): string[] {
+  const faltando: string[] = [];
+  for (const tabela of Object.keys(PROJECT_TABLES)) {
+    for (const { bloco, linha } of blocosDeAcesso(fonte, tabela)) {
+      if (!temEscopoDeProjeto(bloco)) faltando.push(`${tabela} · ${linha}`);
+    }
+  }
+  return faltando;
+}
+
+/**
+ * Leituras/escritas org-wide que existem hoje em tabelas com projeto, por
+ * arquivo: são as consultas de sessão humana, que seguem org-wide por decisão
+ * da E1 (`?project=` fica para quando a UI tiver seletor). A lista é fechada
+ * nos dois sentidos — consulta nova sem projeto quebra o teste, e consulta
+ * migrada obriga a baixar o número aqui.
+ */
+const ORG_WIDE_PENDENTES: Record<string, number> = {
+  "lib/admission.ts": 2,
+  "lib/agent-telemetry-reevaluation.ts": 3,
+  "lib/continuous-telemetry-worker.ts": 1,
+  "lib/professional-plan-service.ts": 1,
+  "lib/serializers.ts": 1,
+  // Caminho de chave: sai desta lista na T1.6.
+  "middlewares/requireAgentCredential.ts": 2,
+  "routes/agent-keys.ts": 3,
+  "routes/agents.ts": 8,
+  "routes/areas.ts": 2,
+  "routes/connectors.ts": 3,
+  "routes/evidence.ts": 1,
+  "routes/executive-reports.ts": 1,
+  "routes/fleet.ts": 5,
+  "routes/journey-recommendations.ts": 2,
+  "routes/journeys.ts": 4,
+  "routes/mixed-teams.ts": 1,
+  "routes/realtime-governance.ts": 1,
+  "routes/telemetry.ts": 5,
+  "routes/verdict-actions.ts": 1,
+};
+
+describe("isolamento por projeto — varredura do código", () => {
+  it("todo acesso a tabela com projeto usa inProject/inEnv ou está na lista org-wide", () => {
+    const contagem: Record<string, number> = {};
+    const detalhes: string[] = [];
+    for (const [rotulo, dir] of [
+      ["routes", DIR_ROTAS],
+      ["lib", DIR_LIB],
+      ["middlewares", DIR_MIDDLEWARES],
+    ] as const) {
+      for (const arquivo of arquivosDe(dir)) {
+        if (ISENTAS.some((e) => e.arquivo === arquivo)) continue;
+        const achados = acessosSemProjeto(readFileSync(join(dir, arquivo), "utf8"));
+        if (achados.length === 0) continue;
+        contagem[`${rotulo}/${arquivo}`] = achados.length;
+        detalhes.push(...achados.map((a) => `${rotulo}/${arquivo} · ${a}`));
+      }
+    }
+    expect(
+      contagem,
+      `Acessos org-wide em tabela com projeto (${detalhes.length}):\n  ${detalhes.join("\n  ")}`,
+    ).toEqual(ORG_WIDE_PENDENTES);
+  });
+
+  it("o scanner pega leitura de agents só com ofOrg (fixture)", () => {
+    const soConta = [
+      "const rows = await db",
+      "  .select()",
+      "  .from(agents)",
+      "  .where(ofOrg(agents, req.orgId!));",
+    ].join("\n");
+    const comProjeto = [
+      "const rows = await db",
+      "  .select()",
+      "  .from(agents)",
+      "  .where(inProject(agents, scope));",
+    ].join("\n");
+    expect(acessosSemProjeto(soConta)).toEqual(["agents · .from(agents)"]);
+    expect(acessosSemProjeto(comProjeto)).toEqual([]);
+  });
+
+  it("toda tabela com projeto tem orgId e projectId", () => {
+    for (const [nome, tabela] of Object.entries(PROJECT_TABLES)) {
+      expect((tabela as { orgId?: unknown }).orgId, `${nome} sem orgId`).toBeDefined();
+      expect((tabela as { projectId?: unknown }).projectId, `${nome} sem projectId`).toBeDefined();
+    }
+    expect(tabelaTemProjeto("agents")).toBe(true);
+    expect(tabelaTemProjeto("areas")).toBe(false);
+  });
+});
+
+describe("predicados de projeto e ambiente", () => {
+  const dialect = new PgDialect();
+  const render = (sql: ReturnType<typeof inOrg>) => dialect.sqlToQuery(sql);
+  const scope = { orgId: "org_x", projectId: "prj_x", environmentId: "env_x" };
+
+  it("inProject filtra por conta e projeto, nessa ordem, e compõe", () => {
+    const q = render(inProject(PROJECT_TABLES.agents, scope, eq(PROJECT_TABLES.agents.id, "a1")));
+    expect(q.sql).toBe(
+      '("agents"."org_id" = $1 and "agents"."project_id" = $2 and "agents"."id" = $3)',
+    );
+    expect(q.params).toEqual(["org_x", "prj_x", "a1"]);
+  });
+
+  it("inEnv filtra por conta, projeto e ambiente", () => {
+    const q = render(inEnv(PROJECT_TABLES.eventOutbox, scope));
+    expect(q.sql).toBe(
+      '("event_outbox"."org_id" = $1 and "event_outbox"."project_id" = $2 and "event_outbox"."environment_id" = $3)',
+    );
+    expect(q.params).toEqual(["org_x", "prj_x", "env_x"]);
+  });
+
+  it("inProject equivale a inOrg + projeto escrito à mão", () => {
+    const t = PROJECT_TABLES.agentApiKeys;
+    expect(render(inProject(t, scope))).toEqual(
+      render(and(eq(t.orgId, "org_x"), eq(t.projectId, "prj_x"))!),
+    );
+  });
+
+  it("decidirAmbiente: igual permite, sandbox→prod proíbe, prod→sandbox não existe", () => {
+    expect(decidirAmbiente("prod", "prod")).toBe("permitido");
+    expect(decidirAmbiente("sandbox", "sandbox")).toBe("permitido");
+    expect(decidirAmbiente("sandbox", "prod")).toBe("proibido");
+    expect(decidirAmbiente("prod", "sandbox")).toBe("inexistente");
+  });
+});
+

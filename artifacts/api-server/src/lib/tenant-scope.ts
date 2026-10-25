@@ -2,6 +2,8 @@ import { and, eq, inArray, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import {
   agents,
+  agentApiKeys,
+  eventOutbox,
   areas,
   teams,
   purposes,
@@ -13,6 +15,7 @@ import {
   metricEvidence,
   externalEventReceipts,
 } from "@workspace/db/schema";
+import type { EnvironmentKind } from "@workspace/db/schema";
 
 /**
  * Escopo por organização (gauntlet rodada 6).
@@ -80,3 +83,83 @@ export function byAgentsOf(
 ): SQL | undefined {
   return agentIds.length === 0 ? undefined : inArray(column, agentIds);
 }
+
+// --- Projeto e ambiente (E1) --------------------------------------------------
+
+/**
+ * Tabelas com `project_id` (D-E1-3). Nelas, quem entra por chave de agente lê
+ * e escreve só com `inProject`/`inEnv`; o scanner de `tenant-scope.test.ts`
+ * cobra isso. `event_outbox` também tem ambiente.
+ */
+export const PROJECT_TABLES = {
+  agents,
+  agentApiKeys,
+  eventOutbox,
+} as const;
+
+export type ProjectTableName = keyof typeof PROJECT_TABLES;
+
+export function tabelaTemProjeto(nome: string): nome is ProjectTableName {
+  return Object.hasOwn(PROJECT_TABLES, nome);
+}
+
+/**
+ * O tenant completo de uma requisição. Sessão humana tem só `orgId` (segue
+ * org-wide); chave de agente tem os quatro campos.
+ */
+export interface TenantScope {
+  orgId: string;
+  projectId?: string;
+  environmentId?: string;
+  environmentKind?: EnvironmentKind;
+}
+
+export type ProjectScope = TenantScope & { projectId: string };
+export type EnvironmentScope = ProjectScope & { environmentId: string };
+
+export interface TabelaComProjeto extends TabelaComOrg {
+  projectId: PgColumn;
+}
+
+export interface TabelaComAmbiente extends TabelaComProjeto {
+  environmentId: PgColumn;
+}
+
+/**
+ * Conta + projeto, compondo com os demais filtros. O projeto é obrigatório no
+ * tipo: escopo sem projeto usa `inOrg`, de forma explícita.
+ */
+export function inProject(
+  table: TabelaComProjeto,
+  scope: ProjectScope,
+  ...rest: Array<SQL | undefined>
+): SQL {
+  return inOrg(table, scope.orgId, eq(table.projectId, scope.projectId), ...rest);
+}
+
+/** Conta + projeto + ambiente. */
+export function inEnv(
+  table: TabelaComAmbiente,
+  scope: EnvironmentScope,
+  ...rest: Array<SQL | undefined>
+): SQL {
+  return inProject(table, scope, eq(table.environmentId, scope.environmentId), ...rest);
+}
+
+/**
+ * Regra de ambiente para a chave de agente (D-E1-4 + decisão em aberto 1):
+ * - mesmo ambiente → permitido;
+ * - chave sandbox pedindo prod → proibido (403);
+ * - chave prod pedindo sandbox → inexistente (404: o recurso não existe
+ *   naquele ambiente para essa chave).
+ */
+export type DecisaoDeAmbiente = "permitido" | "proibido" | "inexistente";
+
+export function decidirAmbiente(
+  daChave: EnvironmentKind,
+  pedido: EnvironmentKind,
+): DecisaoDeAmbiente {
+  if (daChave === pedido) return "permitido";
+  return daChave === "sandbox" ? "proibido" : "inexistente";
+}
+
