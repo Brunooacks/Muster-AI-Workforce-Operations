@@ -85,7 +85,7 @@ import {
 type Tone = "good" | "watch" | "risk" | "neutral" | "primary";
 
 const toneClass: Record<Tone, string> = {
-  good: "bg-[color-mix(in_srgb,var(--wo-accent)_18%,var(--wo-card))] text-[var(--wo-accent)]",
+  good: "bg-[color-mix(in_srgb,var(--wo-accent)_18%,var(--wo-card))] text-[var(--wo-accent-text)]",
   watch: "bg-[color-mix(in_srgb,var(--wo-warning)_16%,var(--wo-card))] text-[var(--wo-warning-text)]",
   risk: "bg-[color-mix(in_srgb,var(--wo-danger)_16%,var(--wo-card))] text-[var(--wo-danger-text)]",
   neutral: "bg-[var(--wo-card-2)] text-[var(--wo-muted)]",
@@ -104,7 +104,7 @@ function ScreenHeader({ eyebrow, title, description, action }: { eyebrow: string
   return (
     <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
       <div>
-        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">{eyebrow}</div>
+        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent-text)]">{eyebrow}</div>
         <h1 className="mt-2 max-w-5xl text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)] sm:text-4xl">{title}</h1>
         <p className="mt-2 max-w-4xl text-sm leading-relaxed text-[var(--wo-muted)]">{description}</p>
       </div>
@@ -287,7 +287,7 @@ export function ManagerScreen({
         className="rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-5 sm:p-6"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Visão geral</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent-text)]">Visão geral</span>
           {!operational && <Badge variant="illustrative">Dados ilustrativos</Badge>}
           <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">{leitura.rotuloPeriodo}</span>
         </div>
@@ -847,7 +847,7 @@ export function MetricsScreen() {
         </Panel>
       )}
 
-      {metricMessage && <div role="status" className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-4 py-3 text-[11px] text-[var(--wo-accent)]">{metricMessage}</div>}
+      {metricMessage && <div role="status" className="rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-4 py-3 text-[11px] text-[var(--wo-accent-text)]">{metricMessage}</div>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <SummaryCard label="Cobertura do contrato" value={`${domain.coverage}%`} note="deveres com indicador válido" icon={Target} tone="primary" />
@@ -884,7 +884,7 @@ export function MetricsScreen() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] border-collapse text-xs">
               <thead><tr className="text-left text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]"><th className="px-4 py-3 font-normal">Indicador</th><th className="px-3 py-3 font-normal">Camada</th><th className="px-3 py-3 font-normal">Fonte</th><th className="px-3 py-3 text-right font-normal">Atual</th><th className="px-4 py-3 text-right font-normal">Combinado</th></tr></thead>
-              <tbody>{displayedMetrics.map((metric) => { const isCustom = (customMetrics[domain.id] ?? []).some((item) => item.name === metric.name); return <tr key={metric.name} className="border-t border-[var(--wo-line)]"><td className="px-4 py-3"><div className="flex items-center justify-between gap-3"><span className="font-medium text-[var(--wo-text)]">{metric.name}</span>{isCustom && <button type="button" onClick={() => removeMetric(metric.name)} title="Remover métrica" className="rounded-lg p-1.5 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)] hover:text-[var(--wo-danger-text)]"><Trash2 className="h-3.5 w-3.5" /></button>}</div></td><td className="px-3 py-3"><Chip tone={isCustom ? "primary" : "neutral"}>{metric.layer}</Chip></td><td className="px-3 py-3 text-[var(--wo-muted)]"><div className="flex items-center gap-2"><PlatformStack platforms={platformIdsFromSource(metric.source)} compact /><span>{metric.source}</span></div></td><td className={cn("px-3 py-3 text-right font-mono", metric.status === "good" ? "text-[var(--wo-accent)]" : metric.status === "watch" ? "text-[var(--wo-warning-text)]" : "text-[var(--wo-danger-text)]")}>{metric.current}</td><td className="px-4 py-3 text-right font-mono text-[var(--wo-muted)]">{metric.target}</td></tr>; })}</tbody>
+              <tbody>{displayedMetrics.map((metric) => { const isCustom = (customMetrics[domain.id] ?? []).some((item) => item.name === metric.name); return <tr key={metric.name} className="border-t border-[var(--wo-line)]"><td className="px-4 py-3"><div className="flex items-center justify-between gap-3"><span className="font-medium text-[var(--wo-text)]">{metric.name}</span>{isCustom && <button type="button" onClick={() => removeMetric(metric.name)} title="Remover métrica" className="rounded-lg p-1.5 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)] hover:text-[var(--wo-danger-text)]"><Trash2 className="h-3.5 w-3.5" /></button>}</div></td><td className="px-3 py-3"><Chip tone={isCustom ? "primary" : "neutral"}>{metric.layer}</Chip></td><td className="px-3 py-3 text-[var(--wo-muted)]"><div className="flex items-center gap-2"><PlatformStack platforms={platformIdsFromSource(metric.source)} compact /><span>{metric.source}</span></div></td><td className={cn("px-3 py-3 text-right font-mono", metric.status === "good" ? "text-[var(--wo-accent-text)]" : metric.status === "watch" ? "text-[var(--wo-warning-text)]" : "text-[var(--wo-danger-text)]")}>{metric.current}</td><td className="px-4 py-3 text-right font-mono text-[var(--wo-muted)]">{metric.target}</td></tr>; })}</tbody>
             </table>
           </div>
         </Panel>
@@ -1018,7 +1018,7 @@ export function MixedTeamsScreen() {
       <div className="grid gap-3 xl:grid-cols-[280px_1fr]">
         <Panel className="p-3">
           <div className="px-2 py-2"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">Portfólio de equipes</span><h2 className="mt-2 text-base font-medium text-[var(--wo-text)]">Companhia · 3 squads</h2></div>
-          <div className="mt-2 space-y-2">{mixedTeams.map((item) => <button key={item.id} type="button" onClick={() => setTeamId(item.id)} className={cn("w-full rounded-xl border p-3 text-left transition-colors", teamId === item.id ? "border-[var(--wo-primary)] bg-[var(--wo-primary-soft)]" : "border-transparent bg-[var(--wo-card-2)] hover:border-[var(--wo-line)]")}><div className="flex items-center justify-between gap-2"><strong className="text-xs font-medium text-[var(--wo-text)]">{item.name}</strong><ChevronRight className="h-3.5 w-3.5 text-[var(--wo-muted)]" /></div><p className="mt-2 text-[10px] text-[var(--wo-muted)]">{item.humans} pessoas · {item.agents} agentes</p><div className="mt-3 flex items-center justify-between text-[9px]"><span className="text-[var(--wo-muted)]">Passagem {item.handoff}%</span><span className={item.risks > 3 ? "text-[var(--wo-danger-text)]" : "text-[var(--wo-accent)]"}>{item.risks} riscos</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--wo-line)]"><div className="h-full rounded-full bg-[var(--wo-accent)]" style={{ width: `${item.contract}%` }} /></div></button>)}</div>
+          <div className="mt-2 space-y-2">{mixedTeams.map((item) => <button key={item.id} type="button" onClick={() => setTeamId(item.id)} className={cn("w-full rounded-xl border p-3 text-left transition-colors", teamId === item.id ? "border-[var(--wo-primary)] bg-[var(--wo-primary-soft)]" : "border-transparent bg-[var(--wo-card-2)] hover:border-[var(--wo-line)]")}><div className="flex items-center justify-between gap-2"><strong className="text-xs font-medium text-[var(--wo-text)]">{item.name}</strong><ChevronRight className="h-3.5 w-3.5 text-[var(--wo-muted)]" /></div><p className="mt-2 text-[10px] text-[var(--wo-muted)]">{item.humans} pessoas · {item.agents} agentes</p><div className="mt-3 flex items-center justify-between text-[9px]"><span className="text-[var(--wo-muted)]">Passagem {item.handoff}%</span><span className={item.risks > 3 ? "text-[var(--wo-danger-text)]" : "text-[var(--wo-accent-text)]"}>{item.risks} riscos</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--wo-line)]"><div className="h-full rounded-full bg-[var(--wo-accent)]" style={{ width: `${item.contract}%` }} /></div></button>)}</div>
         </Panel>
 
         <div className="space-y-3">
@@ -1123,7 +1123,7 @@ export function JourneysScreen() {
     <div className="space-y-4 p-4 sm:p-6">
       <ScreenHeader eyebrow="Jornadas end-to-end" title="Veja o trabalho em movimento, com dono em cada decisão." description="A jornada conecta backlog, responsáveis, WIP, contratos de passagem, decisões e resultado final. O desempenho local só conta quando sustenta o sucesso end-to-end." action={<button type="button" aria-expanded={showJourneyBuilder} onClick={() => setShowJourneyBuilder((current) => !current)} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><Route className="h-4 w-4" /> {showJourneyBuilder ? "Fechar modelagem" : "Modelar jornada"}</button>} />
 
-      {showJourneyBuilder && <Panel className="border-[var(--wo-primary)] p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Rascunho baseado em {scenario.journey.name}</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">O modelo preserva propósito, backlog, participantes, limites de WIP, passagens, SLA e critérios de sucesso.</p></div><button type="button" onClick={() => setJourneyDrafted(true)} className="rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Criar rascunho</button></div>{journeyDrafted && <p role="status" className="mt-3 text-[10px] text-[var(--wo-accent)]">Rascunho criado com todas as responsabilidades e contratos da jornada.</p>}</Panel>}
+      {showJourneyBuilder && <Panel className="border-[var(--wo-primary)] p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Rascunho baseado em {scenario.journey.name}</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">O modelo preserva propósito, backlog, participantes, limites de WIP, passagens, SLA e critérios de sucesso.</p></div><button type="button" onClick={() => setJourneyDrafted(true)} className="rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Criar rascunho</button></div>{journeyDrafted && <p role="status" className="mt-3 text-[10px] text-[var(--wo-accent-text)]">Rascunho criado com todas as responsabilidades e contratos da jornada.</p>}</Panel>}
 
       <div className="grid gap-2 md:grid-cols-3">{teamOperatingScenarios.map((item) => <button key={item.id} type="button" onClick={() => { setJourneyId(item.id); setStageId("all"); setDiagnosisOpen(false); }} className={cn("rounded-2xl border p-4 text-left transition-colors", journeyId === item.id ? "border-[var(--wo-primary)] bg-[var(--wo-primary-soft)]" : "border-[var(--wo-line)] bg-[var(--wo-card)] hover:bg-[var(--wo-card-2)]")}><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{item.shortLabel}</span><strong className="mt-2 block text-sm font-medium text-[var(--wo-text)]">{item.journey.name}</strong><span className="mt-2 block text-[10px] leading-relaxed text-[var(--wo-muted)]">{item.finalOutcome}</span></button>)}</div>
 
@@ -1210,7 +1210,7 @@ function JourneyPulsePanel({ scenario }: { scenario: TeamOperatingScenario }) {
     .filter((item) => item.status !== "done")
     .sort((left, right) => Number(right.status === "blocked") - Number(left.status === "blocked"))
     .slice(0, 4);
-  return <Panel className="p-4"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><Activity className="h-4 w-4 text-[var(--wo-accent)]" /><h3 className="text-sm font-medium text-[var(--wo-text)]">Operação agora</h3></div><Chip tone="good">{scenario.journey.freshnessSeconds}s de atualização</Chip></div><div className="mt-4 space-y-2">{operationalItems.map((item) => <div key={item.id} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between gap-2"><span className="font-mono text-[9px] text-[var(--wo-primary)]">{item.id}</span><Chip tone={journeyStatusTone(item.status)}>{journeyStatusLabels[item.status]}</Chip></div><strong className="mt-2 block text-[10px] text-[var(--wo-text)]">{item.nextStep}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">{item.lastActivity} · {item.due}</span></div>)}</div><div className="mt-3 grid grid-cols-2 gap-2"><div className="rounded-xl border border-[var(--wo-line)] p-3"><span className="text-[8px] text-[var(--wo-muted)]">Cobertura</span><strong className="mt-1 block font-mono text-sm text-[var(--wo-text)]">{scenario.journey.telemetryCoverage}%</strong></div><div className="rounded-xl border border-[var(--wo-line)] p-3"><span className="text-[8px] text-[var(--wo-muted)]">Eventos/min</span><strong className="mt-1 block font-mono text-sm text-[var(--wo-text)]">{scenario.journey.eventsPerMinute.toLocaleString("pt-BR")}</strong></div></div></Panel>;
+  return <Panel className="p-4"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><Activity className="h-4 w-4 text-[var(--wo-accent-text)]" /><h3 className="text-sm font-medium text-[var(--wo-text)]">Operação agora</h3></div><Chip tone="good">{scenario.journey.freshnessSeconds}s de atualização</Chip></div><div className="mt-4 space-y-2">{operationalItems.map((item) => <div key={item.id} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between gap-2"><span className="font-mono text-[9px] text-[var(--wo-primary)]">{item.id}</span><Chip tone={journeyStatusTone(item.status)}>{journeyStatusLabels[item.status]}</Chip></div><strong className="mt-2 block text-[10px] text-[var(--wo-text)]">{item.nextStep}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">{item.lastActivity} · {item.due}</span></div>)}</div><div className="mt-3 grid grid-cols-2 gap-2"><div className="rounded-xl border border-[var(--wo-line)] p-3"><span className="text-[8px] text-[var(--wo-muted)]">Cobertura</span><strong className="mt-1 block font-mono text-sm text-[var(--wo-text)]">{scenario.journey.telemetryCoverage}%</strong></div><div className="rounded-xl border border-[var(--wo-line)] p-3"><span className="text-[8px] text-[var(--wo-muted)]">Eventos/min</span><strong className="mt-1 block font-mono text-sm text-[var(--wo-text)]">{scenario.journey.eventsPerMinute.toLocaleString("pt-BR")}</strong></div></div></Panel>;
 }
 
 function JourneyResponsibilityMatrix({ scenario }: { scenario: TeamOperatingScenario }) {
@@ -1311,7 +1311,7 @@ export function ConnectorsScreen() {
           ["Cloud gerenciada", "AWS · Azure · GCP · SaaS", "Painel de controle do Muster e coleta via APIs/eventos.", Cloud, "primary"],
           ["Arquitetura híbrida", "Cloud + runtime privado", "Collectors locais; governança e fallback por política.", Network, "good"],
           ["On-premise / local", "GPU · vLLM · Docker · Kubernetes", "Dados e execução permanecem na infraestrutura do cliente.", Server, "watch"],
-        ].map(([title, subtitle, description, Icon, tone]) => <Panel key={title as string} className="p-4"><span className={cn("grid h-10 w-10 place-items-center rounded-xl", toneClass[tone as Tone])}><Icon className="h-4 w-4" /></span><h2 className="mt-4 text-sm font-medium text-[var(--wo-text)]">{title as string}</h2><span className="mt-1 block text-[10px] text-[var(--wo-accent)]">{subtitle as string}</span><p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">{description as string}</p></Panel>)}
+        ].map(([title, subtitle, description, Icon, tone]) => <Panel key={title as string} className="p-4"><span className={cn("grid h-10 w-10 place-items-center rounded-xl", toneClass[tone as Tone])}><Icon className="h-4 w-4" /></span><h2 className="mt-4 text-sm font-medium text-[var(--wo-text)]">{title as string}</h2><span className="mt-1 block text-[10px] text-[var(--wo-accent-text)]">{subtitle as string}</span><p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">{description as string}</p></Panel>)}
       </div>
 
       <Panel className="overflow-hidden">
@@ -1321,7 +1321,7 @@ export function ConnectorsScreen() {
 
       <Panel className="p-4">
         <div className="grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
-          <div><div className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-[var(--wo-accent)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Contrato universal do agente</h2></div><p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">Identidade, organização, propósito, execução, decisão, prova, custo opcional, feedback e ação corretiva seguem o mesmo formato, independentemente do runtime.</p></div>
+          <div><div className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-[var(--wo-accent-text)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Contrato universal do agente</h2></div><p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">Identidade, organização, propósito, execução, decisão, prova, custo opcional, feedback e ação corretiva seguem o mesmo formato, independentemente do runtime.</p></div>
           <div className="grid gap-2 sm:grid-cols-5">{["Descobrir", "Coletar", "Medir", "Decidir", "Ajustar"].map((step, index) => <div key={step} className="rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] text-[var(--wo-primary)]">0{index + 1}</span><strong className="mt-2 block text-xs font-medium text-[var(--wo-text)]">{step}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">com prova</span></div>)}</div>
         </div>
       </Panel>
@@ -1343,7 +1343,7 @@ export function SettingsScreen() {
     <div className="space-y-4 p-4 sm:p-6">
       <ScreenHeader eyebrow="Governança operacional" title="Configuração herdável, da companhia ao agente." description="Companhia, unidade, squad, grupo de trabalho, pessoa e agente compartilham políticas com escopo e exceções auditáveis. Nenhum cliente é obrigado a operar localmente ou na nuvem." action={<button type="button" onClick={publishPolicies} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] px-4 py-2.5 text-xs text-[var(--wo-text)]"><Check className="h-4 w-4" /> Publicar versão {publishedVersion + 1}</button>} />
 
-      {publishMessage && <div role="status" className="rounded-xl border border-[var(--wo-accent)] bg-[color-mix(in_srgb,var(--wo-accent)_10%,var(--wo-card))] px-4 py-3 text-[11px] text-[var(--wo-accent)]">{publishMessage} Versão ativa: {publishedVersion}.</div>}
+      {publishMessage && <div role="status" className="rounded-xl border border-[var(--wo-accent)] bg-[color-mix(in_srgb,var(--wo-accent)_10%,var(--wo-card))] px-4 py-3 text-[11px] text-[var(--wo-accent-text)]">{publishMessage} Versão ativa: {publishedVersion}.</div>}
 
       <div className="grid gap-3 xl:grid-cols-[.75fr_1.25fr]">
         <Panel className="p-4">
@@ -1371,7 +1371,7 @@ export function SettingsScreen() {
 
           <div className="grid gap-3 md:grid-cols-3">
             <Panel className="p-4"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Activity className="h-4 w-4" /></span><h3 className="mt-3 text-xs font-medium text-[var(--wo-text)]">Telemetria</h3><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">15 s · buffer 24 h · retenção 90 dias · 97% cobertura.</p></Panel>
-            <Panel className="p-4"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_18%,var(--wo-card))] text-[var(--wo-accent)]"><ShieldCheck className="h-4 w-4" /></span><h3 className="mt-3 text-xs font-medium text-[var(--wo-text)]">Prova</h3><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">Redação de dados pessoais · assinatura · origem · auditoria amostral.</p></Panel>
+            <Panel className="p-4"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_18%,var(--wo-card))] text-[var(--wo-accent-text)]"><ShieldCheck className="h-4 w-4" /></span><h3 className="mt-3 text-xs font-medium text-[var(--wo-text)]">Prova</h3><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">Redação de dados pessoais · assinatura · origem · auditoria amostral.</p></Panel>
             <Panel className="p-4"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--wo-warning)_16%,var(--wo-card))] text-[var(--wo-warning-text)]"><Server className="h-4 w-4" /></span><h3 className="mt-3 text-xs font-medium text-[var(--wo-text)]">Execução</h3><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">Local preferido · cloud permitido · fallback desativado.</p></Panel>
           </div>
         </div>

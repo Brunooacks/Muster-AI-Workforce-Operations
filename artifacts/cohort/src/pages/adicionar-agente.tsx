@@ -86,7 +86,7 @@ export function AdicionarAgenteScreen() {
 
       <section aria-label="Progresso do cadastro" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--wo-accent)]">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--wo-accent-text)]">
             {progressoEtapa(etapa.numero)} · ~3 min
           </span>
           <span className="text-[11px] text-[var(--wo-muted)]">{etapa.titulo}</span>
@@ -254,7 +254,7 @@ export function AdicionarAgenteScreen() {
       </section>
 
       <p className="flex items-center gap-2 text-[11px] text-[var(--wo-muted)]">
-        <CheckCircle2 className="h-3.5 w-3.5 text-[var(--wo-accent)]" />
+        <CheckCircle2 className="h-3.5 w-3.5 text-[var(--wo-accent-text)]" />
         Ao concluir, o agente aparece em Agentes com a etiqueta de período de experiência até a primeira revisão.
       </p>
     </div>

@@ -132,7 +132,7 @@ function Panel({ children, className }: { children: ReactNode; className?: strin
 
 function Chip({ children, tone = "neutral" }: { children: ReactNode; tone?: "good" | "watch" | "primary" | "neutral" }) {
   const tones = {
-    good: "bg-[color-mix(in_srgb,var(--wo-accent)_16%,transparent)] text-[var(--wo-accent)]",
+    good: "bg-[color-mix(in_srgb,var(--wo-accent)_16%,transparent)] text-[var(--wo-accent-text)]",
     watch: "bg-[color-mix(in_srgb,var(--wo-warning)_16%,transparent)] text-[var(--wo-warning-text)]",
     primary: "bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]",
     neutral: "bg-[var(--wo-card-2)] text-[var(--wo-muted)]",
@@ -456,7 +456,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 function PerformanceMetric({ label, value, detail, tone = "neutral" }: { label: string; value: string; detail: string; tone?: "neutral" | "good" | "watch" }) {
-  const valueTone = tone === "good" ? "text-[var(--wo-accent)]" : tone === "watch" ? "text-[var(--wo-warning-text)]" : "text-[var(--wo-text)]";
+  const valueTone = tone === "good" ? "text-[var(--wo-accent-text)]" : tone === "watch" ? "text-[var(--wo-warning-text)]" : "text-[var(--wo-text)]";
   return <div className="bg-[var(--wo-card)] p-4"><span className="text-[8px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{label}</span><strong className={cn("mt-2 block font-mono text-xl", valueTone)}>{value}</strong><span className="mt-1 block text-[9px] text-[var(--wo-muted)]">{detail}</span></div>;
 }
 

@@ -143,6 +143,7 @@ const PARES_PALETA = [
   ...[
     ["wo-warning-text", "wo-warning"],
     ["wo-danger-text", "wo-danger"],
+    ["wo-accent-text", "wo-accent"],
   ].flatMap(([texto, tom]) => [
     [texto, "wo-card"],
     [texto, "wo-card-2"],

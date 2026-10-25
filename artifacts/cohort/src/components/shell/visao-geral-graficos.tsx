@@ -189,7 +189,7 @@ export function GraficoTarefaResultado({
           </div>
           <div className="mt-1 flex justify-between text-[10px] text-[var(--wo-muted)]">
             <span>meta {barra.meta}%</span>
-            <span className={cn("font-mono", barra.valor >= barra.meta ? "text-[var(--wo-accent)]" : "text-[var(--wo-warning-text)]")}>
+            <span className={cn("font-mono", barra.valor >= barra.meta ? "text-[var(--wo-accent-text)]" : "text-[var(--wo-warning-text)]")}>
               {barra.valor >= barra.meta ? "dentro do combinado" : "abaixo do combinado"}
             </span>
           </div>

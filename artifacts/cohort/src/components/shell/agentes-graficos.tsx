@@ -27,7 +27,7 @@ const CORES_STATUS: Record<StatusAgente, string> = {
   fora: "border-[var(--wo-danger)] text-[var(--wo-danger-text)]",
   atencao: "border-[var(--wo-warning)] text-[var(--wo-warning-text)]",
   "sem-dados": "border-[var(--wo-line)] text-[var(--wo-muted)]",
-  dentro: "border-[var(--wo-accent)] text-[var(--wo-accent)]",
+  dentro: "border-[var(--wo-accent)] text-[var(--wo-accent-text)]",
 };
 
 /** Status do agente em linguagem comum. */
@@ -46,7 +46,7 @@ export function ChipStatus({ status }: { status: StatusAgente }) {
 }
 
 const CORES_COBERTURA: Record<Cobertura, string> = {
-  fechada: "border-[var(--wo-accent)] text-[var(--wo-accent)]",
+  fechada: "border-[var(--wo-accent)] text-[var(--wo-accent-text)]",
   parcial: "border-[var(--wo-warning)] text-[var(--wo-warning-text)]",
   aberta: "border-[var(--wo-line)] text-[var(--wo-muted)]",
 };
@@ -120,7 +120,7 @@ export function BulletMeta({ bullet, periodo, semRotulo = false }: { bullet: Bul
         <span>antes do agente {numero(bullet.antes, bullet.unidade)}</span>
         <span>combinado {bullet.combinadoTexto}</span>
         <span className="font-mono">{periodo}</span>
-        <span className={cn("font-mono uppercase tracking-[0.08em]", bullet.ok === false ? "text-[var(--wo-danger-text)]" : bullet.ok ? "text-[var(--wo-accent)]" : "")}>
+        <span className={cn("font-mono uppercase tracking-[0.08em]", bullet.ok === false ? "text-[var(--wo-danger-text)]" : bullet.ok ? "text-[var(--wo-accent-text)]" : "")}>
           {bullet.ok == null ? "sem meta" : bullet.ok ? "dentro do combinado" : "abaixo do combinado"}
         </span>
       </div>

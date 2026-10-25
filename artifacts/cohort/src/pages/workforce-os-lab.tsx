@@ -271,6 +271,7 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-primary-ink": "#ffffff",
     "--wo-primary-soft": "#dbeee9",
     "--wo-accent": "#9dd36f",
+    "--wo-accent-text": "#45702a",
     "--wo-accent-ink": "#13250f",
     "--wo-warning": "#996310",
     "--wo-danger": "#c14f43",
@@ -291,6 +292,7 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-primary-ink": "#061018",
     "--wo-primary-soft": "#102e3f",
     "--wo-accent": "#7ee2b8",
+    "--wo-accent-text": "#7ee2b8",
     "--wo-accent-ink": "#061812",
     "--wo-warning": "#f4c45e",
     "--wo-danger": "#ff7a8a",
@@ -311,6 +313,7 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-primary-ink": "#21222c",
     "--wo-primary-soft": "#45365e",
     "--wo-accent": "#50fa7b",
+    "--wo-accent-text": "#50fa7b",
     "--wo-accent-ink": "#102716",
     "--wo-warning": "#f1fa8c",
     "--wo-danger": "#ff6b6b",
@@ -331,6 +334,7 @@ export const workforcePalettes: Record<PaletteId, CSSProperties> = {
     "--wo-primary-ink": "#11111b",
     "--wo-primary-soft": "#293550",
     "--wo-accent": "#a6e3a1",
+    "--wo-accent-text": "#a6e3a1",
     "--wo-accent-ink": "#132414",
     "--wo-warning": "#f9e2af",
     "--wo-danger": "#f38ba8",
@@ -591,7 +595,7 @@ function AppHeader({ labMode, screen }: { labMode: boolean; screen: Screen }) {
         )}
       </div>
       <div className="flex items-center gap-3">
-        <span className="hidden items-center gap-2 text-[11px] text-[var(--wo-accent)] sm:flex">
+        <span className="hidden items-center gap-2 text-[11px] text-[var(--wo-accent-text)] sm:flex">
           <span className="h-1.5 w-1.5 rounded-full bg-current" /> Supervisão contínua
         </span>
         <div className="hidden items-center gap-1 md:flex" aria-label="Adoção e novidades">
@@ -744,7 +748,7 @@ function TodayScreen({ selectAgent }: { selectAgent: (agentId: string) => void }
     <div className="space-y-4 p-4 sm:p-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Gestão da força de trabalho</div>
+          <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent-text)]">Gestão da força de trabalho</div>
           <h1 className="mt-2 max-w-4xl text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)] sm:text-5xl">
             Três profissionais precisam de revisão para continuar cumprindo o combinado.
           </h1>
@@ -824,7 +828,7 @@ function TodayScreen({ selectAgent }: { selectAgent: (agentId: string) => void }
                   <span className="text-[10px] text-[var(--wo-warning-text)]">{agent.reviewUrgency}</span>
                 </div>
                 <p className="mt-2 line-clamp-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">{agent.diagnosis}</p>
-                <div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-[var(--wo-accent)]">Contrato {agent.contractFulfillment}%</span><ChevronRight className="h-3.5 w-3.5 text-[var(--wo-muted)]" /></div>
+                <div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-[var(--wo-accent-text)]">Contrato {agent.contractFulfillment}%</span><ChevronRight className="h-3.5 w-3.5 text-[var(--wo-muted)]" /></div>
               </button>
             ))}
           </div>
@@ -839,7 +843,7 @@ function PortfolioMatrix({ agents, selectedAgentId, onSelect }: { agents: Profes
     <div className="relative h-[360px] overflow-hidden rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-card-2)]">
       <div className="absolute inset-y-0 left-1/2 w-px bg-[var(--wo-line)]" />
       <div className="absolute inset-x-0 top-1/2 h-px bg-[var(--wo-line)]" />
-      <span className="absolute right-4 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-accent)]">Expandir responsabilidades</span>
+      <span className="absolute right-4 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-accent-text)]">Expandir responsabilidades</span>
       <span className="absolute left-4 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-warning-text)]">Mentorar</span>
       <span className="absolute bottom-3 left-4 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-danger-text)]">Rever função</span>
       <span className="absolute bottom-3 right-4 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-muted)]">Corrigir operação</span>
@@ -889,7 +893,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
   if (semAgentes) {
     return (
       <div className="space-y-4 p-4 sm:p-6">
-        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Operação · últimos 30 dias</div>
+        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent-text)]">Operação · últimos 30 dias</div>
         <Panel className="p-8">
           <h2 className="text-lg font-medium text-[var(--wo-text)]">Nenhum agente ainda.</h2>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--wo-muted)]">Adicione o primeiro agente para acompanhar o que ele entregou, a prova e o custo. Os primeiros dados aparecem após a primeira execução.</p>
@@ -903,7 +907,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
     <div className="space-y-4 p-4 sm:p-6" data-testid="agentes-lista">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Operação · últimos 30 dias</div>
+          <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent-text)]">Operação · últimos 30 dias</div>
           <h1 className="mt-2 text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)] sm:text-4xl">Agentes</h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--wo-muted)]">O que cada agente entregou, quanto custou e o que ainda precisa da sua decisão. Quem está fora do combinado vem primeiro.</p>
         </div>
@@ -1068,7 +1072,7 @@ function ContractList({ title, icon: Icon, items }: { title: string; icon: typeo
   return (
     <div className="rounded-xl bg-[var(--wo-card-2)] p-3">
       <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-muted)]"><Icon className="h-3.5 w-3.5" /> {title}</div>
-      <ul className="mt-3 space-y-2">{items.map((item) => <li key={item} className="flex gap-2 text-[11px] leading-relaxed text-[var(--wo-text)]"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--wo-accent)]" />{item}</li>)}</ul>
+      <ul className="mt-3 space-y-2">{items.map((item) => <li key={item} className="flex gap-2 text-[11px] leading-relaxed text-[var(--wo-text)]"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--wo-accent-text)]" />{item}</li>)}</ul>
     </div>
   );
 }
@@ -1085,7 +1089,7 @@ const planDecisionCopy: Record<PlanDecision, {
     title: "Aprovar plano de desenvolvimento",
     confirm: "Aprovar e liberar ações",
     success: "Plano aprovado. Ações, responsáveis e próxima revisão foram registrados.",
-    tone: "text-[var(--wo-accent)]",
+    tone: "text-[var(--wo-accent-text)]",
     consequence: "O plano entra em execução supervisionada; a aprovação não encerra o trabalho.",
     nextSteps: [
       { actor: "Muster", title: "Congela a linha de base", detail: "Preserva a referência e abre a janela de acompanhamento." },
@@ -1278,7 +1282,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
   return (
     <div className="space-y-4 p-4 sm:p-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between" data-testid="prontuario-abertura">
-        <div className="flex items-start gap-4"><span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[var(--wo-accent)] text-sm font-medium text-[var(--wo-accent-ink)]">{agent.initials}</span><div className="min-w-0"><div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent)]">Agentes · prontuário</div><h1 className="mt-1 text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)]">{agent.name}</h1><p className="mt-1 text-xs text-[var(--wo-muted)]">{agent.role} · Responsável: {agent.owner}</p><div className="mt-2 flex flex-wrap items-center gap-2"><PlatformStack platforms={agent.platforms} /><ChipStatus status={statusDoAgente(agent)} /><SeloCobertura cobertura={coberturaDoAgente(agent)} /></div><p className="mt-3 text-[13px] leading-relaxed text-[var(--wo-text)]" data-testid="prontuario-status">{motivoDoStatus(agent)}</p><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Revisão humana marcada: {agent.reviewDue}</p></div></div>
+        <div className="flex items-start gap-4"><span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[var(--wo-accent)] text-sm font-medium text-[var(--wo-accent-ink)]">{agent.initials}</span><div className="min-w-0"><div className="text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--wo-accent-text)]">Agentes · prontuário</div><h1 className="mt-1 text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)]">{agent.name}</h1><p className="mt-1 text-xs text-[var(--wo-muted)]">{agent.role} · Responsável: {agent.owner}</p><div className="mt-2 flex flex-wrap items-center gap-2"><PlatformStack platforms={agent.platforms} /><ChipStatus status={statusDoAgente(agent)} /><SeloCobertura cobertura={coberturaDoAgente(agent)} /></div><p className="mt-3 text-[13px] leading-relaxed text-[var(--wo-text)]" data-testid="prontuario-status">{motivoDoStatus(agent)}</p><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Revisão humana marcada: {agent.reviewDue}</p></div></div>
         <div className="flex flex-wrap items-center gap-2"><button type="button" data-testid="reevaluate-professional" data-operational-action="reevaluate-agent" onClick={handleReevaluate} disabled={reevaluate.isPending} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><RefreshCw className={cn("h-3.5 w-3.5", reevaluate.isPending && "animate-spin")} />{reevaluate.isPending ? "Recalculando…" : "Recalcular com os dados das últimas 24 h"}</button></div>
       </div>
 
@@ -1290,7 +1294,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
         <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">5 · O que fazer agora</span><p className="mt-2 text-[11px] leading-relaxed text-[var(--wo-text)]">{agent.recommendation}</p><Link href="/pendencias" className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--wo-primary)]">Abrir Pendências <ArrowRight className="h-3 w-3" /></Link></Panel>
       </div>
 
-      {reevaluationMessage && <div className="rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent)]" role="status">{reevaluationMessage}</div>}
+      {reevaluationMessage && <div className="rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent-text)]" role="status">{reevaluationMessage}</div>}
 
       <Panel className="p-4 sm:p-5">
         <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Goal className="h-4 w-4" /></span><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">O que foi combinado</span><h2 className="mt-2 max-w-4xl text-xl font-medium leading-snug text-[var(--wo-text)]">{agent.purpose}</h2></div></div>
@@ -1300,7 +1304,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
       <Panel className="p-4 sm:p-5" data-testid="prontuario-metas">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--wo-accent)]">Metas</div>
+            <div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--wo-accent-text)]">Metas</div>
             <h2 className="mt-2 text-lg font-medium text-[var(--wo-text)]">Antes do agente, o combinado e os últimos 30 dias</h2>
             <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-[var(--wo-muted)]">Cada linha mostra o valor medido antes do agente começar, o que foi combinado e o que aconteceu nos últimos 30 dias — com a prova que sustenta o número.</p>
           </div>
@@ -1354,14 +1358,14 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
 
 
       <Panel className="border-[var(--wo-accent)] p-4 sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--wo-accent)]">Plano de desenvolvimento</div><h2 className="mt-2 text-lg font-medium text-[var(--wo-text)]">{agent.recommendation}</h2></div><span className="text-right text-[10px] text-[var(--wo-muted)]">Próxima avaliação<br /><strong className="text-sm font-medium text-[var(--wo-accent)]">2 ciclos válidos</strong></span></div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--wo-accent-text)]">Plano de desenvolvimento</div><h2 className="mt-2 text-lg font-medium text-[var(--wo-text)]">{agent.recommendation}</h2></div><span className="text-right text-[10px] text-[var(--wo-muted)]">Próxima avaliação<br /><strong className="text-sm font-medium text-[var(--wo-accent-text)]">2 ciclos válidos</strong></span></div>
         <div className="mt-4 grid gap-2 md:grid-cols-3">{[
           ["Muster · autônomo", "Preparar coorte", "Agrupar casos afetados, preservar a prova e agendar reavaliação.", Radar],
           [`${agent.name} · supervisionado`, "Executar plano corrigido", "Aplicar feedback dentro dos limites e reportar cada resultado.", Bot],
           ["Humano · decisão", "Validar evolução", "Confirmar que propósito, responsabilidades e limites seguem no combinado.", Users],
         ].map(([actor, title, description, Icon]) => <div key={actor as string} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]"><span>{actor as string}</span><Icon className="h-3.5 w-3.5" /></div><strong className="mt-3 block text-xs font-medium text-[var(--wo-text)]">{title as string}</strong><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">{description as string}</p></div>)}</div>
         <div className="mt-4 flex flex-col gap-3 border-t border-[var(--wo-line)] pt-4 lg:flex-row lg:items-center lg:justify-between"><div><strong className="text-xs font-medium text-[var(--wo-text)]">Decisão do responsável</strong><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Toda decisão abre um fluxo com responsável, prazo e prova. Um novo ciclo só começa após concluir o atual.</p>{hasOpenWorkflow && <p className="mt-2 text-[10px] font-medium text-[var(--wo-warning-text)]">Fluxo em andamento · conclua “{activeAction?.title}” antes de registrar outra decisão.</p>}</div><div className="flex flex-wrap gap-2"><button type="button" data-testid="reject-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("rejected")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><X className="h-3.5 w-3.5" /> Rejeitar</button><button type="button" data-testid="adjust-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("adjustment_requested")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><FileCheck2 className="h-3.5 w-3.5" /> Ajustar</button><button type="button" data-testid="approve-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("approved")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Aprovar plano</button></div></div>
-        {decisionMessage && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent)]" role="status">{decisionMessage}</div>}
+        {decisionMessage && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent-text)]" role="status">{decisionMessage}</div>}
         {decisionError && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-danger)_12%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-danger-text)]" role="alert">{decisionError}</div>}
         {decisionsQuery.isLoading && <p className="mt-3 text-[10px] text-[var(--wo-muted)]">Carregando histórico de decisões…</p>}
         {latestDecision && (
@@ -1382,7 +1386,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
                   .every((item) => item.status === "completed");
                 return (
                   <div key={`${latestDecision.id}-${action.sequence}`} className={cn("rounded-lg border bg-[var(--wo-card)] p-3", action.sequence === activeAction?.sequence ? "border-[var(--wo-warning)]" : "border-[var(--wo-line)]")}>
-                    <div className="flex items-center justify-between gap-2"><span className="text-[8px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{action.actorType} · {action.owner}</span><span className={cn("text-[8px]", action.status === "blocked" ? "text-[var(--wo-danger-text)]" : action.status === "completed" ? "text-[var(--wo-accent)]" : "text-[var(--wo-primary)]")}>{planActionStatusCopy[action.status]}</span></div>
+                    <div className="flex items-center justify-between gap-2"><span className="text-[8px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">{action.actorType} · {action.owner}</span><span className={cn("text-[8px]", action.status === "blocked" ? "text-[var(--wo-danger-text)]" : action.status === "completed" ? "text-[var(--wo-accent-text)]" : "text-[var(--wo-primary)]")}>{planActionStatusCopy[action.status]}</span></div>
                     <strong className="mt-2 block text-[11px] font-medium text-[var(--wo-text)]">{action.title}</strong>
                     <p className="mt-1 text-[9px] leading-relaxed text-[var(--wo-muted)]">{action.description}</p>
                     <span className="mt-2 block text-[8px] text-[var(--wo-muted)]">Prazo: {formatPlanDate(action.dueAt)}</span>
