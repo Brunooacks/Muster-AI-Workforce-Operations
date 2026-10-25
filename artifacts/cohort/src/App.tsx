@@ -446,6 +446,9 @@ function DemoRoutes() {
       <Route path="/" component={LandingPage} />
       <Route path="/design-system" component={DesignSystemPage} />
       <Route path="/calculadora" component={CalculadoraPage} />
+      <Route path="/agentes/:id/conectar">
+        <WorkforceOsLabPage labMode={false} demo />
+      </Route>
       {WORKFORCE_STATIC_PATHS.map((path) => (
         <Route key={path} path={path}>
           <WorkforceOsLabPage labMode={false} demo />
@@ -470,6 +473,7 @@ function App() {
             <WouterRouter base={basePath}>
               <DemoRoutes />
             </WouterRouter>
+            <Toaster />
           </TooltipProvider>
         </QueryClientProvider>
       </LangProvider>
