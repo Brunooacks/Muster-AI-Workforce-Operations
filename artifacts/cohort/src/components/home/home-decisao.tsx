@@ -4,17 +4,17 @@ import { useLang, type Lang } from "@/lib/i18n";
 const BOARD_STATS = [
   { value: "92%", label: "Propósito", delta: "+4", positive: true },
   { value: "86%", label: "Saúde", delta: "+2", positive: true },
-  { value: "94%", label: "Evidência", delta: "+7", positive: true },
+  { value: "94%", label: "Prova", delta: "+7", positive: true },
   { value: "78%", label: "Governança", delta: "−3", positive: false },
 ];
 
 const pt = {
   leftEyebrow: "Decisão com dono",
   leftTitle: "O Muster recomenda. Uma pessoa decide.",
-  leftSub: "Cada recomendação chega com evidência, prazo e um nome.",
+  leftSub: "Cada recomendação chega com prova, prazo e um nome.",
   cardLabel: "PARA MARINA ALVES · ATÉ 30/08",
   cardTitle: "Ampliar o limite da Sofia para R$ 1.000 em reembolsos de baixo risco.",
-  evidence: "Evidência: 1.284 atendimentos · 0 fora da política · 96% de qualidade",
+  evidence: "Prova: 1.284 atendimentos · 0 fora da política · 96% de qualidade",
   approve: "Aprovar",
   adjust: "Ajustar",
   reject: "Rejeitar",

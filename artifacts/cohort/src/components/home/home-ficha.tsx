@@ -19,7 +19,7 @@ const FIELDS = [
 const METRICS = [
   { label: "Qualidade", value: "93%", width: "93%" },
   { label: "Resultado real", value: "91%", width: "91%" },
-  { label: "Evidência", value: "96%", width: "96%" },
+  { label: "Prova", value: "96%", width: "96%" },
 ];
 
 const CALLOUTS_LEFT = [
@@ -29,7 +29,7 @@ const CALLOUTS_LEFT = [
 
 const CALLOUTS_RIGHT = [
   { title: "Responsável", desc: "Uma pessoa com nome responde por ele.", at: 1 },
-  { title: "KPIs e evidência", desc: "Como está indo, com a origem de cada número.", at: 2 },
+  { title: "Indicadores e prova", desc: "Como está indo, com a origem de cada número.", at: 2 },
 ];
 
 const pt = {

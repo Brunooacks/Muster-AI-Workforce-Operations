@@ -13,7 +13,7 @@ const STATES = [
   {
     number: "61%",
     head: "Mas o resultado não veio.",
-    sub: "das reuniões viraram oportunidade real. Dois handoffs quebrados com o time comercial.",
+    sub: "das reuniões viraram oportunidade real. Duas passagens de serviço quebradas com o time comercial.",
     label: "das reuniões viraram oportunidade",
     color: "text-destructive",
   },

@@ -307,12 +307,12 @@ const demoAgents: ProfessionalAgent[] = [
     duties: [
       "Identificar intenção e contexto mínimo do atendimento.",
       "Resolver somente solicitações cobertas pelo contrato operacional.",
-      "Registrar evidências e comunicar o resultado ao cliente.",
+      "Registrar as provas e comunicar o resultado ao cliente.",
     ],
     responsibilities: [
       "Manter resolução no primeiro contato acima de 75%.",
       "Escalonar risco, ambiguidade ou ausência de conhecimento.",
-      "Evitar encerramento sem confirmação do outcome real.",
+      "Evitar encerramento sem confirmação do resultado real.",
     ],
     boundaries: [
       "Não alterar dados financeiros sem aprovação.",
@@ -323,7 +323,7 @@ const demoAgents: ProfessionalAgent[] = [
       { label: "Resolução no primeiro contato", baseline: "68%", target: "≥ 75%", current: "61%", status: "off", source: "Zendesk · tickets", casos: 96 },
       { label: "Reabertura em 72 horas", baseline: "17%", target: "≤ 15%", current: "24%", status: "off", source: "Zendesk · eventos", casos: 61 },
       { label: "Escalonamento apropriado", baseline: "82%", target: "≥ 80%", current: "86%", status: "on", source: "Auditoria amostral", casos: 24 },
-      { label: "Completude de evidência", baseline: "88%", target: "≥ 95%", current: "91%", status: "watch", source: "Muster telemetry", casos: 30 },
+      { label: "Completude da prova", baseline: "88%", target: "≥ 95%", current: "91%", status: "watch", source: "Muster telemetry", casos: 30 },
     ],
     diagnosis: "Sofia executa o dever de responder rapidamente, mas deixou de cumprir a responsabilidade de confirmar resolução sustentável.",
     recommendation: "Revisar a base de conhecimento de cobrança e manter autonomia supervisionada até dois ciclos consecutivos dentro da meta.",
@@ -356,8 +356,8 @@ const demoAgents: ProfessionalAgent[] = [
     boundaries: ["Não descartar contas estratégicas.", "Não alterar critérios comerciais.", "Solicitar revisão em campanhas novas."],
     metrics: [
       { label: "Conversão qualificada", baseline: "24%", target: "≥ 25%", current: "21%", status: "off", source: "Salesforce · pipeline", casos: 41 },
-      { label: "Falso positivo de lead", baseline: "6%", target: "≤ 5%", current: "11%", status: "off", source: "Feedback do vendedor", casos: 18 },
-      { label: "Speed to lead", baseline: "7 min", target: "< 5 min", current: "3 min", status: "on", source: "Salesforce · eventos", casos: 52 },
+      { label: "Falso positivo na qualificação", baseline: "6%", target: "≤ 5%", current: "11%", status: "off", source: "Feedback do vendedor", casos: 18 },
+      { label: "Tempo até o primeiro contato", baseline: "7 min", target: "< 5 min", current: "3 min", status: "on", source: "Salesforce · eventos", casos: 52 },
     ],
     diagnosis: "A rapidez foi preservada, mas o critério de fit não acompanhou a nova campanha enterprise.",
     recommendation: "Recalibrar regras por campanha e revisar amostra com Revenue Operations antes da próxima janela.",
@@ -385,14 +385,14 @@ const demoAgents: ProfessionalAgent[] = [
     observedMetricCount: 2,
     percepcao: { nota: 4.8, respostas: 5, positivas: 5, negativas: 0 },
     autonomy: "Autônoma",
-    duties: ["Validar pré-condições de deploy.", "Executar rollout gradual.", "Acionar rollback ao romper guardrails."],
-    responsibilities: ["Manter taxa de sucesso acima de 95%.", "Garantir evidência por execução.", "Notificar owner em recuperação automática."],
-    boundaries: ["Não promover mudança sem testes.", "Não ignorar bloqueios de segurança.", "Não alterar guardrails sem comitê."],
+    duties: ["Validar pré-condições de deploy.", "Publicar em etapas graduais.", "Acionar a reversão ao romper os limites combinados."],
+    responsibilities: ["Manter taxa de sucesso acima de 95%.", "Garantir prova por entrega.", "Notificar o responsável em recuperação automática."],
+    boundaries: ["Não promover mudança sem testes.", "Não ignorar bloqueios de segurança.", "Não alterar os limites combinados sem comitê."],
     metrics: [
-      { label: "Deploys sem rollback", baseline: "91%", target: "≥ 95%", current: "97%", status: "on", source: "CI/CD telemetry", casos: 9 },
-      { label: "Completude de trace", baseline: "94%", target: "≥ 99%", current: "99%", status: "on", source: "OpenTelemetry", casos: 9 },
+      { label: "Publicações sem reversão", baseline: "91%", target: "≥ 95%", current: "97%", status: "on", source: "Integração contínua", casos: 9 },
+      { label: "Completude da prova", baseline: "94%", target: "≥ 99%", current: "99%", status: "on", source: "OpenTelemetry", casos: 9 },
     ],
-    diagnosis: "Vega cumpre o contrato com evidência consistente e pode assumir maior volume dentro dos mesmos limites.",
+    diagnosis: "Vega cumpre o contrato com prova consistente e pode assumir maior volume dentro dos mesmos limites.",
     recommendation: "Promover gradualmente o volume, preservando rollback automático e revisão quinzenal.",
   },
   {
@@ -452,7 +452,7 @@ const demoAgents: ProfessionalAgent[] = [
     percepcao: { nota: 5, respostas: 3, positivas: 3, negativas: 0 },
     autonomy: "Autônoma",
     duties: ["Orientar próximos passos.", "Confirmar documentos.", "Escalonar exceções."],
-    responsibilities: ["Evitar pendências silenciosas.", "Preservar experiência humana.", "Registrar consentimento e evidências."],
+    responsibilities: ["Evitar pendências silenciosas.", "Preservar experiência humana.", "Registrar consentimento e provas."],
     boundaries: ["Não decidir exceções trabalhistas.", "Não acessar dados fora do escopo.", "Não concluir onboarding incompleto."],
     metrics: [
       { label: "Onboardings completos", baseline: "89%", target: "≥ 92%", current: "93%", status: "on", source: "HRIS", casos: 8 },
@@ -486,10 +486,10 @@ const demoAgents: ProfessionalAgent[] = [
     autonomy: "Assistida",
     duties: ["Comparar registros.", "Classificar divergências.", "Encaminhar exceções com contexto."],
     responsibilities: ["Manter precisão acima de 98%.", "Não ocultar divergências.", "Produzir trilha auditável."],
-    boundaries: ["Não efetuar baixa financeira.", "Não alterar origem dos dados.", "Não resolver exceções sem owner."],
+    boundaries: ["Não efetuar baixa financeira.", "Não alterar origem dos dados.", "Não resolver exceções sem responsável."],
     metrics: [
       { label: "Precisão de conciliação", baseline: "92%", target: "≥ 98%", current: "89%", status: "off", source: "ERP · amostra auditada", casos: 0 },
-      { label: "Exceções com evidência", baseline: "74%", target: "≥ 95%", current: "71%", status: "off", source: "Muster evidence", casos: 0 },
+      { label: "Exceções com prova", baseline: "74%", target: "≥ 95%", current: "71%", status: "off", source: "Muster · prova", casos: 0 },
       { label: "Tempo até a primeira exceção do dia", baseline: "6 h", target: "", current: "4 h", status: "off", source: "ERP · amostra auditada", casos: 0 },
     ],
     diagnosis: "Dora ainda não demonstra consistência suficiente para cumprir a função acordada.",
@@ -726,10 +726,10 @@ function TodayScreen({ selectAgent }: { selectAgent: (agentId: string) => void }
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ["Cumprimento dos contratos", "82%", "+4 pp no trimestre", ClipboardCheck],
+          ["Cumprimento dos contratos", "82%", "+4 pontos percentuais no trimestre", ClipboardCheck],
           ["Responsabilidades atendidas", "91%", "23 profissionais dentro da meta", UserCheck],
           ["Reviews necessários", "3", "1 SLA crítico hoje", Clock3],
-          ["Evidência confiável", "89%", "telemetria e auditoria válidas", DatabaseZap],
+          ["Prova confiável", "89%", "telemetria e auditoria válidas", DatabaseZap],
         ].map(([label, value, detail, Icon]) => (
           <Panel key={label as string} className="p-4">
             <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">
@@ -761,7 +761,7 @@ function TodayScreen({ selectAgent }: { selectAgent: (agentId: string) => void }
           <div className="grid gap-3 md:grid-cols-3">
             {[
               ["Profissionais ativos", "26", "4 equipes · 3 jornadas"],
-              ["Autonomia dentro do contrato", "87%", "+6 pp no trimestre"],
+              ["Autonomia dentro do contrato", "87%", "+6 pontos percentuais no trimestre"],
               ["Reviews concluídos no prazo", "91%", "2 pendências abertas"],
             ].map(([label, value, detail]) => (
               <Panel key={label} className="p-4">
@@ -1050,8 +1050,8 @@ const planDecisionCopy: Record<PlanDecision, {
     tone: "text-[var(--wo-accent)]",
     consequence: "O plano entra em execução supervisionada; a aprovação não encerra o trabalho.",
     nextSteps: [
-      { actor: "Muster", title: "Congela a baseline", detail: "Preserva a referência e abre a janela de acompanhamento." },
-      { actor: "Agente", title: "Executa o plano", detail: "Trabalha sob guardrails e entrega evidência por execução." },
+      { actor: "Muster", title: "Congela a linha de base", detail: "Preserva a referência e abre a janela de acompanhamento." },
+      { actor: "Agente", title: "Executa o plano", detail: "Trabalha nos limites combinados e entrega prova por entrega." },
       { actor: "Humano", title: "Valida a evolução", detail: "Compara ciclos e decide autonomia, mentoria ou encerramento." },
     ],
   },
@@ -1062,7 +1062,7 @@ const planDecisionCopy: Record<PlanDecision, {
     tone: "text-[var(--wo-warning)]",
     consequence: "A versão atual fica congelada e o profissional recebe uma tarefa de reformulação com prazo.",
     nextSteps: [
-      { actor: "Muster", title: "Preserva a versão", detail: "Mantém hipótese e evidências recusadas para comparação." },
+      { actor: "Muster", title: "Preserva a versão", detail: "Mantém hipótese e provas recusadas para comparação." },
       { actor: "Agente", title: "Reformula em até 4h", detail: "Incorpora o feedback sem ampliar risco ou escopo." },
       { actor: "Humano", title: "Revisa em até 8h", detail: "Confirma o novo contrato antes de liberar a execução." },
     ],
@@ -1131,7 +1131,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
       {
         onSuccess: async (outcome) => {
           setReevaluationMessage(
-            `Reavaliação concluída com ${outcome.dataSource === "telemetry" ? "telemetria real" : "baseline"}: saúde ${outcome.healthScore}/100 e veredito ${outcome.verdict}.`,
+            `Reavaliação concluída com ${outcome.dataSource === "telemetry" ? "telemetria real" : "linha de base"}: saúde ${outcome.healthScore}/100 e veredito ${outcome.verdict}.`,
           );
           await Promise.all([
             queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agent.id) }),
@@ -1316,11 +1316,11 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
       <Panel className="border-[var(--wo-accent)] p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--wo-accent)]">Plano de desenvolvimento</div><h2 className="mt-2 text-lg font-medium text-[var(--wo-text)]">{agent.recommendation}</h2></div><span className="text-right text-[10px] text-[var(--wo-muted)]">Próxima avaliação<br /><strong className="text-sm font-medium text-[var(--wo-accent)]">2 ciclos válidos</strong></span></div>
         <div className="mt-4 grid gap-2 md:grid-cols-3">{[
-          ["Muster · autônomo", "Preparar coorte", "Agrupar casos afetados, preservar evidência e agendar reavaliação.", Radar],
+          ["Muster · autônomo", "Preparar coorte", "Agrupar casos afetados, preservar a prova e agendar reavaliação.", Radar],
           [`${agent.name} · supervisionado`, "Executar plano corrigido", "Aplicar feedback dentro dos limites e reportar cada resultado.", Bot],
-          ["Humano · decisão", "Validar evolução", "Confirmar que propósito, responsabilidades e guardrails voltaram ao combinado.", Users],
+          ["Humano · decisão", "Validar evolução", "Confirmar que propósito, responsabilidades e limites seguem no combinado.", Users],
         ].map(([actor, title, description, Icon]) => <div key={actor as string} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]"><span>{actor as string}</span><Icon className="h-3.5 w-3.5" /></div><strong className="mt-3 block text-xs font-medium text-[var(--wo-text)]">{title as string}</strong><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">{description as string}</p></div>)}</div>
-        <div className="mt-4 flex flex-col gap-3 border-t border-[var(--wo-line)] pt-4 lg:flex-row lg:items-center lg:justify-between"><div><strong className="text-xs font-medium text-[var(--wo-text)]">Decisão do responsável</strong><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Toda decisão abre um fluxo com responsável, SLA e evidência. Um novo ciclo só começa após concluir o atual.</p>{hasOpenWorkflow && <p className="mt-2 text-[10px] font-medium text-[var(--wo-warning)]">Fluxo em andamento · conclua “{activeAction?.title}” antes de registrar outra decisão.</p>}</div><div className="flex flex-wrap gap-2"><button type="button" data-testid="reject-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("rejected")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><X className="h-3.5 w-3.5" /> Rejeitar</button><button type="button" data-testid="adjust-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("adjustment_requested")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><FileCheck2 className="h-3.5 w-3.5" /> Ajustar</button><button type="button" data-testid="approve-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("approved")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Aprovar plano</button></div></div>
+        <div className="mt-4 flex flex-col gap-3 border-t border-[var(--wo-line)] pt-4 lg:flex-row lg:items-center lg:justify-between"><div><strong className="text-xs font-medium text-[var(--wo-text)]">Decisão do responsável</strong><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Toda decisão abre um fluxo com responsável, prazo e prova. Um novo ciclo só começa após concluir o atual.</p>{hasOpenWorkflow && <p className="mt-2 text-[10px] font-medium text-[var(--wo-warning)]">Fluxo em andamento · conclua “{activeAction?.title}” antes de registrar outra decisão.</p>}</div><div className="flex flex-wrap gap-2"><button type="button" data-testid="reject-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("rejected")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><X className="h-3.5 w-3.5" /> Rejeitar</button><button type="button" data-testid="adjust-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("adjustment_requested")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 py-2 text-xs text-[var(--wo-text)] disabled:opacity-50"><FileCheck2 className="h-3.5 w-3.5" /> Ajustar</button><button type="button" data-testid="approve-professional-plan" data-operational-action="record-plan-decision" onClick={() => openDecision("approved")} disabled={recordDecision.isPending || hasOpenWorkflow} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2 text-xs font-medium text-[var(--wo-accent-ink)] disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Aprovar plano</button></div></div>
         {decisionMessage && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent)]" role="status">{decisionMessage}</div>}
         {decisionError && <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--wo-danger)_12%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-danger)]" role="alert">{decisionError}</div>}
         {decisionsQuery.isLoading && <p className="mt-3 text-[10px] text-[var(--wo-muted)]">Carregando histórico de decisões…</p>}
@@ -1346,7 +1346,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
                     <strong className="mt-2 block text-[11px] font-medium text-[var(--wo-text)]">{action.title}</strong>
                     <p className="mt-1 text-[9px] leading-relaxed text-[var(--wo-muted)]">{action.description}</p>
                     <span className="mt-2 block text-[8px] text-[var(--wo-muted)]">Prazo: {formatPlanDate(action.dueAt)}</span>
-                    {action.evidence && <p className="mt-2 rounded-md bg-[var(--wo-card-2)] p-2 text-[9px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">Evidência:</strong> {action.evidence}</p>}
+                    {action.evidence && <p className="mt-2 rounded-md bg-[var(--wo-card-2)] p-2 text-[9px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">Prova:</strong> {action.evidence}</p>}
                     {action.status === "ready" && (
                       <button type="button" onClick={() => requestActionTransition(action.sequence, action.title, "in_progress")} disabled={!previousActionsComplete || updatePlanAction.isPending} className="mt-3 w-full rounded-lg bg-[var(--wo-primary)] px-3 py-2 text-[10px] font-medium text-[var(--wo-primary-ink)] disabled:opacity-45" data-testid={`start-plan-action-${action.sequence}`}>{previousActionsComplete ? "Iniciar etapa" : "Aguardando etapa anterior"}</button>
                     )}
@@ -1483,7 +1483,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
           <main className="pb-16 md:pb-0">
             {screen === "today" && <ManagerScreen selectAgent={openProfessional} navigate={navigate} agents={visibleAgents} operational={!semApi} />}
             {screen === "onboarding" && <OnboardingScreen navigate={navigate} />}
-            {screen === "reports" && <ExecutiveReportsScreen />}
+            {screen === "reports" && <ExecutiveReportsScreen operational={!semApi} />}
             {screen === "portfolio" && <PortfolioScreen agents={visibleAgents} selectedAgent={selectedAgent} onSelect={setSelectedAgentId} openProfessional={openProfessional} isLoading={!semApi && agentsQuery.isLoading} isError={!semApi && agentsQuery.isError} operational={!semApi} />}
             {screen === "professional" && (selectedAgent ? <ProfessionalScreen key={selectedAgent.id} agent={selectedAgent} operational={!semApi} /> : <div className="p-6"><Panel className="p-8"><h1 className="text-xl font-medium text-[var(--wo-text)]">Profissional não encontrado</h1><p className="mt-2 text-sm text-[var(--wo-muted)]">Admitir e conectar o agente é obrigatório antes de abrir seu prontuário operacional.</p><Link href="/admissao" className="mt-5 inline-flex rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir admissão</Link></Panel></div>)}
             {screen === "metrics" && (semApi ? <MetricsScreen /> : <MetricasPage embedded />)}

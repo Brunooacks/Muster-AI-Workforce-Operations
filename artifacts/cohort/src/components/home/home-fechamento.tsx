@@ -9,7 +9,7 @@ const pt = {
   cta: "Iniciar avaliação",
   secondary: "Falar com a equipe ›",
   brand: "Muster · AI Workforce Operations",
-  tagline: "Identidade · Evidência · Decisão · Responsabilidade",
+  tagline: "Identidade · Prova · Decisão · Responsabilidade",
   veltrix: "Gateway de IA: quanto cada chamada custa, com limite de gasto em todos os modelos.",
   tupiniquim: "As taxas do dia a dia, sem letra miúda — dá para comparar antes de assinar.",
 };

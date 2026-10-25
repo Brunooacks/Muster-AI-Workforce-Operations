@@ -612,12 +612,12 @@ const onboardingClips: Array<{
   icon: typeof Target;
   outcomes: string[];
 }> = [
-  { id: "build", phase: "Construção", title: "Construir o contrato profissional", description: "Defina propósito, deveres, responsabilidades, owner e limites de autonomia antes de avaliar desempenho.", duration: 18, target: "professional", icon: Target, outcomes: ["Função explícita", "Accountability", "Autonomia segura"] },
-  { id: "connect", phase: "Conexão", title: "Conectar origem e runtime", description: "Vincule cloud, SaaS, Docker, Kubernetes ou ambiente local e preserve a identidade tecnológica do agente.", duration: 18, target: "connectors", icon: Link2, outcomes: ["Credencial", "Discovery", "Telemetria"] },
-  { id: "metrics", phase: "Construção", title: "Criar o contrato de métricas", description: "Escolha acurácia, eficácia, eficiência, adoção, custo e indicadores específicos da função.", duration: 18, target: "metrics", icon: Gauge, outcomes: ["Baseline", "Meta", "Fonte"] },
-  { id: "evaluate", phase: "Avaliação", title: "Avaliar desempenho e evidência", description: "Compare histórico, meta, coorte e qualidade da evidência antes de recomendar qualquer mudança.", duration: 18, target: "portfolio", icon: Activity, outcomes: ["Diagnóstico", "Confiança", "Decisão"] },
-  { id: "teams", phase: "Operação", title: "Compor uma equipe mista", description: "Distribua execução, recomendação, aprovação e accountability entre pessoas e agentes.", duration: 18, target: "teams", icon: Users, outcomes: ["Papéis", "Carga", "Handoffs"] },
-  { id: "journey", phase: "Operação", title: "Operar uma jornada A2A", description: "Monitore etapas, contratos de handoff, gargalos e o resultado end-to-end.", duration: 18, target: "journeys", icon: Route, outcomes: ["Etapas", "SLA", "Ações"] },
+  { id: "build", phase: "Construção", title: "Construir o contrato profissional", description: "Defina propósito, deveres, responsabilidades, responsáveis e limites de autonomia antes de avaliar desempenho.", duration: 18, target: "professional", icon: Target, outcomes: ["Função explícita", "Accountability", "Autonomia segura"] },
+  { id: "connect", phase: "Conexão", title: "Conectar origem e runtime", description: "Vincule cloud, SaaS, Docker, Kubernetes ou ambiente local e preserve a identidade tecnológica do agente.", duration: 18, target: "connectors", icon: Link2, outcomes: ["Credencial", "Descoberta", "Telemetria"] },
+  { id: "metrics", phase: "Construção", title: "Criar o contrato de métricas", description: "Escolha acurácia, eficácia, eficiência, adoção, custo e indicadores específicos da função.", duration: 18, target: "metrics", icon: Gauge, outcomes: ["Antes do agente", "Meta", "Fonte"] },
+  { id: "evaluate", phase: "Avaliação", title: "Avaliar desempenho e prova", description: "Compare histórico, meta, coorte e qualidade da prova antes de recomendar qualquer mudança.", duration: 18, target: "portfolio", icon: Activity, outcomes: ["Diagnóstico", "Confiança", "Decisão"] },
+  { id: "teams", phase: "Operação", title: "Compor uma equipe mista", description: "Distribua execução, recomendação, aprovação e accountability entre pessoas e agentes.", duration: 18, target: "teams", icon: Users, outcomes: ["Papéis", "Carga", "Passagens"] },
+  { id: "journey", phase: "Operação", title: "Operar uma jornada entre agentes", description: "Monitore etapas, acordos de passagem, gargalos e o resultado de ponta a ponta.", duration: 18, target: "journeys", icon: Route, outcomes: ["Etapas", "SLA", "Ações"] },
 ];
 
 export function OnboardingScreen({ navigate }: { navigate: (screen: OnboardingTarget) => void }) {
@@ -647,7 +647,7 @@ export function OnboardingScreen({ navigate }: { navigate: (screen: OnboardingTa
 
   const platformUpdates = [
     { date: "03 set 2026", category: "Adoção", title: "Central de adoção separada da operação", description: "Aprendizado e comunicação de produto deixam o menu recorrente e ganham acesso utilitário próprio.", target: "portfolio" as OnboardingTarget },
-    { date: "03 set 2026", category: "Operação", title: "Equipes mistas ganham backlog e responsabilidade", description: "Objetivo, outcome, trabalho humano, automação, accountable e capacidade passam a compartilhar a mesma leitura.", target: "teams" as OnboardingTarget },
+    { date: "03 set 2026", category: "Operação", title: "Equipes mistas ganham backlog e responsabilidade", description: "Objetivo, resultado, trabalho humano, automação, responsáveis e capacidade passam a compartilhar a mesma leitura.", target: "teams" as OnboardingTarget },
     { date: "02 set 2026", category: "Governança", title: "Decisões exigem justificativa e próximo passo", description: "Aprovar, ajustar ou rejeitar uma recomendação preserva ator, prazo, ação e trilha de auditoria.", target: "professional" as OnboardingTarget },
   ];
   const ecosystemSignals = [
@@ -711,10 +711,10 @@ const metricDomains = [
       { name: "Escopo técnico cumprido", layer: "Propósito", current: "91%", target: "≥ 90%", source: "GitHub + Linear", status: "good" as Tone },
       { name: "Defeitos escapados", layer: "Qualidade", current: "4,8%", target: "≤ 5%", source: "Sentry + incidentes", status: "good" as Tone },
       { name: "Cobertura de revisão", layer: "Responsabilidade", current: "86%", target: "≥ 92%", source: "GitHub", status: "watch" as Tone },
-      { name: "Trace completo por execução", layer: "Evidência", current: "97%", target: "≥ 99%", source: "OpenTelemetry", status: "watch" as Tone },
+      { name: "Prova completa por entrega", layer: "Prova", current: "97%", target: "≥ 99%", source: "OpenTelemetry", status: "watch" as Tone },
       { name: "Mudança fora do guardrail", layer: "Governança", current: "0,7%", target: "≤ 0,5%", source: "Policy engine", status: "risk" as Tone },
       { name: "Cobertura de testes da mudança", layer: "Qualidade", current: "94%", target: "≥ 90%", source: "CI/CD", status: "good" as Tone },
-      { name: "Aceite humano da recomendação", layer: "Colaboração", current: "82%", target: "≥ 80%", source: "Review outcomes", status: "good" as Tone },
+      { name: "Aceite humano da recomendação", layer: "Colaboração", current: "82%", target: "≥ 80%", source: "Revisões registradas", status: "good" as Tone },
       { name: "Recuperação de falha p95", layer: "Confiabilidade", current: "8 min", target: "≤ 10 min", source: "Sentry + deploy", status: "good" as Tone },
     ],
   },
@@ -757,8 +757,8 @@ const metricDomains = [
     metrics: [
       { name: "Exceções tratadas no SLA", layer: "Propósito", current: "84%", target: "≥ 92%", source: "ERP + workflow", status: "risk" as Tone },
       { name: "Precisão auditada", layer: "Qualidade", current: "96,8%", target: "≥ 98%", source: "Amostra humana", status: "watch" as Tone },
-      { name: "Evidência por decisão", layer: "Evidência", current: "89%", target: "≥ 95%", source: "Muster telemetry", status: "watch" as Tone },
-      { name: "Intervenções humanas úteis", layer: "Colaboração", current: "76%", target: "≥ 80%", source: "Review outcomes", status: "watch" as Tone },
+      { name: "Prova por decisão", layer: "Prova", current: "89%", target: "≥ 95%", source: "Muster telemetry", status: "watch" as Tone },
+      { name: "Intervenções humanas úteis", layer: "Colaboração", current: "76%", target: "≥ 80%", source: "Revisões registradas", status: "watch" as Tone },
       { name: "Exceções reincidentes", layer: "Qualidade", current: "7,2%", target: "≤ 5%", source: "ERP + cohorts", status: "risk" as Tone },
       { name: "Decisões dentro da autonomia", layer: "Governança", current: "99,2%", target: "≥ 99%", source: "Policy engine", status: "good" as Tone },
       { name: "Handoff aceito sem devolução", layer: "Handoff", current: "81%", target: "≥ 90%", source: "Journey telemetry", status: "watch" as Tone },
@@ -790,7 +790,7 @@ export function MetricsScreen() {
     { label: "Propósito", values: domain.history.purpose, color: "var(--wo-accent)" },
     { label: "Qualidade", values: domain.history.quality, color: "var(--wo-primary)" },
     { label: "Responsabilidades", values: domain.history.responsibility, color: "var(--wo-warning)" },
-    { label: "Evidência", values: domain.history.evidence, color: "var(--wo-muted)", dashed: true },
+    { label: "Prova", values: domain.history.evidence, color: "var(--wo-muted)", dashed: true },
   ];
   const purposeDelta = domain.history.purpose.at(-1)! - domain.history.purpose.at(-2)!;
   const qualityDelta = domain.history.quality.at(-1)! - domain.history.quality.at(-2)!;
@@ -824,8 +824,8 @@ export function MetricsScreen() {
       <ScreenHeader
         eyebrow="Contratos de desempenho"
         title="Métricas ligadas à função, não a um placar genérico."
-        description="Cada domínio combina propósito, qualidade, responsabilidade, governança e evidência. Indicadores financeiros entram somente quando fazem parte do contrato daquela função."
-        action={<div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setMetricForm({ ...emptyMetricForm, name: "Qualidade do outcome sugerida", source: "Muster API" }); setShowBuilder(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] px-4 py-2.5 text-xs text-[var(--wo-text)]"><Sparkles className="h-4 w-4" /> Sugerir contrato</button><button type="button" onClick={() => setShowBuilder((current) => !current)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><Plus className="h-4 w-4" /> Nova métrica</button></div>}
+        description="Cada domínio combina propósito, qualidade, responsabilidade, governança e prova. Indicadores financeiros entram somente quando fazem parte do contrato daquela função."
+        action={<div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setMetricForm({ ...emptyMetricForm, name: "Qualidade do resultado sugerida", source: "Muster API" }); setShowBuilder(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card)] px-4 py-2.5 text-xs text-[var(--wo-text)]"><Sparkles className="h-4 w-4" /> Sugerir contrato</button><button type="button" onClick={() => setShowBuilder((current) => !current)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]"><Plus className="h-4 w-4" /> Nova métrica</button></div>}
       />
 
       <div className="flex flex-wrap gap-2">
@@ -839,10 +839,10 @@ export function MetricsScreen() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-2"><Plus className="h-4 w-4 text-[var(--wo-primary)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Adicionar métrica · {domain.label}</h2></div><p className="mt-2 text-[10px] text-[var(--wo-muted)]">A métrica entra no protótipo imediatamente e preserva camada, alvo e proveniência.</p></div><button type="button" onClick={() => setShowBuilder(false)} className="text-xs text-[var(--wo-muted)]">Fechar</button></div>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <label className="xl:col-span-2"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Nome da métrica</span><input value={metricForm.name} onChange={(event) => setMetricForm((current) => ({ ...current, name: event.target.value }))} placeholder="Ex.: Qualidade do código gerado" className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]" /></label>
-            <label><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Camada</span><select value={metricForm.layer} onChange={(event) => setMetricForm((current) => ({ ...current, layer: event.target.value }))} className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]">{["Propósito", "Qualidade", "Eficácia", "Eficiência", "Adoção", "Governança", "Evidência", "Economia"].map((layer) => <option key={layer}>{layer}</option>)}</select></label>
+            <label><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Camada</span><select value={metricForm.layer} onChange={(event) => setMetricForm((current) => ({ ...current, layer: event.target.value }))} className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]">{["Propósito", "Qualidade", "Eficácia", "Eficiência", "Adoção", "Governança", "Prova", "Economia"].map((layer) => <option key={layer}>{layer}</option>)}</select></label>
             <label><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Resultado inicial</span><input value={metricForm.current} onChange={(event) => setMetricForm((current) => ({ ...current, current: event.target.value }))} className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]" /></label>
             <label><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Meta</span><input value={metricForm.target} onChange={(event) => setMetricForm((current) => ({ ...current, target: event.target.value }))} className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]" /></label>
-            <label className="md:col-span-2 xl:col-span-2"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Fonte de evidência</span><select value={metricForm.source} onChange={(event) => setMetricForm((current) => ({ ...current, source: event.target.value }))} className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]">{["Muster API", "GitHub", "OpenTelemetry", "Sentry", "Zendesk", "Salesforce", "ERP", "Auditoria humana"].map((source) => <option key={source}>{source}</option>)}</select></label>
+            <label className="md:col-span-2 xl:col-span-2"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Fonte da prova</span><select value={metricForm.source} onChange={(event) => setMetricForm((current) => ({ ...current, source: event.target.value }))} className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]">{["Muster API", "GitHub", "OpenTelemetry", "Sentry", "Zendesk", "Salesforce", "ERP", "Auditoria humana"].map((source) => <option key={source}>{source}</option>)}</select></label>
             <div className="flex items-end xl:col-span-3"><button type="button" onClick={addMetric} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 text-xs font-medium text-[var(--wo-accent-ink)]"><Plus className="h-4 w-4" /> Adicionar ao contrato</button></div>
           </div>
         </Panel>
@@ -852,16 +852,16 @@ export function MetricsScreen() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <SummaryCard label="Cobertura do contrato" value={`${domain.coverage}%`} note="deveres com indicador válido" icon={Target} tone="primary" />
-        <SummaryCard label="Confiança da evidência" value={`${domain.confidence}%`} note="fonte, janela e amostra verificadas" icon={ShieldCheck} tone="good" />
+        <SummaryCard label="Confiança da prova" value={`${domain.confidence}%`} note="fonte, janela e amostra verificadas" icon={ShieldCheck} tone="good" />
         <SummaryCard label="Dentro do combinado" value={`${healthyMetrics}/${displayedMetrics.length}`} note="métricas dentro do alvo" icon={CircleCheck} tone={healthyMetrics >= displayedMetrics.length / 2 ? "good" : "watch"} />
-        <SummaryCard label="Freshness" value={domain.freshness} note="último ciclo consolidado" icon={RefreshCw} tone="neutral" />
-        <SummaryCard label="Reviews pendentes" value={`${domain.reviewQueue}`} note="decisões aguardando owner" icon={UserCheck} tone={domain.reviewQueue > 8 ? "risk" : "watch"} />
-        <SummaryCard label="Variação mensal" value={`${purposeDelta >= 0 ? "+" : ""}${purposeDelta} pp`} note="cumprimento do propósito" icon={Activity} tone={purposeDelta >= 0 ? "good" : "risk"} />
+        <SummaryCard label="Atualização" value={domain.freshness} note="último ciclo consolidado" icon={RefreshCw} tone="neutral" />
+        <SummaryCard label="Revisões pendentes" value={`${domain.reviewQueue}`} note="decisões aguardando responsável" icon={UserCheck} tone={domain.reviewQueue > 8 ? "risk" : "watch"} />
+        <SummaryCard label="Variação mensal" value={`${purposeDelta >= 0 ? "+" : ""}${purposeDelta} pontos percentuais`} note="cumprimento do propósito" icon={Activity} tone={purposeDelta >= 0 ? "good" : "risk"} />
       </div>
 
       <div className="grid gap-3 xl:grid-cols-[1.45fr_.55fr]">
         <Panel className="p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Evolução do contrato · 6 meses</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Histórico normalizado por função, com troca de baseline registrada.</p></div><Chip tone="primary">mensal + tempo real</Chip></div>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Evolução do contrato · 6 meses</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">Histórico normalizado por função, com troca de linha de base registrada.</p></div><Chip tone="primary">mensal + tempo real</Chip></div>
           <TrendChart months={months} series={historySeries} min={50} max={100} />
         </Panel>
         <Panel className="p-4">
@@ -871,7 +871,7 @@ export function MetricsScreen() {
             ["Qualidade", domain.history.quality.at(-1), qualityDelta, qualityDelta >= 0 ? "good" : "risk"],
             ["Responsabilidades", domain.history.responsibility.at(-1), domain.history.responsibility.at(-1)! - domain.history.responsibility.at(-2)!, "watch"],
             ["Evidência", domain.history.evidence.at(-1), domain.history.evidence.at(-1)! - domain.history.evidence.at(-2)!, "primary"],
-          ].map(([label, value, delta, tone]) => <div key={label as string} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between"><span className="text-[10px] text-[var(--wo-muted)]">{label as string}</span><Chip tone={tone as Tone}>{(delta as number) >= 0 ? "+" : ""}{delta as number} pp</Chip></div><div className="mt-2 flex items-end justify-between"><strong className="font-mono text-lg font-medium text-[var(--wo-text)]">{value as number}%</strong><span className="text-[9px] text-[var(--wo-muted)]">vs. jul</span></div></div>)}</div>
+          ].map(([label, value, delta, tone]) => <div key={label as string} className="rounded-xl bg-[var(--wo-card-2)] p-3"><div className="flex items-center justify-between"><span className="text-[10px] text-[var(--wo-muted)]">{label as string}</span><Chip tone={tone as Tone}>{(delta as number) >= 0 ? "+" : ""}{delta as number} pontos percentuais</Chip></div><div className="mt-2 flex items-end justify-between"><strong className="font-mono text-lg font-medium text-[var(--wo-text)]">{value as number}%</strong><span className="text-[9px] text-[var(--wo-muted)]">vs. jul</span></div></div>)}</div>
           <div className="mt-3 rounded-xl border border-[var(--wo-warning)] bg-[color-mix(in_srgb,var(--wo-warning)_8%,var(--wo-card))] p-3 text-[10px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-warning)]">Correlação:</strong> cobertura de revisão caiu antes do aumento de mudanças fora do guardrail.</div>
         </Panel>
       </div>
@@ -1028,7 +1028,7 @@ export function MixedTeamsScreen() {
           </Panel>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-            <SummaryCard label="Propósito coletivo" value={`${team.contract}%`} note="+1 pp no mês" icon={Target} tone="good" />
+            <SummaryCard label="Propósito coletivo" value={`${team.contract}%`} note="+1 ponto percentual no mês" icon={Target} tone="good" />
             <SummaryCard label="Saúde operacional" value={`${team.health}%`} note="confiabilidade da execução" icon={Gauge} tone={team.health >= 85 ? "good" : "watch"} />
             <SummaryCard label="Handoffs íntegros" value={`${team.handoff}%`} note="aceitos sem devolução" icon={Waypoints} tone={team.handoff >= 90 ? "good" : "watch"} />
             <SummaryCard label="Evidência confiável" value={`${team.evidence}%`} note="traces e decisões correlacionados" icon={ShieldCheck} tone={team.evidence >= 90 ? "good" : "watch"} />
