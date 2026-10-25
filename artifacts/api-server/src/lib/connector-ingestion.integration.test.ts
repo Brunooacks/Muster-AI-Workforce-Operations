@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   agentEvents,
   connectorApiKeys,
@@ -11,6 +11,17 @@ import {
 import { generateConnectorApiKey } from "./connector-api-key";
 
 const runIntegration = process.env.RUN_CONNECTOR_INGESTION_DB_TESTS === "true";
+
+// O app completo exige Clerk configurado na importação; esta rota autentica por
+// chave de conector e não passa pelo Clerk. Sem o mock, o teste só roda com
+// chaves reais do Clerk no ambiente, o que o CI de integração não tem (E1).
+vi.mock("./clerk-config", () => ({
+  clerkRuntimeConfig: () => ({ secretKey: "teste", publishableKey: "teste" }),
+}));
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: null }),
+}));
 
 type WorkspaceDb = typeof import("@workspace/db");
 let workspaceDb: WorkspaceDb;

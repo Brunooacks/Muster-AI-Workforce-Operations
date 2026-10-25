@@ -22,6 +22,10 @@ tags:
     description: Platform connectors (plug and play)
   - name: organizations
     description: Authenticated organization discovery and tenant provisioning
+  - name: projects
+    description: Projetos da conta e seus ambientes (sandbox e prod)
+  - name: runtime
+    description: Leituras do próprio agente autenticado por chave (escopo conta, projeto e ambiente)
   - name: telemetry
     description: Continuous telemetry activity, projections and supervision
   - name: executive-reporting
@@ -1546,6 +1550,242 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProfessionalPlanDecision"
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: Lista os projetos da conta ativa
+      responses:
+        "200":
+          description: Projetos da conta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Cria um projeto (já nasce com os ambientes sandbox e prod)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Projeto criado com os dois ambientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCreated"
+        "409":
+          description: Já existe projeto com este slug na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /projects/{projectId}/environments:
+    get:
+      operationId: listProjectEnvironments
+      tags: [projects]
+      summary: Lista os ambientes de um projeto da conta
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ambientes do projeto
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Environment"
+        "404":
+          description: Projeto não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents:
+    get:
+      operationId: listRuntimeAgents
+      tags: [runtime]
+      summary: Agentes do projeto da chave (autenticação por chave de agente)
+      parameters:
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: environment
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/EnvironmentKind"
+      responses:
+        "200":
+          description: Agentes do projeto da chave
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuntimeAgent"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents/{agentId}:
+    get:
+      operationId: readRuntimeAgent
+      description: >-
+        Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora
+        dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo
+        nome quando a operação tem caminho e query.
+      tags: [runtime]
+      summary: O próprio agente da chave
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeAgent"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents/{agentId}/events:
+    get:
+      operationId: listRuntimeAgentEvents
+      description: >-
+        Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora
+        dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo
+        nome quando a operação tem caminho e query.
+      tags: [runtime]
+      summary: Eventos do outbox do agente no ambiente da chave
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Eventos do agente no ambiente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuntimeOutboxEvent"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents/{agentId}/api-keys:
+    get:
+      operationId: listRuntimeAgentApiKeys
+      description: >-
+        Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora
+        dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo
+        nome quando a operação tem caminho e query.
+      tags: [runtime]
+      summary: Chaves (mascaradas) do agente no ambiente da chave
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chaves do agente no ambiente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentApiKey"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /agents/{agentId}/api-keys:
     get:
@@ -3395,6 +3635,10 @@ components:
           type: string
           minLength: 1
           description: Connector selected as the authenticated source of discovery and telemetry for this agent.
+        projectId:
+          type: string
+          minLength: 1
+          description: Projeto do agente. Sem valor, o agente entra no projeto Padrão da conta.
         areaId:
           type: string
           nullable: true
@@ -5020,21 +5264,120 @@ components:
           type: string
           format: date-time
 
+    EnvironmentKind:
+      type: string
+      enum: [sandbox, prod]
+      description: Ambiente de um projeto. Chave sandbox nunca alcança prod.
+
+    Project:
+      type: object
+      required: [id, name, slug, isDefault, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        isDefault:
+          type: boolean
+          description: Projeto "Padrão" criado para toda conta.
+        createdAt:
+          type: string
+          format: date-time
+
+    ProjectInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 60
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          description: Sem valor, é derivado do nome.
+
+    ProjectCreated:
+      type: object
+      required: [project, environments]
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+        environments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Environment"
+
+    Environment:
+      type: object
+      required: [id, projectId, kind, createdAt]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        kind:
+          $ref: "#/components/schemas/EnvironmentKind"
+        createdAt:
+          type: string
+          format: date-time
+
+    RuntimeAgent:
+      type: object
+      required: [id, name, slug, projectId]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        projectId:
+          type: string
+
+    RuntimeOutboxEvent:
+      type: object
+      required: [id, eventType, status, projectId, environment, createdAt]
+      properties:
+        id:
+          type: string
+        eventType:
+          type: string
+        status:
+          type: string
+        projectId:
+          type: string
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
+        createdAt:
+          type: string
+          format: date-time
+
     AgentApiKeyInput:
       type: object
       properties:
         label:
           type: string
           description: Nome operacional da credencial (ex.- "produção", "staging").
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
 
     AgentApiKey:
       type: object
-      required: [id, agentId, prefix, masked, createdAt, revoked]
+      required: [id, agentId, projectId, environment, prefix, masked, createdAt, revoked]
       properties:
         id:
           type: string
         agentId:
           type: string
+        projectId:
+          type: string
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
         label:
           type: string
           nullable: true
@@ -5073,6 +5416,8 @@ components:
     AgentEventInput:
       type: object
       properties:
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
         idempotencyKey:
           type: string
           minLength: 1
@@ -5106,6 +5451,8 @@ components:
     AgentHeartbeatInput:
       type: object
       properties:
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
         runtime:
           type: string
         version:

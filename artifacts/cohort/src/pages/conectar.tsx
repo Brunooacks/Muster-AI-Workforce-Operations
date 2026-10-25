@@ -6,6 +6,7 @@ import {
   useCreateAgentApiKey,
   useGetAgentTelemetry,
   getGetAgentTelemetryQueryKey,
+  type EnvironmentKind,
 } from "@workspace/api-client-react";
 import { OperationalPageFrame } from "@/components/layout";
 import { PageHeading, Eyebrow } from "@/components/cohort";
@@ -54,6 +55,10 @@ interface Dict {
   alreadyLive: string;
   alreadyLiveHelp: (n: number) => string;
   issueAnother: string;
+  envLabel: string;
+  envProd: string;
+  envSandbox: string;
+  envHelp: string;
   cloudTitle: string;
   cloudHelp: string;
   localTitle: string;
@@ -86,6 +91,10 @@ const PT: Dict = {
   alreadyLive: "Este agente já reporta telemetria",
   alreadyLiveHelp: (n) => `${n} ${n === 1 ? "execução registrada" : "execuções registradas"}. Emita uma nova credencial apenas se precisar substituir a atual.`,
   issueAnother: "Emitir outra credencial",
+  envLabel: "Ambiente da credencial",
+  envProd: "Produção",
+  envSandbox: "Sandbox",
+  envHelp: "Uma credencial de sandbox nunca alcança dados de produção.",
   cloudTitle: "O agente roda em nuvem e você não pode mexer no código?",
   cloudHelp:
     "Azure, AWS e Google gravam o rastro de execução por conta própria. A ponte de coleta lê esse rastro e traz para cá, sem tocar no agente.",
@@ -119,6 +128,10 @@ const EN: Dict = {
   alreadyLive: "This agent already reports telemetry",
   alreadyLiveHelp: (n) => `${n} ${n === 1 ? "execution recorded" : "executions recorded"}. Issue a new credential only to replace the current one.`,
   issueAnother: "Issue another credential",
+  envLabel: "Credential environment",
+  envProd: "Production",
+  envSandbox: "Sandbox",
+  envHelp: "A sandbox credential never reaches production data.",
   cloudTitle: "Agent runs in the cloud and you can't touch the code?",
   cloudHelp:
     "Azure, AWS and Google already record the execution trail. The collection bridge reads it and brings it here, without touching the agent.",
@@ -152,6 +165,10 @@ const ES: Dict = {
   alreadyLive: "Este agente ya reporta telemetría",
   alreadyLiveHelp: (n) => `${n} ${n === 1 ? "ejecución registrada" : "ejecuciones registradas"}. Emite una nueva credencial solo si necesitas reemplazar la actual.`,
   issueAnother: "Emitir otra credencial",
+  envLabel: "Ambiente de la credencial",
+  envProd: "Producción",
+  envSandbox: "Sandbox",
+  envHelp: "Una credencial de sandbox nunca alcanza datos de producción.",
   cloudTitle: "¿El agente corre en la nube y no puedes tocar el código?",
   cloudHelp:
     "Azure, AWS y Google ya registran el rastro de ejecución. El puente de recolección lo lee y lo trae aquí, sin tocar el agente.",
@@ -290,6 +307,8 @@ export default function ConectarPage({ embedded = false }: { embedded?: boolean 
   const { data: detalhe, isLoading } = useGetAgent(agentId);
   const criarChave = useCreateAgentApiKey();
   const [chave, setChave] = useState<string | null>(null);
+  // Sem escolha, produção: o mesmo comportamento de antes dos ambientes (E1).
+  const [ambiente, setAmbiente] = useState<EnvironmentKind>("prod");
 
   // Enquanto a tela espera o primeiro evento, ela precisa perguntar de novo.
   // Depois que ele chega, parar de perguntar: manter o intervalo seria gastar
@@ -346,21 +365,46 @@ export default function ConectarPage({ embedded = false }: { embedded?: boolean 
               <p className="text-xs text-muted-foreground">{t.keyOnce}</p>
             </div>
           ) : (
-            <Button
-              onClick={() =>
-                criarChave.mutate(
-                  { agentId, data: { label: "integração" } },
-                  { onSuccess: (r) => setChave(r.plaintext) },
-                )
-              }
-              disabled={criarChave.isPending}
-            >
-              {criarChave.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t.issuing}</>
-              ) : (
-                <><KeyRound className="mr-2 h-4 w-4" />{chave === null && temTelemetria ? t.issueAnother : t.issue}</>
-              )}
-            </Button>
+            <div className="space-y-3">
+              <div role="radiogroup" aria-label={t.envLabel} className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">{t.envLabel}</p>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    ["prod", t.envProd],
+                    ["sandbox", t.envSandbox],
+                  ] as const).map(([valor, rotulo]) => (
+                    <Button
+                      key={valor}
+                      type="button"
+                      role="radio"
+                      aria-checked={ambiente === valor}
+                      variant={ambiente === valor ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAmbiente(valor)}
+                      data-testid={`ambiente-${valor}`}
+                    >
+                      {rotulo}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{t.envHelp}</p>
+              </div>
+              <Button
+                onClick={() =>
+                  criarChave.mutate(
+                    { agentId, data: { label: "integração", environment: ambiente } },
+                    { onSuccess: (r) => setChave(r.plaintext) },
+                  )
+                }
+                disabled={criarChave.isPending}
+              >
+                {criarChave.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t.issuing}</>
+                ) : (
+                  <><KeyRound className="mr-2 h-4 w-4" />{chave === null && temTelemetria ? t.issueAnother : t.issue}</>
+                )}
+              </Button>
+            </div>
           )}
         </Card>
 

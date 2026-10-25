@@ -62,6 +62,7 @@ import type {
   DiscoveryImportInput,
   DiscoveryResult,
   DiscoveryRun,
+  Environment,
   Error,
   Evaluation,
   EvaluationMetricUpdate,
@@ -91,6 +92,7 @@ import type {
   ListContinuousTelemetryActivityParams,
   ListExecutiveReportsParams,
   ListFleetAlertsParams,
+  ListRuntimeAgentsParams,
   MetricInstrumentation,
   MetricPoint,
   MetricStarterKit,
@@ -101,11 +103,16 @@ import type {
   ProfessionalPlanActionUpdate,
   ProfessionalPlanDecision,
   ProfessionalPlanDecisionInput,
+  Project,
+  ProjectCreated,
+  ProjectInput,
   RealtimeGovernanceResponse,
   ReevaluateOutcome,
   RegisterConnectorInput,
   RegisterConnectorResult,
   RejectDraftInput,
+  RuntimeAgent,
+  RuntimeOutboxEvent,
   StartDiscoveryRunInput,
   StreamContinuousTelemetryActivityParams,
   TelemetrySummary,
@@ -5170,6 +5177,549 @@ export const useUpdateProfessionalPlanAction = <TError = ErrorType<unknown>,
       return useMutation(getUpdateProfessionalPlanActionMutationOptions(options));
     }
 
+export const getListProjectsUrl = () => {
+
+
+
+
+  return `/api/projects`
+}
+
+/**
+ * @summary Lista os projetos da conta ativa
+ */
+export const listProjects = async ( options?: RequestInit): Promise<Project[]> => {
+
+  return customFetch<Project[]>(getListProjectsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectsQueryKey = () => {
+    return [
+    `/api/projects`
+    ] as const;
+    }
+
+
+export const getListProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listProjects>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjects>>> = ({ signal }) => listProjects({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjects>>>
+export type ListProjectsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lista os projetos da conta ativa
+ */
+
+export function useListProjects<TData = Awaited<ReturnType<typeof listProjects>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateProjectUrl = () => {
+
+
+
+
+  return `/api/projects`
+}
+
+/**
+ * @summary Cria um projeto (já nasce com os ambientes sandbox e prod)
+ */
+export const createProject = async (projectInput: ProjectInput, options?: RequestInit): Promise<ProjectCreated> => {
+
+  return customFetch<ProjectCreated>(getCreateProjectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      projectInput,)
+  }
+);}
+
+
+
+
+export const getCreateProjectMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<ProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<ProjectInput>}, TContext> => {
+
+const mutationKey = ['createProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProject>>, {data: BodyType<ProjectInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProject(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof createProject>>>
+    export type CreateProjectMutationBody = BodyType<ProjectInput>
+    export type CreateProjectMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cria um projeto (já nasce com os ambientes sandbox e prod)
+ */
+export const useCreateProject = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<ProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProject>>,
+        TError,
+        {data: BodyType<ProjectInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProjectMutationOptions(options));
+    }
+
+export const getListProjectEnvironmentsUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/environments`
+}
+
+/**
+ * @summary Lista os ambientes de um projeto da conta
+ */
+export const listProjectEnvironments = async (projectId: string, options?: RequestInit): Promise<Environment[]> => {
+
+  return customFetch<Environment[]>(getListProjectEnvironmentsUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectEnvironmentsQueryKey = (projectId: string,) => {
+    return [
+    `/api/projects/${projectId}/environments`
+    ] as const;
+    }
+
+
+export const getListProjectEnvironmentsQueryOptions = <TData = Awaited<ReturnType<typeof listProjectEnvironments>>, TError = ErrorType<Error>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectEnvironments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectEnvironmentsQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectEnvironments>>> = ({ signal }) => listProjectEnvironments(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(projectId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectEnvironments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectEnvironmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectEnvironments>>>
+export type ListProjectEnvironmentsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Lista os ambientes de um projeto da conta
+ */
+
+export function useListProjectEnvironments<TData = Awaited<ReturnType<typeof listProjectEnvironments>>, TError = ErrorType<Error>>(
+ projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectEnvironments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectEnvironmentsQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRuntimeAgentsUrl = (params?: ListRuntimeAgentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/runtime/agents?${stringifiedParams}` : `/api/runtime/agents`
+}
+
+/**
+ * @summary Agentes do projeto da chave (autenticação por chave de agente)
+ */
+export const listRuntimeAgents = async (params?: ListRuntimeAgentsParams, options?: RequestInit): Promise<RuntimeAgent[]> => {
+
+  return customFetch<RuntimeAgent[]>(getListRuntimeAgentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRuntimeAgentsQueryKey = (params?: ListRuntimeAgentsParams,) => {
+    return [
+    `/api/runtime/agents`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListRuntimeAgentsQueryOptions = <TData = Awaited<ReturnType<typeof listRuntimeAgents>>, TError = ErrorType<Error>>(params?: ListRuntimeAgentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRuntimeAgentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRuntimeAgents>>> = ({ signal }) => listRuntimeAgents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRuntimeAgentsQueryResult = NonNullable<Awaited<ReturnType<typeof listRuntimeAgents>>>
+export type ListRuntimeAgentsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Agentes do projeto da chave (autenticação por chave de agente)
+ */
+
+export function useListRuntimeAgents<TData = Awaited<ReturnType<typeof listRuntimeAgents>>, TError = ErrorType<Error>>(
+ params?: ListRuntimeAgentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRuntimeAgentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReadRuntimeAgentUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/runtime/agents/${agentId}`
+}
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary O próprio agente da chave
+ */
+export const readRuntimeAgent = async (agentId: string, options?: RequestInit): Promise<RuntimeAgent> => {
+
+  return customFetch<RuntimeAgent>(getReadRuntimeAgentUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadRuntimeAgentQueryKey = (agentId: string,) => {
+    return [
+    `/api/runtime/agents/${agentId}`
+    ] as const;
+    }
+
+
+export const getReadRuntimeAgentQueryOptions = <TData = Awaited<ReturnType<typeof readRuntimeAgent>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readRuntimeAgent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadRuntimeAgentQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readRuntimeAgent>>> = ({ signal }) => readRuntimeAgent(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readRuntimeAgent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReadRuntimeAgentQueryResult = NonNullable<Awaited<ReturnType<typeof readRuntimeAgent>>>
+export type ReadRuntimeAgentQueryError = ErrorType<Error>
+
+
+/**
+ * @summary O próprio agente da chave
+ */
+
+export function useReadRuntimeAgent<TData = Awaited<ReturnType<typeof readRuntimeAgent>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readRuntimeAgent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReadRuntimeAgentQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRuntimeAgentEventsUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/runtime/agents/${agentId}/events`
+}
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary Eventos do outbox do agente no ambiente da chave
+ */
+export const listRuntimeAgentEvents = async (agentId: string, options?: RequestInit): Promise<RuntimeOutboxEvent[]> => {
+
+  return customFetch<RuntimeOutboxEvent[]>(getListRuntimeAgentEventsUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRuntimeAgentEventsQueryKey = (agentId: string,) => {
+    return [
+    `/api/runtime/agents/${agentId}/events`
+    ] as const;
+    }
+
+
+export const getListRuntimeAgentEventsQueryOptions = <TData = Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRuntimeAgentEventsQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRuntimeAgentEvents>>> = ({ signal }) => listRuntimeAgentEvents(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRuntimeAgentEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listRuntimeAgentEvents>>>
+export type ListRuntimeAgentEventsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Eventos do outbox do agente no ambiente da chave
+ */
+
+export function useListRuntimeAgentEvents<TData = Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRuntimeAgentEventsQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRuntimeAgentApiKeysUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/runtime/agents/${agentId}/api-keys`
+}
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary Chaves (mascaradas) do agente no ambiente da chave
+ */
+export const listRuntimeAgentApiKeys = async (agentId: string, options?: RequestInit): Promise<AgentApiKey[]> => {
+
+  return customFetch<AgentApiKey[]>(getListRuntimeAgentApiKeysUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRuntimeAgentApiKeysQueryKey = (agentId: string,) => {
+    return [
+    `/api/runtime/agents/${agentId}/api-keys`
+    ] as const;
+    }
+
+
+export const getListRuntimeAgentApiKeysQueryOptions = <TData = Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRuntimeAgentApiKeysQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>> = ({ signal }) => listRuntimeAgentApiKeys(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRuntimeAgentApiKeysQueryResult = NonNullable<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>>
+export type ListRuntimeAgentApiKeysQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Chaves (mascaradas) do agente no ambiente da chave
+ */
+
+export function useListRuntimeAgentApiKeys<TData = Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRuntimeAgentApiKeysQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListAgentApiKeysUrl = (agentId: string,) => {
 
 
@@ -6340,3 +6890,10 @@ export function useGetRealtimeGovernance<TData = Awaited<ReturnType<typeof getRe
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+
+
+
+
+
+

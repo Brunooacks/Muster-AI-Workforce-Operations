@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:muster:task-envelope:v1",
+  "title": "TaskEnvelope",
+  "description": "Envelope de tarefa da fila (E1 · T1.8). Só contrato nesta etapa; quem consome é a E3. Carrega o tenant completo (conta, projeto, ambiente) para que o consumidor nunca precise adivinhar o escopo. Regra que o JSON Schema não expressa e o Zod cobra: attempt <= max_attempts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "org_id",
+    "project_id",
+    "environment",
+    "agent_id",
+    "stage",
+    "attempt",
+    "idempotency_key",
+    "payload"
+  ],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1 },
+    "org_id": { "type": "string", "minLength": 1, "description": "Conta (organizations.id)." },
+    "project_id": { "type": "string", "minLength": 1 },
+    "environment": { "type": "string", "enum": ["sandbox", "prod"] },
+    "agent_id": { "type": "string", "minLength": 1 },
+    "stage": { "type": "string", "minLength": 1, "description": "Etapa do pipeline; o vocabulário fecha na E3." },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "max_attempts": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 8,
+      "description": "8 tentativas com espera crescente até ~30 min, depois DLQ (D-E3-1)."
+    },
+    "idempotency_key": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "payload": { "type": "object" }
+  }
+}

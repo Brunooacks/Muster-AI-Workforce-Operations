@@ -7,8 +7,10 @@
  */
 import type { AgentEventInputKind } from './agentEventInputKind';
 import type { AgentEventInputMetadata } from './agentEventInputMetadata';
+import type { EnvironmentKind } from './environmentKind';
 
 export interface AgentEventInput {
+  environment?: EnvironmentKind;
   /**
      * Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.
      * @minLength 1

@@ -66,6 +66,7 @@ import {
   AlreadyAdmittedError,
   InvalidAdmissionCatalogMetricError,
   InvalidAdmissionConnectorError,
+  InvalidAdmissionProjectError,
   MissingConnectorExternalIdError,
 } from "../lib/admission";
 
@@ -156,6 +157,7 @@ router.post("/agents", requireAuth, requireOrg, async (req, res) => {
       orgId: req.orgId!,
       externalId: body.externalId,
       connectorId: body.connectorId,
+      projectId: body.projectId,
       areaId: body.areaId ?? null,
       name: body.name,
       role: body.role,
@@ -183,6 +185,10 @@ router.post("/agents", requireAuth, requireOrg, async (req, res) => {
     }
     if (err instanceof InvalidAdmissionConnectorError) {
       res.status(400).json({ error: "O conector selecionado não pertence à organização ativa." });
+      return;
+    }
+    if (err instanceof InvalidAdmissionProjectError) {
+      res.status(400).json({ error: "O projeto selecionado não pertence à organização ativa." });
       return;
     }
     if (err instanceof MissingConnectorExternalIdError) {

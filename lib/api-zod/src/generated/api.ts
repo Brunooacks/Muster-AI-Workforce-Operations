@@ -850,9 +850,11 @@ export const ListAgentsResponse = zod.array(ListAgentsResponseItem)
 
 
 
+
 export const CreateAgentBody = zod.object({
   "externalId": zod.string().min(1).optional().describe('Stable identifier emitted by the external runtime in telemetry envelopes.'),
   "connectorId": zod.string().min(1).optional().describe('Connector selected as the authenticated source of discovery and telemetry for this agent.'),
+  "projectId": zod.string().min(1).optional().describe('Projeto do agente. Sem valor, o agente entra no projeto Padrão da conta.'),
   "areaId": zod.string().nullish().describe('Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como \"sem área\" e a atribuição fica pendente.'),
   "name": zod.string().min(1),
   "role": zod.string().min(1),
@@ -2504,6 +2506,128 @@ export const UpdateProfessionalPlanActionResponse = zod.object({
 
 
 /**
+ * @summary Lista os projetos da conta ativa
+ */
+export const ListProjectsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "isDefault": zod.boolean().describe('Projeto \"Padrão\" criado para toda conta.'),
+  "createdAt": zod.coerce.date()
+})
+export const ListProjectsResponse = zod.array(ListProjectsResponseItem)
+
+
+/**
+ * @summary Cria um projeto (já nasce com os ambientes sandbox e prod)
+ */
+export const createProjectBodyNameMax = 120;
+
+export const createProjectBodySlugMax = 60;
+
+
+export const createProjectBodySlugRegExp = new RegExp('^[a-z0-9]+(?:-[a-z0-9]+)\*$');
+
+
+export const CreateProjectBody = zod.object({
+  "name": zod.string().min(1).max(createProjectBodyNameMax),
+  "slug": zod.string().min(1).max(createProjectBodySlugMax).regex(createProjectBodySlugRegExp).optional().describe('Sem valor, é derivado do nome.')
+})
+
+
+/**
+ * @summary Lista os ambientes de um projeto da conta
+ */
+export const ListProjectEnvironmentsParams = zod.object({
+  "projectId": zod.coerce.string()
+})
+
+export const ListProjectEnvironmentsResponseItem = zod.object({
+  "id": zod.string(),
+  "projectId": zod.string(),
+  "kind": zod.enum(['sandbox', 'prod']).describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
+  "createdAt": zod.coerce.date()
+})
+export const ListProjectEnvironmentsResponse = zod.array(ListProjectEnvironmentsResponseItem)
+
+
+/**
+ * @summary Agentes do projeto da chave (autenticação por chave de agente)
+ */
+export const ListRuntimeAgentsQueryParams = zod.object({
+  "project": zod.coerce.string().optional(),
+  "environment": zod.enum(['sandbox', 'prod']).optional()
+})
+
+export const ListRuntimeAgentsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "projectId": zod.string()
+})
+export const ListRuntimeAgentsResponse = zod.array(ListRuntimeAgentsResponseItem)
+
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary O próprio agente da chave
+ */
+export const ReadRuntimeAgentParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ReadRuntimeAgentResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "projectId": zod.string()
+})
+
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary Eventos do outbox do agente no ambiente da chave
+ */
+export const ListRuntimeAgentEventsParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ListRuntimeAgentEventsResponseItem = zod.object({
+  "id": zod.string(),
+  "eventType": zod.string(),
+  "status": zod.string(),
+  "projectId": zod.string(),
+  "environment": zod.enum(['sandbox', 'prod']).describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
+  "createdAt": zod.coerce.date()
+})
+export const ListRuntimeAgentEventsResponse = zod.array(ListRuntimeAgentEventsResponseItem)
+
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary Chaves (mascaradas) do agente no ambiente da chave
+ */
+export const ListRuntimeAgentApiKeysParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const ListRuntimeAgentApiKeysResponseItem = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "projectId": zod.string(),
+  "environment": zod.enum(['sandbox', 'prod']).describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
+  "label": zod.string().nullish(),
+  "prefix": zod.string().describe('Handle público da credencial — não é segredo.'),
+  "masked": zod.string().describe('Forma exibível, com o segredo oculto.'),
+  "createdAt": zod.coerce.date(),
+  "lastUsedAt": zod.coerce.date().nullish(),
+  "revokedAt": zod.coerce.date().nullish(),
+  "revoked": zod.boolean()
+})
+export const ListRuntimeAgentApiKeysResponse = zod.array(ListRuntimeAgentApiKeysResponseItem)
+
+
+/**
  * @summary Lista as credenciais do agente (nunca devolve o segredo)
  */
 export const ListAgentApiKeysParams = zod.object({
@@ -2513,6 +2637,8 @@ export const ListAgentApiKeysParams = zod.object({
 export const ListAgentApiKeysResponseItem = zod.object({
   "id": zod.string(),
   "agentId": zod.string(),
+  "projectId": zod.string(),
+  "environment": zod.enum(['sandbox', 'prod']).describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
   "label": zod.string().nullish(),
   "prefix": zod.string().describe('Handle público da credencial — não é segredo.'),
   "masked": zod.string().describe('Forma exibível, com o segredo oculto.'),
@@ -2532,7 +2658,8 @@ export const CreateAgentApiKeyParams = zod.object({
 })
 
 export const CreateAgentApiKeyBody = zod.object({
-  "label": zod.string().optional().describe('Nome operacional da credencial (ex.- \"produção\", \"staging\").')
+  "label": zod.string().optional().describe('Nome operacional da credencial (ex.- \"produção\", \"staging\").'),
+  "environment": zod.enum(['sandbox', 'prod']).optional().describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.')
 })
 
 
@@ -2547,6 +2674,8 @@ export const RevokeAgentApiKeyParams = zod.object({
 export const RevokeAgentApiKeyResponse = zod.object({
   "id": zod.string(),
   "agentId": zod.string(),
+  "projectId": zod.string(),
+  "environment": zod.enum(['sandbox', 'prod']).describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
   "label": zod.string().nullish(),
   "prefix": zod.string().describe('Handle público da credencial — não é segredo.'),
   "masked": zod.string().describe('Forma exibível, com o segredo oculto.'),
@@ -2569,6 +2698,7 @@ export const ingestAgentEventBodyIdempotencyKeyMax = 200;
 
 
 export const IngestAgentEventBody = zod.object({
+  "environment": zod.enum(['sandbox', 'prod']).optional().describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
   "idempotencyKey": zod.string().min(1).max(ingestAgentEventBodyIdempotencyKeyMax).optional().describe('Chave estável por evento. Reenvie a mesma chave após uma falha de rede para evitar materializar o evento duas vezes.'),
   "kind": zod.enum(['execution', 'error', 'escalation', 'feedback', 'heartbeat']).optional(),
   "ts": zod.coerce.date().optional(),
@@ -2646,6 +2776,7 @@ export const ReportAgentHeartbeatParams = zod.object({
 })
 
 export const ReportAgentHeartbeatBody = zod.object({
+  "environment": zod.enum(['sandbox', 'prod']).optional().describe('Ambiente de um projeto. Chave sandbox nunca alcança prod.'),
   "runtime": zod.string().optional(),
   "version": zod.string().optional(),
   "intervalSeconds": zod.number().optional(),
