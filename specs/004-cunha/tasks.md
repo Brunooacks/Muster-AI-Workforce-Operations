@@ -35,8 +35,8 @@ Formato Spec Kit. `[x]` = feito e commitado nesta branch (um commit por item).
 
 ## Item 14 · Landing sem números fixos (MUS-179)
 
-- [ ] **C14.1** Números da landing em `landing-examples.ts` com selo "Exemplo"
-- [ ] **C14.2** Termos da R6 fora dos textos públicos + `docs/fontes.md`
+- [x] **C14.1** Números da landing em `landing-examples.ts` com selo "Exemplo" (brief, fechamento, ticker e visão geral)
+- [x] **C14.2** Termos da R6 fora dos textos públicos (varredura) + `docs/fontes.md`
 
 ## Fechamento (fora desta rodada)
 
