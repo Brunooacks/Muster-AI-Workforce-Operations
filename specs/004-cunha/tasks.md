@@ -30,8 +30,8 @@ Formato Spec Kit. `[x]` = feito e commitado nesta branch (um commit por item).
 
 ## Item 12 · Página do agente nas três camadas (MUS-178)
 
-- [ ] **C12.1** `GET /agents/:id/outcome?period=`
-- [ ] **C12.2** agent-detail com Custo / Qualidade / Prova + sinais
+- [x] **C12.1** `GET /agents/:id/outcome?period=` (+ `POST …/outcome/close` para fechar o mês)
+- [x] **C12.2** agent-detail e `ProfessionalScreen` (rota real `/agentes/:id`) com Custo / Qualidade / Prova + sinais
 
 ## Item 14 · Landing sem números fixos (MUS-179)
 

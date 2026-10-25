@@ -3369,3 +3369,75 @@ export const CreateOffInvoiceCostBody = zod.object({
 })
 
 
+/**
+ * @summary Camadas 1–3, sinais e contrato vigente do agente no período (cunha · C12.1)
+ */
+export const GetAgentOutcomeParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const GetAgentOutcomeQueryParams = zod.object({
+  "period": zod.coerce.string().optional()
+})
+
+export const GetAgentOutcomeResponse = zod.object({
+  "agentId": zod.string(),
+  "period": zod.string(),
+  "source": zod.enum(['live', 'snapshot']),
+  "calcVersion": zod.string(),
+  "coverage": zod.object({
+  "status": zod.enum(['ok', 'unavailable']),
+  "value": zod.unknown().optional(),
+  "reason": zod.string().optional()
+}).describe('Número com status: ok traz value; unavailable traz reason (nunca um valor neutro).'),
+  "layer1": zod.record(zod.string(), zod.unknown()).describe('cost, decomposition {retry, context, model}, referenceModel — cada um OutcomeNumber'),
+  "layer2": zod.record(zod.string(), zod.unknown()).describe('tasks, acceptanceRate, interventionRate, autoAcceptShare, expectedMatchRate, contract'),
+  "layer3": zod.record(zod.string(), zod.unknown()).describe('provenance, trail, ownerCoverage, credentialCoverage, snapshot'),
+  "signals": zod.record(zod.string(), zod.unknown()).describe('adoption, illusoryWin, tokenAnomaly'),
+  "contract": zod.union([zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "version": zod.number(),
+  "metricKey": zod.string(),
+  "unit": zod.string(),
+  "direction": zod.enum(['up', 'down']),
+  "baseline": zod.number(),
+  "target": zod.number(),
+  "limit": zod.number().nullable(),
+  "deadline": zod.string(),
+  "ownerMemberId": zod.string(),
+  "status": zod.enum(['draft', 'active', 'superseded']),
+  "createdBy": zod.string(),
+  "createdAt": zod.string(),
+  "supersededAt": zod.string().nullable(),
+  "referenceHumanMinutes": zod.number().nullable(),
+  "requireHumanAccept": zod.boolean(),
+  "referenceModel": zod.string().nullable()
+}),zod.null()]),
+  "verdict": zod.object({
+  "status": zod.enum(['coming_soon'])
+})
+})
+
+
+/**
+ * @summary Fecha um mês encerrado em snapshot imutável (idempotente; só admin)
+ */
+export const CloseAgentOutcomePeriodParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const CloseAgentOutcomePeriodQueryParams = zod.object({
+  "period": zod.coerce.string()
+})
+
+export const CloseAgentOutcomePeriodResponse = zod.object({
+  "id": zod.string(),
+  "agentId": zod.string(),
+  "period": zod.string(),
+  "calcVersion": zod.string(),
+  "inputsHash": zod.string(),
+  "created": zod.boolean()
+})
+
+

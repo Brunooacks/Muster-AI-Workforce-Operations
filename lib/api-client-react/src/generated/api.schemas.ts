@@ -2564,6 +2564,89 @@ export interface OffInvoiceCost {
   createdAt: string;
 }
 
+export type OutcomeNumberStatus = typeof OutcomeNumberStatus[keyof typeof OutcomeNumberStatus];
+
+
+export const OutcomeNumberStatus = {
+  ok: 'ok',
+  unavailable: 'unavailable',
+} as const;
+
+/**
+ * Número com status: ok traz value; unavailable traz reason (nunca um valor neutro).
+ */
+export interface OutcomeNumber {
+  status: OutcomeNumberStatus;
+  value?: unknown;
+  reason?: string;
+}
+
+export type AgentOutcomeSource = typeof AgentOutcomeSource[keyof typeof AgentOutcomeSource];
+
+
+export const AgentOutcomeSource = {
+  live: 'live',
+  snapshot: 'snapshot',
+} as const;
+
+/**
+ * cost, decomposition {retry, context, model}, referenceModel — cada um OutcomeNumber
+ */
+export type AgentOutcomeLayer1 = { [key: string]: unknown };
+
+/**
+ * tasks, acceptanceRate, interventionRate, autoAcceptShare, expectedMatchRate, contract
+ */
+export type AgentOutcomeLayer2 = { [key: string]: unknown };
+
+/**
+ * provenance, trail, ownerCoverage, credentialCoverage, snapshot
+ */
+export type AgentOutcomeLayer3 = { [key: string]: unknown };
+
+/**
+ * adoption, illusoryWin, tokenAnomaly
+ */
+export type AgentOutcomeSignals = { [key: string]: unknown };
+
+export type AgentOutcomeVerdictStatus = typeof AgentOutcomeVerdictStatus[keyof typeof AgentOutcomeVerdictStatus];
+
+
+export const AgentOutcomeVerdictStatus = {
+  coming_soon: 'coming_soon',
+} as const;
+
+export type AgentOutcomeVerdict = {
+  status: AgentOutcomeVerdictStatus;
+};
+
+export interface AgentOutcome {
+  agentId: string;
+  period: string;
+  source: AgentOutcomeSource;
+  calcVersion: string;
+  coverage: OutcomeNumber;
+  /** cost, decomposition {retry, context, model}, referenceModel — cada um OutcomeNumber */
+  layer1: AgentOutcomeLayer1;
+  /** tasks, acceptanceRate, interventionRate, autoAcceptShare, expectedMatchRate, contract */
+  layer2: AgentOutcomeLayer2;
+  /** provenance, trail, ownerCoverage, credentialCoverage, snapshot */
+  layer3: AgentOutcomeLayer3;
+  /** adoption, illusoryWin, tokenAnomaly */
+  signals: AgentOutcomeSignals;
+  contract: AgentContract | null;
+  verdict: AgentOutcomeVerdict;
+}
+
+export interface OutcomeSnapshotRef {
+  id: string;
+  agentId: string;
+  period: string;
+  calcVersion: string;
+  inputsHash: string;
+  created: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -3191,5 +3274,16 @@ export type IngestAgentEvent202 = {
   accepted: boolean;
   /** True when this idempotency key was already accepted for this agent. */
   duplicate?: boolean;
+};
+
+export type GetAgentOutcomeParams = {
+/**
+ * YYYY-MM (padrão = mês corrente)
+ */
+period?: string;
+};
+
+export type CloseAgentOutcomePeriodParams = {
+period: string;
 };
 

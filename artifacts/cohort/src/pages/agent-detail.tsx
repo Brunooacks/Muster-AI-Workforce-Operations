@@ -86,6 +86,7 @@ import {
 } from "@/components/mission-control/operational-status";
 import { relativeAge } from "@/components/mission-control/presentation";
 import { AgentContractPanel } from "@/components/agent-contract";
+import { AgentOutcomePanel } from "@/components/agent-outcome";
 
 const AUTONOMY_LABEL: Record<Lang, Record<string, string>> = {
   pt: {
@@ -872,6 +873,9 @@ export default function AgentDetailPage() {
             />
           </div>
         </section>
+
+        {/* ===== Cunha · três camadas (custo, qualidade, prova) ===== */}
+        <AgentOutcomePanel agentId={agent.id} />
 
         {/* ===== 01 · Carteira de Trabalho ===== */}
         <section>

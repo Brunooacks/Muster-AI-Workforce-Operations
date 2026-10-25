@@ -42,6 +42,7 @@ import type {
   AgentHeartbeatAccepted,
   AgentHeartbeatInput,
   AgentInput,
+  AgentOutcome,
   AgentSupervision,
   AgentUpdate,
   Alert,
@@ -56,6 +57,7 @@ import type {
   CatalogMetricInput,
   CatalogMetricUpdate,
   CatalogVertical,
+  CloseAgentOutcomePeriodParams,
   Connector,
   ConnectorCapability,
   ConnectorInput,
@@ -82,6 +84,7 @@ import type {
   FleetKpis,
   FleetSummary,
   GenerateExecutiveReportRequest,
+  GetAgentOutcomeParams,
   GitHubStatus,
   HealthStatus,
   IdentityUpdate,
@@ -103,6 +106,7 @@ import type {
   OffInvoiceCostInput,
   OrganizationError,
   OrganizationList,
+  OutcomeSnapshotRef,
   PreAssessInput,
   PreAssessResult,
   ProfessionalPlanActionUpdate,
@@ -7347,5 +7351,173 @@ export const useCreateOffInvoiceCost = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getCreateOffInvoiceCostMutationOptions(options));
+    }
+
+export const getGetAgentOutcomeUrl = (agentId: string,
+    params?: GetAgentOutcomeParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/agents/${agentId}/outcome?${stringifiedParams}` : `/api/agents/${agentId}/outcome`
+}
+
+/**
+ * @summary Camadas 1–3, sinais e contrato vigente do agente no período (cunha · C12.1)
+ */
+export const getAgentOutcome = async (agentId: string,
+    params?: GetAgentOutcomeParams, options?: RequestInit): Promise<AgentOutcome> => {
+
+  return customFetch<AgentOutcome>(getGetAgentOutcomeUrl(agentId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentOutcomeQueryKey = (agentId: string,
+    params?: GetAgentOutcomeParams,) => {
+    return [
+    `/api/agents/${agentId}/outcome`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAgentOutcomeQueryOptions = <TData = Awaited<ReturnType<typeof getAgentOutcome>>, TError = ErrorType<Error>>(agentId: string,
+    params?: GetAgentOutcomeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentOutcome>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentOutcomeQueryKey(agentId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentOutcome>>> = ({ signal }) => getAgentOutcome(agentId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentOutcome>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentOutcomeQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentOutcome>>>
+export type GetAgentOutcomeQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Camadas 1–3, sinais e contrato vigente do agente no período (cunha · C12.1)
+ */
+
+export function useGetAgentOutcome<TData = Awaited<ReturnType<typeof getAgentOutcome>>, TError = ErrorType<Error>>(
+ agentId: string,
+    params?: GetAgentOutcomeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentOutcome>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentOutcomeQueryOptions(agentId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCloseAgentOutcomePeriodUrl = (agentId: string,
+    params: CloseAgentOutcomePeriodParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/agents/${agentId}/outcome/close?${stringifiedParams}` : `/api/agents/${agentId}/outcome/close`
+}
+
+/**
+ * @summary Fecha um mês encerrado em snapshot imutável (idempotente; só admin)
+ */
+export const closeAgentOutcomePeriod = async (agentId: string,
+    params: CloseAgentOutcomePeriodParams, options?: RequestInit): Promise<OutcomeSnapshotRef> => {
+
+  return customFetch<OutcomeSnapshotRef>(getCloseAgentOutcomePeriodUrl(agentId,params),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCloseAgentOutcomePeriodMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, TError,{agentId: string;params: CloseAgentOutcomePeriodParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, TError,{agentId: string;params: CloseAgentOutcomePeriodParams}, TContext> => {
+
+const mutationKey = ['closeAgentOutcomePeriod'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, {agentId: string;params: CloseAgentOutcomePeriodParams}> = (props) => {
+          const {agentId,params} = props ?? {};
+
+          return  closeAgentOutcomePeriod(agentId,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CloseAgentOutcomePeriodMutationResult = NonNullable<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>>
+
+    export type CloseAgentOutcomePeriodMutationError = ErrorType<Error>
+
+    /**
+ * @summary Fecha um mês encerrado em snapshot imutável (idempotente; só admin)
+ */
+export const useCloseAgentOutcomePeriod = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, TError,{agentId: string;params: CloseAgentOutcomePeriodParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof closeAgentOutcomePeriod>>,
+        TError,
+        {agentId: string;params: CloseAgentOutcomePeriodParams},
+        TContext
+      > => {
+      return useMutation(getCloseAgentOutcomePeriodMutationOptions(options));
     }
 

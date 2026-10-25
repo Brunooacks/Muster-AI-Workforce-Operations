@@ -79,6 +79,8 @@ import AccountSettingsPage from "@/pages/configuracoes";
 import ProfilePage from "@/pages/perfil";
 import ConectarPage from "@/pages/conectar";
 import AdminConsolePage from "@/pages/admin-console";
+import { AgentOutcomePanel } from "@/components/agent-outcome";
+import { AgentContractPanel } from "@/components/agent-contract";
 import { queryClient } from "@/lib/queryClient";
 import {
   adaptApiAgent,
@@ -937,7 +939,7 @@ function formatPlanDate(value: string | null): string {
   }).format(new Date(value));
 }
 
-function ProfessionalScreen({ agent }: { agent: ProfessionalAgent }) {
+function ProfessionalScreen({ agent, operational = false }: { agent: ProfessionalAgent; operational?: boolean }) {
   const [decisionMessage, setDecisionMessage] = useState("");
   const [decisionError, setDecisionError] = useState("");
   const [reevaluationMessage, setReevaluationMessage] = useState("");
@@ -1101,6 +1103,16 @@ function ProfessionalScreen({ agent }: { agent: ProfessionalAgent }) {
         <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Goal className="h-4 w-4" /></span><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">Contrato de propósito</span><h2 className="mt-2 max-w-4xl text-xl font-medium leading-snug text-[var(--wo-text)]">{agent.purpose}</h2></div></div>
         <div className="mt-5 grid gap-3 lg:grid-cols-3"><ContractList title="Deveres" icon={ClipboardCheck} items={agent.duties} /><ContractList title="Responsabilidades" icon={UserCheck} items={agent.responsibilities} /><ContractList title="Limites de atuação" icon={ShieldCheck} items={agent.boundaries} /></div>
       </Panel>
+
+      {operational && (
+        <Panel className="p-4 sm:p-5">
+          <AgentOutcomePanel agentId={agent.id} />
+          <div className="mt-5 border-t border-[var(--wo-line)] pt-4">
+            <h3 className="mb-3 text-sm font-medium text-[var(--wo-text)]">Contrato numérico</h3>
+            <AgentContractPanel agentId={agent.id} legacy={{}} />
+          </div>
+        </Panel>
+      )}
 
       <Panel className="p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-medium text-[var(--wo-text)]">Scorecard gerencial</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">As lentes executivas acompanham o contrato até o nível do agente.</p></div><span className="text-[9px] text-[var(--wo-muted)]">janela móvel de 30 dias</span></div>
@@ -1294,7 +1306,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true }: { 
             {screen === "onboarding" && <OnboardingScreen navigate={navigate} />}
             {screen === "reports" && <ExecutiveReportsScreen />}
             {screen === "portfolio" && <PortfolioScreen agents={visibleAgents} selectedAgent={selectedAgent} onSelect={setSelectedAgentId} openProfessional={openProfessional} isLoading={!labMode && agentsQuery.isLoading} isError={!labMode && agentsQuery.isError} />}
-            {screen === "professional" && (selectedAgent ? <ProfessionalScreen key={selectedAgent.id} agent={selectedAgent} /> : <div className="p-6"><Panel className="p-8"><h1 className="text-xl font-medium text-[var(--wo-text)]">Profissional não encontrado</h1><p className="mt-2 text-sm text-[var(--wo-muted)]">Admitir e conectar o agente é obrigatório antes de abrir seu prontuário operacional.</p><Link href="/admissao" className="mt-5 inline-flex rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir admissão</Link></Panel></div>)}
+            {screen === "professional" && (selectedAgent ? <ProfessionalScreen key={selectedAgent.id} agent={selectedAgent} operational={!labMode} /> : <div className="p-6"><Panel className="p-8"><h1 className="text-xl font-medium text-[var(--wo-text)]">Profissional não encontrado</h1><p className="mt-2 text-sm text-[var(--wo-muted)]">Admitir e conectar o agente é obrigatório antes de abrir seu prontuário operacional.</p><Link href="/admissao" className="mt-5 inline-flex rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir admissão</Link></Panel></div>)}
             {screen === "metrics" && (labMode ? <MetricsScreen /> : <MetricasPage embedded />)}
             {screen === "teams" && (labMode ? <MixedTeamsScreen /> : <OperationalMixedTeamsScreen />)}
             {screen === "journeys" && (labMode ? <JourneysScreen /> : <JourneysPage embedded />)}
