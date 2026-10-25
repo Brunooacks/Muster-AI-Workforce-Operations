@@ -21,7 +21,10 @@ const METRIC_FILES = ["pages/landing.tsx", "components/workforce-overview.tsx"];
 const PUBLIC_FILES = [
   ...METRIC_FILES,
   "pages/landing-examples.ts",
+  "pages/calculadora.tsx",
   "components/landing-demo.tsx",
+  "components/home/home-mercado.tsx",
+  "lib/calculadora.ts",
   "lib/i18n.tsx",
 ];
 
@@ -41,6 +44,8 @@ const METRIC_LITERALS: Array<[string, RegExp]> = [
 ];
 
 // Dados da R6 sem fonte pública, em pt/en/es. Mantidos só aqui (teste).
+const tituloCalculadora = "Calculadora de Custo";
+
 const R6_TERMS: RegExp[] = [
   /\b1\s*(?:em|in|de cada|out of)\s*5\b/i,
   /\b(?:one in five|um em cada cinco|uno de cada cinco)\b/i,
@@ -109,6 +114,17 @@ test("R6: nenhum dos três dados sem fonte em texto público", () => {
     const texto = readFileSync(arquivo, "utf8");
     for (const termo of R6_TERMS) assert.doesNotMatch(texto, termo, `${arquivo} · ${termo}`);
   }
+});
+
+test("calculadora é rota pública e a fórmula está publicada na página", () => {
+  const app = read(SRC, "App.tsx");
+  assert.ok(app.includes('path="/calculadora"'), "rota registrada");
+  const pagina = read(SRC, "pages/calculadora.tsx");
+  assert.ok(pagina.includes("ProtectedRoute") === false, "sem login");
+  assert.ok(pagina.includes(tituloCalculadora), "título publicado");
+  assert.ok(pagina.includes("Como calculamos"), "fórmula visível");
+  assert.ok(pagina.includes("lib/calculadora"), "usa a lib testada");
+  assert.ok(pagina.includes("Dados ilustrativos"), "defaults marcados");
 });
 
 test("docs/fontes.md existe e não reintroduz os dados da R6", () => {

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { HomeNav } from "@/components/home/home-nav";
 import { HomeHero } from "@/components/home/home-hero";
 import { HomeMercado } from "@/components/home/home-mercado";
@@ -10,7 +11,24 @@ import { HomeCobertura } from "@/components/home/home-cobertura";
 import { HomePrecos } from "@/components/home/home-precos";
 import { HomeFechamento } from "@/components/home/home-fechamento";
 
+function rolarParaAncora() {
+  const id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+  if (!id) return;
+  let tentativas = 0;
+  const procurar = () => {
+    const alvo = document.getElementById(id);
+    if (alvo) {
+      alvo.scrollIntoView();
+      return;
+    }
+    if (tentativas++ < 40) window.setTimeout(procurar, 50);
+  };
+  procurar();
+}
+
 export default function LandingPage() {
+  useEffect(rolarParaAncora, []);
+
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <HomeNav />
