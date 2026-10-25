@@ -17,6 +17,7 @@ const runIntegration = process.env.RUN_TENANT_DB_TESTS === "true";
 const M0022 = "0022_projects_envs";
 const M0023 = "0023_agent_events_outcome";
 const M0024 = "0024_agent_contracts";
+const M0025 = "0025_rates_offinvoice";
 
 // ag_c_3 fica num segundo projeto da org_c_1: o backfill precisa seguir o
 // projeto do agente, não o Padrão da conta.
@@ -245,11 +246,60 @@ describe.skipIf(!runIntegration)("0024 · agent_contracts imutável e veredito c
   });
 });
 
+describe.skipIf(!runIntegration)("0025 · role_rates e off_invoice_costs", () => {
+  let db: ScratchDb;
+
+  beforeAll(async () => {
+    db = await createScratchDb("muster_c0025");
+    await db.migrateUntil(M0022);
+    await seed0022(db);
+    await db.migrateUntil(M0025);
+  }, 120_000);
+
+  afterAll(async () => {
+    if (db) await db.drop();
+  });
+
+  it("nasce vazia: sem seed e sem default de custo-hora (R4)", async () => {
+    const [n] = await db.query<{ n: number }>(
+      `SELECT (SELECT count(*) FROM role_rates) + (SELECT count(*) FROM off_invoice_costs) AS n`,
+    );
+    expect(Number(n!.n)).toBe(0);
+  });
+
+  it("CHECKs: valor negativo, vigência invertida, alocação sem alvo", async () => {
+    const rate = (cents: number, from: string, to: string | null) =>
+      db.query(
+        `INSERT INTO role_rates (id, org_id, role, hourly_cost_cents, currency, valid_from, valid_to, created_by)
+         VALUES (gen_random_uuid()::text, 'org_c_1', 'analista', $1, 'BRL', $2, $3, 'u')`,
+        [cents, from, to],
+      );
+    await rate(9000, "2026-01-01", null);
+    await expect(rate(-1, "2026-01-01", null)).rejects.toThrow(/role_rates_value_check/);
+    await expect(rate(1, "2026-02-01", "2026-01-01")).rejects.toThrow(/role_rates_period_check/);
+    await expect(
+      db.query(
+        `INSERT INTO off_invoice_costs (id, org_id, category, amount_cents, currency, period_start, period_end, allocation, created_by)
+         VALUES (gen_random_uuid()::text, 'org_c_1', 'license', 10, 'BRL', '2026-10-01', '2026-10-31', 'agent', 'u')`,
+      ),
+    ).rejects.toThrow(/off_invoice_costs_allocation_check/);
+  });
+
+  it("projeto de outra conta é recusado pela FK composta", async () => {
+    await expect(
+      db.query(
+        `INSERT INTO off_invoice_costs (id, org_id, project_id, category, amount_cents, currency, period_start, period_end, allocation, created_by)
+         VALUES (gen_random_uuid()::text, 'org_c_2', 'prj_c_x', 'infra', 10, 'BRL', '2026-10-01', '2026-10-31', 'project', 'u')`,
+      ),
+    ).rejects.toThrow(/off_invoice_costs_project_org_fk/);
+  });
+});
+
 /**
  * up → down → up de cada migração da cunha, da mais nova para a mais antiga:
  * o down de N volta o retrato exatamente ao de N−1 e os eventos ficam.
  */
-const CADEIA = [M0023, M0024];
+const CADEIA = [M0023, M0024, M0025];
 
 describe.skipIf(!runIntegration)("cunha · up → down → up", () => {
   let db: ScratchDb;

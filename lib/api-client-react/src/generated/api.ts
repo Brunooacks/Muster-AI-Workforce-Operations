@@ -99,6 +99,8 @@ import type {
   MetricInstrumentation,
   MetricPoint,
   MetricStarterKit,
+  OffInvoiceCost,
+  OffInvoiceCostInput,
   OrganizationError,
   OrganizationList,
   PreAssessInput,
@@ -114,6 +116,8 @@ import type {
   RegisterConnectorInput,
   RegisterConnectorResult,
   RejectDraftInput,
+  RoleRate,
+  RoleRateInput,
   RuntimeAgent,
   RuntimeOutboxEvent,
   StartDiscoveryRunInput,
@@ -7047,5 +7051,301 @@ export const useCreateAgentContract = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getCreateAgentContractMutationOptions(options));
+    }
+
+export const getListRoleRatesUrl = () => {
+
+
+
+
+  return `/api/rates/roles`
+}
+
+/**
+ * @summary Custo-hora por área/papel (cunha · C3.2)
+ */
+export const listRoleRates = async ( options?: RequestInit): Promise<RoleRate[]> => {
+
+  return customFetch<RoleRate[]>(getListRoleRatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRoleRatesQueryKey = () => {
+    return [
+    `/api/rates/roles`
+    ] as const;
+    }
+
+
+export const getListRoleRatesQueryOptions = <TData = Awaited<ReturnType<typeof listRoleRates>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoleRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRoleRatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRoleRates>>> = ({ signal }) => listRoleRates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRoleRates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRoleRatesQueryResult = NonNullable<Awaited<ReturnType<typeof listRoleRates>>>
+export type ListRoleRatesQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Custo-hora por área/papel (cunha · C3.2)
+ */
+
+export function useListRoleRates<TData = Awaited<ReturnType<typeof listRoleRates>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoleRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRoleRatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateRoleRateUrl = () => {
+
+
+
+
+  return `/api/rates/roles`
+}
+
+/**
+ * @summary Cadastra custo-hora com vigência (409 se cruzar outra vigência do mesmo papel/área)
+ */
+export const createRoleRate = async (roleRateInput: RoleRateInput, options?: RequestInit): Promise<RoleRate> => {
+
+  return customFetch<RoleRate>(getCreateRoleRateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      roleRateInput,)
+  }
+);}
+
+
+
+
+export const getCreateRoleRateMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoleRate>>, TError,{data: BodyType<RoleRateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRoleRate>>, TError,{data: BodyType<RoleRateInput>}, TContext> => {
+
+const mutationKey = ['createRoleRate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRoleRate>>, {data: BodyType<RoleRateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRoleRate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRoleRateMutationResult = NonNullable<Awaited<ReturnType<typeof createRoleRate>>>
+    export type CreateRoleRateMutationBody = BodyType<RoleRateInput>
+    export type CreateRoleRateMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cadastra custo-hora com vigência (409 se cruzar outra vigência do mesmo papel/área)
+ */
+export const useCreateRoleRate = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoleRate>>, TError,{data: BodyType<RoleRateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRoleRate>>,
+        TError,
+        {data: BodyType<RoleRateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateRoleRateMutationOptions(options));
+    }
+
+export const getListOffInvoiceCostsUrl = () => {
+
+
+
+
+  return `/api/rates/off-invoice`
+}
+
+/**
+ * @summary Custos fora da fatura (cunha · C3.2)
+ */
+export const listOffInvoiceCosts = async ( options?: RequestInit): Promise<OffInvoiceCost[]> => {
+
+  return customFetch<OffInvoiceCost[]>(getListOffInvoiceCostsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOffInvoiceCostsQueryKey = () => {
+    return [
+    `/api/rates/off-invoice`
+    ] as const;
+    }
+
+
+export const getListOffInvoiceCostsQueryOptions = <TData = Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOffInvoiceCostsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOffInvoiceCosts>>> = ({ signal }) => listOffInvoiceCosts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOffInvoiceCostsQueryResult = NonNullable<Awaited<ReturnType<typeof listOffInvoiceCosts>>>
+export type ListOffInvoiceCostsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Custos fora da fatura (cunha · C3.2)
+ */
+
+export function useListOffInvoiceCosts<TData = Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOffInvoiceCostsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateOffInvoiceCostUrl = () => {
+
+
+
+
+  return `/api/rates/off-invoice`
+}
+
+/**
+ * @summary Cadastra custo fora da fatura com período e alocação
+ */
+export const createOffInvoiceCost = async (offInvoiceCostInput: OffInvoiceCostInput, options?: RequestInit): Promise<OffInvoiceCost> => {
+
+  return customFetch<OffInvoiceCost>(getCreateOffInvoiceCostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      offInvoiceCostInput,)
+  }
+);}
+
+
+
+
+export const getCreateOffInvoiceCostMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOffInvoiceCost>>, TError,{data: BodyType<OffInvoiceCostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createOffInvoiceCost>>, TError,{data: BodyType<OffInvoiceCostInput>}, TContext> => {
+
+const mutationKey = ['createOffInvoiceCost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOffInvoiceCost>>, {data: BodyType<OffInvoiceCostInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createOffInvoiceCost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateOffInvoiceCostMutationResult = NonNullable<Awaited<ReturnType<typeof createOffInvoiceCost>>>
+    export type CreateOffInvoiceCostMutationBody = BodyType<OffInvoiceCostInput>
+    export type CreateOffInvoiceCostMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cadastra custo fora da fatura com período e alocação
+ */
+export const useCreateOffInvoiceCost = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOffInvoiceCost>>, TError,{data: BodyType<OffInvoiceCostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createOffInvoiceCost>>,
+        TError,
+        {data: BodyType<OffInvoiceCostInput>},
+        TContext
+      > => {
+      return useMutation(getCreateOffInvoiceCostMutationOptions(options));
     }
 

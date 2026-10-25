@@ -3291,3 +3291,81 @@ export const CreateAgentContractBody = zod.object({
 })
 
 
+/**
+ * @summary Custo-hora por área/papel (cunha · C3.2)
+ */
+export const ListRoleRatesResponseItem = zod.object({
+  "id": zod.string(),
+  "areaId": zod.string().nullable(),
+  "role": zod.string(),
+  "hourlyCostCents": zod.number(),
+  "currency": zod.enum(['BRL', 'USD']),
+  "validFrom": zod.string(),
+  "validTo": zod.string().nullable(),
+  "createdBy": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListRoleRatesResponse = zod.array(ListRoleRatesResponseItem)
+
+
+/**
+ * @summary Cadastra custo-hora com vigência (409 se cruzar outra vigência do mesmo papel/área)
+ */
+export const createRoleRateBodyRoleMax = 120;
+
+export const createRoleRateBodyHourlyCostCentsMin = 0;
+
+
+
+export const CreateRoleRateBody = zod.object({
+  "areaId": zod.string().nullish(),
+  "role": zod.string().min(1).max(createRoleRateBodyRoleMax),
+  "hourlyCostCents": zod.number().min(createRoleRateBodyHourlyCostCentsMin),
+  "currency": zod.enum(['BRL', 'USD']),
+  "validFrom": zod.string(),
+  "validTo": zod.string().nullish()
+})
+
+
+/**
+ * @summary Custos fora da fatura (cunha · C3.2)
+ */
+export const ListOffInvoiceCostsResponseItem = zod.object({
+  "id": zod.string(),
+  "projectId": zod.string().nullable(),
+  "agentId": zod.string().nullable(),
+  "category": zod.enum(['license', 'infra', 'integration', 'other']),
+  "amountCents": zod.number(),
+  "currency": zod.enum(['BRL', 'USD']),
+  "periodStart": zod.string(),
+  "periodEnd": zod.string(),
+  "allocation": zod.enum(['agent', 'project', 'per_task']),
+  "description": zod.string().nullable(),
+  "createdBy": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListOffInvoiceCostsResponse = zod.array(ListOffInvoiceCostsResponseItem)
+
+
+/**
+ * @summary Cadastra custo fora da fatura com período e alocação
+ */
+export const createOffInvoiceCostBodyAmountCentsMin = 0;
+
+export const createOffInvoiceCostBodyDescriptionMax = 500;
+
+
+
+export const CreateOffInvoiceCostBody = zod.object({
+  "projectId": zod.string().nullish(),
+  "agentId": zod.string().nullish(),
+  "category": zod.enum(['license', 'infra', 'integration', 'other']),
+  "amountCents": zod.number().min(createOffInvoiceCostBodyAmountCentsMin),
+  "currency": zod.enum(['BRL', 'USD']),
+  "periodStart": zod.string(),
+  "periodEnd": zod.string(),
+  "allocation": zod.enum(['agent', 'project', 'per_task']),
+  "description": zod.string().max(createOffInvoiceCostBodyDescriptionMax).nullish()
+})
+
+

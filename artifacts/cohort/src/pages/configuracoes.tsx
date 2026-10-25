@@ -9,11 +9,13 @@ import {
   ShieldCheck,
   CreditCard,
   Webhook,
+  Calculator,
   ArrowRight,
   Check,
 } from "lucide-react";
 import { OperationalPageFrame } from "@/components/layout";
 import { AccessControlPanel } from "@/components/access-control/access-control-panel";
+import { RatesSettings } from "@/components/rates-settings";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +33,7 @@ type SectionId =
   | "notificacoes"
   | "seguranca"
   | "faturamento"
+  | "custos"
   | "webhooks";
 
 const SECTIONS: { id: SectionId; icon: typeof Building2 }[] = [
@@ -40,6 +43,7 @@ const SECTIONS: { id: SectionId; icon: typeof Building2 }[] = [
   { id: "notificacoes", icon: Bell },
   { id: "seguranca", icon: ShieldCheck },
   { id: "faturamento", icon: CreditCard },
+  { id: "custos", icon: Calculator },
   { id: "webhooks", icon: Webhook },
 ];
 
@@ -67,6 +71,7 @@ const PT = {
     notificacoes: "Notificações",
     seguranca: "Segurança",
     faturamento: "Faturamento",
+    custos: "Custo-hora e custos",
     webhooks: "API · Webhooks",
   } as Record<SectionId, string>,
   wsTitle: "Workspace",
@@ -179,6 +184,7 @@ const L: Record<Lang, Dict> = {
       notificacoes: "Notifications",
       seguranca: "Security",
       faturamento: "Billing",
+      custos: "Hourly and off-invoice costs",
       webhooks: "API · Webhooks",
     },
     wsTitle: "Workspace",
@@ -286,6 +292,7 @@ const L: Record<Lang, Dict> = {
       notificacoes: "Notificaciones",
       seguranca: "Seguridad",
       faturamento: "Facturación",
+      custos: "Costo-hora y costos",
       webhooks: "API · Webhooks",
     },
     wsTitle: "Workspace",
@@ -709,6 +716,7 @@ const SECTION_CONTENT: Record<SectionId, React.FC> = {
   notificacoes: NotificationsSection,
   seguranca: SecuritySection,
   faturamento: BillingSection,
+  custos: RatesSettings,
   webhooks: WebhooksSection,
 };
 

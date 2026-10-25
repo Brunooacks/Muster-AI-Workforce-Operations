@@ -18,8 +18,8 @@ Formato Spec Kit. `[x]` = feito e commitado nesta branch (um commit por item).
 
 ## Item 3 · Custo-hora e custos fora da fatura (MUS-176)
 
-- [ ] **C3.1** Migração 0025 `role_rates` e `off_invoice_costs` + down
-- [ ] **C3.2** Rotas `/rates/*` (admin), trilha no outbox, tela em Configurações
+- [x] **C3.1** Migração 0025 `role_rates` e `off_invoice_costs` + down
+- [x] **C3.2** Rotas `/rates/*` (admin), trilha no outbox, tela em Configurações → Custo-hora e custos
 
 ## Item 4 · Cálculo da camada 1 (MUS-177)
 

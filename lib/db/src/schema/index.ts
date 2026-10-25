@@ -767,6 +767,66 @@ export const agentContracts = pgTable("agent_contracts", {
   ),
 }));
 
+// --- Custo-hora e custos fora da fatura (cunha · 0025) ------------------------
+// Sem seed e sem default global (R4): conta sem custo-hora vigente vê a camada
+// 1 como "indisponível". Valores em centavos, nunca em log.
+export type RateCurrency = "BRL" | "USD";
+export type OffInvoiceCategory = "license" | "infra" | "integration" | "other";
+export type OffInvoiceAllocation = "agent" | "project" | "per_task";
+
+export const roleRates = pgTable("role_rates", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  /** Nulo = vale para o papel em toda a conta; com área, a área tem precedência. */
+  areaId: text("area_id").references(() => areas.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  hourlyCostCents: integer("hourly_cost_cents").notNull(),
+  currency: text("currency").$type<RateCurrency>().notNull(),
+  validFrom: date("valid_from").notNull(),
+  validTo: date("valid_to"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  roleRatesOrgRoleIdx: index("role_rates_org_role_idx").on(table.orgId, table.role, table.validFrom),
+  roleRatesValueCheck: check("role_rates_value_check", sql`"hourly_cost_cents" >= 0`),
+  roleRatesCurrencyCheck: check("role_rates_currency_check", sql`"currency" IN ('BRL', 'USD')`),
+  roleRatesPeriodCheck: check("role_rates_period_check", sql`"valid_to" IS NULL OR "valid_to" >= "valid_from"`),
+}));
+
+export const offInvoiceCosts = pgTable("off_invoice_costs", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  projectId: text("project_id"),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "cascade" }),
+  category: text("category").$type<OffInvoiceCategory>().notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: text("currency").$type<RateCurrency>().notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  allocation: text("allocation").$type<OffInvoiceAllocation>().notNull(),
+  description: text("description"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  offInvoiceOrgPeriodIdx: index("off_invoice_costs_org_period_idx").on(table.orgId, table.periodStart),
+  offInvoiceProjectFk: foreignKey({
+    name: "off_invoice_costs_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }).onDelete("cascade"),
+  offInvoiceValueCheck: check("off_invoice_costs_value_check", sql`"amount_cents" >= 0`),
+  offInvoiceCurrencyCheck: check("off_invoice_costs_currency_check", sql`"currency" IN ('BRL', 'USD')`),
+  offInvoicePeriodCheck: check("off_invoice_costs_period_check", sql`"period_end" >= "period_start"`),
+  offInvoiceCategoryCheck: check(
+    "off_invoice_costs_category_check",
+    sql`"category" IN ('license', 'infra', 'integration', 'other')`,
+  ),
+  offInvoiceAllocationCheck: check(
+    "off_invoice_costs_allocation_check",
+    sql`("allocation" = 'agent' AND "agent_id" IS NOT NULL) OR ("allocation" = 'project' AND "project_id" IS NOT NULL) OR "allocation" = 'per_task'`,
+  ),
+}));
+
 export type AlertSeverity = "critical" | "high" | "medium" | "antecedent";
 export type AlertStatus = "active" | "acknowledged" | "resolved";
 export type GovernanceAssessmentStatus =

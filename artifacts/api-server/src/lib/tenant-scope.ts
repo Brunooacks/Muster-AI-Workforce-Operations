@@ -17,6 +17,8 @@ import {
   metricEvidence,
   externalEventReceipts,
   agentContracts,
+  roleRates,
+  offInvoiceCosts,
 } from "@workspace/db/schema";
 import type { EnvironmentKind } from "@workspace/db/schema";
 
@@ -49,6 +51,8 @@ export const ROOT_TABLES = {
   metricEvidence,
   externalEventReceipts,
   agentContracts,
+  roleRates,
+  offInvoiceCosts,
 } as const;
 
 export type RootTableName = keyof typeof ROOT_TABLES;

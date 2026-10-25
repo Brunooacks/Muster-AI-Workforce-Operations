@@ -10,6 +10,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: rates
+    description: Custo-hora e custos fora da fatura da conta (cunha)
   - name: health
     description: Health operations
   - name: fleet
@@ -2194,6 +2196,106 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /rates/roles:
+    get:
+      operationId: listRoleRates
+      tags: [rates]
+      summary: Custo-hora por área/papel (cunha · C3.2)
+      responses:
+        "200":
+          description: Linhas da conta (só admin)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleRate"
+        "403":
+          description: Apenas admin da conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createRoleRate
+      tags: [rates]
+      summary: Cadastra custo-hora com vigência (409 se cruzar outra vigência do mesmo papel/área)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleRateInput"
+      responses:
+        "201":
+          description: Criado (trilha no outbox)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleRate"
+        "400":
+          description: Validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Apenas admin da conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /rates/off-invoice:
+    get:
+      operationId: listOffInvoiceCosts
+      tags: [rates]
+      summary: Custos fora da fatura (cunha · C3.2)
+      responses:
+        "200":
+          description: Linhas da conta (só admin)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OffInvoiceCost"
+        "403":
+          description: Apenas admin da conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createOffInvoiceCost
+      tags: [rates]
+      summary: Cadastra custo fora da fatura com período e alocação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OffInvoiceCostInput"
+      responses:
+        "201":
+          description: Criado (trilha no outbox)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OffInvoiceCost"
+        "400":
+          description: Validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Apenas admin da conta
           content:
             application/json:
               schema:
@@ -5462,6 +5564,107 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AgentContractOwnerCandidate"
+    RoleRateInput:
+      type: object
+      required: [role, hourlyCostCents, currency, validFrom]
+      properties:
+        areaId:
+          type: ["string", "null"]
+        role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        hourlyCostCents:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+          enum: [BRL, USD]
+        validFrom:
+          type: string
+        validTo:
+          type: ["string", "null"]
+    RoleRate:
+      type: object
+      required: [id, areaId, role, hourlyCostCents, currency, validFrom, validTo, createdBy, createdAt]
+      properties:
+        id:
+          type: string
+        areaId:
+          type: ["string", "null"]
+        role:
+          type: string
+        hourlyCostCents:
+          type: integer
+        currency:
+          type: string
+          enum: [BRL, USD]
+        validFrom:
+          type: string
+        validTo:
+          type: ["string", "null"]
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+    OffInvoiceCostInput:
+      type: object
+      required: [category, amountCents, currency, periodStart, periodEnd, allocation]
+      properties:
+        projectId:
+          type: ["string", "null"]
+        agentId:
+          type: ["string", "null"]
+        category:
+          type: string
+          enum: [license, infra, integration, other]
+        amountCents:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+          enum: [BRL, USD]
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        allocation:
+          type: string
+          enum: [agent, project, per_task]
+        description:
+          type: ["string", "null"]
+          maxLength: 500
+    OffInvoiceCost:
+      type: object
+      required: [id, projectId, agentId, category, amountCents, currency, periodStart, periodEnd, allocation, description, createdBy, createdAt]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: ["string", "null"]
+        agentId:
+          type: ["string", "null"]
+        category:
+          type: string
+          enum: [license, infra, integration, other]
+        amountCents:
+          type: integer
+        currency:
+          type: string
+          enum: [BRL, USD]
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        allocation:
+          type: string
+          enum: [agent, project, per_task]
+        description:
+          type: ["string", "null"]
+        createdBy:
+          type: string
+        createdAt:
+          type: string
     Project:
       type: object
       required: [id, name, slug, isDefault, createdAt]

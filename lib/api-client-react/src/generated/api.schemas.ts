@@ -2427,6 +2427,143 @@ export interface AgentContractHistory {
   ownerCandidates: AgentContractOwnerCandidate[];
 }
 
+export type RoleRateInputCurrency = typeof RoleRateInputCurrency[keyof typeof RoleRateInputCurrency];
+
+
+export const RoleRateInputCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export interface RoleRateInput {
+  /** @nullable */
+  areaId?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  role: string;
+  /** @minimum 0 */
+  hourlyCostCents: number;
+  currency: RoleRateInputCurrency;
+  validFrom: string;
+  /** @nullable */
+  validTo?: string | null;
+}
+
+export type RoleRateCurrency = typeof RoleRateCurrency[keyof typeof RoleRateCurrency];
+
+
+export const RoleRateCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export interface RoleRate {
+  id: string;
+  /** @nullable */
+  areaId: string | null;
+  role: string;
+  hourlyCostCents: number;
+  currency: RoleRateCurrency;
+  validFrom: string;
+  /** @nullable */
+  validTo: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export type OffInvoiceCostInputCategory = typeof OffInvoiceCostInputCategory[keyof typeof OffInvoiceCostInputCategory];
+
+
+export const OffInvoiceCostInputCategory = {
+  license: 'license',
+  infra: 'infra',
+  integration: 'integration',
+  other: 'other',
+} as const;
+
+export type OffInvoiceCostInputCurrency = typeof OffInvoiceCostInputCurrency[keyof typeof OffInvoiceCostInputCurrency];
+
+
+export const OffInvoiceCostInputCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type OffInvoiceCostInputAllocation = typeof OffInvoiceCostInputAllocation[keyof typeof OffInvoiceCostInputAllocation];
+
+
+export const OffInvoiceCostInputAllocation = {
+  agent: 'agent',
+  project: 'project',
+  per_task: 'per_task',
+} as const;
+
+export interface OffInvoiceCostInput {
+  /** @nullable */
+  projectId?: string | null;
+  /** @nullable */
+  agentId?: string | null;
+  category: OffInvoiceCostInputCategory;
+  /** @minimum 0 */
+  amountCents: number;
+  currency: OffInvoiceCostInputCurrency;
+  periodStart: string;
+  periodEnd: string;
+  allocation: OffInvoiceCostInputAllocation;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  description?: string | null;
+}
+
+export type OffInvoiceCostCategory = typeof OffInvoiceCostCategory[keyof typeof OffInvoiceCostCategory];
+
+
+export const OffInvoiceCostCategory = {
+  license: 'license',
+  infra: 'infra',
+  integration: 'integration',
+  other: 'other',
+} as const;
+
+export type OffInvoiceCostCurrency = typeof OffInvoiceCostCurrency[keyof typeof OffInvoiceCostCurrency];
+
+
+export const OffInvoiceCostCurrency = {
+  BRL: 'BRL',
+  USD: 'USD',
+} as const;
+
+export type OffInvoiceCostAllocation = typeof OffInvoiceCostAllocation[keyof typeof OffInvoiceCostAllocation];
+
+
+export const OffInvoiceCostAllocation = {
+  agent: 'agent',
+  project: 'project',
+  per_task: 'per_task',
+} as const;
+
+export interface OffInvoiceCost {
+  id: string;
+  /** @nullable */
+  projectId: string | null;
+  /** @nullable */
+  agentId: string | null;
+  category: OffInvoiceCostCategory;
+  amountCents: number;
+  currency: OffInvoiceCostCurrency;
+  periodStart: string;
+  periodEnd: string;
+  allocation: OffInvoiceCostAllocation;
+  /** @nullable */
+  description: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface Project {
   id: string;
   name: string;
