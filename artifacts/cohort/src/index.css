@@ -100,7 +100,7 @@
   --ring: 189 92% 53%;
 
   /* Ciano escuro para texto/links no modo claro (contraste ≥4.5:1 sobre branco) */
-  --cyan-text: 189 75% 32%;             /* #0d8a9e - usado para links/texto ciano */
+  --cyan-text: 189 75% 30%;             /* ciano escuro p/ texto: 5,4:1 no branco, 4,9:1 no cinza */
 
   /* Âmbar escuro para texto/atenção no modo claro (contraste ≥4.5:1 sobre branco) */
   --chart-2-text: 35 68% 30%;
