@@ -12,7 +12,14 @@ function readString(value: unknown): string | undefined {
 }
 
 function sessionContext(req: Request): { orgId?: string; userId?: string } {
-  const auth = getAuth(req);
+  // getAuth throws when clerkMiddleware did not run for this request
+  // (e.g. SPA/static routes outside /api). Logging must never fail a request.
+  let auth: ReturnType<typeof getAuth> | undefined;
+  try {
+    auth = getAuth(req);
+  } catch {
+    auth = undefined;
+  }
   const claims = auth?.sessionClaims as SessionClaims;
   const userId = readString(auth?.userId) ?? readString(claims?.userId);
   const orgId =
