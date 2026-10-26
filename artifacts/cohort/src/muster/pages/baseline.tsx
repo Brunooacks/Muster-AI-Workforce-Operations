@@ -11,7 +11,7 @@ const ROLE: Record<string, [string, string]> = {
   "Analista de service desk": ["Service desk analyst", "Analista de service desk"],
   "Dev pleno": ["Mid-level developer", "Desarrollador semi-senior"],
 };
-const per = (s: string, t: (pt: string, en: string, es: string) => string) => t(s, ROLE[s]?.[0] ?? s, ROLE[s]?.[1] ?? s).replace("histórico", t("histórico", "history", "historial")).replace("jan–jun", t("jan–jun", "Jan–Jun", "ene–jun"));
+const per = (s: string, t: (pt: string, en: string, es: string) => string) => t(s, ROLE[s]?.[0] ?? s, ROLE[s]?.[1] ?? s).replace("histórico", t("histórico", "history", "historial")).replace("régua", t("régua", "collection schedule", "calendario de cobranza")).replace("jan–jun", t("jan–jun", "Jan–Jun", "ene–jun"));
 
 export default function BaselinePage() {
   const t = useT();

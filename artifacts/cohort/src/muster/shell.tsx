@@ -104,7 +104,7 @@ export function MusterShell({ active, children }: { active: string; children: Re
           <Link className="brand" href="/visao-geral" aria-label="Muster Workforce Operations">{MARK}<span className="bn"><b>Muster</b><em>Workforce Operations</em></span></Link>
           <div className="wsw">
             <button className="wsw-b" aria-haspopup="listbox" aria-expanded={wsOpen} onClick={() => setWsOpen(!wsOpen)}>
-              <i>LL</i><span><b>{DEMO.empresa}</b><small>{t("Conta empresa", "Company account", "Cuenta empresa")} · {DEMO.periodo}</small></span>
+              <i>LL</i><span><b>{DEMO.empresa}</b><small>{t("Conta empresa", "Company account", "Cuenta empresa")} · {t("setembro/2026", "September/2026", "septiembre/2026")}</small></span>
               <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" /></svg>
             </button>
             <div className="wsw-m" role="listbox" hidden={!wsOpen}>
@@ -135,7 +135,7 @@ export function MusterShell({ active, children }: { active: string; children: Re
             <div className="mp-lang"><LangSwitcher /></div>
           </header>
           <div>{children}</div>
-          <footer className="foot"><span>{t("Dados ilustrativos", "Illustrative data", "Datos ilustrativos")} · {DEMO.empresa}</span><span>{DEMO.periodo}</span></footer>
+          <footer className="foot"><span>{t("Dados ilustrativos", "Illustrative data", "Datos ilustrativos")} · {DEMO.empresa}</span><span>{t("setembro/2026", "September/2026", "septiembre/2026")}</span></footer>
         </div>
       </div>
       <div className={"scrim" + (side ? " on" : "")} onClick={() => setSide(false)} />

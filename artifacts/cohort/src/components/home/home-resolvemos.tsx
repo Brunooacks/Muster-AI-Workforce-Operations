@@ -71,7 +71,7 @@ export function HomeResolvemos() {
 
         <div className="flex flex-col gap-4">
           <Badge variant="illustrative" className="self-start bg-chart-2/15">
-            Dados ilustrativos
+            {{ pt: "Dados ilustrativos", en: "Illustrative data", es: "Datos ilustrativos" }[lang]}
           </Badge>
           <div className="grid gap-px overflow-hidden rounded-[20px] border border-[#2a2a2e] bg-[#2a2a2e] sm:grid-cols-2">
             {t.items.map((item) => (
