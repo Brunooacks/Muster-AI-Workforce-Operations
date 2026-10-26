@@ -21,7 +21,7 @@ import {
 } from "./lib/observability";
 import {
   resolveStaticWebRoot,
-  shouldServeSpaNavigation,
+  spaFallback,
 } from "./lib/static-web";
 
 const app: Express = express();
@@ -61,13 +61,7 @@ app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 
 if (staticWebRoot) {
   app.use(express.static(staticWebRoot, { index: "index.html" }));
-  app.get("/{*path}", (req, res, next) => {
-    if (!shouldServeSpaNavigation(req.method, req.path, req.get("accept"))) {
-      next();
-      return;
-    }
-    res.sendFile(path.join(staticWebRoot, "index.html"));
-  });
+  app.use(spaFallback(staticWebRoot));
 } else {
   app.get("/", (_req, res) => {
     res.redirect(302, process.env.WEB_APP_URL ?? "http://localhost:5173");
