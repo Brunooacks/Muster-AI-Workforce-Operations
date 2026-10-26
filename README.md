@@ -35,7 +35,10 @@ Em construção, com publicação em **https://muster.veltrixplatform.com**. As 
 | Fase 1 | Base da área logada: conta empresa × pessoal, componentes-base e tema do protótipo (Claro/Noite) | [#67](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/67) |
 | Fase 2 · Marco 1 | Visão geral, Direcionamento, Baseline e Histórico | [#68](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/68) |
 | Fase 2 · Marco 2 | Squads mistos, Aprendizados e Board | [#69](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/69) |
-| Login | Entrar e criar conta com e-mail corporativo, Google ou GitHub | PR de `feat/login-cadastro` |
+| Home | Nova página inicial (design aprovado) | [#66](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/66) |
+| Login | Entrar e criar conta com e-mail corporativo, Google ou GitHub | [#70](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/70) |
+
+Release candidata: branch `release/muster-2026-10-26` junta #66, #67, #68, #69 e #70 sem merge na `main`. As migrações da home (#66) foram renumeradas para 0023..0027, depois de `0022_conta_pessoal`. O manifesto lista cada PR incluído.
 
 Próximas etapas: Jornadas, Agentes, Entregas, Custos e Governança; conectores reais (Jira, Linear, Confluence); cobrança.
 
@@ -75,6 +78,7 @@ Validação: `pnpm run typecheck`, `pnpm test` e `pnpm --filter @workspace/muste
 - Produção em **https://muster.veltrixplatform.com**: front e API em containers (Docker Compose) atrás de um proxy com HTTPS, sem portas públicas além do proxy.
 - Segredos ficam só no servidor, fora do git. Nunca registre chaves, senhas ou endereços de servidor neste repositório.
 - Merge na `main` e deploy de produção só com aprovação explícita do responsável pelo produto.
+- Antes de cada deploy: conferir que todos os PRs aprovados são ancestrais do commit publicado (manifesto da release) e comparar prints 1280/390 com o protótipo aprovado.
 
 ## Estrutura
 

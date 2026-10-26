@@ -100,7 +100,7 @@ describe.skipIf(!runIntegration)("0022 · backfill de projeto e ambiente", () =>
 
   beforeAll(async () => {
     db = await createScratchDb("muster_bf0022");
-    await db.migrateUntil("0021_premium_molten_man");
+    await db.migrateUntil("0022_conta_pessoal");
     const [base] = await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM organizations`);
     orgsDasMigracoes = base!.n;
     await seed0021(db);
@@ -246,7 +246,7 @@ describe.skipIf(!runIntegration)("0022 · up → down → up", () => {
 
   beforeAll(async () => {
     db = await createScratchDb("muster_down0022");
-    await db.migrateUntil("0021_premium_molten_man");
+    await db.migrateUntil("0022_conta_pessoal");
     await seed0021(db);
     schema0021 = await schemaSnapshot(db);
     // Só até a 0022: as migrações da cunha (0023+) dependem dela e têm o próprio
