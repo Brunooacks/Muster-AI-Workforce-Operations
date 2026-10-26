@@ -1,6 +1,7 @@
 import { Link, useParams } from "wouter";
 import { MusterShell } from "../shell";
 import { AG, DEMO, Disc, F, Tip, useT, type Agent } from "../fmt";
+import { useLang } from "@/lib/i18n";
 
 type L3 = [string, string, string];
 /** Propósito de cada agente: a atividade repetitiva que ele assume e o que fica com as pessoas. Dados ilustrativos. */
@@ -15,11 +16,34 @@ const PROP: Record<string, [L3, L3]> = {
   code: [["Abrir PRs de manutenção", "Open maintenance PRs", "Abrir PRs de mantenimiento"], ["arquitetura e revisão de PR", "architecture and PR review", "arquitectura y revisión de PR"]],
 };
 
+/** Tradução dos campos de exemplo (dados ilustrativos em pt-BR no JSON de demonstração). */
+const TX: Record<string, [string, string]> = {
+  "Atendimento ao cliente": ["Customer service", "Atención al cliente"], "Roteirização de entregas": ["Delivery routing", "Ruteo de entregas"],
+  "Emissão de NF-e": ["E-invoice issuing", "Emisión de facturas electrónicas"], "Régua de cobrança": ["Collections cadence", "Regla de cobranza"],
+  "Validação de cadastro": ["Registration checks", "Validación de registros"], "Triagem de notas recebidas": ["Incoming invoice triage", "Clasificación de facturas recibidas"],
+  "Suporte interno de TI": ["Internal IT support", "Soporte interno de TI"], "Agente de código (PRs)": ["Code agent (PRs)", "Agente de código (PRs)"],
+  "Atendimento": ["Customer service", "Atención"], "Operações": ["Operations", "Operaciones"], "Financeiro": ["Finance", "Finanzas"], "Comercial": ["Sales", "Comercial"], "TI": ["IT", "TI"],
+  "Pós-venda": ["After-sales", "Posventa"], "Last mile": ["Last mile", "Última milla"], "Faturamento": ["Billing", "Facturación"], "Contas a pagar": ["Accounts payable", "Cuentas por pagar"], "Plataforma": ["Platform", "Plataforma"],
+  "Analista de atendimento": ["Customer service analyst", "Analista de atención"], "Analista de roteirização": ["Routing analyst", "Analista de ruteo"], "Analista fiscal": ["Tax analyst", "Analista fiscal"],
+  "Analista de cobrança": ["Collections analyst", "Analista de cobranza"], "Assistente de cadastro": ["Registration assistant", "Asistente de registros"], "Assistente de contas a pagar": ["Accounts payable assistant", "Asistente de cuentas por pagar"],
+  "Analista de service desk": ["Service desk analyst", "Analista de service desk"], "Dev pleno": ["Mid-level developer", "Desarrollador semi-senior"],
+};
+function tr(lang: string, v: string) {
+  if (lang === "pt") return v;
+  const i = lang === "en" ? 0 : 1, m = TX[v];
+  if (m) return m[i];
+  const d = /^Declarado por (.+) em (\d{2})\/(\d{2})$/.exec(v);
+  if (d) return lang === "en" ? `Declared by ${d[1]} on ${d[3]}/${d[2]}` : `Declarado por ${d[1]} el ${d[2]}/${d[3]}`;
+  return v.replace(/histórico/g, lang === "en" ? "history" : "histórico").replace(/régua/g, lang === "en" ? "cadence" : "regla").replace(/jan–jun/g, lang === "en" ? "Jan–Jun" : "ene–jun");
+}
+
 const R = { display: "grid", gridTemplateColumns: "minmax(110px,38%) 1fr", gap: 12, padding: "10px 0", borderTop: "1px solid var(--line)", fontSize: 14, lineHeight: 1.4 } as const;
 export function fichaFaixa(a: Agent) { const r = a.custoPorResultado / a.custoHumanoUnit, q = a.qualidade - a.baseline; return r > 1 ? "vermelho" : (r > 0.7 || q < 0) ? "amarelo" : "verde"; }
 
 export default function FichaAgentePage() {
   const t = useT();
+  const { lang } = useLang();
+  const x = (v: string) => tr(lang, v);
   const { id } = useParams<{ id: string }>();
   const a = AG[id ?? ""] ?? AG.atlas;
   const [prop, fica] = PROP[a.id] ?? PROP.atlas;
@@ -47,7 +71,7 @@ export default function FichaAgentePage() {
         <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}><Link href="/squads">{t("Squads mistos", "Mixed squads", "Squads mixtos")}</Link> <span className="mono">· {t("Ficha do agente", "Agent file", "Ficha del agente")} · {DEMO.empresa} · {t("setembro/2026", "September/2026", "septiembre/2026")}</span></div>
         <div className="hd2 rise" style={{ ["--i" as string]: 1 }}>
           <h1>{a.nome}: {t(...prop).toLowerCase()}. <em>{t(`A equipe fica com ${fica[0]}.`, `The team keeps ${fica[1]}.`, `El equipo se queda con ${fica[2]}.`)}</em></h1>
-          <div className="covline">{t("Membro do squad", "Squad member", "Miembro del squad")} {a.squad} · {t("responsável", "owner", "responsable")} {a.dono} · {t("compatível com", "compatible with", "compatible con")} {a.plataforma} · <span className={"faixa " + fx}>{FX[fx]}</span></div>
+          <div className="covline">{t("Membro do squad", "Squad member", "Miembro del squad")} {x(a.squad)} · {t("responsável", "owner", "responsable")} {a.dono} · {t("compatível com", "compatible with", "compatible con")} {a.plataforma} · <span className={"faixa " + fx}>{FX[fx]}</span></div>
         </div>
         <div className="kpis rise" style={{ ["--i" as string]: 2 }}>
           <div className="kpi"><small>{t("Validadas", "Validated", "Validadas")}</small><span className="v">{F.n(a.validadas)}</span><p>{t("de", "of", "de")} {F.n(a.entregas)} {t("entregas no mês", "deliveries this month", "entregas en el mes")}</p></div>
@@ -59,11 +83,11 @@ export default function FichaAgentePage() {
           <section className="panel rise" style={{ ["--i" as string]: 3 }}>
             <h3>{t("Ficha", "File", "Ficha")} <small>{t("quem responde por este agente", "who answers for this agent", "quién responde por este agente")}</small></h3>
             <div>
-              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Responsável", "Owner", "Responsable")}</span><span><b>{a.dono}</b> · {a.time}</span></div>
+              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Responsável", "Owner", "Responsable")}</span><span><b>{a.dono}</b> · {x(a.time)}</span></div>
               <div style={R}><span style={{ color: "var(--mut)" }}>{t("Propósito", "Purpose", "Propósito")}</span><span>{t(...prop)}</span></div>
               <div style={R}><span style={{ color: "var(--mut)" }}>{t("Fica com a equipe", "Stays with the team", "Queda con el equipo")}</span><span>{t(...fica)}</span></div>
-              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Função", "Role", "Función")}</span><span>{a.funcao}</span></div>
-              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Baseline humano", "Human baseline", "Baseline humano")}</span><span>{a.bl.papel} · {a.bl.origem} <Tip text={t(`Base ${a.bl.versao}, congelada em ${a.bl.congelado}. É a régua de custo e qualidade da equipe para a mesma atividade.`, `Baseline ${a.bl.versao}, frozen on ${a.bl.congelado}. It is the team's cost and quality standard for the same activity.`, `Base ${a.bl.versao}, congelada el ${a.bl.congelado}. Es la medida de costo y calidad del equipo para la misma actividad.`)} /></span></div>
+              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Função", "Role", "Función")}</span><span>{x(a.funcao)}</span></div>
+              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Baseline humano", "Human baseline", "Baseline humano")}</span><span>{x(a.bl.papel)} · {x(a.bl.origem)} <Tip text={t(`Base ${a.bl.versao}, congelada em ${a.bl.congelado}. É a régua de custo e qualidade da equipe para a mesma atividade.`, `Baseline ${a.bl.versao}, frozen on ${a.bl.congelado}. It is the team's cost and quality standard for the same activity.`, `Base ${a.bl.versao}, congelada el ${a.bl.congelado}. Es la medida de costo y calidad del equipo para la misma actividad.`)} /></span></div>
             </div>
           </section>
           <section className="panel rise" style={{ ["--i" as string]: 4 }}>
