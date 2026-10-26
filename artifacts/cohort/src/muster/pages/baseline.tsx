@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { MusterShell } from "../shell";
 import { Badge, DEMO, Disc, F, TipLine, useT } from "../fmt";
+const ROLE: Record<string, [string, string]> = {
+  "Analista de atendimento": ["Customer service analyst", "Analista de atención"],
+  "Analista de roteirização": ["Routing analyst", "Analista de ruteo"],
+  "Analista fiscal": ["Tax analyst", "Analista fiscal"],
+  "Analista de cobrança": ["Collections analyst", "Analista de cobranzas"],
+  "Assistente de cadastro": ["Records assistant", "Asistente de registros"],
+  "Assistente de contas a pagar": ["Accounts payable assistant", "Asistente de cuentas por pagar"],
+  "Analista de service desk": ["Service desk analyst", "Analista de service desk"],
+  "Dev pleno": ["Mid-level developer", "Desarrollador semi-senior"],
+};
+const per = (s: string, t: (pt: string, en: string, es: string) => string) => t(s, ROLE[s]?.[0] ?? s, ROLE[s]?.[1] ?? s).replace("histórico", t("histórico", "history", "historial")).replace("jan–jun", t("jan–jun", "Jan–Jun", "ene–jun"));
 
 export default function BaselinePage() {
   const t = useT();
@@ -53,7 +64,7 @@ export default function BaselinePage() {
           <h3>{t("Todos os baselines", "All baselines", "Todos los baselines")} <small>{t("congelados e versionados", "frozen and versioned", "congelados y versionados")}</small></h3>
           <div className="wt"><table>
             <thead><tr><th>{t("Agente", "Agent", "Agente")}</th><th>{t("Papel", "Role", "Rol")}</th><th className="r">{t("h prod.", "prod. h", "h prod.")}</th><th className="r">R$/h</th><th className="r">N/{t("mês", "mo", "mes")}</th><th className="r">{t("R$/res. humano", "R$/res. human", "R$/res. humano")}</th><th>{t("Fonte", "Source", "Fuente")}</th><th>{t("Origem", "Origin", "Origen")}</th></tr></thead>
-            <tbody>{A.map((x) => <tr key={x.id}><td>{x.nome}</td><td>{x.bl.papel}</td><td className="r">{F.n(x.bl.horasProd, 1)}</td><td className="r">{F.n(x.bl.custoHora)}</td><td className="r">{F.n(x.bl.n)}</td><td className="r">{F.brl(x.custoHumanoUnit)}</td><td><Badge f={x.bl.fonte} /></td><td style={{ color: "var(--mut)", fontSize: 13 }}>{x.bl.origem}</td></tr>)}</tbody>
+            <tbody>{A.map((x) => <tr key={x.id}><td>{x.nome}</td><td>{per(x.bl.papel, t)}</td><td className="r">{F.n(x.bl.horasProd, 1)}</td><td className="r">{F.n(x.bl.custoHora)}</td><td className="r">{F.n(x.bl.n)}</td><td className="r">{F.brl(x.custoHumanoUnit)}</td><td><Badge f={x.bl.fonte} /></td><td style={{ color: "var(--mut)", fontSize: 13 }}>{per(x.bl.origem, t)}</td></tr>)}</tbody>
           </table></div>
         </section>
         <Disc />

@@ -8,7 +8,7 @@ const pt = {
   sub: "Em 30 dias: objetivos, KPIs, acompanhamento e o primeiro relatório para o board.",
   cta: "Iniciar avaliação",
   secondary: "Falar com a equipe ›",
-  brand: "Muster · AI Workforce Operations",
+  brand: "Muster Workforce Operations",
   tagline: "Identidade · Prova · Decisão · Responsabilidade",
   veltrix: "Gateway de IA: quanto cada chamada custa, com limite de gasto em todos os modelos.",
   tupiniquim: "As taxas do dia a dia, sem letra miúda — dá para comparar antes de assinar.",
