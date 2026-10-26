@@ -32,7 +32,28 @@ const pt = {
   ],
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  eyebrow: "What we solve",
+  h2: "Four questions that go unanswered today.",
+  items: [
+    { n: "01", q: "How many agents are running, and what is each one allowed to do?", why: "Different teams switched on agents in different systems. There is no list.", fix: "one file per agent, with objective and limits." },
+    { n: "02", q: "Are they delivering results or just completing tasks?", why: "The agent dashboard says 98%. Nobody measures the business result.", fix: "measures task and result, and flags when they diverge." },
+    { n: "03", q: "Who is accountable when an agent gets it wrong?", why: "Today the answer is “the vendor”, “IT” or silence.", fix: "every agent has a named person accountable for it, in writing." },
+    { n: "04", q: "What do you tell the board?", why: "There is no report, only dashboard screenshots nobody can read.", fix: "a one-page monthly report, with the source of every number." },
+  ],
+};
+const es: typeof pt = {
+  eyebrow: "Lo que resolvemos",
+  h2: "Cuatro preguntas que hoy quedan sin respuesta.",
+  items: [
+    { n: "01", q: "¿Cuántos agentes están en operación y qué puede hacer cada uno?", why: "Distintos equipos activaron agentes en distintos sistemas. No existe una lista.", fix: "una ficha por agente, con objetivo y límites." },
+    { n: "02", q: "¿Están entregando resultados o solo completando tareas?", why: "El panel del agente dice 98%. Nadie mide el resultado para el negocio.", fix: "mide tarea y resultado, y avisa cuando divergen." },
+    { n: "03", q: "¿Quién responde cuando un agente se equivoca?", why: "Hoy la respuesta es “el proveedor”, “TI” o silencio.", fix: "cada agente tiene un responsable humano por escrito." },
+    { n: "04", q: "¿Qué le dice usted al directorio?", why: "No hay informe, solo capturas de paneles que nadie sabe interpretar.", fix: "un informe mensual de una página, con el origen de cada número." },
+  ],
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 export function HomeResolvemos() {
   const { lang } = useLang();

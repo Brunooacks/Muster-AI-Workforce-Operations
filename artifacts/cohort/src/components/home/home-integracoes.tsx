@@ -22,7 +22,18 @@ const pt = {
   soon: "Em breve",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  h3: "Works where your agents already are.",
+  note: "In the cloud or on your own server · data isolated per company · fully auditable",
+  soon: "Coming soon",
+};
+const es: typeof pt = {
+  h3: "Funciona donde sus agentes ya están.",
+  note: "En la nube o en su servidor · datos aislados por empresa · todo auditable",
+  soon: "Próximamente",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 export function HomeIntegracoes() {
   const { lang } = useLang();

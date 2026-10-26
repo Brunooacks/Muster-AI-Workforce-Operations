@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { useLang, type Lang } from "@/lib/i18n";
+import { useLang, localize, type Lang } from "@/lib/i18n";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
-const STATES = [
+const STATES_PT = [
   {
     number: "98%",
     head: "Meta de reuniões batida.",
@@ -20,6 +20,25 @@ const STATES = [
   },
 ];
 
+const TR: Partial<Record<Lang, Record<string, string>>> = {
+  en: {
+  "Meta de reuniões batida.": "Meeting target achieved.",
+  "das tarefas concluídas no prazo": "of tasks completed on time",
+  "das reuniões agendadas no prazo": "of meetings scheduled on time",
+  "Mas o resultado não veio.": "But the result did not follow.",
+  "das reuniões viraram oportunidade real. Duas passagens de serviço quebradas com o time comercial.": "of meetings became real opportunities. Two failed transfers to the sales team.",
+  "das reuniões viraram oportunidade": "of meetings became opportunities"
+},
+  es: {
+  "Meta de reuniões batida.": "Meta de reuniones cumplida.",
+  "das tarefas concluídas no prazo": "de las tareas completadas a tiempo",
+  "das reuniões agendadas no prazo": "de las reuniones agendadas a tiempo",
+  "Mas o resultado não veio.": "Pero el resultado no llegó.",
+  "das reuniões viraram oportunidade real. Duas passagens de serviço quebradas com o time comercial.": "de las reuniones se convirtieron en oportunidad real. Dos traspasos fallidos con el equipo comercial.",
+  "das reuniões viraram oportunidade": "de las reuniones se convirtieron en oportunidad"
+},
+};
+
 const pt = {
   eyebrow: "Acompanhamento",
   h2: "Concluir a tarefa não é entregar o resultado.",
@@ -29,10 +48,28 @@ const pt = {
   tabLabels: ["Tarefas concluídas", "Resultado real"],
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  eyebrow: "Monitoring",
+  h2: "Completing a task is not delivering a result.",
+  sub: "Muster measures both, and flags when one hides the other.",
+  context: "Atlas · prospecting agent · August",
+  illustrative: "Illustrative data",
+  tabLabels: ["Tasks completed", "Actual result"],
+};
+const es: typeof pt = {
+  eyebrow: "Seguimiento",
+  h2: "Completar la tarea no es entregar el resultado.",
+  sub: "Muster mide ambos y avisa cuando uno oculta al otro.",
+  context: "Atlas · agente de prospección · agosto",
+  illustrative: "Datos ilustrativos",
+  tabLabels: ["Tareas completadas", "Resultado real"],
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 export function HomeAcompanhamento() {
   const { lang } = useLang();
+  const STATES = localize(STATES_PT, TR[lang]);
   const t = copy[lang] ?? copy.pt;
   const [state, setState] = useState(0);
   const [touched, setTouched] = useState(false);

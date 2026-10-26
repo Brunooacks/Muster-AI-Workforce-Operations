@@ -14,7 +14,28 @@ const pt = {
   tupiniquim: "As taxas do dia a dia, sem letra miúda — dá para comparar antes de assinar.",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  h2: "Start with the agent that concerns you most.",
+  sub: "In 30 days: objectives, KPIs, monitoring and the first board report.",
+  cta: "Start evaluation",
+  secondary: "Talk to our team ›",
+  brand: "Muster Workforce Operations",
+  tagline: "Identity · Evidence · Decision · Accountability",
+  veltrix: "AI gateway: what each call costs, with spending limits across all models.",
+  tupiniquim: "Everyday fees with no fine print, so you can compare before you sign.",
+};
+const es: typeof pt = {
+  h2: "Comience por el agente que más le preocupa.",
+  sub: "En 30 días: objetivos, KPIs, seguimiento y el primer informe para el directorio.",
+  cta: "Iniciar evaluación",
+  secondary: "Hablar con el equipo ›",
+  brand: "Muster Workforce Operations",
+  tagline: "Identidad · Prueba · Decisión · Responsabilidad",
+  veltrix: "Gateway de IA: cuánto cuesta cada llamada, con límite de gasto en todos los modelos.",
+  tupiniquim: "Las tarifas del día a día, sin letra pequeña, para comparar antes de contratar.",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 export function HomeFechamento() {
   const { lang } = useLang();

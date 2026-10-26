@@ -38,7 +38,34 @@ const pt = {
   novaAba: "abre em nova aba",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  eyebrow: "What the market already knows",
+  h2: "Agents will make more decisions. Four in ten projects will be cancelled.",
+  cards: [
+    { lead: "at least", number: "15%", negative: false, title: "of day-to-day work decisions will be made by AI agents by 2028.", detail: "In 2024, zero.", source: "Gartner, Jun 2025" },
+    { lead: "", number: "33%", negative: false, title: "of enterprise software will include embedded agents by 2028.", detail: "In 2024, less than 1%.", source: "Gartner, Jun 2025" },
+    { lead: "", number: "40%+", negative: true, title: "of agent projects will be cancelled by 2027.", detail: "High cost, unclear value, weak controls.", source: "Gartner, Jun 2025" },
+  ],
+  disclaimer:
+    "Gartner is a registered trademark of Gartner, Inc. Forecasts from public press releases (Jun 2025). No endorsement of Muster is implied.",
+  fonteLink: "Source: Gartner press release, 06/25/2025",
+  novaAba: "opens in a new tab",
+};
+const es: typeof pt = {
+  eyebrow: "Lo que el mercado ya sabe",
+  h2: "Los agentes decidirán más. Cuatro de cada diez proyectos serán cancelados.",
+  cards: [
+    { lead: "al menos", number: "15%", negative: false, title: "de las decisiones del día a día serán de agentes de IA hasta 2028.", detail: "En 2024, cero.", source: "Gartner, jun/2025" },
+    { lead: "", number: "33%", negative: false, title: "del software corporativo tendrá agentes integrados hasta 2028.", detail: "En 2024, menos del 1%.", source: "Gartner, jun/2025" },
+    { lead: "", number: "40%+", negative: true, title: "de los proyectos con agentes serán cancelados hasta 2027.", detail: "Costo alto, valor poco claro, control débil.", source: "Gartner, jun/2025" },
+  ],
+  disclaimer:
+    "Gartner es una marca registrada de Gartner, Inc. Previsiones de comunicados públicos (jun/2025). No implica respaldo a Muster.",
+  fonteLink: "Fuente: comunicado de prensa de Gartner, 25/06/2025",
+  novaAba: "se abre en una nueva pestaña",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 export function HomeMercado() {
   const { lang } = useLang();

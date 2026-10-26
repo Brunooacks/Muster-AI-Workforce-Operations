@@ -12,7 +12,28 @@ const pt = {
   secondary: "Ver como funciona ›",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  h1a: "Your AI agents already make decisions.",
+  h1b: "Who is accountable for them?",
+  product: "Muster: all your AI agents, with objectives, KPIs and an accountable person.",
+  sub: "Wherever they run, Muster shows in one place what each agent should deliver, what it costs, whether it is delivering and who is accountable for it.",
+  logosLabel: "Works with",
+  homeMade: "+ in-house agents",
+  cta: "Start evaluation",
+  secondary: "See how it works ›",
+};
+const es: typeof pt = {
+  h1a: "Sus agentes de IA ya toman decisiones.",
+  h1b: "¿Quién responde por ellos?",
+  product: "Muster: todos sus agentes de IA, con objetivos, KPIs y un responsable.",
+  sub: "Dondequiera que operen, Muster muestra en un solo lugar qué debe entregar cada agente, cuánto cuesta, si está entregando y quién responde por él.",
+  logosLabel: "Compatible con",
+  homeMade: "+ agentes desarrollados internamente",
+  cta: "Iniciar evaluación",
+  secondary: "Ver cómo funciona ›",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 const LOGOS: Array<{ alt: string; file: string; height: number }> = [
   { alt: "AWS", file: "Amazon_Web_Services_Logo.svg", height: 24 },

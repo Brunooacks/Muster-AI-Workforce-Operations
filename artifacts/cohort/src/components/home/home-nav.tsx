@@ -15,7 +15,30 @@ const pt = {
   cta: "Iniciar avaliação",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  links: [
+    { label: "How it works", href: "#ficha" },
+    { label: "Monitoring", href: "#acompanhamento" },
+    { label: "Decision", href: "#decisao" },
+    { label: "Board", href: "#board" },
+    { label: "Integrations", href: "#integracoes" },
+  ],
+  signIn: "Sign in",
+  cta: "Start evaluation",
+};
+const es: typeof pt = {
+  links: [
+    { label: "Cómo funciona", href: "#ficha" },
+    { label: "Seguimiento", href: "#acompanhamento" },
+    { label: "Decisión", href: "#decisao" },
+    { label: "Directorio", href: "#board" },
+    { label: "Integraciones", href: "#integracoes" },
+  ],
+  signIn: "Iniciar sesión",
+  cta: "Iniciar evaluación",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -47,7 +70,7 @@ export function HomeNav() {
         </nav>
 
         <div className="flex items-center gap-3 lg:gap-4">
-          <LangSwitcher className="hidden sm:inline-flex" />
+          <LangSwitcher />
           <Link
             href="/sign-in"
             className="text-[13px] text-foreground transition-colors hover:text-muted-foreground"

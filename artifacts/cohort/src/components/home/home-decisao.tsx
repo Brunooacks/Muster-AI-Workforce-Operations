@@ -25,7 +25,40 @@ const pt = {
   illustrative: "Dados ilustrativos",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  leftEyebrow: "Decisions with accountability",
+  leftTitle: "Muster recommends. A person decides.",
+  leftSub: "Every recommendation comes with evidence, a deadline and a name.",
+  cardLabel: "FOR MARINA ALVES · BY 08/30",
+  cardTitle: "Raise Sofia's limit to R$ 1,000 for low-risk refunds.",
+  evidence: "Evidence: 1,284 cases · 0 outside policy · 96% quality",
+  approve: "Approve",
+  adjust: "Adjust",
+  reject: "Reject",
+  boardEyebrow: "For the board",
+  boardTitle: "One report a month. On one page.",
+  boardSub: "What changed, why, what is at risk and who owns it.",
+  soon: "Coming soon",
+  illustrative: "Illustrative data",
+};
+const es: typeof pt = {
+  leftEyebrow: "Decisión con responsable",
+  leftTitle: "Muster recomienda. Una persona decide.",
+  leftSub: "Cada recomendación llega con prueba, plazo y un nombre.",
+  cardLabel: "PARA MARINA ALVES · HASTA 30/08",
+  cardTitle: "Ampliar el límite de Sofia a R$ 1.000 en reembolsos de bajo riesgo.",
+  evidence: "Prueba: 1.284 atenciones · 0 fuera de política · 96% de calidad",
+  approve: "Aprobar",
+  adjust: "Ajustar",
+  reject: "Rechazar",
+  boardEyebrow: "Para el directorio",
+  boardTitle: "Un informe al mes. En una página.",
+  boardSub: "Qué cambió, por qué, qué está en riesgo y quién se encarga.",
+  soon: "Próximamente",
+  illustrative: "Datos ilustrativos",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 export function HomeDecisao() {
   const { lang } = useLang();

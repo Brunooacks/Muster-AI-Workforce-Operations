@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useLang, type Lang } from "@/lib/i18n";
+import { useLang, localize, type Lang } from "@/lib/i18n";
 
 type Plan = {
   name: string;
@@ -16,7 +16,7 @@ type Plan = {
   dark: boolean;
 };
 
-const PLANS: Plan[] = [
+const PLANS_PT: Plan[] = [
   {
     name: "Startups",
     who: "Até 2 anos de CNPJ ou até R$ 4,8 mi/ano e 20 pessoas",
@@ -76,6 +76,89 @@ const PLANS: Plan[] = [
   },
 ];
 
+const TR: Partial<Record<Lang, Record<string, string>>> = {
+  en: {
+  "Até 2 anos de CNPJ ou até R$ 4,8 mi/ano e 20 pessoas": "Company up to 2 years old, or up to R$ 4.8M/year and 20 people",
+  "Grátis ou R$ 199": "Free or R$ 199",
+  "Grátis ou R$ 1.990": "Free or R$ 1,990",
+  "por mês · preço válido por 24 meses": "per month · price valid for 24 months",
+  "por ano · 2 meses grátis": "per year · 2 months free",
+  "Para provar valor desde o primeiro agente.": "To prove value from the first agent.",
+  "Grátis: 2 agentes e 30 dias de histórico": "Free: 2 agents and 30 days of history",
+  "Startup: 5 agentes e 90 dias de histórico": "Startup: 5 agents and 90 days of history",
+  "Relatório mensal de entregas (plano pago)": "Monthly delivery report (paid plan)",
+  "Agente adicional: R$ 39/mês": "Additional agent: R$ 39/month",
+  "Suporte por comunidade e e-mail": "Community and email support",
+  "Começar grátis": "Start for free",
+  "Sem cartão.": "No card required.",
+  "Pequenas e Médias Empresas": "Small and Mid-sized Companies",
+  "Até R$ 300 mi/ano ou 500 pessoas": "Up to R$ 300M/year or 500 people",
+  "R$ 6.900": "R$ 6,900",
+  "por mês": "per month",
+  "Para quem já tem agentes em produção.": "For companies that already run agents in production.",
+  "Até 25 agentes e 15 usuários": "Up to 25 agents and 15 users",
+  "12 meses de histórico": "12 months of history",
+  "Relatório mensal de entregas": "Monthly delivery report",
+  "Agente adicional: R$ 29/mês": "Additional agent: R$ 29/month",
+  "Suporte por e-mail em 1 dia útil": "Email support within 1 business day",
+  "Testar 14 dias grátis": "Try free for 14 days",
+  "Grandes Empresas": "Enterprise",
+  "Acima disso, ou quem precisa de contrato, SSO ou SLA": "Above that, or if you need a contract, SSO or SLA",
+  "a partir de R$ 2.990": "from R$ 2,990",
+  "contrato anual": "annual contract",
+  "por mês, sob contrato": "per month, under contract",
+  "a partir de R$ 2.990/mês": "from R$ 2,990/month",
+  "Para operações em escala, com SLA e auditoria.": "For operations at scale, with SLA and audit.",
+  "A partir de 50 agentes, usuários ilimitados": "From 50 agents, unlimited users",
+  "24 a 36 meses de histórico": "24 to 36 months of history",
+  "Relatório mensal + auditoria trimestral": "Monthly report + quarterly audit",
+  "Agente adicional: a partir de R$ 19/mês": "Additional agent: from R$ 19/month",
+  "Canal dedicado com SLA": "Dedicated channel with SLA",
+  "Falar com a equipe": "Talk to our team",
+  "Piloto de 30 dias por R$ 990, abatido no contrato anual.": "30-day pilot for R$ 990, credited toward the annual contract."
+},
+  es: {
+  "Até 2 anos de CNPJ ou até R$ 4,8 mi/ano e 20 pessoas": "Empresa de hasta 2 años, o hasta R$ 4,8 M/año y 20 personas",
+  "Grátis ou R$ 199": "Gratis o R$ 199",
+  "Grátis ou R$ 1.990": "Gratis o R$ 1.990",
+  "por mês · preço válido por 24 meses": "por mes · precio válido por 24 meses",
+  "por ano · 2 meses grátis": "por año · 2 meses gratis",
+  "Para provar valor desde o primeiro agente.": "Para demostrar valor desde el primer agente.",
+  "Grátis: 2 agentes e 30 dias de histórico": "Gratis: 2 agentes y 30 días de historial",
+  "Startup: 5 agentes e 90 dias de histórico": "Startup: 5 agentes y 90 días de historial",
+  "Relatório mensal de entregas (plano pago)": "Informe mensual de entregas (plan pago)",
+  "Agente adicional: R$ 39/mês": "Agente adicional: R$ 39/mes",
+  "Suporte por comunidade e e-mail": "Soporte por comunidad y correo",
+  "Começar grátis": "Comenzar gratis",
+  "Sem cartão.": "Sin tarjeta.",
+  "Pequenas e Médias Empresas": "Pequeñas y Medianas Empresas",
+  "Até R$ 300 mi/ano ou 500 pessoas": "Hasta R$ 300 M/año o 500 personas",
+  "R$ 6.900": "R$ 6.900",
+  "por mês": "por mes",
+  "Para quem já tem agentes em produção.": "Para quienes ya tienen agentes en producción.",
+  "Até 25 agentes e 15 usuários": "Hasta 25 agentes y 15 usuarios",
+  "12 meses de histórico": "12 meses de historial",
+  "Relatório mensal de entregas": "Informe mensual de entregas",
+  "Agente adicional: R$ 29/mês": "Agente adicional: R$ 29/mes",
+  "Suporte por e-mail em 1 dia útil": "Soporte por correo en 1 día hábil",
+  "Testar 14 dias grátis": "Probar 14 días gratis",
+  "Grandes Empresas": "Grandes Empresas",
+  "Acima disso, ou quem precisa de contrato, SSO ou SLA": "Por encima de eso, o si necesita contrato, SSO o SLA",
+  "a partir de R$ 2.990": "desde R$ 2.990",
+  "contrato anual": "contrato anual",
+  "por mês, sob contrato": "por mes, bajo contrato",
+  "a partir de R$ 2.990/mês": "desde R$ 2.990/mes",
+  "Para operações em escala, com SLA e auditoria.": "Para operaciones a escala, con SLA y auditoría.",
+  "A partir de 50 agentes, usuários ilimitados": "Desde 50 agentes, usuarios ilimitados",
+  "24 a 36 meses de histórico": "24 a 36 meses de historial",
+  "Relatório mensal + auditoria trimestral": "Informe mensual + auditoría trimestral",
+  "Agente adicional: a partir de R$ 19/mês": "Agente adicional: desde R$ 19/mes",
+  "Canal dedicado com SLA": "Canal dedicado con SLA",
+  "Falar com a equipe": "Hablar con el equipo",
+  "Piloto de 30 dias por R$ 990, abatido no contrato anual.": "Piloto de 30 días por R$ 990, descontado del contrato anual."
+},
+};
+
 const pt = {
   eyebrow: "Preços",
   h2: "Preço fixo por empresa. Sem cobrança por usuário.",
@@ -86,10 +169,30 @@ const pt = {
     "Sem cobrança surpresa: aviso aos 80% do limite; acima de 100%, 30 dias de coleta antes de você escolher. Auditoria avulsa: R$ 490 (inclusa em Grandes Empresas).",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  eyebrow: "Pricing",
+  h2: "Flat price per company. No per-user fees.",
+  sub: "Three plans, by company size. Additional agents when you need them.",
+  tabs: ["Monthly", "Annual · 2 months free"],
+  pending: "Pricing pending decision",
+  footnote:
+    "No surprise charges: notice at 80% of the limit; above 100%, 30 days of collection before you choose. One-off audit: R$ 490 (included in Enterprise).",
+};
+const es: typeof pt = {
+  eyebrow: "Precios",
+  h2: "Precio fijo por empresa. Sin cobro por usuario.",
+  sub: "Tres planes, según el tamaño de la empresa. Agentes adicionales cuando los necesite.",
+  tabs: ["Mensual", "Anual · 2 meses gratis"],
+  pending: "Precios pendientes de decisión",
+  footnote:
+    "Sin cobros inesperados: aviso al 80% del límite; por encima del 100%, 30 días de recolección antes de que usted elija. Auditoría puntual: R$ 490 (incluida en Grandes Empresas).",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 export function HomePrecos() {
   const { lang } = useLang();
+  const PLANS = localize(PLANS_PT, TR[lang]);
   const t = copy[lang] ?? copy.pt;
   const [annual, setAnnual] = useState(false);
 

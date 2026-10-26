@@ -1,37 +1,90 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MusterMark } from "@/components/logo";
-import { useLang, type Lang } from "@/lib/i18n";
+import { useLang, localize, type Lang } from "@/lib/i18n";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
-const TABS = [
+const TABS_PT = [
   { label: "Identidade", badge: "ATIVA", badgeColor: "chart-1" },
   { label: "Objetivos e KPIs", badge: "METAS DO TRIMESTRE", badgeColor: "foreground" },
   { label: "Acompanhamento", badge: "AO VIVO", badgeColor: "chart-1" },
   { label: "Decisão", badge: "AGUARDA MARINA", badgeColor: "chart-2" },
 ] as const;
 
-const FIELDS = [
+const FIELDS_PT = [
   { label: "OBJETIVO", value: "Resolver 90% dos chamados de 1º nível sem escalar" },
   { label: "LIMITE", value: "Reembolsa até R$ 500 sozinha" },
   { label: "RESPONSÁVEL", value: "Marina Alves · CX" },
 ];
 
-const METRICS = [
+const METRICS_PT = [
   { label: "Qualidade", value: "93%", width: "93%" },
   { label: "Resultado real", value: "91%", width: "91%" },
   { label: "Prova", value: "96%", width: "96%" },
 ];
 
-const CALLOUTS_LEFT = [
+const CALLOUTS_LEFT_PT = [
   { title: "Identidade", desc: "Nome, função e onde roda.", abas: [0] },
   { title: "Objetivo e limite", desc: "O que deve entregar e até onde vai sozinho.", abas: [1] },
 ];
 
-const CALLOUTS_RIGHT = [
+const CALLOUTS_RIGHT_PT = [
   { title: "Responsável", desc: "Uma pessoa com nome responde por ele.", abas: [1] },
   { title: "Indicadores e prova", desc: "Como está indo, com a origem de cada número.", abas: [2, 3] },
 ];
+
+const TR: Partial<Record<Lang, Record<string, string>>> = {
+  en: {
+  "Identidade": "Identity",
+  "ATIVA": "ACTIVE",
+  "Objetivos e KPIs": "Objectives and KPIs",
+  "METAS DO TRIMESTRE": "QUARTERLY TARGETS",
+  "Acompanhamento": "Monitoring",
+  "AO VIVO": "LIVE",
+  "Decisão": "Decision",
+  "AGUARDA MARINA": "AWAITING MARINA",
+  "OBJETIVO": "OBJECTIVE",
+  "Resolver 90% dos chamados de 1º nível sem escalar": "Resolve 90% of tier 1 tickets without escalation",
+  "LIMITE": "LIMIT",
+  "Reembolsa até R$ 500 sozinha": "Refunds up to R$ 500 on her own",
+  "RESPONSÁVEL": "ACCOUNTABLE",
+  "Qualidade": "Quality",
+  "Resultado real": "Actual result",
+  "Prova": "Evidence",
+  "Nome, função e onde roda.": "Name, role and where it runs.",
+  "Objetivo e limite": "Objective and limit",
+  "O que deve entregar e até onde vai sozinho.": "What it must deliver and how far it goes on its own.",
+  "Responsável": "Accountable person",
+  "Uma pessoa com nome responde por ele.": "A named person is accountable for it.",
+  "Indicadores e prova": "Indicators and evidence",
+  "Como está indo, com a origem de cada número.": "How it is performing, with the source of every number."
+},
+  es: {
+  "Identidade": "Identidad",
+  "ATIVA": "ACTIVA",
+  "Objetivos e KPIs": "Objetivos y KPIs",
+  "METAS DO TRIMESTRE": "METAS DEL TRIMESTRE",
+  "Acompanhamento": "Seguimiento",
+  "AO VIVO": "EN VIVO",
+  "Decisão": "Decisión",
+  "AGUARDA MARINA": "ESPERA A MARINA",
+  "OBJETIVO": "OBJETIVO",
+  "Resolver 90% dos chamados de 1º nível sem escalar": "Resolver el 90% de los tickets de 1.er nivel sin escalar",
+  "LIMITE": "LÍMITE",
+  "Reembolsa até R$ 500 sozinha": "Reembolsa hasta R$ 500 por sí sola",
+  "RESPONSÁVEL": "RESPONSABLE",
+  "Qualidade": "Calidad",
+  "Resultado real": "Resultado real",
+  "Prova": "Prueba",
+  "Nome, função e onde roda.": "Nombre, función y dónde opera.",
+  "Objetivo e limite": "Objetivo y límite",
+  "O que deve entregar e até onde vai sozinho.": "Qué debe entregar y hasta dónde actúa solo.",
+  "Responsável": "Responsable",
+  "Uma pessoa com nome responde por ele.": "Una persona con nombre responde por él.",
+  "Indicadores e prova": "Indicadores y prueba",
+  "Como está indo, com a origem de cada número.": "Cómo va, con el origen de cada número."
+},
+};
 
 const pt = {
   eyebrow: "Objetivos e KPIs por agente",
@@ -48,7 +101,36 @@ const pt = {
   illustrative: "Dados ilustrativos",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  eyebrow: "Objectives and KPIs per agent",
+  h2: "Every agent has a file, like an employee.",
+  ficha: "AGENT FILE",
+  agentName: "Sofia",
+  agentRole: "Tier 1 support · Zendesk",
+  captions: [
+    "Name, role and where it runs. You know how many exist and what each one does.",
+    "What it must deliver, how far it can go on its own and who is accountable for it, in writing.",
+    "KPIs, cost and results measured continuously, with the source of every number.",
+    "When a KPI drifts off target, a person receives the recommendation and decides.",
+  ],
+  illustrative: "Illustrative data",
+};
+const es: typeof pt = {
+  eyebrow: "Objetivos y KPIs por agente",
+  h2: "Cada agente tiene una ficha, como un empleado.",
+  ficha: "FICHA DEL AGENTE",
+  agentName: "Sofia",
+  agentRole: "Atención N1 · Zendesk",
+  captions: [
+    "Nombre, función y dónde opera. Usted sabe cuántos existen y qué hace cada uno.",
+    "Qué debe entregar, hasta dónde actúa solo y quién responde por él, por escrito.",
+    "KPIs, costo y resultado medidos en todo momento, con el origen de cada número.",
+    "Cuando un KPI se aleja de la meta, una persona recibe la recomendación y decide.",
+  ],
+  illustrative: "Datos ilustrativos",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 // Como no protótipo: OBJETIVO acende em Identidade e Objetivos; LIMITE e
 // RESPONSÁVEL só em Objetivos e KPIs; os KPIs em Acompanhamento e Decisão.
@@ -63,6 +145,11 @@ function calloutOpacity(tab: number, abas: readonly number[]): number {
 
 export function HomeFicha() {
   const { lang } = useLang();
+  const TABS = localize(TABS_PT, TR[lang]);
+  const FIELDS = localize(FIELDS_PT, TR[lang]);
+  const METRICS = localize(METRICS_PT, TR[lang]);
+  const CALLOUTS_LEFT = localize(CALLOUTS_LEFT_PT, TR[lang]);
+  const CALLOUTS_RIGHT = localize(CALLOUTS_RIGHT_PT, TR[lang]);
   const t = copy[lang] ?? copy.pt;
   const [tab, setTab] = useState(0);
   const [touched, setTouched] = useState(false);

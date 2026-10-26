@@ -67,7 +67,110 @@ const pt = {
   semLogin: "Sem cartão. Sem instalação.",
 };
 
-const copy: Record<Lang, typeof pt> = { pt, en: pt, es: pt };
+const en: typeof pt = {
+  eyebrow: "Free · no sign-in",
+  h1a: "Cost per Result",
+  h1b: "Calculator.",
+  sub: "Enter your numbers and see what each accepted result costs, with an agent and with a human team. The calculation runs in your browser; nothing is sent.",
+  ilustrativo: "Illustrative data",
+  ilustrativoHint: "The initial values are examples. Replace them with your own.",
+  inputsTitle: "Your numbers",
+  campos: {
+    agentes: "Agents in production",
+    tarefas: "Tasks per month",
+    aceitacao: "Accepted tasks",
+    gastoMensal: "Monthly agent spend",
+    custoHora: "Team hourly cost",
+    minutosPorTarefa: "Average time per task",
+  } as Record<CampoEntrada, string>,
+  dicas: {
+    agentes: "how many are running today",
+    tarefas: "volume the agents process",
+    aceitacao: "what became an accepted result",
+    gastoMensal: "models, infrastructure and licenses",
+    custoHora: "salary + charges ÷ hours",
+    minutosPorTarefa: "time a person takes on the same task",
+  } as Record<CampoEntrada, string>,
+  sufixos: { aceitacao: "%", minutosPorTarefa: "min" } as Partial<Record<CampoEntrada, string>>,
+  prefixos: { gastoMensal: "R$", custoHora: "R$" } as Partial<Record<CampoEntrada, string>>,
+  resultTitle: "Cost per validated result",
+  resultAgente: "with an agent on Muster",
+  resultHumano: "with the human team",
+  deltaBarato: (p: string) => `${p}% lower cost per result`,
+  deltaCaro: (p: string) => `${p}% higher cost per result`,
+  mediaAgente: (valor: string) => `Average spend per agent: ${valor} per month`,
+  stats: {
+    resultados: "Validated results per month",
+    humanoMes: "Estimated human cost per month",
+    economia: "Monthly savings with the agent",
+    negativa: "above the human cost",
+  },
+  semDados: "Fill in the fields to calculate the cost per result.",
+  formulaTitle: "How we calculate",
+  formula: [
+    "validated results = tasks × acceptance",
+    "cost per result (agent) = monthly spend ÷ validated results",
+    "monthly human cost = tasks × minutes ÷ 60 × hourly cost",
+    "cost per result (human) = monthly human cost ÷ validated results",
+  ],
+  formulaNote:
+    "Both sides spend on every task and only accepted work counts as a result, so low acceptance weighs on both. The human cost uses the average time per task you entered.",
+  cta: "Start evaluation",
+  semLogin: "No card. No installation.",
+};
+const es: typeof pt = {
+  eyebrow: "Gratis · sin inicio de sesión",
+  h1a: "Calculadora de Costo",
+  h1b: "por Resultado.",
+  sub: "Ingrese sus números y vea cuánto cuesta cada resultado aceptado, con agente y con equipo humano. El cálculo se ejecuta en su navegador; no se envía nada.",
+  ilustrativo: "Datos ilustrativos",
+  ilustrativoHint: "Los valores iniciales son ejemplos. Reemplácelos por los suyos.",
+  inputsTitle: "Sus números",
+  campos: {
+    agentes: "Agentes en producción",
+    tarefas: "Tareas por mes",
+    aceitacao: "Tareas aceptadas",
+    gastoMensal: "Gasto mensual en agentes",
+    custoHora: "Costo por hora del equipo",
+    minutosPorTarefa: "Tiempo medio por tarea",
+  } as Record<CampoEntrada, string>,
+  dicas: {
+    agentes: "cuántos están operando hoy",
+    tarefas: "volumen que procesan los agentes",
+    aceitacao: "lo que se convirtió en resultado aceptado",
+    gastoMensal: "modelos, infraestructura y licencias",
+    custoHora: "salario + cargas ÷ horas",
+    minutosPorTarefa: "tiempo de una persona en la misma tarea",
+  } as Record<CampoEntrada, string>,
+  sufixos: { aceitacao: "%", minutosPorTarefa: "min" } as Partial<Record<CampoEntrada, string>>,
+  prefixos: { gastoMensal: "R$", custoHora: "R$" } as Partial<Record<CampoEntrada, string>>,
+  resultTitle: "Costo por resultado validado",
+  resultAgente: "con agente en Muster",
+  resultHumano: "en el equipo humano",
+  deltaBarato: (p: string) => `${p}% menos costo por resultado`,
+  deltaCaro: (p: string) => `${p}% más costo por resultado`,
+  mediaAgente: (valor: string) => `Gasto medio por agente: ${valor} al mes`,
+  stats: {
+    resultados: "Resultados validados por mes",
+    humanoMes: "Costo humano estimado por mes",
+    economia: "Ahorro mensual con el agente",
+    negativa: "por encima del costo humano",
+  },
+  semDados: "Complete los campos para calcular el costo por resultado.",
+  formulaTitle: "Cómo calculamos",
+  formula: [
+    "resultados validados = tareas × aceptación",
+    "costo por resultado (agente) = gasto mensual ÷ resultados validados",
+    "costo humano mensual = tareas × minutos ÷ 60 × costo por hora",
+    "costo por resultado (humano) = costo humano mensual ÷ resultados validados",
+  ],
+  formulaNote:
+    "Ambos lados gastan en todas las tareas y solo lo aceptado cuenta como resultado: una aceptación baja pesa en ambos. El costo humano usa el tiempo medio por tarea que usted informó.",
+  cta: "Iniciar evaluación",
+  semLogin: "Sin tarjeta. Sin instalación.",
+};
+
+const copy: Record<Lang, typeof pt> = { pt, en, es };
 
 const CAMPOS: CampoEntrada[] = ["agentes", "tarefas", "aceitacao", "gastoMensal", "custoHora", "minutosPorTarefa"];
 
