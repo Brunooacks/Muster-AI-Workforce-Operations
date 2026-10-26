@@ -101,3 +101,16 @@ describe("observability", () => {
     );
   });
 });
+
+describe("requestLogProperties outside clerkMiddleware", () => {
+  it("does not throw when getAuth throws (non-/api routes, Clerk did not run)", async () => {
+    getAuthMock.mockImplementation(() => {
+      throw new Error("clerkMiddleware should be registered");
+    });
+    const { requestLogProperties } = await import("./observability");
+    expect(() =>
+      requestLogProperties({ headers: {} } as unknown as Request),
+    ).not.toThrow();
+    expect(requestLogProperties({ headers: {} } as unknown as Request)).toEqual({});
+  });
+});
