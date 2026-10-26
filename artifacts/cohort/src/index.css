@@ -83,6 +83,13 @@
 
 /* ---------- CLARO (padrão da home e do app) ---------- */
 [data-profile="claro"], :root {
+  --cyan-text: 189 75% 30%;             /* ciano escuro p/ texto: 5,4:1 no branco, 4,9:1 no cinza */
+  --chart-2-text: 35 68% 30%;
+  --chart-3-text: 12 60% 38%;
+  --chart-4-text: 340 80% 38%;
+  --destructive-text: 12 60% 38%;
+  --button-outline: rgba(0,0,0,.10);
+  --badge-outline: rgba(0,0,0,.07);
   --background: 0 0% 100%;              /* #ffffff */
   --foreground: 240 3% 12%;             /* #1d1d1f  tinta */
   --card: 0 0% 100%;
@@ -171,6 +178,61 @@
 }
 
 /* `.dark` = perfil "noite" do protótipo; :root = perfil "claro". */
+/* Perfil "noite" da home e do design system (#66) — escopado por data-profile. */
+[data-profile="noite"] {
+  --background: 225 37% 4%;             /* #06080d */
+  --foreground: 210 36% 95%;            /* #eef2f7 */
+  --card: 220 33% 7%;                   /* #0c1018 */
+  --card-foreground: 210 36% 95%;
+  --card-border: 220 20% 14%;
+  --popover: 220 33% 8%;
+  --popover-foreground: 210 36% 95%;
+  --popover-border: 220 20% 16%;
+  --border: 220 20% 14%;
+  --input: 220 20% 16%;
+
+  --primary: 189 92% 53%;               /* no escuro, a ação principal é o ciano */
+  --primary-foreground: 225 37% 4%;
+  --secondary: 220 20% 12%;
+  --secondary-foreground: 210 36% 95%;
+  --muted: 220 20% 11%;
+  --muted-foreground: 221 14% 60%;      /* #8b94a7 */
+  --accent: 189 92% 53%;
+  --accent-foreground: 225 37% 4%;
+  --destructive: 340 100% 62%;          /* #ff3d81 */
+  --destructive-foreground: 225 37% 4%;
+  --ring: 189 92% 53%;
+
+  /* Ciano para texto no modo escuro (já tem bom contraste) */
+  --cyan-text: 189 92% 53%;             /* #19d3f5 */
+  --chart-2-text: 40 100% 66%;          /* #ffb020 - texto de atenção no escuro */
+  --chart-3-text: 340 100% 74%;
+  --chart-4-text: 4 80% 72%;
+  --destructive-text: 340 100% 74%;
+
+  --chart-1: 189 92% 53%;               /* #19d3f5 */
+  --chart-2: 38 100% 56%;               /* #ffb020 */
+  --chart-3: 340 100% 62%;              /* #ff3d81 */
+  --chart-4: 4 62% 56%;                 /* vermelho */
+  --chart-5: 205 32% 62%;               /* azul-aço */
+
+  --sidebar: 225 40% 3%;
+  --sidebar-foreground: 210 36% 92%;
+  --sidebar-border: 220 20% 12%;
+  --sidebar-primary: 189 92% 53%;
+  --sidebar-primary-foreground: 225 37% 4%;
+  --sidebar-accent: 220 20% 11%;
+  --sidebar-accent-foreground: 210 36% 95%;
+  --sidebar-ring: 189 92% 53%;
+
+  --elevate-1: rgba(255,255,255,.04);
+  --elevate-2: rgba(255,255,255,.09);
+  --button-outline: rgba(255,255,255,.10);
+  --badge-outline: rgba(255,255,255,.06);
+  --shadow-card: 0 60px 140px -40px rgba(0,0,0,.9), 0 0 120px -40px rgba(25,211,245,.25);
+  --shadow-soft: 0 30px 80px -30px rgba(0,0,0,.8);
+}
+
 .dark {
   --background: 225 37% 4%;
   --foreground: 210 36% 95%;
