@@ -123,10 +123,9 @@ export default function ProfilePage({ embedded = false, demo = false }: { embedd
   const { data: agents, isLoading } = useListAgents(undefined, {
     query: { queryKey: getListAgentsQueryKey(), enabled: !demo },
   });
-  const { lang } = useLang();
+  const { lang, setLang } = useLang();
   const t = L[lang];
   const [theme, setTheme] = useState("light");
-  const [language, setLanguage] = useState("pt-BR");
 
   const followed = Array.isArray(agents) ? agents.slice(0, 4) : [];
 
@@ -245,14 +244,14 @@ export default function ProfilePage({ embedded = false, demo = false }: { embedd
                 <div className="text-sm font-medium text-foreground">{t.langLabel}</div>
                 <div className="text-xs text-muted-foreground">{t.langDesc}</div>
               </div>
-              <Select value={language} onValueChange={setLanguage}>
+              <Select value={lang} onValueChange={(v) => setLang(v as Lang)}>
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                  <SelectItem value="en-US">English (US)</SelectItem>
-                  <SelectItem value="es-ES">Español</SelectItem>
+                  <SelectItem value="pt">Português (Brasil)</SelectItem>
+                  <SelectItem value="en">English (US)</SelectItem>
+                  <SelectItem value="es">Español</SelectItem>
                 </SelectContent>
               </Select>
             </div>
