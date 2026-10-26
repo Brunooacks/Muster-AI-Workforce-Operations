@@ -33,6 +33,7 @@ import DirecionamentoPage from "@/muster/pages/direcionamento";
 import BaselinePage from "@/muster/pages/baseline";
 import HistoricoPage from "@/muster/pages/historico";
 import SquadsPage from "@/muster/pages/squads";
+import FichaAgentePage from "@/muster/pages/ficha-agente";
 import AprendizadosPage from "@/muster/pages/aprendizados";
 import BoardPage from "@/muster/pages/board";
 import {
@@ -215,6 +216,7 @@ function ClerkProviderWithRoutes({
                   <Route path="/squads"><ProtectedRoute component={SquadsPage} /></Route>
                   <Route path="/aprendizados"><ProtectedRoute component={AprendizadosPage} /></Route>
                   <Route path="/board"><ProtectedRoute component={BoardPage} /></Route>
+                  <Route path="/agentes/:id/ficha"><ProtectedRoute component={FichaAgentePage} /></Route>
                   <Route path="/agentes/:id/conectar">
                     <ProtectedRoute component={WorkforceOsProductionPage} />
                   </Route>

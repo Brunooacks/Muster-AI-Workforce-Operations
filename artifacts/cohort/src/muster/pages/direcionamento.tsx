@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { MusterShell } from "../shell";
 import { AG, DEMO, Disc, F, MES, Tip, useT, type Agent } from "../fmt";
 
@@ -57,7 +58,7 @@ export default function DirecionamentoPage() {
             <thead><tr><th>{t("Atividade", "Activity", "Actividad")}</th><th>{t("Repetitiva", "Repetitive", "Repetitiva")}</th><th className="r">{t("Volume", "Volume", "Volumen")}</th><th>{t("Hoje com", "Today with", "Hoy con")}</th><th className="r">{t("Custo/res.", "Cost/res.", "Costo/res.")}</th><th className="r">{t("Equipe/res.", "Team/res.", "Equipo/res.")}</th><th className="r">{t("Qualidade", "Quality", "Calidad")}</th><th className="r">{t("h liberadas", "h freed", "h liberadas")}</th><th>{t("Faixa", "Band", "Franja")}</th><th>{t("Lugar certo?", "Right place?", "¿Lugar correcto?")}</th></tr></thead>
             <tbody>{AT.map((x) => { const a = x[3] ? AG[x[3]] : null, fx = a ? faixa(a) : "cinza";
               const certo = a ? (fx === "vermelho" ? <b style={{ color: "#c8492b" }}>{t("Devolver para a equipe", "Return to the team", "Devolver al equipo")}</b> : t("Sim", "Yes", "Sí")) : (x[4] ? t("Sim, exige julgamento", "Yes, needs judgment", "Sí, exige criterio") : <b>{t("Levar para agente", "Move to an agent", "Llevar a un agente")}</b>);
-              return (<tr key={x[0][0]}><td>{t(...x[0])}</td><td><span className="rep"><i style={{ width: x[1] + "%" }} /></span>{x[1]}%</td><td className="r">{F.n(x[2])}</td><td>{a ? `${t("Agente", "Agent", "Agente")} · ${a.nome}` : t("Equipe", "Team", "Equipo")}</td><td className="r">{a ? F.brl(a.custoPorResultado) : "—"}</td><td className="r">{F.brl(a ? a.custoHumanoUnit : x[5]!)}</td><td className="r">{a ? `${a.qualidade} vs ${a.baseline}` : "—"}</td><td className="r">{a ? F.n(horasDe(a)) : "—"}</td><td><span className={"faixa " + fx}>{FX[fx]}</span></td><td>{certo}</td></tr>); })}</tbody>
+              return (<tr key={x[0][0]}><td>{t(...x[0])}</td><td><span className="rep"><i style={{ width: x[1] + "%" }} /></span>{x[1]}%</td><td className="r">{F.n(x[2])}</td><td>{a ? <Link href={`/agentes/${a.id}/ficha`}>{`${t("Agente", "Agent", "Agente")} · ${a.nome}`}</Link> : t("Equipe", "Team", "Equipo")}</td><td className="r">{a ? F.brl(a.custoPorResultado) : "—"}</td><td className="r">{F.brl(a ? a.custoHumanoUnit : x[5]!)}</td><td className="r">{a ? `${a.qualidade} vs ${a.baseline}` : "—"}</td><td className="r">{a ? F.n(horasDe(a)) : "—"}</td><td><span className={"faixa " + fx}>{FX[fx]}</span></td><td>{certo}</td></tr>); })}</tbody>
           </table></div>
         </section>
         <div className="g2">

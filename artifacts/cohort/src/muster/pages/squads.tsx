@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { MusterShell } from "../shell";
-import { Disc, F, TipLine, useT } from "../fmt";
+import { AG, Disc, F, TipLine, useT } from "../fmt";
+const ID = Object.fromEntries(Object.values(AG).map((a) => [a.nome, a.id]));
 
 type T3 = [string, string, string];
 type Sq = { nome: T3; lider: string; fonte: string; ent: [number, number]; custo: [number, number]; ciclo: [number, number]; pessoas: number; papel: T3; ctb: [string, number][] };
@@ -42,7 +43,7 @@ export default function SquadsPage() {
               <div>
                 <small style={{ font: "500 10.5px var(--app-font-mono)", textTransform: "uppercase", letterSpacing: ".08em", color: "var(--faint)" }}>{t("Contribuição nas entregas", "Share of deliveries", "Contribución en las entregas")}</small>
                 <div className="ctb" style={{ marginTop: 8 }}>{s.ctb.map(([n, v], i) => <i key={i} style={{ width: v + "%", background: C[i] }} title={n || `${pess} (${s.pessoas})`} />)}</div>
-                <div className="ctl" style={{ marginTop: 8 }}>{s.ctb.map(([n, v], i) => <span key={i} style={{ ["--cc" as string]: C[i] }}>{n ? `${n} ${v}%` : `${pess} (${s.pessoas}) ${v}% · ${t(...s.papel)}`}</span>)}</div>
+                <div className="ctl" style={{ marginTop: 8 }}>{s.ctb.map(([n, v], i) => <span key={i} style={{ ["--cc" as string]: C[i] }}>{n && ID[n] ? <Link href={`/agentes/${ID[n]}/ficha`}>{n} {v}%</Link> : `${pess} (${s.pessoas}) ${v}% · ${t(...s.papel)}`}</span>)}</div>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <Link className="btn sm soft" href="/board">{t("Ver board do squad", "View squad board", "Ver board del squad")}</Link>
