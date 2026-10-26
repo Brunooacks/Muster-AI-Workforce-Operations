@@ -62,4 +62,4 @@ DROP TABLE IF EXISTS "projects";--> statement-breakpoint
 
 -- Tira a 0022 do registro do migrator (created_at = "when" do _journal.json),
 -- para que um `migrate` seguinte a reaplique (up → down → up).
-DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792887114875;
+DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792962187056;

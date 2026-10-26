@@ -9,4 +9,4 @@ DROP TABLE IF EXISTS "off_invoice_costs";--> statement-breakpoint
 DROP TABLE IF EXISTS "role_rates";--> statement-breakpoint
 
 -- Tira a 0025 do registro do migrator (created_at = "when" do _journal.json).
-DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792899094881;
+DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792962367056;

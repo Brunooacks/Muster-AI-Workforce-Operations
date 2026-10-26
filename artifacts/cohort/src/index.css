@@ -74,15 +74,9 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* OPS ROOM — Sala de Operações (conceito B): void + phosphor + creme.
-   Supersede a "Trincheira" clara. Serif Spectral e mono IBM Plex permanecem;
-   o chão vira a sala de comando escura da landing. */
-:root {
-  --button-outline: rgba(0,0,0,.10);
-  --badge-outline: rgba(0,0,0,.07);
-
 /* ---------- CLARO (padrão da home e do app) ---------- */
 [data-profile="claro"], :root {
+  --opaque-button-border-intensity: 9;
   --cyan-text: 189 75% 30%;             /* ciano escuro p/ texto: 5,4:1 no branco, 4,9:1 no cinza */
   --chart-2-text: 35 68% 30%;
   --chart-3-text: 12 60% 38%;

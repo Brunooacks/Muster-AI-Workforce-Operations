@@ -9,4 +9,4 @@ DROP FUNCTION IF EXISTS "muster_outcome_snapshots_immutable"();--> statement-bre
 DROP TABLE IF EXISTS "outcome_snapshots";--> statement-breakpoint
 
 -- Tira a 0026 do registro do migrator (created_at = "when" do _journal.json).
-DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792899833796;
+DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792962427056;

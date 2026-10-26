@@ -41,4 +41,4 @@ ALTER TABLE "agent_events" DROP COLUMN IF EXISTS "org_id";--> statement-breakpoi
 
 -- Tira a 0023 do registro do migrator (created_at = "when" do _journal.json),
 -- para que um `migrate` seguinte a reaplique (up → down → up).
-DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792889358830;
+DELETE FROM "drizzle"."__drizzle_migrations" WHERE "created_at" = 1792962247056;
