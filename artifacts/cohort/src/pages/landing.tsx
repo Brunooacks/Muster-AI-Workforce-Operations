@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { HomeNav } from "@/components/home/home-nav";
 import { HomeHero } from "@/components/home/home-hero";
+import { HomeVideo } from "@/components/home/home-video";
 import { HomeMercado } from "@/components/home/home-mercado";
 import { HomeResolvemos } from "@/components/home/home-resolvemos";
 import { HomeFicha } from "@/components/home/home-ficha";
@@ -34,6 +35,7 @@ export default function LandingPage() {
       <HomeNav />
       <main>
         <HomeHero />
+        <HomeVideo />
         <HomeMercado />
         <HomeResolvemos />
         <HomeFicha />

@@ -508,3 +508,5 @@
   background-clip: content-box;
 }
 ::-webkit-scrollbar-corner { background: transparent; }
+/* Vídeo da home: brilho discreto no canto, no tom do acento. */
+.home-video-glow { background: radial-gradient(120% 80% at 80% 0%, hsl(189 92% 53% / .08), transparent 55%); }

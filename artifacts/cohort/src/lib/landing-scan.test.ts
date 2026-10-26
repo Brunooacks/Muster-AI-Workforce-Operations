@@ -87,7 +87,12 @@ test("os exemplos existem e a landing compõe as seções do handoff", () => {
   for (const secao of ["HomeNav", "HomeHero", "HomeMercado", "HomeResolvemos", "HomeFicha", "HomeAcompanhamento", "HomeDecisao", "HomeIntegracoes", "HomeCobertura", "HomePrecos", "HomeFechamento"]) {
     assert.ok(landing.includes(`<${secao}`), `seção ${secao}`);
   }
-  assert.ok(!landing.includes("video") && !landing.includes("iframe"), "sem vídeo publicado");
+  assert.ok(landing.includes("<HomeVideo"), "vídeo logo abaixo do hero");
+  assert.ok(landing.indexOf("<HomeVideo") > landing.indexOf("<HomeHero") && landing.indexOf("<HomeVideo") < landing.indexOf("<HomeMercado"), "vídeo entre o hero e o mercado");
+  assert.ok(!landing.includes("iframe"), "sem iframe");
+  const video = read(SRC, "components/home/home-video.tsx");
+  assert.ok(video.includes("homeVideo.webm") && video.includes("homeVideo.mp4") && video.includes("homeVideo.poster"), "vídeo vem da config única");
+  assert.ok(video.includes("prefers-reduced-motion") && video.includes("muted") && video.includes("playsInline") && video.includes("loop"), "mudo, em loop, inline e respeita movimento reduzido");
 });
 
 test("home: número ilustrativo vem com selo; Gartner vem com fonte pública", () => {
