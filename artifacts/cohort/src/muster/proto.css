@@ -42,6 +42,8 @@ h1,h2,h3,p{margin:0}
 .brand{display:flex;align-items:center;gap:9px;padding:2px 10px}
 .brand svg{width:24px;height:24px}
 .brand b{font:600 18px/1 var(--app-font-sans);letter-spacing:-.03em}
+.bn{display:flex;flex-direction:column;gap:3px;min-width:0}
+.bn em{font:500 8.5px/1 var(--app-font-mono);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--muted-foreground));white-space:nowrap}
 .org{margin:0 4px;padding:12px 14px;border-radius:16px;background:var(--paper);box-shadow:0 0 0 1px var(--line);display:flex;flex-direction:column;gap:2px}
 .org b{font:600 14px/1.2 var(--app-font-sans);letter-spacing:-.01em}
 .org span{font:400 12px var(--app-font-mono);color:var(--mut)}
@@ -1083,3 +1085,6 @@ h1 .itip{width:22px;height:22px;font-size:13px;vertical-align:.35em}
 .mp :where(h4){margin:1.33em 0}
 /* O protótipo só carrega Geist até 600; negrito renderiza com a face 600. */
 .mp :where(b,strong){font-weight:600}
+
+/* 390px: a marca ocupa duas linhas; o selo vira só o ponto, com o texto acessível */
+@media (max-width:480px){.top .seal{font-size:0;gap:0;padding:8px;letter-spacing:0}.top .seal i{margin:0}}

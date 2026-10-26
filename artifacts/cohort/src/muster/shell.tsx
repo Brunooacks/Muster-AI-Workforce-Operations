@@ -101,7 +101,7 @@ export function MusterShell({ active, children }: { active: string; children: Re
     <div className="mp">
       <div className="app">
         <aside className={"side" + (side ? " on" : "")} id="side" aria-label={t("Navegação principal", "Main navigation", "Navegación principal")}>
-          <Link className="brand" href="/visao-geral" aria-label="Muster">{MARK}<b>Muster</b></Link>
+          <Link className="brand" href="/visao-geral" aria-label="Muster Workforce Operations">{MARK}<span className="bn"><b>Muster</b><em>Workforce Operations</em></span></Link>
           <div className="wsw">
             <button className="wsw-b" aria-haspopup="listbox" aria-expanded={wsOpen} onClick={() => setWsOpen(!wsOpen)}>
               <i>LL</i><span><b>{DEMO.empresa}</b><small>{t("Conta empresa", "Company account", "Cuenta empresa")} · {DEMO.periodo}</small></span>
@@ -126,7 +126,7 @@ export function MusterShell({ active, children }: { active: string; children: Re
         <div className="col" id="col">
           <header className="top">
             <button className="burger" aria-label={t("Abrir menu", "Open menu", "Abrir menú")} aria-controls="side" onClick={() => setSide(true)}>{I('<path d="M4 7h16M4 12h16M4 17h10"/>')}</button>
-            <Link className="mbrand" href="/visao-geral">{MARK}<b>Muster</b></Link>
+            <Link className="mbrand" href="/visao-geral" aria-label="Muster Workforce Operations">{MARK}<span className="bn"><b>Muster</b><em>Workforce Operations</em></span></Link>
             <button className="search" data-toast={soon}>
               <svg className="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z" /></svg>
               <span>{t("Pergunte sobre seus agentes", "Ask about your agents", "Pregunte sobre sus agentes")}</span><kbd>⌘K</kbd>
