@@ -1,24 +1,28 @@
 /**
- * Vídeo da home. Para trocar pelo vídeo novo, substitua os três arquivos em
- * public/video/ (mesmos nomes) ou aponte os caminhos abaixo para os novos, e
- * ajuste `duration` e `chapters` se o roteiro mudar. Nada mais precisa mudar.
+ * Vídeo da home (v3), um arquivo por idioma com legendas embutidas.
+ * Para trocar, substitua os arquivos em public/video/ (mesmos nomes) e ajuste
+ * `duration` e `chapters` se o roteiro mudar.
  *
- * Origem atual: composição HyperFrames do handoff da home
- * (design_handoff_muster_home/video/muster-intro), renderizada 960x540, 24 fps.
+ * Origem: /workspace/muster/video-novo/v3 (edit.py), 1920x1080, 30 fps, sem áudio.
  */
+type L3 = { pt: string; en: string; es: string };
+const files = (lang: "pt" | "en" | "es") => ({
+  webm: `/video/muster-home-${lang}.webm`,
+  mp4: `/video/muster-home-${lang}.mp4`,
+  poster: `/video/muster-home-${lang}-poster.jpg`,
+});
+
 export const homeVideo = {
-  webm: "/video/muster-intro.webm",
-  mp4: "/video/muster-intro.mp4",
-  poster: "/video/muster-intro-poster.jpg",
-  duration: 53,
+  sources: { pt: files("pt"), en: files("en"), es: files("es") },
+  /** O v3 não tem trilha de áudio: o botão de som fica oculto. */
+  hasAudio: false as boolean,
+  duration: 56,
   /** Capítulos (segundos) — viram os atalhos abaixo do vídeo. */
   chapters: [
-    { at: 0, label: { pt: "Abertura", en: "Opening", es: "Apertura" } },
-    { at: 5, label: { pt: "Todas as plataformas", en: "Every platform", es: "Todas las plataformas" } },
-    { at: 12, label: { pt: "Visão geral", en: "Overview", es: "Visión general" } },
-    { at: 18, label: { pt: "Objetivos e KPIs", en: "Goals and KPIs", es: "Objetivos y KPIs" } },
-    { at: 25, label: { pt: "Alerta", en: "Alert", es: "Alerta" } },
-    { at: 32, label: { pt: "Decisões", en: "Decisions", es: "Decisiones" } },
-    { at: 47, label: { pt: "Começar", en: "Get started", es: "Empezar" } },
-  ],
-} as const;
+    { at: 0, label: { pt: "Várias plataformas", en: "Many platforms", es: "Varias plataformas" } },
+    { at: 15, label: { pt: "Visão geral", en: "Overview", es: "Visión general" } },
+    { at: 25, label: { pt: "Ficha do agente", en: "Agent file", es: "Ficha del agente" } },
+    { at: 34, label: { pt: "Pessoas e agentes", en: "People and agents", es: "Personas y agentes" } },
+    { at: 45, label: { pt: "Decisões", en: "Decisions", es: "Decisiones" } },
+  ] as Array<{ at: number; label: L3 }>,
+};

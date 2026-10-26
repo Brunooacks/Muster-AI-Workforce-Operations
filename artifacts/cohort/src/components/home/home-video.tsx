@@ -18,6 +18,7 @@ function prefersReducedMotion() {
 export function HomeVideo() {
   const { lang } = useLang();
   const t = copy[lang] ?? copy.pt;
+  const src = homeVideo.sources[lang] ?? homeVideo.sources.pt;
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [near, setNear] = useState(false);
@@ -70,9 +71,10 @@ export function HomeVideo() {
         className="group relative mx-auto aspect-video w-full max-w-[1152px] overflow-hidden rounded-[22px] border border-white/10 bg-[#06080d] shadow-[0_40px_90px_-30px_rgba(0,0,0,.55),0_0_0_1px_rgba(0,0,0,.04)]"
       >
         <video
+          key={lang}
           ref={video}
           className="absolute inset-0 h-full w-full object-cover"
-          poster={url(homeVideo.poster)}
+          poster={url(src.poster)}
           muted={muted}
           loop
           playsInline
@@ -82,8 +84,8 @@ export function HomeVideo() {
           onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
           aria-label={t.label}
         >
-          {near && <source src={url(homeVideo.webm)} type="video/webm" />}
-          {near && <source src={url(homeVideo.mp4)} type="video/mp4" />}
+          {near && <source src={url(src.webm)} type="video/webm" />}
+          {near && <source src={url(src.mp4)} type="video/mp4" />}
         </video>
         {/* moldura do produto: brilho de borda e vinheta discretos */}
         <div className="pointer-events-none absolute inset-0 rounded-[22px] ring-1 ring-inset ring-white/10 home-video-glow" />
@@ -101,7 +103,7 @@ export function HomeVideo() {
             )}
           </span>
         </button>
-        {playing && (
+        {playing && homeVideo.hasAudio && (
           <button
             type="button"
             onClick={() => setMuted((m) => !m)}

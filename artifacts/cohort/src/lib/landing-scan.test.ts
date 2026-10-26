@@ -91,7 +91,7 @@ test("os exemplos existem e a landing compõe as seções do handoff", () => {
   assert.ok(landing.indexOf("<HomeVideo") > landing.indexOf("<HomeHero") && landing.indexOf("<HomeVideo") < landing.indexOf("<HomeMercado"), "vídeo entre o hero e o mercado");
   assert.ok(!landing.includes("iframe"), "sem iframe");
   const video = read(SRC, "components/home/home-video.tsx");
-  assert.ok(video.includes("homeVideo.webm") && video.includes("homeVideo.mp4") && video.includes("homeVideo.poster"), "vídeo vem da config única");
+  assert.ok(video.includes("homeVideo.sources") && video.includes("src.webm") && video.includes("src.mp4") && video.includes("src.poster"), "vídeo vem da config única");
   assert.ok(video.includes("prefers-reduced-motion") && video.includes("muted") && video.includes("playsInline") && video.includes("loop"), "mudo, em loop, inline e respeita movimento reduzido");
 });
 
