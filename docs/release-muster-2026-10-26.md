@@ -1,6 +1,6 @@
 # Release muster-2026-10-26 — manifesto
 
-Branch: release/muster-2026-10-26 · HEAD 25bdd8e · gerado 25/10/2026 22:09 BRT
+Branch: release/muster-2026-10-26 · HEAD 1f94513 · gerado 25/10/2026 22:09 BRT
 Base: main 38ed109 (sem merge no main)
 
 | PR | Branch | Commit aprovado | Ponta atual no GitHub | Ancestral do release? |
