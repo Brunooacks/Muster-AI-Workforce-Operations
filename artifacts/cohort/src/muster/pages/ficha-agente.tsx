@@ -68,7 +68,7 @@ export default function FichaAgentePage() {
   return (
     <MusterShell active="agentes">
       <main className="page" id="main">
-        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}><Link href="/squads">{t("Squads mistos", "Mixed squads", "Squads mixtos")}</Link> <span className="mono">· {t("Ficha do agente", "Agent file", "Ficha del agente")} · {DEMO.empresa} · {t("setembro/2026", "September/2026", "septiembre/2026")}</span></div>
+        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}><Link href="/squads">{t("Squads mistos", "Mixed squads", "Squads mixtos")}</Link> <span className="mono">· {t("Ficha do agente", "Agent file", "Ficha del agente")} · {DEMO.empresa} · {t("setembro/2026", "September 2026", "septiembre de 2026")}</span></div>
         <div className="hd2 rise" style={{ ["--i" as string]: 1 }}>
           <h1>{a.nome}: {t(...prop).toLowerCase()}. <em>{t(`A equipe fica com ${fica[0]}.`, `The team keeps ${fica[1]}.`, `El equipo se queda con ${fica[2]}.`)}</em></h1>
           <div className="covline">{t("Membro do squad", "Squad member", "Miembro del squad")} {x(a.squad)} · {t("responsável", "owner", "responsable")} {a.dono} · {t("compatível com", "compatible with", "compatible con")} {a.plataforma} · <span className={"faixa " + fx}>{FX[fx]}</span></div>

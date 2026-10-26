@@ -39,7 +39,7 @@ export default function DirecionamentoPage() {
   return (
     <MusterShell active="direcionamento">
       <main className="page" id="main">
-        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}>{t("Direcionamento", "Routing", "Direccionamiento")} <span className="mono">· {DEMO.empresa} · {t("setembro/2026", "September/2026", "septiembre/2026")}</span></div>
+        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}>{t("Direcionamento", "Routing", "Direccionamiento")} <span className="mono">· {DEMO.empresa} · {t(DEMO.periodo, "September 2026", "septiembre de 2026")}</span></div>
         <div className="hd2 rise" style={{ ["--i" as string]: 1 }}>
           <h1>{roteadas} {t("atividades com agentes.", "activities with agents.", "actividades con agentes.")} <em>{F.n(horas)} {t("h/mês de volta à equipe.", "h/month back to the team.", "h/mes de vuelta al equipo.")}</em></h1>
           <div className="covline">{t("Repetitivo vai para agentes · julgamento fica com a equipe", "Repetitive work goes to agents · judgment stays with the team", "Lo repetitivo va a agentes · el criterio queda con el equipo")} <Tip text={t("O objetivo é tirar da equipe o trabalho trivial e repetitivo, não substituir pessoas. Quando um agente custa mais que a equipe para a mesma atividade, a sugestão é devolver a atividade para a equipe.", "The goal is to take trivial, repetitive work off the team, not to replace people. When an agent costs more than the team for the same activity, the suggestion is to return it to the team.", "El objetivo es quitar al equipo el trabajo trivial y repetitivo, no reemplazar personas. Cuando un agente cuesta más que el equipo para la misma actividad, la sugerencia es devolverla al equipo.")} /></div>

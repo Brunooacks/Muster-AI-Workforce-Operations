@@ -46,7 +46,7 @@ export default function VisaoGeralPage() {
   return (
     <MusterShell active="visao">
       <main className="page" id="main">
-        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}>{t("Visão geral", "Overview", "Visión general")} <span className="mono">· {DEMO.empresa} · {t("setembro/2026", "September/2026", "septiembre/2026")}</span></div>
+        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}>{t("Visão geral", "Overview", "Visión general")} <span className="mono">· {DEMO.empresa} · {t(DEMO.periodo, "September 2026", "septiembre de 2026")}</span></div>
         <div className="hd2 rise" style={{ ["--i" as string]: 1 }}>
           <h1>{A.length} {t("agentes em", "agents in", "agentes en")} {mes}. <em>{pending} {t("pedem ação.", "need action.", "piden acción.")}</em></h1>
           <div className="covline">{t("Cobertura de baseline", "Baseline coverage", "Cobertura de baseline")} <b>{F.n(cov, 1)}%</b> <Badge f={ok ? "medido" : "declarado"} /> <Link href="/baseline">{t("baseline humano →", "human baseline →", "baseline humano →")}</Link></div>

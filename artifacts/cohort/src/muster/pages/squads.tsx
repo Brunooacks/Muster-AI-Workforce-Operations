@@ -20,7 +20,7 @@ export default function SquadsPage() {
   return (
     <MusterShell active="squads">
       <main className="page" id="main">
-        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}>{t("Squads mistos", "Mixed squads", "Squads mixtos")} <span className="mono">· Lumen Logística S.A. · {t("setembro/2026", "September/2026", "septiembre/2026")}</span></div>
+        <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}>{t("Squads mistos", "Mixed squads", "Squads mixtos")} <span className="mono">· Lumen Logística S.A. · {t("setembro/2026", "September 2026", "septiembre de 2026")}</span></div>
         <div className="hd2 rise" style={{ ["--i" as string]: 1 }}>
           <h1>{t("4 squads mistos: +28% de entregas.", "4 mixed squads: +28% deliveries.", "4 squads mixtos: +28% de entregas.")} <em>{t("Custo por entrega 31% menor.", "Cost per delivery 31% lower.", "Costo por entrega 31% menor.")}</em></h1>
           <div className="covline">{t("Pessoas + agentes · medido por squad, nunca por pessoa", "People + agents · measured per squad, never per person", "Personas + agentes · medido por squad, nunca por persona")}</div>
