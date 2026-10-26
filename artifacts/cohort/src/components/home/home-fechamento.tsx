@@ -83,7 +83,7 @@ export function HomeFechamento() {
             <span className="text-[13px] leading-[1.45] text-muted-foreground">{t.veltrix}</span>
           </a>
           <a
-            href="https://taxatupiniquim.com.br"
+            href="https://tupiniquim.veltrixplatform.com"
             target="_blank"
             rel="noreferrer"
             className="flex flex-col gap-1 rounded-[16px] border border-black/[.08] p-4 transition-colors hover:bg-secondary"
