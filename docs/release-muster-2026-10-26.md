@@ -19,3 +19,13 @@ Commits próprios do release:
 - 367fc90 merge da #66 (conflitos resolvidos; migrações 0022..0026 do #66 renumeradas para 0023..0027 com "when" posterior à 0022_conta_pessoal)
 
 Vem junto com o #66 (empilhados nele, não aprovados separadamente): #64 feat/e1-tenant-projeto-ambiente (25044f6), #65 feat/cunha-mus-173 (1840e7a), feat/e0-ci-woodpecker (23aca5d).
+
+
+## Atualização 2026-10-25 22:xx BRT — vídeo da home
+- Commit c0523a3 (c0523a3d9504d3b282b7e1836fb0d8db712e944d): vídeo do handoff (composição `video/muster-intro`, 53 s) gravado em webm 1,0 MB + mp4 1,3 MB (960x540) + pôster 48 KB, em `artifacts/cohort/public/video/`.
+- Trocar o vídeo: substituir os 3 arquivos ou editar `artifacts/cohort/src/config/home-video.ts` (caminhos, duração, capítulos).
+- Autoplay mudo, loop, playsinline, carregamento só perto da viewport, pausa fora da tela; prefers-reduced-motion mostra o pôster com botão play.
+- Testes: cohort 133/133, scripts 103/103, typecheck ok, build ok.
+- Preview: https://release-home.muster-prototipo.pages.dev (sem prod).
+- Lado a lado da home: /workspace/muster/release/release-home-lado-a-lado.pdf
+- HEAD da release: c0523a3d9504d3b282b7e1836fb0d8db712e944d
