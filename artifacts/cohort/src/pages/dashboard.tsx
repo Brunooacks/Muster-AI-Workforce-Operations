@@ -114,7 +114,7 @@ const L: Record<Lang, FrotaDict> = {
     eyebrow: "Operação",
     title: "Painel da Frota",
     subtitle:
-      "Desempenho consolidado em 5 camadas, retorno sobre investimento e alertas do Detector de Vitória Ilusória.",
+      "Desempenho consolidado em 3 camadas, retorno sobre investimento e alertas do Detector de Vitória Ilusória.",
     errorTitle: "Não foi possível carregar a frota",
     errorDesc: "Tente novamente em instantes.",
     statAgents: "Total de agentes",
@@ -129,7 +129,7 @@ const L: Record<Lang, FrotaDict> = {
     statAlerts: "Alertas ativos",
     alertsDelta: "Padrões ilusórios detectados",
     perfTitle: "Perfil de Desempenho",
-    perfDesc: "Média da frota nas 5 camadas de avaliação",
+    perfDesc: "Média da frota nas 3 camadas de avaliação",
     fleet: "Frota",
     layersTitle: "Camadas de Avaliação",
     layersDesc: "Pontuação, variação no período e agentes em risco",
@@ -316,7 +316,7 @@ function TrendPill({ value }: { value: number }) {
     );
   if (value < 0)
     return (
-      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-chart-3">
+      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-chart-3-text">
         <TrendingDown className="h-3 w-3" /> {value}
       </span>
     );
@@ -627,7 +627,7 @@ export default function DashboardPage({ embedded = false }: { embedded?: boolean
           <Card>
             <CardHeader>
               <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                <AlertTriangle className="h-4 w-4 text-chart-2" /> {t.attentionTitle}
+                <AlertTriangle className="h-4 w-4 text-chart-2-text" /> {t.attentionTitle}
               </CardTitle>
               <CardDescription>{t.attentionDesc}</CardDescription>
             </CardHeader>
@@ -685,7 +685,7 @@ export default function DashboardPage({ embedded = false }: { embedded?: boolean
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className={`${cardTitleSerif} flex items-center gap-2`}>
-                <Eye className="h-4 w-4 text-chart-3" /> {t.detectorTitle}
+                <Eye className="h-4 w-4 text-chart-3-text" /> {t.detectorTitle}
               </CardTitle>
               <CardDescription>{t.detectorDesc}</CardDescription>
             </div>
@@ -714,7 +714,7 @@ export default function DashboardPage({ embedded = false }: { embedded?: boolean
                       <div className="flex items-center gap-2">
                         <Eye
                           className={`h-4 w-4 ${
-                            alert.severity === "critical" ? "text-chart-4" : "text-chart-3"
+                            alert.severity === "critical" ? "text-chart-4-text" : "text-chart-3-text"
                           }`}
                         />
                         <span className="text-sm font-medium">{alert.pattern}</span>

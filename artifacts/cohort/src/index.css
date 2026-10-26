@@ -47,6 +47,12 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  /* Texto de status (chips de risco/atenção): ≥4,5:1 sobre fundo, cartão e tinta de 10–15% */
+  --color-chart-2-text: hsl(var(--chart-2-text));
+  --color-chart-3-text: hsl(var(--chart-3-text));
+  --color-chart-4-text: hsl(var(--chart-4-text));
+  --color-destructive-text: hsl(var(--destructive-text));
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -75,7 +81,18 @@
   --button-outline: rgba(0,0,0,.10);
   --badge-outline: rgba(0,0,0,.07);
 
-  --opaque-button-border-intensity: 9;
+/* ---------- CLARO (padrão da home e do app) ---------- */
+[data-profile="claro"], :root {
+  --background: 0 0% 100%;              /* #ffffff */
+  --foreground: 240 3% 12%;             /* #1d1d1f  tinta */
+  --card: 0 0% 100%;
+  --card-foreground: 240 3% 12%;
+  --card-border: 240 5% 90%;            /* #e4e4e8 */
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 3% 12%;
+  --popover-border: 240 5% 90%;
+  --border: 240 5% 90%;
+  --input: 240 5% 90%;
 
   --elevate-1: rgba(0,0,0,.03);
   --elevate-2: rgba(0,0,0,.07);
@@ -214,15 +231,22 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at 76% -10%, hsl(var(--primary) / 0.12), transparent 30rem),
-      linear-gradient(hsl(var(--primary) / 0.035) 1px, transparent 1px);
-    background-size: auto, 100% 34px;
     min-width: 320px;
+  }
+
+  /* Tipografia Geist + IBM Plex Mono */
+  html {
+    font-family: var(--app-font-sans);
+  }
+
+  /* text-wrap balance em títulos */
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
   }
 }
 
 @layer components {
+  /* Superfície da landing (gradientes sutis) */
   .landing-surface {
     background-image:
       radial-gradient(circle at 12% 4%, hsl(var(--primary) / 0.18), transparent 31rem),
@@ -261,8 +285,79 @@
     background: linear-gradient(145deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.8));
     box-shadow: 0 18px 48px hsl(160 30% 2% / 0.14);
   }
+
+  /* Botão primário: pílula tinta/branco (claro) ou ciano/escuro (noite) */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+  .btn-primary:hover {
+    @apply opacity-90;
+  }
+
+  /* Botão secundário: texto tinta com seta */
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:text-primary;
+  }
+
+  /* Seletor segmentado */
+  .segmented {
+    @apply inline-flex items-center gap-1 rounded-full p-1;
+    background: rgba(0,0,0,.06);
+  }
+  [data-profile="noite"] .segmented {
+    background: rgba(255,255,255,.08);
+  }
+  .segmented-item {
+    @apply rounded-full px-4 py-2 text-sm font-medium transition-all;
+  }
+  .segmented-item.active {
+    @apply bg-white text-foreground shadow-sm;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  }
+  [data-profile="noite"] .segmented-item.active {
+    @apply bg-card text-card-foreground;
+    box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  .segmented-item:not(.active) {
+    @apply text-muted-foreground hover:text-foreground;
+  }
+
+  /* Selo "Dados ilustrativos" */
+  .badge-illustrative {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em];
+    border-color: hsl(var(--chart-2));
+    background: hsl(var(--chart-2) / 0.1);
+    color: hsl(var(--chart-2-text));
+  }
+  [data-profile="noite"] .badge-illustrative {
+    border-color: hsl(var(--chart-2));
+    background: hsl(var(--chart-2) / 0.15);
+    color: hsl(var(--chart-2));
+  }
+
+  /* Selo "Em breve" */
+  .badge-soon {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em];
+    border-color: hsl(var(--chart-2));
+    background: hsl(var(--chart-2) / 0.1);
+    color: hsl(var(--chart-2-text));
+  }
+
+  /* Cards de preço */
+  .pricing-card {
+    @apply rounded-2xl border p-6 lg:p-8 flex flex-col gap-4;
+  }
+  .pricing-card.popular {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+  .pricing-card.popular .pricing-btn {
+    @apply bg-accent text-accent-foreground;
+  }
 }
 
+/* Estilos do Clerk */
 @layer clerk {
   .cl-formFieldInput {
     color: hsl(var(--foreground)) !important;
@@ -349,8 +444,6 @@
 ::-webkit-scrollbar-thumb {
   background-color: hsl(var(--border));
   border-radius: 999px;
-  /* A borda transparente encolhe o polegar visualmente sem reduzir a área de
-     clique — mais discreto, mesma facilidade de pegar. */
   border: 3px solid transparent;
   background-clip: content-box;
 }

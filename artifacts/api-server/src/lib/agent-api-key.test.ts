@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  AGENT_KEY_LABELS,
   AGENT_KEY_PREFIX_LABEL,
   agentApiKeyMatches,
   bearerFrom,
@@ -30,7 +31,27 @@ describe("generateAgentApiKey", () => {
 describe("parseAgentApiKey", () => {
   it("extracts the public prefix from a valid token", () => {
     const key = generateAgentApiKey();
-    expect(parseAgentApiKey(key.plaintext)).toEqual({ prefix: key.prefix });
+    expect(parseAgentApiKey(key.plaintext)).toEqual({ prefix: key.prefix, environment: "prod" });
+  });
+
+  it("chave sem ambiente explícito segue msk_live_ = prod (compatível com as atuais)", () => {
+    const key = generateAgentApiKey();
+    expect(key.plaintext.startsWith("msk_live_")).toBe(true);
+    expect(parseAgentApiKey(key.plaintext)?.environment).toBe("prod");
+  });
+
+  it("chave de sandbox usa msk_sbx_ e é lida como sandbox", () => {
+    const key = generateAgentApiKey("sandbox");
+    expect(key.plaintext.startsWith(`${AGENT_KEY_LABELS.sandbox}_`)).toBe(true);
+    expect(parseAgentApiKey(key.plaintext)).toEqual({ prefix: key.prefix, environment: "sandbox" });
+    expect(maskAgentApiKey(key.prefix, "sandbox").startsWith("msk_sbx_")).toBe(true);
+  });
+
+  it("trocar o rótulo do ambiente muda o hash: a chave não pula de ambiente", () => {
+    const key = generateAgentApiKey("sandbox");
+    const forjada = key.plaintext.replace(/^msk_sbx_/, "msk_live_");
+    expect(parseAgentApiKey(forjada)?.environment).toBe("prod");
+    expect(agentApiKeyMatches(forjada, key.keyHash)).toBe(false);
   });
 
   it("rejects anything that is not a well-formed agent key", () => {
@@ -54,7 +75,7 @@ describe("parseAgentApiKey", () => {
 
   it("tolerates surrounding whitespace", () => {
     const key = generateAgentApiKey();
-    expect(parseAgentApiKey(`  ${key.plaintext}  `)).toEqual({ prefix: key.prefix });
+    expect(parseAgentApiKey(`  ${key.plaintext}  `)).toEqual({ prefix: key.prefix, environment: "prod" });
   });
 });
 

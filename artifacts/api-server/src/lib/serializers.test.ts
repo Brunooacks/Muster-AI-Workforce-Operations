@@ -468,6 +468,8 @@ describe("toVerdict", () => {
       [
         "agentId",
         "confidence",
+        "contractId",
+        "contractVersion",
         "createdAt",
         "decidedAt",
         "decidedBy",

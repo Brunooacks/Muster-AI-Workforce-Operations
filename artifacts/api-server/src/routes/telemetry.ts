@@ -1,5 +1,5 @@
-import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { Router, type IRouter, type Request } from "express";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 import {
   db,
   agents,
@@ -24,8 +24,8 @@ import {
 import type { ExternalAgentEnvelope } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireOrg } from "../middlewares/requireOrg";
-import { ofOrg } from "../lib/tenant-scope";
-import { requireAgentCredential } from "../middlewares/requireAgentCredential";
+import { inProject, ofOrg } from "../lib/tenant-scope";
+import { agentScopeOf, requireAgentCredential } from "../middlewares/requireAgentCredential";
 import { requireIntegrationCredential } from "../middlewares/requireIntegrationCredential";
 import {
   summarizeEvents,
@@ -42,6 +42,16 @@ import {
   reevaluateAgentFromTelemetry,
 } from "../lib/agent-telemetry-reevaluation";
 import { supervisionDispatchFor } from "../lib/continuous-supervision";
+import {
+  TASK_TRAIL_EVENT_TYPE,
+  TaskOutcomeError,
+  acceptedAtFor,
+  checkTaskOutcome,
+  resolveAttempt,
+  taskTrailPayload,
+  type PreviousRun,
+  type TaskOutcomeBody,
+} from "../lib/task-outcome";
 
 const router: IRouter = Router();
 
@@ -50,6 +60,9 @@ const DIRECT_AGENT_EVENT_PLATFORM = "muster-direct-agent-v1";
 
 function telemetryOutboxEntry(input: {
   orgId: string;
+  /** Projeto do agente e ambiente da chave (E1); sessão humana não tem ambiente. */
+  projectId: string;
+  environmentId: string | null;
   agentId: string;
   agentEventId: string;
   kind: AgentEventKind;
@@ -59,6 +72,8 @@ function telemetryOutboxEntry(input: {
   if (!dispatch.shouldReevaluate) return null;
   return {
     orgId: input.orgId,
+    projectId: input.projectId,
+    environmentId: input.environmentId,
     aggregateType: "agent",
     aggregateId: input.agentId,
     eventType: AGENT_TELEMETRY_EVENT_TYPE,
@@ -74,16 +89,40 @@ function telemetryOutboxEntry(input: {
   };
 }
 
+function isUniqueViolation(error: unknown, constraint: string): boolean {
+  for (let current = error as { code?: string; constraint?: string; cause?: unknown } | undefined; current; ) {
+    if (current.code === "23505" && current.constraint === constraint) return true;
+    current = current.cause as typeof current;
+  }
+  return false;
+}
+
+/**
+ * Agente do ingest. Com chave de agente o middleware já resolveu conta,
+ * projeto e ambiente, e a leitura fica no projeto da chave; com sessão humana
+ * (diagnóstico) segue org-wide, como antes da E1.
+ */
+async function ingestAgent(
+  req: Request,
+  agentId: string,
+): Promise<{ id: string; projectId: string } | null> {
+  const where = req.projectId
+    ? inProject(agents, agentScopeOf(req), eq(agents.id, agentId))
+    : and(eq(agents.id, agentId), ofOrg(agents, req.orgId!));
+  const [agent] = await db
+    .select({ id: agents.id, projectId: agents.projectId })
+    .from(agents)
+    .where(where)
+    .limit(1);
+  return agent ?? null;
+}
+
 // ── Ingest: agents report execution events here (fire-and-forget SDK) ──────
 router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) => {
   const agentId = req.params.agentId as string;
   const body = IngestAgentEventBody.parse(req.body);
 
-  const [agent] = await db
-    .select({ id: agents.id })
-    .from(agents)
-    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
-    .limit(1);
+  const agent = await ingestAgent(req, agentId);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });
     return;
@@ -101,71 +140,153 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
   }
 
   const kind = (body.kind ?? "execution") as AgentEventRow["kind"];
-  const result = await db.transaction(async (transaction) => {
-    // Agent credentials are expected to retry after transport failures. Claim
-    // the key in the same transaction as the event so a replay cannot create
-    // a second event or outbox entry.
-    if (body.idempotencyKey) {
-      const claimed = await transaction
-        .insert(externalEventReceipts)
-        .values({
-          orgId: req.orgId!,
-          agentId,
-          platform: DIRECT_AGENT_EVENT_PLATFORM,
-          // The receipt index is organization-scoped; include the agent so a
-          // caller can use a local sequence safely for separate agents.
-          eventId: `${agentId}:${body.idempotencyKey}`,
-        })
-        .onConflictDoNothing({
-          target: [
-            externalEventReceipts.orgId,
-            externalEventReceipts.platform,
-            externalEventReceipts.eventId,
-          ],
-        })
-        .returning({ id: externalEventReceipts.id });
-      if (claimed.length === 0) return { duplicate: true };
-    }
+  const projectId = agent.projectId;
 
-    const [event] = await transaction
-      .insert(agentEvents)
-      .values({
-        agentId,
-        ...(ts ? { ts } : {}),
-        kind,
-        durationMs:
-          body.durationMs != null ? Math.round(body.durationMs) : null,
-        costCents: body.costCents != null ? Math.round(body.costCents) : null,
-        tokensIn: body.tokensIn != null ? Math.round(body.tokensIn) : null,
-        tokensOut: body.tokensOut != null ? Math.round(body.tokensOut) : null,
-        success: body.success === undefined ? null : body.success ? 1 : 0,
-        metadata:
-          (body.metadata as Record<string, unknown> | undefined) ?? null,
-      })
-      .returning({ id: agentEvents.id, ts: agentEvents.ts });
-    if (!event) throw new Error("Falha ao persistir evento do agente.");
-    const outbox = telemetryOutboxEntry({
-      orgId: req.orgId!,
-      agentId,
-      agentEventId: event.id,
-      kind,
-      occurredAt: event.ts,
-    });
-    if (outbox) await transaction.insert(eventOutbox).values(outbox);
-    return { duplicate: false };
-  });
+  // Cunha (C1.3): cadeia task → run → attempt → retryOf e aceite. Corpo sem
+  // esses campos passa direto e tem a mesma resposta de antes.
+  const outcome = body as TaskOutcomeBody;
+  let attempt: number | null;
+  try {
+    checkTaskOutcome(outcome);
+    let previous: PreviousRun | null | undefined;
+    if (outcome.retryOf !== undefined) {
+      const [run] = await db
+        .select({ taskId: agentEvents.taskId, attempt: agentEvents.attempt })
+        .from(agentEvents)
+        .where(
+          and(
+            eq(agentEvents.orgId, req.orgId!),
+            eq(agentEvents.projectId, projectId),
+            eq(agentEvents.runId, outcome.retryOf),
+            isNotNull(agentEvents.attempt),
+          ),
+        )
+        .limit(1);
+      previous = run ?? null;
+    }
+    attempt = resolveAttempt(outcome, previous);
+  } catch (error) {
+    if (!(error instanceof TaskOutcomeError)) throw error;
+    res.status(error.status).json({ error: error.message });
+    return;
+  }
+
+  let result: { duplicate: boolean };
+  try {
+    result = await ingestEvent();
+  } catch (error) {
+    if (!isUniqueViolation(error, "agent_events_task_attempt_idx")) throw error;
+    res.status(409).json({ error: "Esta tentativa da tarefa já tem resultado registrado." });
+    return;
+  }
 
   res.status(202).json({ accepted: true, duplicate: result.duplicate });
+
+  async function ingestEvent() {
+    return db.transaction(async (transaction) => {
+      // Agent credentials are expected to retry after transport failures. Claim
+      // the key in the same transaction as the event so a replay cannot create
+      // a second event or outbox entry.
+      if (body.idempotencyKey) {
+        const claimed = await transaction
+          .insert(externalEventReceipts)
+          .values({
+            orgId: req.orgId!,
+            agentId,
+            platform: DIRECT_AGENT_EVENT_PLATFORM,
+            // The receipt index is organization-scoped; include the agent so a
+            // caller can use a local sequence safely for separate agents.
+            eventId: `${agentId}:${body.idempotencyKey}`,
+          })
+          .onConflictDoNothing({
+            target: [
+              externalEventReceipts.orgId,
+              externalEventReceipts.platform,
+              externalEventReceipts.eventId,
+            ],
+          })
+          .returning({ id: externalEventReceipts.id });
+        if (claimed.length === 0) return { duplicate: true };
+      }
+
+      const occurredAt = ts ?? new Date();
+      const acceptedAt = acceptedAtFor(outcome, occurredAt);
+      const [event] = await transaction
+        .insert(agentEvents)
+        .values({
+          agentId,
+          ts: occurredAt,
+          kind,
+          durationMs:
+            body.durationMs != null ? Math.round(body.durationMs) : null,
+          costCents: body.costCents != null ? Math.round(body.costCents) : null,
+          tokensIn: body.tokensIn != null ? Math.round(body.tokensIn) : null,
+          tokensOut: body.tokensOut != null ? Math.round(body.tokensOut) : null,
+          success: body.success === undefined ? null : body.success ? 1 : 0,
+          metadata:
+            (body.metadata as Record<string, unknown> | undefined) ?? null,
+          // Tenant sempre da credencial (nunca do corpo).
+          orgId: req.orgId!,
+          projectId,
+          environmentId: req.environmentId ?? null,
+          taskId: outcome.taskId ?? null,
+          runId: outcome.runId ?? null,
+          attempt,
+          retryOf: outcome.retryOf ?? null,
+          expected: outcome.expected ?? null,
+          actual: outcome.actual ?? null,
+          acceptedBy: outcome.acceptedBy ?? null,
+          acceptedByKind: kind === "human_review" ? "human" : (outcome.acceptedByKind ?? null),
+          acceptedRuleVersion: outcome.acceptedRuleVersion ?? null,
+          acceptedAt,
+          capabilities: outcome.capabilities ?? null,
+          reworkCount: outcome.reworkCount ?? null,
+          humanMinutes: outcome.humanMinutes ?? null,
+          contextTokens: outcome.contextTokens ?? null,
+          model: outcome.model ?? null,
+        })
+        .returning({ id: agentEvents.id, ts: agentEvents.ts });
+      if (!event) throw new Error("Falha ao persistir evento do agente.");
+      const outbox = telemetryOutboxEntry({
+        orgId: req.orgId!,
+        projectId: projectId,
+        environmentId: req.environmentId ?? null,
+        agentId,
+        agentEventId: event.id,
+        kind,
+        occurredAt: event.ts,
+      });
+      if (outbox) await transaction.insert(eventOutbox).values(outbox);
+      const trail = taskTrailPayload({
+        agentId,
+        agentEventId: event.id,
+        body: outcome,
+        attempt,
+        acceptedAt,
+        occurredAt: event.ts,
+      });
+      if (trail) {
+        await transaction.insert(eventOutbox).values({
+          orgId: req.orgId!,
+          projectId: projectId,
+          environmentId: req.environmentId ?? null,
+          aggregateType: "agent",
+          aggregateId: agentId,
+          eventType: TASK_TRAIL_EVENT_TYPE,
+          payload: trail,
+          status: "completed",
+          processedAt: new Date(),
+        });
+      }
+      return { duplicate: false };
+    });
+  }
 });
 
 router.post("/agents/:agentId/heartbeat", requireAgentCredential, async (req, res) => {
   const agentId = req.params.agentId as string;
   const body = ReportAgentHeartbeatBody.parse(req.body ?? {});
-  const [agent] = await db
-    .select({ id: agents.id })
-    .from(agents)
-    .where(and(eq(agents.id, agentId), ofOrg(agents, req.orgId!)))
-    .limit(1);
+  const agent = await ingestAgent(req, agentId);
   if (!agent) {
     res.status(404).json({ error: "Agente não encontrado." });
     return;
@@ -237,7 +358,7 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
 
   const [linkedAgent] = connectorId
     ? await db
-        .select({ id: agents.id, externalId: agents.externalId })
+        .select({ id: agents.id, externalId: agents.externalId, projectId: agents.projectId })
         .from(agentConnectorLinks)
         .innerJoin(agents, eq(agents.id, agentConnectorLinks.agentId))
         .where(
@@ -254,7 +375,7 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
   const [legacyAgent] = linkedAgent
     ? []
     : await db
-        .select({ id: agents.id, externalId: agents.externalId })
+        .select({ id: agents.id, externalId: agents.externalId, projectId: agents.projectId })
         .from(agents)
         .where(and(eq(agents.externalId, body.agent.externalId), ofOrg(agents, req.orgId!)))
         .limit(1);
@@ -364,6 +485,9 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
       if (!event) throw new Error("Falha ao persistir execução externa.");
       const outbox = telemetryOutboxEntry({
         orgId: req.orgId!,
+        // Chave de conector é org-wide: projeto do agente, sem ambiente.
+        projectId: agent.projectId,
+        environmentId: null,
         agentId: agent.id,
         agentEventId: event.id,
         kind,
@@ -390,6 +514,9 @@ router.post("/integrations/agent-events", requireIntegrationCredential, async (r
       if (!event) throw new Error("Falha ao persistir feedback externo.");
       const outbox = telemetryOutboxEntry({
         orgId: req.orgId!,
+        // Chave de conector é org-wide: projeto do agente, sem ambiente.
+        projectId: agent.projectId,
+        environmentId: null,
         agentId: agent.id,
         agentEventId: event.id,
         kind: "feedback",

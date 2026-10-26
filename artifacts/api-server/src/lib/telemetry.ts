@@ -1,4 +1,5 @@
-import type { LayerKey } from "@workspace/db";
+import type { AgentEventKind, LayerKey } from "@workspace/db";
+import type { OutcomeResult } from "./outcome-layers";
 import { metricTargetStatus } from "@workspace/metrics";
 import type { ProposedMetric } from "./discovery";
 import { loadMetricEvidence } from "./evidence";
@@ -17,7 +18,7 @@ export interface AgentEventRow {
   id: string;
   agentId: string;
   ts: Date; // event timestamp
-  kind: "execution" | "error" | "escalation" | "feedback" | "heartbeat";
+  kind: AgentEventKind;
   durationMs: number | null;
   costCents: number | null; // integer cents (BRL)
   tokensIn: number | null;
@@ -163,6 +164,7 @@ export function summarizeEvents(
  */
 export function layersFromTelemetry(
   summary: TelemetrySummary,
+  outcome?: OutcomeResult,
 ): Partial<Record<LayerKey, TelemetryLayerResult>> {
   const layers: Partial<Record<LayerKey, TelemetryLayerResult>> = {};
 
@@ -271,20 +273,27 @@ export function layersFromTelemetry(
     };
   }
 
-  // Value — real spend is informational (cost alone proves no value), so the
-  // layer gets a neutral score and surfaces the consolidated monthly cost.
-  if (summary.totalCostCents > 0) {
-    const totalReais = summary.totalCostCents / 100;
-    const useThousands = totalReais >= 1000;
+  // Value (cunha · C4.2) — sem score neutro fixo. A camada só existe quando a
+  // camada 1 calculou o custo por resultado validado E o contrato vigente tem
+  // meta nesse custo: o score é o avanço do baseline até a meta. Sem isso a
+  // camada é omitida (o chamador mostra "sem evidência"), nunca inventada.
+  const cost = outcome?.layer1.cost;
+  const comparison = outcome?.layer2.contract;
+  if (
+    cost?.status === "ok" &&
+    comparison?.status === "ok" &&
+    comparison.value.metricKey === "cost_per_validated_task" &&
+    comparison.value.progress !== null
+  ) {
     layers.value = {
-      score: 50,
+      score: Math.round(comparison.value.progress * 100),
       metrics: [
         metric(
-          "Custo total mensal",
-          useThousands ? round(totalReais / 1000, 1) : round(totalReais, 2),
-          useThousands ? "R$ mil" : "R$",
-          "—",
-          "cost_total",
+          "Custo por tarefa aceita",
+          round(cost.value.costPerValidatedTask.cents / 100, 2),
+          "R$",
+          `≤ R$ ${comparison.value.target}`,
+          "cost_per_validated_task",
         ),
       ],
     };
@@ -301,8 +310,9 @@ export function layersFromTelemetry(
  */
 export function proposedMetricsFromTelemetry(
   summary: TelemetrySummary,
+  outcome?: OutcomeResult,
 ): ProposedMetric[] {
-  const layers = layersFromTelemetry(summary);
+  const layers = layersFromTelemetry(summary, outcome);
   const confidence =
     summary.totalExecutions >= 30
       ? 90

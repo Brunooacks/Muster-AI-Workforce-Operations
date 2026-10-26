@@ -17,7 +17,23 @@ export type AgentEventKind =
   | "error"
   | "escalation"
   | "feedback"
-  | "heartbeat";
+  | "heartbeat"
+  /** Aprovação/rejeição humana de uma tarefa (use `run.review`). */
+  | "human_review";
+
+/** Headers do Veltrix com a mesma semântica de `taskId`/`runId` (regra R2). */
+export const VELTRIX_TASK_HEADER = "x-veltrix-task";
+export const VELTRIX_RUN_HEADER = "x-veltrix-run";
+
+export type AcceptedByKind = "human" | "auto";
+
+export interface TaskCapabilities {
+  tools?: boolean;
+  vision?: boolean;
+  /** Janela de contexto usada, em tokens. */
+  contextWindow?: number;
+  [key: string]: unknown;
+}
 
 export interface AgentEvent {
   kind?: AgentEventKind;
@@ -30,6 +46,108 @@ export interface AgentEvent {
   /** For kind=execution: whether the work item was resolved correctly. */
   success?: boolean;
   metadata?: Record<string, unknown>;
+  /** Stable per-event key; resend the same key after a network failure. */
+  idempotencyKey?: string;
+  // --- Resultado da tarefa (cunha) -----------------------------------------
+  /** Tarefa (x-veltrix-task). */
+  taskId?: string;
+  /** Execução/tentativa (x-veltrix-run). */
+  runId?: string;
+  /** Ordinal do run dentro da task: 1, 2, … */
+  attempt?: number;
+  /** runId da tentativa anterior da mesma task. */
+  retryOf?: string;
+  expected?: unknown;
+  actual?: unknown;
+  /** Quem decidiu: pessoa (human) ou regra (auto). */
+  acceptedBy?: string;
+  acceptedByKind?: AcceptedByKind;
+  /** Obrigatório quando acceptedByKind = "auto". */
+  acceptedRuleVersion?: string;
+  acceptedAt?: string | Date;
+  capabilities?: TaskCapabilities;
+  /** Rodadas de retrabalho dentro do run. */
+  rework?: number;
+  /** Minutos humanos reais (revisão ou retrabalho). */
+  humanMinutes?: number;
+  /** Tokens de contexto dentro de tokensIn. */
+  contextTokens?: number;
+  model?: string;
+}
+
+/** Identidade de um run: o que vai nos campos taskId/runId/attempt/retryOf. */
+export interface TaskRunRef {
+  taskId: string;
+  runId: string;
+  attempt: number;
+  retryOf?: string;
+}
+
+export interface ReviewInput {
+  approved: boolean;
+  /** Minutos que a pessoa gastou revisando. */
+  minutes?: number;
+  /** Quem revisou. */
+  by: string;
+  ts?: string | Date;
+}
+
+export interface AcceptInput {
+  by: string;
+  kind: AcceptedByKind;
+  /** Obrigatório para kind = "auto" (o servidor recusa sem ela). */
+  ruleVersion?: string;
+  ts?: string | Date;
+}
+
+/** Um run em andamento, com os campos da tarefa já preenchidos. */
+export interface TaskRun extends TaskRunRef {
+  /** Reporta um evento deste run (os campos da tarefa são do run). */
+  report(event?: AgentEvent): Promise<boolean>;
+  /** Mede e reporta uma unidade de trabalho deste run. */
+  trackExecution<T>(work: () => Promise<T> | T, options?: TrackOptions): Promise<T>;
+  /** Nova tentativa da mesma tarefa (attempt + 1, retryOf = este run). */
+  retry(options?: { runId?: string }): TaskRun;
+  /** Aprovação ou rejeição humana deste run (kind human_review). */
+  review(input: ReviewInput): Promise<boolean>;
+  /** Aceite humano ou automático deste run. */
+  accept(input: AcceptInput): Promise<boolean>;
+}
+
+/** Lê task/run dos headers do Veltrix (objeto simples ou Headers). */
+export function taskFromVeltrixHeaders(
+  headers: Headers | Record<string, string | string[] | undefined>,
+): { taskId?: string; runId?: string } {
+  const get = (name: string): string | undefined => {
+    if (typeof (headers as Headers).get === "function") return (headers as Headers).get(name) ?? undefined;
+    const record = headers as Record<string, string | string[] | undefined>;
+    const key = Object.keys(record).find((k) => k.toLowerCase() === name);
+    const value = key ? record[key] : undefined;
+    return Array.isArray(value) ? value[0] : value;
+  };
+  const taskId = get(VELTRIX_TASK_HEADER);
+  const runId = get(VELTRIX_RUN_HEADER);
+  return { ...(taskId ? { taskId } : {}), ...(runId ? { runId } : {}) };
+}
+
+function newId(): string {
+  const cryptoApi = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  if (cryptoApi?.randomUUID) return cryptoApi.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+/** Próxima tentativa de um run: calcula attempt e retryOf. */
+export function nextAttempt(prev: TaskRunRef, runId: string = newId()): TaskRunRef {
+  return { taskId: prev.taskId, runId, attempt: prev.attempt + 1, retryOf: prev.runId };
+}
+
+function runFields(run: TaskRunRef): Pick<AgentEvent, "taskId" | "runId" | "attempt" | "retryOf"> {
+  return {
+    taskId: run.taskId,
+    runId: run.runId,
+    attempt: run.attempt,
+    ...(run.retryOf ? { retryOf: run.retryOf } : {}),
+  };
 }
 
 export type MusterCaptureMode =
@@ -149,6 +267,8 @@ export interface TrackOptions {
   metadata?: Record<string, unknown>;
   /** Structured descriptors for comparison and attribution. Raw content is intentionally absent. */
   executionContext?: MusterExecutionContext;
+  /** Campos extras do evento de erro (o TaskRun usa para levar task/run). */
+  errorFields?: Omit<AgentEvent, "kind" | "durationMs" | "metadata">;
 }
 
 export interface MusterReporter {
@@ -166,6 +286,17 @@ export interface MusterReporter {
    * re-throws so the agent's own error handling still runs.
    */
   trackExecution<T>(work: () => Promise<T> | T, options?: TrackOptions): Promise<T>;
+  /**
+   * Começa uma tarefa (attempt 1). Sem ids, gera; com os headers do Veltrix,
+   * use `taskFromVeltrixHeaders(req.headers)`.
+   */
+  startTask(options?: { taskId?: string; runId?: string }): TaskRun;
+  /** Nova tentativa de um run anterior (attempt + 1, retryOf = runId anterior). */
+  retry(prevRun: TaskRunRef, options?: { runId?: string }): TaskRun;
+  /** Revisão humana de um run. */
+  review(run: TaskRunRef, input: ReviewInput): Promise<boolean>;
+  /** Aceite humano ou automático de um run. */
+  accept(run: TaskRunRef, input: AcceptInput): Promise<boolean>;
 }
 
 export interface HeartbeatOptions {
@@ -193,8 +324,13 @@ export function createMusterReporter(
 
   async function report(event: AgentEvent = {}): Promise<boolean> {
     try {
-      const { ts, ...rest } = event;
-      const body = { ...rest, ...(ts !== undefined ? { ts: toIso(ts) } : {}) };
+      const { ts, acceptedAt, rework, ...rest } = event;
+      const body = {
+        ...rest,
+        ...(ts !== undefined ? { ts: toIso(ts) } : {}),
+        ...(acceptedAt !== undefined ? { acceptedAt: toIso(acceptedAt) } : {}),
+        ...(rework !== undefined ? { reworkCount: rework } : {}),
+      };
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -287,6 +423,7 @@ export function createMusterReporter(
       void report({
         kind: "error",
         durationMs: Date.now() - startedAt,
+        ...trackOptions.errorFields,
         metadata: withMusterExecutionContext({
           ...trackOptions.metadata,
           message: error instanceof Error ? error.message : String(error),
@@ -296,5 +433,57 @@ export function createMusterReporter(
     }
   }
 
-  return { report, reportMany, heartbeat, startHeartbeat, trackExecution };
+  function review(run: TaskRunRef, input: ReviewInput): Promise<boolean> {
+    return report({
+      kind: "human_review",
+      taskId: run.taskId,
+      runId: run.runId,
+      attempt: run.attempt,
+      success: input.approved,
+      acceptedBy: input.by,
+      ...(input.minutes !== undefined ? { humanMinutes: input.minutes } : {}),
+      ...(input.ts !== undefined ? { ts: input.ts } : {}),
+    });
+  }
+
+  function accept(run: TaskRunRef, input: AcceptInput): Promise<boolean> {
+    // O aceite anota a tentativa (kind feedback): o resultado terminal dela
+    // (execution/error) já foi reportado e é único por tentativa.
+    return report({
+      kind: "feedback",
+      taskId: run.taskId,
+      runId: run.runId,
+      attempt: run.attempt,
+      acceptedBy: input.by,
+      acceptedByKind: input.kind,
+      ...(input.ruleVersion !== undefined ? { acceptedRuleVersion: input.ruleVersion } : {}),
+      ...(input.ts !== undefined ? { ts: input.ts } : {}),
+    });
+  }
+
+  function bind(ref: TaskRunRef): TaskRun {
+    return {
+      ...ref,
+      report: (event = {}) => report({ ...event, ...runFields(ref) }),
+      trackExecution: (work, trackOptions = {}) =>
+        trackExecution(work, {
+          ...trackOptions,
+          enrich: (result) => ({ ...(trackOptions.enrich?.(result) ?? {}), ...runFields(ref) }),
+          errorFields: runFields(ref),
+        }),
+      retry: (retryOptions = {}) => bind(nextAttempt(ref, retryOptions.runId)),
+      review: (input) => review(ref, input),
+      accept: (input) => accept(ref, input),
+    };
+  }
+
+  function startTask(taskOptions: { taskId?: string; runId?: string } = {}): TaskRun {
+    return bind({ taskId: taskOptions.taskId ?? newId(), runId: taskOptions.runId ?? newId(), attempt: 1 });
+  }
+
+  function retry(prevRun: TaskRunRef, retryOptions: { runId?: string } = {}): TaskRun {
+    return bind(nextAttempt(prevRun, retryOptions.runId));
+  }
+
+  return { report, reportMany, heartbeat, startHeartbeat, trackExecution, startTask, retry, review, accept };
 }

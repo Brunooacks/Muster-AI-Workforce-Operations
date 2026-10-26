@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   text,
@@ -10,6 +11,10 @@ import {
   boolean,
   index,
   uniqueIndex,
+  unique,
+  foreignKey,
+  check,
+  numeric,
 } from "drizzle-orm/pg-core";
 
 const id = () =>
@@ -51,6 +56,60 @@ export const organizations = pgTable("organizations", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// --- Projeto e ambiente (E1 · migração 0022) ----------------------------------
+// conta (organizations) > projeto > ambiente > chave. Toda conta tem um projeto
+// "Padrão" e todo projeto tem exatamente `sandbox` e `prod` — criados por
+// trigger no banco, para que nenhum INSERT antigo precise saber disso. O
+// ambiente pertence à chave e ao evento; o agente é do projeto (D-E1-1).
+export type EnvironmentKind = "sandbox" | "prod";
+export const ENVIRONMENT_KINDS: readonly EnvironmentKind[] = ["sandbox", "prod"];
+
+export const projects = pgTable("projects", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  projectsOrgSlugIdx: uniqueIndex("projects_org_slug_idx").on(table.orgId, table.slug),
+  projectsOrgDefaultIdx: uniqueIndex("projects_org_default_idx")
+    .on(table.orgId)
+    .where(sql`"is_default"`),
+  // Alvo das FKs compostas: quem aponta para o projeto aponta também para a
+  // conta dele, então uma linha não consegue misturar projeto e conta alheios.
+  projectsIdOrgUnique: unique("projects_id_org_unique").on(table.id, table.orgId),
+}));
+
+export const environments = pgTable("environments", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull(),
+  kind: text("kind").$type<EnvironmentKind>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  environmentsProjectFk: foreignKey({
+    name: "environments_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }).onDelete("cascade"),
+  environmentsProjectKindIdx: uniqueIndex("environments_project_kind_idx").on(table.projectId, table.kind),
+  environmentsIdProjectOrgUnique: unique("environments_id_project_org_unique").on(
+    table.id,
+    table.projectId,
+    table.orgId,
+  ),
+  environmentsKindCheck: check("environments_kind_check", sql`"kind" IN ('sandbox', 'prod')`),
+}));
+
+/**
+ * Colunas de escopo preenchidas pelo banco quando o INSERT não as informa
+ * (triggers da 0022). `sql\`default\`` faz o Drizzle mandar DEFAULT em vez de
+ * exigir o valor no tipo de insert; a coluna continua NOT NULL.
+ */
+const filledByTrigger = () => sql`default`;
 
 export const organizationMembers = pgTable("organization_members", {
   id: id(),
@@ -297,6 +356,8 @@ export const teamMemberships = pgTable("team_memberships", {
 export const agents = pgTable("agents", {
   id: id(),
   orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  /** Projeto do agente; sem valor no INSERT, o trigger usa o projeto Padrão da conta. */
+  projectId: text("project_id").notNull().$defaultFn(filledByTrigger),
   /**
    * Área responsável. Nulo é permitido de propósito: um agente descoberto por
    * varredura ou integrado às pressas entra sem dono, e a plataforma precisa
@@ -343,6 +404,18 @@ export const agents = pgTable("agents", {
   agentsOrgExternalIdx: uniqueIndex("agents_org_external_idx").on(table.orgId, table.externalId),
   agentsOrgIdx: index("agents_org_idx").on(table.orgId),
   agentsAreaIdx: index("agents_area_idx").on(table.areaId),
+  agentsOrgProjectIdx: index("agents_org_project_idx").on(table.orgId, table.projectId),
+  agentsProjectFk: foreignKey({
+    name: "agents_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }),
+  // Alvo da FK da chave: a chave é sempre do mesmo projeto e conta do agente.
+  agentsIdProjectOrgUnique: unique("agents_id_project_org_unique").on(
+    table.id,
+    table.projectId,
+    table.orgId,
+  ),
 }));
 
 export const teamAgentAssignments = pgTable("team_agent_assignments", {
@@ -624,7 +697,186 @@ export const verdicts = pgTable("verdicts", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+  // Cunha (0024): versão do contrato vigente quando o veredito foi gravado.
+  // Nulos em vereditos anteriores ao contrato numérico (regra R3).
+  contractId: text("contract_id"),
+  contractVersion: integer("contract_version"),
+}, (table) => ({
+  verdictsContractFk: foreignKey({
+    name: "verdicts_contract_fk",
+    columns: [table.contractId, table.contractVersion],
+    foreignColumns: [agentContracts.id, agentContracts.version],
+  }).onDelete("set null"),
+}));
+
+// --- Contrato numérico versionado (cunha · 0024) ------------------------------
+// Substitui as strings de business_case (que ficam só como texto de
+// referência). Cada mudança é uma versão nova; o trigger
+// agent_contracts_immutable só deixa mudar status/superseded_at e recusa
+// DELETE fora da cascata do agente/conta.
+export type ContractDirection = "up" | "down";
+export type ContractStatus = "draft" | "active" | "superseded";
+
+export const agentContracts = pgTable("agent_contracts", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull(),
+  agentId: text("agent_id").notNull(),
+  version: integer("version").notNull(),
+  metricKey: text("metric_key").notNull(),
+  unit: text("unit").notNull(),
+  direction: text("direction").$type<ContractDirection>().notNull(),
+  baseline: numeric("baseline", { mode: "number" }).notNull(),
+  target: numeric("target", { mode: "number" }).notNull(),
+  limit: numeric("limit", { mode: "number" }),
+  deadline: date("deadline").notNull(),
+  /**
+   * organization_members.id do dono, validado pela API. Sem FK de propósito: a
+   * versão é imutável e precisa continuar dizendo quem era o dono mesmo depois
+   * que a pessoa sair da conta.
+   */
+  ownerMemberId: text("owner_member_id").notNull(),
+  status: text("status").$type<ContractStatus>().notNull().default("active"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  /** Minutos humanos de referência por tarefa (D-C2); não é o human_minutes do evento. */
+  referenceHumanMinutes: numeric("reference_human_minutes", { mode: "number" }),
+  /** D-C3: aceite automático não conta como tarefa aceita. */
+  requireHumanAccept: boolean("require_human_accept").notNull().default(false),
+  /** D-C1: modelo de referência fixado pela conta (sem valor = o mais barato aprovado). */
+  referenceModel: text("reference_model"),
+}, (table) => ({
+  agentContractsAgentVersionIdx: uniqueIndex("agent_contracts_agent_version_idx").on(table.agentId, table.version),
+  agentContractsActiveIdx: uniqueIndex("agent_contracts_active_idx")
+    .on(table.agentId)
+    .where(sql`"status" = 'active'`),
+  agentContractsOrgAgentIdx: index("agent_contracts_org_agent_idx").on(table.orgId, table.agentId),
+  // Alvo da FK de verdicts: (id, version) andam juntos.
+  agentContractsIdVersionUnique: unique("agent_contracts_id_version_unique").on(table.id, table.version),
+  agentContractsAgentFk: foreignKey({
+    name: "agent_contracts_agent_project_org_fk",
+    columns: [table.agentId, table.projectId, table.orgId],
+    foreignColumns: [agents.id, agents.projectId, agents.orgId],
+  }).onDelete("cascade"),
+  agentContractsDirectionCheck: check("agent_contracts_direction_check", sql`"direction" IN ('up', 'down')`),
+  agentContractsStatusCheck: check(
+    "agent_contracts_status_check",
+    sql`"status" IN ('draft', 'active', 'superseded')`,
+  ),
+  agentContractsVersionCheck: check("agent_contracts_version_check", sql`"version" >= 1`),
+  agentContractsReferenceMinutesCheck: check(
+    "agent_contracts_reference_minutes_check",
+    sql`"reference_human_minutes" IS NULL OR "reference_human_minutes" >= 0`,
+  ),
+}));
+
+// --- Custo-hora e custos fora da fatura (cunha · 0025) ------------------------
+// Sem seed e sem default global (R4): conta sem custo-hora vigente vê a camada
+// 1 como "indisponível". Valores em centavos, nunca em log.
+export type RateCurrency = "BRL" | "USD";
+export type OffInvoiceCategory = "license" | "infra" | "integration" | "other";
+export type OffInvoiceAllocation = "agent" | "project" | "per_task";
+
+export const roleRates = pgTable("role_rates", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  /** Nulo = vale para o papel em toda a conta; com área, a área tem precedência. */
+  areaId: text("area_id").references(() => areas.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  hourlyCostCents: integer("hourly_cost_cents").notNull(),
+  currency: text("currency").$type<RateCurrency>().notNull(),
+  validFrom: date("valid_from").notNull(),
+  validTo: date("valid_to"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  roleRatesOrgRoleIdx: index("role_rates_org_role_idx").on(table.orgId, table.role, table.validFrom),
+  roleRatesValueCheck: check("role_rates_value_check", sql`"hourly_cost_cents" >= 0`),
+  roleRatesCurrencyCheck: check("role_rates_currency_check", sql`"currency" IN ('BRL', 'USD')`),
+  roleRatesPeriodCheck: check("role_rates_period_check", sql`"valid_to" IS NULL OR "valid_to" >= "valid_from"`),
+}));
+
+export const offInvoiceCosts = pgTable("off_invoice_costs", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  projectId: text("project_id"),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "cascade" }),
+  category: text("category").$type<OffInvoiceCategory>().notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: text("currency").$type<RateCurrency>().notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  allocation: text("allocation").$type<OffInvoiceAllocation>().notNull(),
+  description: text("description"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  offInvoiceOrgPeriodIdx: index("off_invoice_costs_org_period_idx").on(table.orgId, table.periodStart),
+  offInvoiceProjectFk: foreignKey({
+    name: "off_invoice_costs_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }).onDelete("cascade"),
+  offInvoiceValueCheck: check("off_invoice_costs_value_check", sql`"amount_cents" >= 0`),
+  offInvoiceCurrencyCheck: check("off_invoice_costs_currency_check", sql`"currency" IN ('BRL', 'USD')`),
+  offInvoicePeriodCheck: check("off_invoice_costs_period_check", sql`"period_end" >= "period_start"`),
+  offInvoiceCategoryCheck: check(
+    "off_invoice_costs_category_check",
+    sql`"category" IN ('license', 'infra', 'integration', 'other')`,
+  ),
+  offInvoiceAllocationCheck: check(
+    "off_invoice_costs_allocation_check",
+    sql`("allocation" = 'agent' AND "agent_id" IS NOT NULL) OR ("allocation" = 'project' AND "project_id" IS NOT NULL) OR "allocation" = 'per_task'`,
+  ),
+}));
+
+// --- Snapshot de resultado por período (cunha · 0026) -------------------------
+// Base da prova (camada 3) e do veredito futuro. Imutável (trigger): guarda os
+// inputs normalizados, o custo-hora e os preços usados, então o cálculo é
+// reproduzido só com a linha, mesmo depois de contrato/custo-hora mudarem.
+export const outcomeSnapshots = pgTable("outcome_snapshots", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  projectId: text("project_id").notNull(),
+  environmentId: text("environment_id"),
+  agentId: text("agent_id").notNull(),
+  /** YYYY-MM */
+  period: text("period").notNull(),
+  layer1: jsonb("layer1").$type<Record<string, unknown>>().notNull(),
+  layer2: jsonb("layer2").$type<Record<string, unknown>>().notNull(),
+  signals: jsonb("signals").$type<Record<string, unknown>>().notNull(),
+  contractId: text("contract_id"),
+  contractVersion: integer("contract_version"),
+  calcVersion: text("calc_version").notNull(),
+  inputsHash: text("inputs_hash").notNull(),
+  inputs: jsonb("inputs").$type<Record<string, unknown>>().notNull(),
+  roleRatesSnapshot: jsonb("role_rates_snapshot").$type<Record<string, unknown> | null>(),
+  pricesSnapshot: jsonb("prices_snapshot").$type<Record<string, unknown> | null>(),
+  referenceModel: text("reference_model"),
+  priceVersion: text("price_version"),
+  taskCoverage: numeric("task_coverage", { precision: 6, scale: 4, mode: "number" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  outcomeSnapshotsUnique: uniqueIndex("outcome_snapshots_agent_period_calc_hash_idx").on(
+    table.agentId,
+    table.period,
+    table.calcVersion,
+    table.inputsHash,
+  ),
+  outcomeSnapshotsOrgPeriodIdx: index("outcome_snapshots_org_period_idx").on(table.orgId, table.period),
+  outcomeSnapshotsAgentFk: foreignKey({
+    name: "outcome_snapshots_agent_project_org_fk",
+    columns: [table.agentId, table.projectId, table.orgId],
+    foreignColumns: [agents.id, agents.projectId, agents.orgId],
+  }).onDelete("cascade"),
+  outcomeSnapshotsContractFk: foreignKey({
+    name: "outcome_snapshots_contract_fk",
+    columns: [table.contractId, table.contractVersion],
+    foreignColumns: [agentContracts.id, agentContracts.version],
+  }),
+  outcomeSnapshotsPeriodCheck: check("outcome_snapshots_period_check", sql`"period" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+}));
 
 export type AlertSeverity = "critical" | "high" | "medium" | "antecedent";
 export type AlertStatus = "active" | "acknowledged" | "resolved";
@@ -978,7 +1230,20 @@ export type AgentEventKind =
   | "error"
   | "escalation"
   | "feedback"
-  | "heartbeat";
+  | "heartbeat"
+  // Cunha (0023): aprovação/rejeição humana de uma tarefa (regra R5).
+  | "human_review";
+
+export type AcceptedByKind = "human" | "auto";
+
+/** Capabilities que a tarefa usou; base da escolha do modelo de referência (D-C1). */
+export interface TaskCapabilities {
+  tools?: boolean;
+  vision?: boolean;
+  /** Janela de contexto usada, em tokens. */
+  contextWindow?: number;
+  [key: string]: unknown;
+}
 
 export const agentEvents = pgTable("agent_events", {
   id: id(),
@@ -993,8 +1258,85 @@ export const agentEvents = pgTable("agent_events", {
   tokensOut: integer("tokens_out"),
   success: integer("success"), // 1/0/null — drizzle boolean-as-int keeps parity with is_custom
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  // --- Cunha · resultado da tarefa (0023) ------------------------------------
+  // Todas anuláveis: evento antigo continua válido. Conta/projeto vêm do
+  // agente (trigger, quando o INSERT não informa) e o ambiente vem da chave;
+  // nunca do corpo da requisição. Nomes iguais aos headers x-veltrix-* (R2).
+  orgId: text("org_id"),
+  projectId: text("project_id"),
+  environmentId: text("environment_id"),
+  /** x-veltrix-task */
+  taskId: text("task_id"),
+  /** x-veltrix-run */
+  runId: text("run_id"),
+  /** Ordinal do run dentro da task (1, 2, …). */
+  attempt: integer("attempt"),
+  /** run_id da tentativa anterior da mesma task. */
+  retryOf: text("retry_of"),
+  expected: jsonb("expected").$type<unknown>(),
+  actual: jsonb("actual").$type<unknown>(),
+  /** Quem decidiu: pessoa (human) ou regra (auto). Em human_review, o revisor. */
+  acceptedBy: text("accepted_by"),
+  acceptedByKind: text("accepted_by_kind").$type<AcceptedByKind>(),
+  acceptedRuleVersion: text("accepted_rule_version"),
+  /** Não nulo = a tarefa foi aceita por este evento. */
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  capabilities: jsonb("capabilities").$type<TaskCapabilities>(),
+  reworkCount: integer("rework_count"),
+  /** Minutos humanos reais: revisão (human_review) ou retrabalho (demais). */
+  humanMinutes: numeric("human_minutes", { precision: 8, scale: 2, mode: "number" }),
+  contextTokens: integer("context_tokens"),
+  model: text("model"),
 }, (table) => ({
   agentEventsAgentTsIdx: index("agent_events_agent_ts_idx").on(table.agentId, table.ts),
+  agentEventsOrgProjectEnvTsIdx: index("agent_events_org_project_env_ts_idx").on(
+    table.orgId,
+    table.projectId,
+    table.environmentId,
+    table.ts,
+  ),
+  // Um resultado terminal por tentativa; escalation/feedback/human_review
+  // anotam a tentativa e podem se repetir.
+  agentEventsTaskAttemptIdx: uniqueIndex("agent_events_task_attempt_idx")
+    .on(table.orgId, table.taskId, table.attempt)
+    .where(sql`"task_id" IS NOT NULL AND "kind" IN ('execution', 'error')`),
+  agentEventsOrgRunIdx: index("agent_events_org_run_idx")
+    .on(table.orgId, table.runId)
+    .where(sql`"run_id" IS NOT NULL`),
+  agentEventsAgentFk: foreignKey({
+    name: "agent_events_agent_project_org_fk",
+    columns: [table.agentId, table.projectId, table.orgId],
+    foreignColumns: [agents.id, agents.projectId, agents.orgId],
+  }).onDelete("cascade"),
+  agentEventsProjectFk: foreignKey({
+    name: "agent_events_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }),
+  agentEventsEnvironmentFk: foreignKey({
+    name: "agent_events_environment_fk",
+    columns: [table.environmentId, table.projectId, table.orgId],
+    foreignColumns: [environments.id, environments.projectId, environments.orgId],
+  }),
+  agentEventsEnvironmentNeedsProject: check(
+    "agent_events_environment_needs_project",
+    sql`"environment_id" IS NULL OR "project_id" IS NOT NULL`,
+  ),
+  agentEventsAttemptCheck: check("agent_events_attempt_check", sql`"attempt" IS NULL OR "attempt" >= 1`),
+  agentEventsAcceptedKindCheck: check(
+    "agent_events_accepted_by_kind_check",
+    sql`"accepted_by_kind" IS NULL OR "accepted_by_kind" IN ('human', 'auto')`,
+  ),
+  // D-C3: aceite automático sem versão da regra não é prova de nada.
+  agentEventsAutoNeedsRuleCheck: check(
+    "agent_events_auto_needs_rule_version",
+    sql`"accepted_by_kind" IS DISTINCT FROM 'auto' OR "accepted_rule_version" IS NOT NULL`,
+  ),
+  agentEventsReworkCheck: check("agent_events_rework_count_check", sql`"rework_count" IS NULL OR "rework_count" >= 0`),
+  agentEventsHumanMinutesCheck: check(
+    "agent_events_human_minutes_check",
+    sql`"human_minutes" IS NULL OR "human_minutes" >= 0`,
+  ),
 }));
 
 export type OutboxStatus =
@@ -1013,6 +1355,10 @@ export const eventOutbox = pgTable("event_outbox", {
   orgId: text("org_id")
     .notNull()
     .references(() => organizations.id, { onDelete: "cascade" }),
+  // Nulos de propósito: evento de sistema/org-wide não tem projeto nem
+  // ambiente. Evento vindo de chave de agente grava os dois (D-E1-1).
+  projectId: text("project_id"),
+  environmentId: text("environment_id"),
   aggregateType: text("aggregate_type").notNull(),
   aggregateId: text("aggregate_id").notNull(),
   eventType: text("event_type").notNull(),
@@ -1053,6 +1399,28 @@ export const eventOutbox = pgTable("event_outbox", {
     table.aggregateType,
     table.aggregateId,
     table.createdAt,
+  ),
+  eventOutboxOrgProjectEnvIdx: index("event_outbox_org_project_env_idx").on(
+    table.orgId,
+    table.projectId,
+    table.environmentId,
+    table.createdAt,
+  ),
+  eventOutboxProjectFk: foreignKey({
+    name: "event_outbox_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }),
+  eventOutboxEnvironmentFk: foreignKey({
+    name: "event_outbox_environment_fk",
+    columns: [table.environmentId, table.projectId, table.orgId],
+    foreignColumns: [environments.id, environments.projectId, environments.orgId],
+  }),
+  // FK composta com coluna nula não é checada (MATCH SIMPLE): sem esta regra,
+  // um evento com ambiente e sem projeto escaparia da FK de ambiente.
+  eventOutboxEnvironmentNeedsProject: check(
+    "event_outbox_environment_needs_project",
+    sql`"environment_id" IS NULL OR "project_id" IS NOT NULL`,
   ),
 }));
 
@@ -1220,6 +1588,9 @@ export const insightRecords = pgTable("insight_records", {
 // aggregates only: prompts and generated content are never persisted here.
 export const aiUsageDaily = pgTable("ai_usage_daily", {
   orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  // Nulo no histórico e nas chamadas sem projeto conhecido (D-E1-3). A soma
+  // do orçamento continua por organização.
+  projectId: text("project_id"),
   day: date("day").notNull(),
   feature: text("feature").notNull(),
   calls: integer("calls").notNull().default(0),
@@ -1227,12 +1598,22 @@ export const aiUsageDaily = pgTable("ai_usage_daily", {
   outputTokens: integer("output_tokens").notNull().default(0),
   estCostUsd: doublePrecision("est_cost_usd").notNull().default(0),
 }, (table) => ({
-  aiUsageDailyOrgDayFeatureIdx: uniqueIndex("ai_usage_daily_org_day_feature_idx").on(
-    table.orgId,
-    table.day,
-    table.feature,
-  ),
+  // NULLS NOT DISTINCT: linhas sem projeto continuam colidindo entre si, como
+  // no índice único anterior (org, dia, feature).
+  aiUsageDailyOrgProjectDayFeatureUnique: unique("ai_usage_daily_org_project_day_feature_unique")
+    .on(table.orgId, table.projectId, table.day, table.feature)
+    .nullsNotDistinct(),
   aiUsageDailyOrgDayIdx: index("ai_usage_daily_org_day_idx").on(table.orgId, table.day),
+  aiUsageDailyOrgProjectDayIdx: index("ai_usage_daily_org_project_day_idx").on(
+    table.orgId,
+    table.projectId,
+    table.day,
+  ),
+  aiUsageDailyProjectFk: foreignKey({
+    name: "ai_usage_daily_project_org_fk",
+    columns: [table.projectId, table.orgId],
+    foreignColumns: [projects.id, projects.orgId],
+  }),
 }));
 
 // --- Agent credentials (R7 · gauntlet rodada 3) -------------------------------
@@ -1247,6 +1628,10 @@ export const agentApiKeys = pgTable("agent_api_keys", {
   agentId: text("agent_id")
     .notNull()
     .references(() => agents.id, { onDelete: "cascade" }),
+  /** Sem valor no INSERT, o trigger usa o projeto do agente. */
+  projectId: text("project_id").notNull().$defaultFn(filledByTrigger),
+  /** Sem valor no INSERT, o trigger usa o ambiente prod do projeto (D-E1-2). */
+  environmentId: text("environment_id").notNull().$defaultFn(filledByTrigger),
   label: text("label"),
   prefix: text("prefix").notNull(),
   keyHash: text("key_hash").notNull(),
@@ -1258,6 +1643,21 @@ export const agentApiKeys = pgTable("agent_api_keys", {
   agentApiKeysOrgIdx: index("agent_api_keys_org_idx").on(table.orgId),
   agentApiKeysPrefixIdx: uniqueIndex("agent_api_keys_prefix_idx").on(table.prefix),
   agentApiKeysAgentIdx: index("agent_api_keys_agent_idx").on(table.agentId),
+  agentApiKeysOrgProjectEnvIdx: index("agent_api_keys_org_project_env_idx").on(
+    table.orgId,
+    table.projectId,
+    table.environmentId,
+  ),
+  agentApiKeysAgentProjectFk: foreignKey({
+    name: "agent_api_keys_agent_project_fk",
+    columns: [table.agentId, table.projectId, table.orgId],
+    foreignColumns: [agents.id, agents.projectId, agents.orgId],
+  }),
+  agentApiKeysEnvironmentFk: foreignKey({
+    name: "agent_api_keys_environment_fk",
+    columns: [table.environmentId, table.projectId, table.orgId],
+    foreignColumns: [environments.id, environments.projectId, environments.orgId],
+  }),
 }));
 
 // --- Ciclo de revisão do agente (R7 · gauntlet rodada 5) ----------------------

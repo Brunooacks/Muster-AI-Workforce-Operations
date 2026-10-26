@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import {
   ClerkProvider,
   SignIn,
@@ -25,10 +25,6 @@ import { LangProvider, useLang } from "@/lib/i18n";
 import { AuthShell } from "@/muster/auth/auth-shell";
 import { musterClerkAppearance, musterClerkLocalization } from "@/muster/auth/clerk-config";
 
-import LandingPage from "@/pages/landing";
-import DesignLabPage from "@/pages/design-lab";
-import WorkforceOsLabPage from "@/pages/workforce-os-lab";
-import OnboardingPage from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 import { isOnboardingComplete } from "@/lib/onboarding";
 import { WORKFORCE_STATIC_PATHS } from "@/lib/workforce-routing";
@@ -48,8 +44,19 @@ import {
   signedOutSignInPath,
 } from "@/lib/auth-routing";
 
+// Cada rota vira um chunk próprio: a home e a calculadora não carregam a área
+// logada, e a área logada não carrega a home.
+const LandingPage = lazy(() => import("@/pages/landing"));
+const DesignLabPage = lazy(() => import("@/pages/design-lab"));
+const DesignSystemPage = lazy(() => import("@/pages/design-system"));
+const CalculadoraPage = lazy(() => import("@/pages/calculadora"));
+const WorkforceOsLabPage = lazy(() => import("@/pages/workforce-os-lab"));
+const OnboardingPage = lazy(() => import("@/pages/onboarding"));
+
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
+/** Modo demonstração: build estático sem API e sem Clerk (previews e demo). */
+export const demoMode = String(import.meta.env.VITE_DEMO ?? "") === "1";
 
 const clerkAppearance = musterClerkAppearance(basePath);
 
@@ -195,6 +202,7 @@ function ClerkProviderWithRoutes({
           <TooltipProvider>
             <TenantBootstrapBoundary>
               <AppShellProvider>
+                <Suspense fallback={null}>
                 <Switch>
                   <Route path="/" component={HomeRedirect} />
                   <Route path="/sign-in/*?" component={SignInPage} />
@@ -230,6 +238,10 @@ function ClerkProviderWithRoutes({
                       requireOnboarding={false}
                     />
                   </Route>
+                  <Route path="/design-system">
+                    <DesignSystemPage />
+                  </Route>
+                  <Route path="/calculadora" component={CalculadoraPage} />
                   <Route path="/onboarding">
                     <ProtectedRoute
                       component={OnboardingPage}
@@ -239,6 +251,7 @@ function ClerkProviderWithRoutes({
 
                   <Route component={NotFound} />
                 </Switch>
+                </Suspense>
               </AppShellProvider>
             </TenantBootstrapBoundary>
             <Toaster />
@@ -253,7 +266,7 @@ function MissingClerkConfiguration() {
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-background px-6 text-foreground">
       <section className="max-w-xl rounded-2xl border border-destructive/40 bg-card p-8 shadow-lg">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-destructive">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-destructive-text">
           Configuração obrigatória
         </p>
         <h1 className="mt-3 text-2xl font-semibold">Clerk não configurado</h1>
@@ -267,7 +280,47 @@ function MissingClerkConfiguration() {
   );
 }
 
+function DemoRoutes() {
+  return (
+    <AppShellProvider>
+      <Suspense fallback={null}>
+      <Switch>
+      <Route path="/" component={LandingPage} />
+      <Route path="/design-system" component={DesignSystemPage} />
+      <Route path="/calculadora" component={CalculadoraPage} />
+      <Route path="/agentes/:id/conectar">
+        <WorkforceOsLabPage labMode={false} demo />
+      </Route>
+      {WORKFORCE_STATIC_PATHS.map((path) => (
+        <Route key={path} path={path}>
+          <WorkforceOsLabPage labMode={false} demo />
+        </Route>
+      ))}
+      <Route path="/agentes/:id">
+        <WorkforceOsLabPage labMode={false} demo />
+      </Route>
+        <Route component={NotFound} />
+      </Switch>
+      </Suspense>
+    </AppShellProvider>
+  );
+}
+
 function App() {
+  if (demoMode) {
+    return (
+      <LangProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={basePath}>
+              <DemoRoutes />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LangProvider>
+    );
+  }
   if (!clerkPubKey) return <MissingClerkConfiguration />;
   return (
     <LangProvider>
