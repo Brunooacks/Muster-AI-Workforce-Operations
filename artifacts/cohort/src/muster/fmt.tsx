@@ -54,9 +54,9 @@ export function Disc({ children }: { children?: ReactNode }) {
   const t = useT();
   return (
     <footer className="disc">
-      <p>{t("Dados ilustrativos e fictícios; não são resultados reais. Baseline humano em horas produtivas (70% de 168 h, editável).",
-        "Illustrative, fictitious data; not real results. Human baseline in productive hours (70% of 168 h, editable).",
-        "Datos ilustrativos y ficticios; no son resultados reales. Baseline humano en horas productivas (70% de 168 h, editable).")}</p>
+      <p>{t("Dados ilustrativos e fictícios; não são resultados reais. Referência da equipe em horas produtivas (70% de 168 h, editável).",
+        "Illustrative, fictitious data; not real results. Team benchmark in productive hours (70% of 168 h, editable).",
+        "Datos ilustrativos y ficticios; no son resultados reales. Referencia del equipo en horas productivas (70% de 168 h, editable).")}</p>
       {children}
     </footer>
   );

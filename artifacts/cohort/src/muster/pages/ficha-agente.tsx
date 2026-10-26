@@ -55,23 +55,23 @@ export default function FichaAgentePage() {
   const ok = (b: boolean) => <span className={"faixa " + (b ? "verde" : "vermelho")}>{b ? t("atinge", "meets", "cumple") : t("não atinge", "misses", "no cumple")}</span>;
   const metas: [string, string, string, boolean][] = [
     [t("Custo por resultado vs equipe", "Cost per result vs team", "Costo por resultado vs equipo"), t("até 50% (meta 40%)", "up to 50% (target 40%)", "hasta 50% (meta 40%)"), F.pct(custoRel), custoRel <= 50],
-    [t("Qualidade vs baseline humano", "Quality vs human baseline", "Calidad vs baseline humano"), `≥ ${a.baseline}`, `${a.qualidade}`, a.qualidade >= a.baseline],
+    [t("Qualidade vs referência da equipe", "Quality vs team benchmark", "Calidad vs referencia del equipo"), `≥ ${a.baseline}`, `${a.qualidade}`, a.qualidade >= a.baseline],
     [t("Retrabalho (resgate pela equipe)", "Rework (team rescue)", "Retrabajo (rescate por el equipo)"), t("até 10%", "up to 10%", "hasta 10%"), F.pct(a.resgatePct), a.resgatePct <= 10],
     [t("Incidentes no mês", "Incidents this month", "Incidentes en el mes"), "0", `${a.incidentes}`, a.incidentes === 0],
   ];
   const acao: [string, string] = fx === "vermelho"
     ? [t("Devolver a atividade para a equipe", "Return the activity to the team", "Devolver la actividad al equipo"), t(`Custa ${F.brl(a.custoPorResultado)} por resultado contra ${F.brl(a.custoHumanoUnit)} da equipe. A equipe faz melhor e mais barato.`, `It costs ${F.brl(a.custoPorResultado)} per result against ${F.brl(a.custoHumanoUnit)} for the team. The team does it better and cheaper.`, `Cuesta ${F.brl(a.custoPorResultado)} por resultado frente a ${F.brl(a.custoHumanoUnit)} del equipo. El equipo lo hace mejor y más barato.`)]
     : fx === "amarelo"
-    ? [t("Ajustar antes de ampliar", "Adjust before expanding", "Ajustar antes de ampliar"), t("Uma meta está fora da faixa. Revise com o responsável antes de dar mais volume.", "One goal is out of range. Review with the owner before adding volume.", "Una meta está fuera del rango. Revise con el responsable antes de dar más volumen.")]
-    : [t("Ampliar o volume com o mesmo responsável", "Expand volume with the same owner", "Ampliar el volumen con el mismo responsable"), t(`Dentro de todas as faixas. Libera ${F.n(horas)} h/mês da equipe para ${fica[0]}.`, `Within every range. Frees ${F.n(horas)} h/month of the team for ${fica[1]}.`, `Dentro de todos los rangos. Libera ${F.n(horas)} h/mes del equipo para ${fica[2]}.`)];
-  const reg = t("Registrado. O responsável recebe a proposta para decidir.", "Recorded. The owner receives the proposal to decide.", "Registrado. El responsable recibe la propuesta para decidir.");
+    ? [t("Ajustar antes de ampliar", "Adjust before expanding", "Ajustar antes de ampliar"), t("Uma meta está fora da faixa. Revise com o responsável antes de dar mais volume.", "One goal is out of range. Review with the accountable person before adding volume.", "Una meta está fuera del rango. Revise con el responsable antes de dar más volumen.")]
+    : [t("Ampliar o volume com o mesmo responsável", "Expand volume with the same accountable person", "Ampliar el volumen con el mismo responsable"), t(`Dentro de todas as faixas. Libera ${F.n(horas)} h/mês da equipe para ${fica[0]}.`, `Within every range. Frees ${F.n(horas)} h/month of the team for ${fica[1]}.`, `Dentro de todos los rangos. Libera ${F.n(horas)} h/mes del equipo para ${fica[2]}.`)];
+  const reg = t("Registrado. O responsável recebe a proposta para decidir.", "Recorded. The accountable person receives the proposal to decide.", "Registrado. El responsable recibe la propuesta para decidir.");
   return (
     <MusterShell active="agentes">
       <main className="page" id="main">
         <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}><Link href="/squads">{t("Squads mistos", "Mixed squads", "Squads mixtos")}</Link> <span className="mono">· {t("Ficha do agente", "Agent file", "Ficha del agente")} · {DEMO.empresa} · {t("setembro/2026", "September 2026", "septiembre de 2026")}</span></div>
         <div className="hd2 rise" style={{ ["--i" as string]: 1 }}>
           <h1>{a.nome}: {t(...prop).toLowerCase()}. <em>{t(`A equipe fica com ${fica[0]}.`, `The team keeps ${fica[1]}.`, `El equipo se queda con ${fica[2]}.`)}</em></h1>
-          <div className="covline">{t("Membro do squad", "Squad member", "Miembro del squad")} {x(a.squad)} · {t("responsável", "owner", "responsable")} {a.dono} · {t("compatível com", "compatible with", "compatible con")} {a.plataforma} · <span className={"faixa " + fx}>{FX[fx]}</span></div>
+          <div className="covline">{t("Membro do squad", "Squad member", "Miembro del squad")} {x(a.squad)} · {t("responsável", "accountable person", "responsable")} {a.dono} · {t("compatível com", "compatible with", "compatible con")} {a.plataforma} · <span className={"faixa " + fx}>{FX[fx]}</span></div>
         </div>
         <div className="kpis rise" style={{ ["--i" as string]: 2 }}>
           <div className="kpi"><small>{t("Validadas", "Validated", "Validadas")}</small><span className="v">{F.n(a.validadas)}</span><p>{t("de", "of", "de")} {F.n(a.entregas)} {t("entregas no mês", "deliveries this month", "entregas en el mes")}</p></div>
@@ -83,11 +83,11 @@ export default function FichaAgentePage() {
           <section className="panel rise" style={{ ["--i" as string]: 3 }}>
             <h3>{t("Ficha", "File", "Ficha")} <small>{t("quem responde por este agente", "who answers for this agent", "quién responde por este agente")}</small></h3>
             <div>
-              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Responsável", "Owner", "Responsable")}</span><span><b>{a.dono}</b> · {x(a.time)}</span></div>
+              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Responsável", "Accountable person", "Responsable")}</span><span><b>{a.dono}</b> · {x(a.time)}</span></div>
               <div style={R}><span style={{ color: "var(--mut)" }}>{t("Propósito", "Purpose", "Propósito")}</span><span>{t(...prop)}</span></div>
               <div style={R}><span style={{ color: "var(--mut)" }}>{t("Fica com a equipe", "Stays with the team", "Queda con el equipo")}</span><span>{t(...fica)}</span></div>
               <div style={R}><span style={{ color: "var(--mut)" }}>{t("Função", "Role", "Función")}</span><span>{x(a.funcao)}</span></div>
-              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Baseline humano", "Human baseline", "Baseline humano")}</span><span>{x(a.bl.papel)} · {x(a.bl.origem)} <Tip text={t(`Base ${a.bl.versao}, congelada em ${a.bl.congelado}. É a régua de custo e qualidade da equipe para a mesma atividade.`, `Baseline ${a.bl.versao}, frozen on ${a.bl.congelado}. It is the team's cost and quality standard for the same activity.`, `Base ${a.bl.versao}, congelada el ${a.bl.congelado}. Es la medida de costo y calidad del equipo para la misma actividad.`)} /></span></div>
+              <div style={R}><span style={{ color: "var(--mut)" }}>{t("Referência da equipe", "Team benchmark", "Referencia del equipo")}</span><span>{x(a.bl.papel)} · {x(a.bl.origem)} <Tip text={t(`Base ${a.bl.versao}, congelada em ${a.bl.congelado}. É a régua de custo e qualidade da equipe para a mesma atividade.`, `Baseline ${a.bl.versao}, frozen on ${a.bl.congelado}. It is the team's cost and quality standard for the same activity.`, `Base ${a.bl.versao}, congelada el ${a.bl.congelado}. Es la medida de costo y calidad del equipo para la misma actividad.`)} /></span></div>
             </div>
           </section>
           <section className="panel rise" style={{ ["--i" as string]: 4 }}>
@@ -96,7 +96,7 @@ export default function FichaAgentePage() {
           </section>
         </div>
         <section className="panel rise" style={{ ["--i" as string]: 5, marginTop: 14 }}>
-          <h3>{t("Ação sugerida", "Suggested action", "Acción sugerida")} <small>{t("a decisão é do responsável", "the owner decides", "la decisión es del responsable")}</small></h3>
+          <h3>{t("Ação sugerida", "Suggested action", "Acción sugerida")} <small>{t("a decisão é do responsável", "the accountable person decides", "la decisión es del responsable")}</small></h3>
           <p style={{ font: "600 18px/1.3 var(--app-font-sans)" }}>{acao[0]}</p>
           <p style={{ color: "var(--mut)", margin: "6px 0 14px" }}>{acao[1]}</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

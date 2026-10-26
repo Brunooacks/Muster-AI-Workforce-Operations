@@ -16,7 +16,7 @@ const COLS: [string, T3, Card[]][] = [
   ]],
   ["precisa", ["Precisa de humano", "Needs a person", "Necesita a una persona"], [
     { id: "FIN-482", src: "Jira", tit: ["Rejeição SEFAZ em lote · CFOP 6102", "SEFAZ batch rejection · CFOP 6102", "Rechazo SEFAZ en lote · CFOP 6102"], ags: ["Agente Fiscal"], pes: ["AP", "Ana Prado"], custo: "R$ 3,84", ev: 3, warn: ["aprovação do aprovador", "approver sign-off", "aprobación del aprobador"] },
-    { id: "FIN-470", src: "Jira", tit: ["Triagem de 120 notas recebidas", "Triage of 120 received invoices", "Triaje de 120 facturas recibidas"], ags: ["Triagem-NF"], pes: ["PS", "Paulo Siqueira"], custo: "R$ 11,32", ev: 0, warn: ["sem registro: evidência ausente", "no record: evidence missing", "sin registro: evidencia ausente"] },
+    { id: "FIN-470", src: "Jira", tit: ["Triagem de 120 notas recebidas", "Triage of 120 received invoices", "Triaje de 120 facturas recibidas"], ags: ["Triagem-NF"], pes: ["PS", "Paulo Siqueira"], custo: "R$ 11,32", ev: 0, warn: ["sem registro: comprovação ausente", "no record: evidence missing", "sin registro: respaldo ausente"] },
   ]],
   ["validacao", ["Em validação", "In validation", "En validación"], [
     { id: "CAD-219", src: "Linear", tit: ["Validar 38 cadastros com CNPJ baixado", "Validate 38 records with closed CNPJ", "Validar 38 registros con CNPJ dado de baja"], ags: ["Cadastro"], pes: ["PS", "Paulo Siqueira"], custo: "R$ 0,42", ev: 4 },
@@ -58,13 +58,13 @@ export default function BoardPage() {
                   <h4>{t(...c.tit)}</h4>
                   <div className="who">{c.ags.map((a) => <span key={a} className="ag"><i>{a[0]}</i>{a}</span>)}{c.pes && <span><i>{c.pes[0]}</i>{c.pes[1]}</span>}</div>
                   {c.warn && <div className="warn">⚠ {t(...c.warn)}</div>}
-                  <div className="t2"><span>{t("agente", "agent", "agente")} <b>{c.custo}</b></span><span>{c.ev ? <><b>{c.ev}</b> {t("evidências", "evidence", "evidencias")}</> : t("sem evidência", "no evidence", "sin evidencia")}</span></div>
+                  <div className="t2"><span>{t("agente", "agent", "agente")} <b>{c.custo}</b></span><span>{c.ev ? <><b>{c.ev}</b> {t("comprovações", "evidence", "respaldos")}</> : t("sem comprovação", "no evidence", "sin respaldo")}</span></div>
                 </article>
               ))}
             </section>
           ))}
         </div>
-        <TipLine label={t("De onde vêm os cartões", "Where the cards come from", "De dónde vienen las tarjetas")} text={t("Os cartões são as issues e PRs dos seus boards no Jira, Linear e GitHub, lidos em modo somente leitura pelos servidores MCP oficiais ou por plugin. O Muster acrescenta a cada cartão quem trabalhou (pessoa e agente), o custo do agente e as evidências na trilha. A coluna “Precisa de humano” reúne o que está parado esperando uma pessoa.", "Cards are the issues and PRs on your Jira, Linear and GitHub boards, read-only through the official MCP servers or a plugin. Muster adds who worked on each (person and agent), the agent's cost and the evidence in the trail. “Needs a person” gathers what is stuck waiting for someone.", "Las tarjetas son las issues y PRs de sus boards en Jira, Linear y GitHub, leídas en modo solo lectura por los servidores MCP oficiales o por plugin. Muster agrega a cada tarjeta quién trabajó (persona y agente), el costo del agente y las evidencias en la pista. La columna “Necesita a una persona” reúne lo que está detenido esperando a alguien.")} />
+        <TipLine label={t("De onde vêm os cartões", "Where the cards come from", "De dónde vienen las tarjetas")} text={t("Os cartões são as issues e PRs dos seus boards no Jira, Linear e GitHub, lidos em modo somente leitura pelos servidores MCP oficiais ou por plugin. O Muster acrescenta a cada cartão quem trabalhou (pessoa e agente), o custo do agente e as comprovações na trilha. A coluna “Precisa de humano” reúne o que está parado esperando uma pessoa.", "Cards are the issues and PRs on your Jira, Linear and GitHub boards, read-only through the official MCP servers or a plugin. Muster adds who worked on each (person and agent), the agent's cost and the evidence in the trail. “Needs a person” gathers what is stuck waiting for someone.", "Las tarjetas son las issues y PRs de sus boards en Jira, Linear y GitHub, leídas en modo solo lectura por los servidores MCP oficiales o por plugin. Muster agrega a cada tarjeta quién trabajó (persona y agente), el costo del agente y los respaldos en la pista. La columna “Necesita a una persona” reúne lo que está detenido esperando a alguien.")} />
         <Disc />
       </main>
     </MusterShell>

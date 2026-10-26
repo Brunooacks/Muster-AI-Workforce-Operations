@@ -42,7 +42,7 @@ const NAV: [string, L3, string][] = [
 ];
 const SUB: [L3, string][] = [
   [["Exportar para o board", "Export for the board", "Exportar para el board"], "/exportar"],
-  [["Baseline humano", "Human baseline", "Baseline humano"], "/baseline"],
+  [["Referência da equipe", "Team benchmark", "Referencia del equipo"], "/baseline"],
   [["Conectores", "Connectors", "Conectores"], "/conectores"],
   [["Auditoria", "Audit", "Auditoría"], "/auditoria"],
   [["Admitir um agente", "Admit an agent", "Admitir un agente"], "/admissao"],
@@ -121,7 +121,7 @@ export function MusterShell({ active, children }: { active: string; children: Re
             <small>{t("Governança", "Governance", "Gobernanza")}</small>
             {SUB.map(([l, href]) => go(href, t(...l), null, false))}
           </nav>
-          <div className="me"><i>MD</i><div><b>Marina Duarte</b><span>{t("dona · Atendimento", "owner · Support", "dueña · Atención")}</span></div></div>
+          <div className="me"><i>MD</i><div><b>Marina Duarte</b><span>{t("dona · Atendimento", "accountable · Support", "dueña · Atención")}</span></div></div>
         </aside>
         <div className="col" id="col">
           <header className="top">

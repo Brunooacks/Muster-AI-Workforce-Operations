@@ -44,6 +44,9 @@ const ARQUIVOS = [
   "components/agent-contract.tsx",
   "components/agent-outcome.tsx",
   "components/home",
+  "muster",
+  "muster/pages",
+  "muster/auth",
 ];
 
 // Termo proibido + corpo do padrão; o teste cola limite de palavra que não
@@ -105,6 +108,8 @@ export function termosEncontrados(fonte: string, excecoes: string[] = []): strin
   textoVisivel(fonte).forEach((pedaco, i) => {
     // String minúscula de uma palavra é identificador de código, não rótulo.
     if (/^[a-z][a-z0-9]*$/.test(pedaco.trim())) return;
+    // Caminho de rota (href) é identificador de URL, não rótulo.
+    if (/^\/[a-z0-9/:-]*$/.test(pedaco.trim())) return;
     for (const [nome, re] of PROIBIDOS) {
       if (excecoes.includes(nome)) continue;
       if (re.test(pedaco)) achados.push(`pedaço #${i}: [${nome}] ${pedaco.trim().slice(0, 120)}`);
@@ -125,7 +130,7 @@ test("glossário: nenhuma tela da home em demonstração usa termo fora do gloss
   const problemas: string[] = [];
   for (const arquivo of ARQUIVOS) {
     const caminho = join(SRC, arquivo);
-    const alvos = arquivo.endsWith("home")
+    const alvos = (arquivo.endsWith("home") || arquivo.startsWith("muster"))
       ? readdirSync(caminho).filter((nome) => nome.endsWith(".tsx")).map((nome) => `${arquivo}/${nome}`)
       : [arquivo];
     for (const alvo of alvos) {

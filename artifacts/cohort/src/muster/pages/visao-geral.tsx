@@ -31,15 +31,15 @@ export default function VisaoGeralPage() {
   const dec = [
     { tipo: "Desligar", tag: t("Devolver para a equipe", "Return to the team", "Devolver al equipo"), ag: tri,
       h: t("Devolver a triagem de notas à equipe do Financeiro.", "Return invoice triage to the Finance team.", "Devolver la clasificación de facturas al equipo de Finanzas."),
-      ev: `${F.n(tri.validadas)} / ${F.n(tri.entregas)} (${F.pct(tri.validadas / tri.entregas * 100)}) · ${t("qualidade", "quality", "calidad")} ${tri.qualidade} vs baseline ${tri.baseline} · ${F.brl(tri.custoPorResultado)} vs ${F.brl(tri.custoHumanoUnit)} ${t("de um humano", "for a person", "de una persona")} · ${t("economia de", "saves", "ahorro de")} ${F.brl0(DEMO.economiaDesligarTriagem)}/${t("mês", "month", "mes")}.`,
+      ev: `${F.n(tri.validadas)} / ${F.n(tri.entregas)} (${F.pct(tri.validadas / tri.entregas * 100)}) · ${t("qualidade", "quality", "calidad")} ${tri.qualidade} ${t("vs referência", "vs benchmark", "vs referencia")} ${tri.baseline} · ${F.brl(tri.custoPorResultado)} vs ${F.brl(tri.custoHumanoUnit)} ${t("de um humano", "for a person", "de una persona")} · ${t("economia de", "saves", "ahorro de")} ${F.brl0(DEMO.economiaDesligarTriagem)}/${t("mês", "month", "mes")}.`,
       ok: t("Devolver para a equipe", "Return to the team", "Devolver al equipo") },
     { tipo: "Corrigir", tag: t("Corrigir", "Fix", "Corregir"), ag: fis,
       h: t(`Aprovar o plano de correção do ${fis.nome} no repasse para a Cobrança.`, `Approve the fix plan for ${fis.nome} at the hand-off to Collections.`, `Aprobar el plan de corrección de ${fis.nome} en el traspaso a Cobranza.`),
-      ev: `${t("Qualidade", "Quality", "Calidad")} ${fis.qualidade} vs baseline ${fis.baseline} · ${fis.resgatePct}% ${t("resgatadas por humanos", "rescued by people", "rescatadas por personas")} · ${jp.perdaFiscal} / ${jp.perdaTotal} (${jp.perdaFiscalPct}%).`,
+      ev: `${t("Qualidade", "Quality", "Calidad")} ${fis.qualidade} ${t("vs referência", "vs benchmark", "vs referencia")} ${fis.baseline} · ${fis.resgatePct}% ${t("resgatadas por humanos", "rescued by people", "rescatadas por personas")} · ${jp.perdaFiscal} / ${jp.perdaTotal} (${jp.perdaFiscalPct}%).`,
       ok: t("Aprovar plano", "Approve plan", "Aprobar plan") },
     { tipo: "Ampliar", tag: t("Ampliar", "Expand", "Ampliar"), ag: sof,
       h: t(`Ampliar o escopo da ${sof.nome} para mais tipos de atendimento de baixo risco.`, `Expand ${sof.nome}'s scope to more low-risk support types.`, `Ampliar el alcance de ${sof.nome} a más tipos de atención de bajo riesgo.`),
-      ev: `${F.n(sof.validadas)} ${t("resultados validados", "validated results", "resultados validados")} · ${t("qualidade", "quality", "calidad")} ${sof.qualidade} vs baseline ${sof.baseline} · ${F.brl(sof.custoPorResultado)} vs ${F.brl(sof.custoHumanoUnit)} · ${t("resgate humano em", "human rescue in", "rescate humano en")} ${sof.resgatePct}%.`,
+      ev: `${F.n(sof.validadas)} ${t("resultados validados", "validated results", "resultados validados")} · ${t("qualidade", "quality", "calidad")} ${sof.qualidade} ${t("vs referência", "vs benchmark", "vs referencia")} ${sof.baseline} · ${F.brl(sof.custoPorResultado)} vs ${F.brl(sof.custoHumanoUnit)} · ${t("resgate humano em", "human rescue in", "rescate humano en")} ${sof.resgatePct}%.`,
       ok: t("Ampliar escopo", "Expand scope", "Ampliar alcance") },
   ];
 
@@ -49,10 +49,10 @@ export default function VisaoGeralPage() {
         <div className="eyebrow rise" style={{ ["--i" as string]: 0 }}>{t("Visão geral", "Overview", "Visión general")} <span className="mono">· {DEMO.empresa} · {t(DEMO.periodo, "September 2026", "septiembre de 2026")}</span></div>
         <div className="hd2 rise" style={{ ["--i" as string]: 1 }}>
           <h1>{A.length} {t("agentes em", "agents in", "agentes en")} {mes}. <em>{pending} {t("pedem ação.", "need action.", "piden acción.")}</em></h1>
-          <div className="covline">{t("Cobertura de baseline", "Baseline coverage", "Cobertura de baseline")} <b>{F.n(cov, 1)}%</b> <Badge f={ok ? "medido" : "declarado"} /> <Link href="/baseline">{t("baseline humano →", "human baseline →", "baseline humano →")}</Link></div>
+          <div className="covline">{t("Cobertura da referência", "Benchmark coverage", "Cobertura da referência")} <b>{F.n(cov, 1)}%</b> <Badge f={ok ? "medido" : "declarado"} /> <Link href="/baseline">{t("referência da equipe →", "team benchmark →", "referência da equipe →")}</Link></div>
         </div>
         <div className="flt2 rise" style={{ ["--i" as string]: 2 }}>
-          <select aria-label={t("Recorte", "Scope", "Recorte")}><option>{t("Empresa inteira", "Whole company", "Empresa completa")}</option><option>{t("Área", "Area", "Área")}: Financeiro</option><option>Squad: Faturamento</option><option>{t("Dono", "Owner", "Dueño")}: Carla Mendes</option><option>{t("Meus agentes", "My agents", "Mis agentes")}</option></select>
+          <select aria-label={t("Recorte", "Scope", "Recorte")}><option>{t("Empresa inteira", "Whole company", "Empresa completa")}</option><option>{t("Área", "Area", "Área")}: Financeiro</option><option>Squad: Faturamento</option><option>{t("Dono", "Accountable", "Dueño")}: Carla Mendes</option><option>{t("Meus agentes", "My agents", "Mis agentes")}</option></select>
           <select aria-label={t("Projeto", "Project", "Proyecto")}><option>{t("Todos os projetos", "All projects", "Todos los proyectos")}</option>{DEMO.projetos.map((x) => <option key={x}>{x}</option>)}</select>
           <span className="lgpd">{t("Pessoas: por equipe", "People: by team", "Personas: por equipo")}</span>
         </div>
@@ -61,7 +61,7 @@ export default function VisaoGeralPage() {
         </div>
         <Link className={"roi rise" + (ok ? "" : " est")} style={{ ["--i" as string]: 4 }} href="/baseline">
           <div><small className="mono" style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", opacity: 0.7 }}>{t("ROI vs humano", "ROI vs human", "ROI vs humano")}</small><div className="v">{ok ? "" : "≈ "}{F.n(roi, 0)}%</div></div>
-          <span>{ok ? `${t("Economia de", "Savings of", "Ahorro de")} ${F.brl0(s.humano * s.validadas - s.custo)} ${t("no mês.", "this month.", "en el mes.")}` : t("Estimativa: baseline medido abaixo de 80%.", "Estimate: measured baseline below 80%.", "Estimación: baseline medido por debajo de 80%.")}</span>
+          <span>{ok ? `${t("Economia de", "Savings of", "Ahorro de")} ${F.brl0(s.humano * s.validadas - s.custo)} ${t("no mês.", "this month.", "en el mes.")}` : t("Estimativa: referência medida abaixo de 80%.", "Estimate: measured benchmark below 80%.", "Estimación: referência medida por debajo de 80%.")}</span>
           <Badge f={ok ? "medido" : "declarado"} />
         </Link>
         <div className="g2">
@@ -70,12 +70,12 @@ export default function VisaoGeralPage() {
             <div className="bars">
               {S.map((x) => <div key={x.mes} className={"b" + (x.parcial ? " parc" : "")}><b>{F.n(x.validadas)}</b><i style={{ height: Math.round(x.validadas / mx * 110) }} /><span>{t(...MES[x.mes])}{x.parcial ? " · " + t("parcial", "partial", "parcial") : ""}</span><span>{F.brl(x.cpr)}/res.</span></div>)}
             </div>
-            <TipLine label={t("Barra hachurada = mês parcial", "Hatched bar = partial month", "Barra rayada = mes parcial")} text={t("Mês com menos de 80% dos resultados com baseline medido. O snapshot é imutável e mostra o que se sabia no fechamento.", "Month with under 80% of results on a measured baseline. The snapshot is immutable and shows what was known at close.", "Mes con menos de 80% de resultados con baseline medido. El snapshot es inmutable y muestra lo que se sabía al cierre.")} />
+            <TipLine label={t("Barra hachurada = mês parcial", "Hatched bar = partial month", "Barra rayada = mes parcial")} text={t("Mês com menos de 80% dos resultados com referência medida. O snapshot é imutável e mostra o que se sabia no fechamento.", "Month with under 80% of results on a measured benchmark. The snapshot is immutable and shows what was known at close.", "Mes con menos de 80% de resultados con referencia medida. El snapshot es inmutable y muestra lo que se sabía al cierre.")} />
           </section>
           <section className="panel rise" style={{ ["--i" as string]: 6 }}>
             <h3>{t("Agentes, pior primeiro", "Agents, worst first", "Agentes, peor primero")} <small>{A.length} {t("agentes", "agents", "agentes")}</small></h3>
             <div className="wt"><table>
-              <thead><tr><th>{t("Agente", "Agent", "Agente")}</th><th>{t("Dono", "Owner", "Dueño")}</th><th>Status</th><th className="r">{t("Custo/res.", "Cost/res.", "Costo/res.")}</th><th className="r">{t("vs humano", "vs human", "vs humano")}</th><th className="r">{t("Volume", "Volume", "Volumen")}</th><th className="r">{t("Atrito", "Friction", "Fricción")}</th><th>Baseline</th></tr></thead>
+              <thead><tr><th>{t("Agente", "Agent", "Agente")}</th><th>{t("Dono", "Accountable", "Dueño")}</th><th>Status</th><th className="r">{t("Custo/res.", "Cost/res.", "Costo/res.")}</th><th className="r">{t("vs humano", "vs human", "vs humano")}</th><th className="r">{t("Volume", "Volume", "Volumen")}</th><th className="r">{t("Atrito", "Friction", "Fricción")}</th><th>{t("Referência", "Benchmark", "Referencia")}</th></tr></thead>
               <tbody>{worst.map((a) => { const r = a.custoPorResultado / a.custoHumanoUnit, med = a.bl.fonte === "medido"; return (
                 <tr key={a.id}><td><a href="#" onClick={(e) => e.preventDefault()}>{a.nome}</a></td><td>{a.dono}</td><td><span className={"st " + a.status}>{t(...STATUS[a.status])}</span></td><td className="r">{F.brl(a.custoPorResultado)}</td><td className={"r" + (med ? "" : " grey")}>{med ? "" : "≈ "}{F.pct(r * 100)}</td><td className="r">{F.n(a.validadas)}</td><td className="r">{a.atrito}</td><td><Badge f={a.bl.fonte} /></td></tr>); })}</tbody>
             </table></div>
@@ -89,7 +89,7 @@ export default function VisaoGeralPage() {
         <section className="sec">
           <div className="sec-h">
             <span className="step">{t("Ação · 02", "Action · 02", "Acción · 02")}</span>
-            <h2>{t("Três decisões esperam por uma pessoa.", "Three decisions are waiting for a person.", "Tres decisiones esperan a una persona.")} <Tip text={t("O Muster recomenda com evidência. Quem responde pelo agente decide.", "Muster recommends with evidence. The agent's owner decides.", "Muster recomienda con evidencia. Quien responde por el agente decide.")} /></h2>
+            <h2>{t("Três decisões esperam por uma pessoa.", "Three decisions are waiting for a person.", "Tres decisiones esperan a una persona.")} <Tip text={t("O Muster recomenda com base em dados. Quem responde pelo agente decide.", "Muster recommends with evidence. The person accountable for the agent decides.", "Muster recomienda con base en datos. Quien responde por el agente decide.")} /></h2>
           </div>
           <div className="dq">
             {dec.map((d, i) => (
