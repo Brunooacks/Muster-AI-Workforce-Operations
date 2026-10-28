@@ -43,13 +43,15 @@ import {
   onboardingRoute,
   requestedAuthRedirect,
   signedOutSignInPath,
+  onboardingGateAllows,
 } from "@/lib/auth-routing";
 
 // Cada rota vira um chunk próprio: a home e a calculadora não carregam a área
 // logada, e a área logada não carrega a home.
 const LandingPage = lazy(() => import("@/pages/landing"));
 const DesignLabPage = lazy(() => import("@/pages/design-lab"));
-const DesignSystemPage = lazy(() => import("@/pages/design-system"));
+// RG-N20: vitrine interna; fora do build de produção (o Vite descarta o ramo).
+const DesignSystemPage = import.meta.env.DEV ? lazy(() => import("@/pages/design-system")) : null;
 const CalculadoraPage = lazy(() => import("@/pages/calculadora"));
 const WorkforceOsLabPage = lazy(() => import("@/pages/workforce-os-lab"));
 const OnboardingPage = lazy(() => import("@/pages/onboarding"));
@@ -140,7 +142,8 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { orgId } = useAuth();
   const [location] = useLocation();
   if (!isLoaded) return null;
-  if (user && !isOnboardingComplete(user.id, orgId)) {
+  // RG-N03: telas de conector abrem durante o onboarding (sem loop).
+  if (user && !isOnboardingComplete(user.id, orgId) && !onboardingGateAllows(location)) {
     return <Redirect to={onboardingRoute(locationWithBrowserSearch(location, window.location.search))} />;
   }
   return <>{children}</>;
@@ -240,9 +243,7 @@ function ClerkProviderWithRoutes({
                       requireOnboarding={false}
                     />
                   </Route>
-                  <Route path="/design-system">
-                    <DesignSystemPage />
-                  </Route>
+                  {DesignSystemPage && <Route path="/design-system"><DesignSystemPage /></Route>}
                   <Route path="/calculadora" component={CalculadoraPage} />
                   <Route path="/onboarding">
                     <ProtectedRoute
@@ -288,7 +289,7 @@ function DemoRoutes() {
       <Suspense fallback={null}>
       <Switch>
       <Route path="/" component={LandingPage} />
-      <Route path="/design-system" component={DesignSystemPage} />
+      {DesignSystemPage && <Route path="/design-system" component={DesignSystemPage} />}
       <Route path="/calculadora" component={CalculadoraPage} />
       <Route path="/agentes/:id/conectar">
         <WorkforceOsLabPage labMode={false} demo />

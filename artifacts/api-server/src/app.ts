@@ -22,6 +22,7 @@ import {
 import {
   resolveStaticWebRoot,
   spaFallback,
+  retiredPathsMiddleware,
 } from "./lib/static-web";
 
 const app: Express = express();
@@ -60,6 +61,7 @@ app.use("/api", auditMutations, router);
 app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 
 if (staticWebRoot) {
+  app.use(retiredPathsMiddleware());
   app.use(express.static(staticWebRoot, { index: "index.html" }));
   app.use(spaFallback(staticWebRoot));
 } else {

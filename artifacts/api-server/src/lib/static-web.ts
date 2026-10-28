@@ -35,3 +35,25 @@ export function spaFallback(staticWebRoot: string): RequestHandler {
     res.sendFile(path.join(staticWebRoot, "index.html"));
   };
 }
+
+/**
+ * RG-N20: rotas aposentadas do front (vitrines internas) respondem 301 para a
+ * home no servidor, em vez de 200 pelo SPA fallback.
+ */
+const RETIRED_PATHS = ["/design-system"];
+
+export function retiredPathRedirect(pathname: string): string | null {
+  return RETIRED_PATHS.some((base) => pathname === base || pathname.startsWith(base + "/")) ? "/" : null;
+}
+
+export function retiredPathsMiddleware(): RequestHandler {
+  return (req, res, next) => {
+    const m = req.method.toUpperCase();
+    const to = m === "GET" || m === "HEAD" ? retiredPathRedirect(req.path) : null;
+    if (!to) {
+      next();
+      return;
+    }
+    res.redirect(301, to);
+  };
+}
