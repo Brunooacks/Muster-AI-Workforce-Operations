@@ -110,9 +110,6 @@ export function HomeDecisao() {
         <div className="flex flex-col gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[13px] font-medium text-[#a1a1a6]">{t.boardEyebrow}</span>
-            <Badge variant="soon" className="border-chart-2/60 text-chart-2">
-              {t.soon}
-            </Badge>
           </div>
           <h3 className="text-[clamp(22px,3.1vw,40px)] font-semibold leading-[1.08] tracking-[-0.03em]">
             {t.boardTitle}

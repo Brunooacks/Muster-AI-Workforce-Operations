@@ -49,7 +49,7 @@ export function HomeIntegracoes() {
       </h3>
 
       <div className="flex max-w-[900px] flex-wrap justify-center gap-2.5">
-        {CONNECTORS.map((connector) => (
+        {CONNECTORS.filter((c) => !c.soon).map((connector) => (
           <span
             key={connector.name}
             className="inline-flex items-center gap-1.5 rounded-full border border-black/[.12] px-[18px] py-2.5 text-[15px] font-medium text-foreground"

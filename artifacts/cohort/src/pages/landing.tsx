@@ -9,7 +9,6 @@ import { HomeAcompanhamento } from "@/components/home/home-acompanhamento";
 import { HomeDecisao } from "@/components/home/home-decisao";
 import { HomeIntegracoes } from "@/components/home/home-integracoes";
 import { HomeCobertura } from "@/components/home/home-cobertura";
-import { HomePrecos } from "@/components/home/home-precos";
 import { HomeFechamento } from "@/components/home/home-fechamento";
 
 function rolarParaAncora() {
@@ -43,7 +42,7 @@ export default function LandingPage() {
         <HomeDecisao />
         <HomeIntegracoes />
         <HomeCobertura />
-        <HomePrecos />
+        {/* Preços fora da home até a decisão de preço (28/10/2026). */}
         <HomeFechamento />
       </main>
     </div>

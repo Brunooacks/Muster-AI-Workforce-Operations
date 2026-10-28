@@ -170,24 +170,6 @@ export function HomeCobertura() {
             ))}
           </div>
         </div>
-
-        <div className="flex flex-col gap-3 rounded-[24px] border border-black/[.08] bg-background p-7 lg:p-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[20px] font-semibold tracking-[-0.02em]">{t.frictionTitle}</span>
-            <Badge variant="soon">{t.soon}</Badge>
-          </div>
-          <span className="text-[15px] leading-[1.5] text-muted-foreground">{t.frictionDesc}</span>
-          <div className="mt-auto flex flex-wrap gap-2 pt-2">
-            {localize(["login", "aprovação", "dado faltante"], TR[lang]).map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-black/[.1] px-3 py-1 text-[13px] text-foreground"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

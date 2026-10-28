@@ -84,7 +84,7 @@ test("os exemplos existem e a landing compõe as seções do handoff", () => {
   const exemplos = read(SRC, "pages/landing-examples.ts");
   for (const selo of ['pt: "Exemplo"', 'en: "Example"', 'es: "Ejemplo"']) assert.ok(exemplos.includes(selo), selo);
   const landing = read(SRC, "pages/landing.tsx");
-  for (const secao of ["HomeNav", "HomeHero", "HomeMercado", "HomeResolvemos", "HomeFicha", "HomeAcompanhamento", "HomeDecisao", "HomeIntegracoes", "HomeCobertura", "HomePrecos", "HomeFechamento"]) {
+  for (const secao of ["HomeNav", "HomeHero", "HomeMercado", "HomeResolvemos", "HomeFicha", "HomeAcompanhamento", "HomeDecisao", "HomeIntegracoes", "HomeCobertura", "HomeFechamento"]) {
     assert.ok(landing.includes(`<${secao}`), `seção ${secao}`);
   }
   assert.ok(landing.includes("<HomeVideo"), "vídeo logo abaixo do hero");
