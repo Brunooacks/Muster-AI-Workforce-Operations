@@ -21,7 +21,8 @@ import {
 } from "./lib/observability";
 import {
   resolveStaticWebRoot,
-  shouldServeSpaNavigation,
+  spaFallback,
+  retiredPathsMiddleware,
 } from "./lib/static-web";
 
 const app: Express = express();
@@ -60,14 +61,9 @@ app.use("/api", auditMutations, router);
 app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 
 if (staticWebRoot) {
+  app.use(retiredPathsMiddleware());
   app.use(express.static(staticWebRoot, { index: "index.html" }));
-  app.get("/{*path}", (req, res, next) => {
-    if (!shouldServeSpaNavigation(req.method, req.path, req.get("accept"))) {
-      next();
-      return;
-    }
-    res.sendFile(path.join(staticWebRoot, "index.html"));
-  });
+  app.use(spaFallback(staticWebRoot));
 } else {
   app.get("/", (_req, res) => {
     res.redirect(302, process.env.WEB_APP_URL ?? "http://localhost:5173");
@@ -80,13 +76,15 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (res.headersSent) {
     return;
   }
+  // req.log is only set once pino-http ran; fall back to the base logger.
+  const log = req.log ?? logger;
   const isZodError =
     err != null &&
     typeof err === "object" &&
     (err as { name?: string }).name === "ZodError" &&
     Array.isArray((err as { issues?: unknown }).issues);
   if (isZodError) {
-    req.log.warn({ err }, "Validation error");
+    log.warn({ err }, "Validation error");
     res.status(400).json({
       error: "Validation failed",
       issues: (err as { issues: unknown }).issues,
@@ -99,11 +97,11 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     (err as { status?: number; statusCode?: number })?.status ??
     (err as { statusCode?: number })?.statusCode;
   if (typeof status === "number" && status >= 400 && status < 500) {
-    req.log.warn({ err }, "Client error");
+    log.warn({ err }, "Client error");
     res.status(status).json({ error: "Bad request" });
     return;
   }
-  req.log.error({ err }, "Unhandled error");
+  log.error({ err }, "Unhandled error");
   res.status(500).json({ error: "Internal server error" });
 });
 

@@ -4,23 +4,16 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  // Badges should never wrap.
-  "whitespace-nowrap inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" +
-  " hover-elevate ",
+  "whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors",
   {
     variants: {
       variant: {
-        default:
-          // Use a light shadow; hover-elevate supplies the interaction state.
-          "border-transparent bg-primary text-primary-foreground shadow-xs",
-        secondary:
-          // hover-elevate supplies the interaction state.
-          "border-transparent bg-secondary text-secondary-foreground",
-        destructive:
-          // Use a light shadow; hover-elevate supplies the interaction state.
-          "border-transparent bg-destructive text-destructive-foreground shadow-xs",
-          // Use the shared badge outline variable.
-        outline: "text-foreground border [border-color:var(--badge-outline)]",
+        default: "border-transparent bg-primary text-primary-foreground",
+        secondary: "border-transparent bg-secondary text-secondary-foreground",
+        destructive: "border-transparent bg-destructive text-destructive-foreground",
+        outline: "text-foreground border-[var(--badge-outline)]",
+        illustrative: "border-chart-2 bg-chart-2/10 text-[hsl(var(--chart-2-text))]",
+        soon: "border-chart-2 bg-chart-2/10 text-[hsl(var(--chart-2-text))]",
       },
     },
     defaultVariants: {

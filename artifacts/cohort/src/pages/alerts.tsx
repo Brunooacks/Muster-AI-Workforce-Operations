@@ -68,7 +68,7 @@ const alertsI18n: Record<Lang, AlertsDict> = {
     breadcrumbGov: "Governança",
     title: "Detector de Vitória Ilusória",
     subtitle:
-      "Monitoramento passivo que cruza as 5 camadas de KPIs em busca de contradições — ex.: adoção caindo enquanto o sucesso aparente sobe.",
+      "Monitoramento passivo que cruza as 3 camadas de KPIs em busca de contradições — ex.: adoção caindo enquanto o sucesso aparente sobe.",
     errorTitle: "Não foi possível carregar os alertas",
     statActive: "Alertas ativos",
     statActiveDelta: "Padrões em monitoramento",
@@ -209,7 +209,10 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
   const { lang } = useLang();
   const t = alertsI18n[lang];
   const { toast } = useToast();
-  const { data: alerts, isLoading, isError, refetch } = useListFleetAlerts();
+  const { data: alertsResposta, isLoading, isError, refetch } = useListFleetAlerts();
+  // Sem API (modo demonstração ou preview estático) a rota responde HTML:
+  // não é lista de alertas, então a tela mostra o estado vazio em vez de quebrar.
+  const alerts = Array.isArray(alertsResposta) ? alertsResposta : undefined;
   const updateAlert = useUpdateFleetAlert();
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [drafts, setDrafts] = useState<Record<string, { assignedTo: string; dueAt: string }>>({});
@@ -405,7 +408,7 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                             <Label htmlFor={`alert-due-${alert.id}`} className="flex items-center justify-between text-[10px] uppercase tracking-[0.08em]">
                               <span>{t.dueDate}</span>
                               {deadline && (
-                                <span className={deadline === "overdue" ? "text-chart-3" : "text-chart-2"}>
+                                <span className={deadline === "overdue" ? "text-chart-3-text" : "text-chart-2-text"}>
                                   {deadline === "overdue" ? t.overdue : t.dueSoon}
                                 </span>
                               )}

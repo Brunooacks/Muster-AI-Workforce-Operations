@@ -1,12 +1,17 @@
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
+import type { EnvironmentKind } from "@workspace/db/schema";
 
 /**
  * Agent API keys (R7 · gauntlet rodada 3) — the credential a RUNNING agent uses
  * to report telemetry. Deliberately separate from the human session: an agent
  * deployed in the customer's infrastructure must never carry a user session.
  *
- * Shape: `msk_live_<prefix>_<secret>`
- *  - `msk_live_` marks the token in logs, secret scanners and support tickets.
+ * Shape: `msk_live_<prefix>_<secret>` (prod) or `msk_sbx_<prefix>_<secret>`
+ * (sandbox, E1). The label is part of the hashed token, so it cannot be edited
+ * to jump environments; the middleware also checks it against the environment
+ * stored with the key.
+ *  - `msk_live_`/`msk_sbx_` mark the token in logs, secret scanners and support
+ *    tickets.
  *  - `prefix` is public and indexed — it turns validation into one indexed
  *    lookup instead of a table scan comparing every hash.
  *  - `secret` is the only sensitive part. Only its SHA-256 is persisted, so a
@@ -17,6 +22,19 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto";
  */
 
 export const AGENT_KEY_PREFIX_LABEL = "msk_live";
+
+/** Rótulo do token por ambiente. `msk_live` segue sendo prod (D-E1-2). */
+export const AGENT_KEY_LABELS: Record<EnvironmentKind, string> = {
+  prod: AGENT_KEY_PREFIX_LABEL,
+  sandbox: "msk_sbx",
+};
+
+function environmentFromLabel(label: string): EnvironmentKind | null {
+  for (const [environment, candidate] of Object.entries(AGENT_KEY_LABELS)) {
+    if (candidate === label) return environment as EnvironmentKind;
+  }
+  return null;
+}
 const PREFIX_BYTES = 6; // 12 hex chars — public, non-secret
 const SECRET_BYTES = 24; // 48 hex chars — the actual secret
 
@@ -29,10 +47,10 @@ export interface GeneratedAgentApiKey {
   keyHash: string;
 }
 
-export function generateAgentApiKey(): GeneratedAgentApiKey {
+export function generateAgentApiKey(environment: EnvironmentKind = "prod"): GeneratedAgentApiKey {
   const prefix = randomBytes(PREFIX_BYTES).toString("hex");
   const secret = randomBytes(SECRET_BYTES).toString("hex");
-  const plaintext = `${AGENT_KEY_PREFIX_LABEL}_${prefix}_${secret}`;
+  const plaintext = `${AGENT_KEY_LABELS[environment]}_${prefix}_${secret}`;
   return { plaintext, prefix, keyHash: hashAgentApiKey(plaintext) };
 }
 
@@ -47,17 +65,18 @@ export function hashAgentApiKey(plaintext: string): string {
  */
 export function parseAgentApiKey(
   token: string | undefined | null,
-): { prefix: string } | null {
+): { prefix: string; environment: EnvironmentKind } | null {
   if (!token) return null;
   const parts = token.trim().split("_");
-  // ["msk", "live", prefix, secret]
+  // ["msk", "live" | "sbx", prefix, secret]
   if (parts.length !== 4) return null;
   const [scheme, env, prefix, secret] = parts;
-  if (`${scheme}_${env}` !== AGENT_KEY_PREFIX_LABEL) return null;
+  const environment = environmentFromLabel(`${scheme}_${env}`);
+  if (!environment) return null;
   if (!prefix || !secret) return null;
   if (prefix.length !== PREFIX_BYTES * 2 || secret.length !== SECRET_BYTES * 2) return null;
   if (!/^[0-9a-f]+$/.test(prefix) || !/^[0-9a-f]+$/.test(secret)) return null;
-  return { prefix };
+  return { prefix, environment };
 }
 
 /** Reads a bearer token from an Authorization header value. */
@@ -85,6 +104,6 @@ export function agentApiKeyMatches(plaintext: string, storedHash: string): boole
 }
 
 /** Display form for UIs and logs — never reveals the secret. */
-export function maskAgentApiKey(prefix: string): string {
-  return `${AGENT_KEY_PREFIX_LABEL}_${prefix}_${"•".repeat(8)}`;
+export function maskAgentApiKey(prefix: string, environment: EnvironmentKind = "prod"): string {
+  return `${AGENT_KEY_LABELS[environment]}_${prefix}_${"•".repeat(8)}`;
 }

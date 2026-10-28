@@ -72,9 +72,9 @@ function Panel({ children, className }: { children: ReactNode; className?: strin
 
 function Chip({ children, tone = "neutral" }: { children: ReactNode; tone?: Tone }) {
   const tones: Record<Tone, string> = {
-    good: "bg-[color-mix(in_srgb,var(--wo-accent)_16%,transparent)] text-[var(--wo-accent)]",
-    watch: "bg-[color-mix(in_srgb,var(--wo-warning)_16%,transparent)] text-[var(--wo-warning)]",
-    risk: "bg-[color-mix(in_srgb,var(--wo-danger)_16%,transparent)] text-[var(--wo-danger)]",
+    good: "bg-[color-mix(in_srgb,var(--wo-accent)_16%,transparent)] text-[var(--wo-accent-text)]",
+    watch: "bg-[color-mix(in_srgb,var(--wo-warning)_16%,transparent)] text-[var(--wo-warning-text)]",
+    risk: "bg-[color-mix(in_srgb,var(--wo-danger)_16%,transparent)] text-[var(--wo-danger-text)]",
     primary: "bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]",
     neutral: "bg-[var(--wo-card-2)] text-[var(--wo-muted)]",
   };
@@ -449,7 +449,7 @@ export function ConnectorsScreen() {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <span className="text-[9px] font-medium uppercase tracking-[0.14em] text-[var(--wo-primary)]">
-            Control plane de integrações
+            Painel de integrações
           </span>
           <h1 className="mt-2 max-w-5xl text-3xl font-medium tracking-[-0.04em] text-[var(--wo-text)] sm:text-4xl">
             Da credencial ao primeiro evento, sem estados fictícios.
@@ -473,7 +473,7 @@ export function ConnectorsScreen() {
           className="flex items-center justify-between gap-3 rounded-xl border border-[var(--wo-primary)] bg-[var(--wo-primary-soft)] px-4 py-3 text-[10px] text-[var(--wo-text)]"
         >
           <span className="flex items-center gap-2">
-            <Check className="h-3.5 w-3.5 text-[var(--wo-accent)]" />
+            <Check className="h-3.5 w-3.5 text-[var(--wo-accent-text)]" />
             {operationMessage}
           </span>
           <button type="button" onClick={() => setOperationMessage("")}>
@@ -486,7 +486,7 @@ export function ConnectorsScreen() {
 
       <div className="grid gap-3 lg:grid-cols-3">
         <ConnectionPath icon={Github} eyebrow="Nativo" title="GitHub" description="Testa a credencial, lê repositórios, detecta stacks agentic e importa candidatos reais." action="Configurar GitHub" onClick={() => openConfiguration("github")} />
-        <ConnectionPath icon={Network} eyebrow="Contrato universal" title="SaaS e cloud" description="Gera uma chave tenant-scoped para Zendesk, Agentforce, AWS, Azure, GCP e frameworks." action="Escolher plataforma" onClick={() => openConfiguration("universal")} />
+        <ConnectionPath icon={Network} eyebrow="Contrato universal" title="SaaS e cloud" description="Gera uma chave exclusiva da sua organização para Zendesk, Agentforce, AWS, Azure, GCP e frameworks." action="Escolher plataforma" onClick={() => openConfiguration("universal")} />
         <ConnectionPath icon={Server} eyebrow="Runtime próprio" title="Local, Docker e Kubernetes" description="Recebe a mesma telemetria de workloads on-premise, vLLM, GPU local ou edge." action="Configurar runtime" onClick={() => openConfiguration("runtime")} />
       </div>
 
@@ -500,7 +500,7 @@ export function ConnectorsScreen() {
         <div className="flex flex-col gap-3 border-b border-[var(--wo-line)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-medium text-[var(--wo-text)]">Conexões desta organização</h2>
-            <p className="mt-1 text-[10px] text-[var(--wo-muted)]">“Comprovado” exige teste nativo válido ou pelo menos um envelope real autenticado.</p>
+            <p className="mt-1 text-[10px] text-[var(--wo-muted)]">“Comprovado” exige teste nativo válido ou pelo menos uma resposta real autenticada.</p>
           </div>
           <button type="button" onClick={() => connectorsQuery.refetch()} className="inline-flex items-center gap-2 text-xs text-[var(--wo-text)]">
             <RefreshCw className={cn("h-3.5 w-3.5", connectorsQuery.isFetching && "animate-spin")} /> Atualizar
@@ -563,7 +563,7 @@ export function ConnectorsScreen() {
         <div className="grid xl:grid-cols-[.72fr_1.28fr]">
           <div className="border-b border-[var(--wo-line)] p-4 xl:border-b-0 xl:border-r">
             <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-[var(--wo-primary)]" /><h2 className="text-sm font-medium text-[var(--wo-text)]">Fast assessment de código</h2></div>
-            <p className="mt-3 text-[10px] leading-relaxed text-[var(--wo-muted)]">Leia um repositório antes da admissão para detectar stack, runtime, guardrails e lacunas de instrumentação.</p>
+            <p className="mt-3 text-[10px] leading-relaxed text-[var(--wo-muted)]">Leia um repositório antes da admissão para detectar stack, runtime, limites combinados e lacunas de instrumentação.</p>
             <div className="mt-4 space-y-3">
               <Field label="URL do repositório"><input value={assessmentForm.url} onChange={(event) => setAssessmentForm((current) => ({ ...current, url: event.target.value }))} placeholder="https://github.com/empresa/agente" className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]" /></Field>
               <Field label="Nome sugerido"><input value={assessmentForm.nameHint} onChange={(event) => setAssessmentForm((current) => ({ ...current, nameHint: event.target.value }))} placeholder="Opcional" className="mt-2 h-10 w-full rounded-xl border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-3 text-xs text-[var(--wo-text)] outline-none focus:border-[var(--wo-primary)]" /></Field>
@@ -649,7 +649,7 @@ function IntegrationLifecycle() {
     <Panel className="overflow-hidden">
       <div className="border-b border-[var(--wo-line)] px-4 py-3">
         <h2 className="text-sm font-medium text-[var(--wo-text)]">Um fluxo, duas responsabilidades</h2>
-        <p className="mt-1 text-[10px] text-[var(--wo-muted)]">Conectores transportam evidência. Admissão autoriza o agente a fazer parte da força de trabalho.</p>
+        <p className="mt-1 text-[10px] text-[var(--wo-muted)]">Conectores transportam prova. Admissão autoriza o agente a fazer parte da força de trabalho.</p>
       </div>
       <div className="grid gap-px bg-[var(--wo-line)] md:grid-cols-2 xl:grid-cols-4">
         {stages.map((stage) => (
@@ -682,9 +682,9 @@ function SetupDialog({ connector, agentContext, onClose, onCopy, onRotate, rotat
         <div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><PlatformIcon platform={connector.platform} size="lg" /><div><div className="flex flex-wrap items-center gap-2"><h2 id="setup-title" className="text-xl font-medium text-[var(--wo-text)]">{connector.name}</h2><Chip tone={statusTone(connector.status)}>{statusLabel(connector.status)}</Chip></div><p className="mt-1 text-[10px] text-[var(--wo-muted)]">{connector.mode} · credencial limitada à organização</p></div></div><button type="button" aria-label="Fechar" onClick={onClose} className="rounded-lg p-2 text-[var(--wo-muted)] hover:bg-[var(--wo-card-2)]"><X className="h-4 w-4" /></button></div>
         <div className="mt-5 grid gap-3 lg:grid-cols-[.72fr_1.28fr]">
           <div className="space-y-3">
-            {agentContext?.agentId && <div className="rounded-xl border border-[var(--wo-accent)] bg-[color-mix(in_srgb,var(--wo-accent)_10%,var(--wo-card))] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-accent)]">Admissão concluída</span><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">{agentContext.name || "Agente"}</strong> já está vinculado a esta origem. Envie o primeiro evento com <code className="text-[var(--wo-text)]">externalId: {agentContext.externalId}</code> para iniciar a supervisão.</p></div>}
-            {connector.setupApiKey ? <div className="rounded-xl border border-[var(--wo-warning)] bg-[color-mix(in_srgb,var(--wo-warning)_10%,var(--wo-card))] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-warning)]">Chave exibida uma única vez</span><code className="mt-3 block break-all rounded-lg bg-[var(--wo-bg)] p-3 text-[9px] text-[var(--wo-text)]">{connector.setupApiKey}</code><button type="button" onClick={() => onCopy(connector.setupApiKey!, "Chave")} className="mt-3 inline-flex items-center gap-2 text-[10px] font-medium text-[var(--wo-warning)]"><Copy className="h-3 w-3" /> Copiar chave</button></div> : <div className="rounded-xl bg-[var(--wo-card-2)] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Credencial protegida</span><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">A chave existente não pode ser recuperada. Gere uma nova somente se perdeu a original; a anterior será revogada.</p><button type="button" onClick={onRotate} disabled={rotating} className="mt-3 inline-flex items-center gap-2 text-[10px] font-medium text-[var(--wo-primary)] disabled:opacity-50">{rotating ? <Loader2 className="h-3 w-3 animate-spin" /> : <KeyRound className="h-3 w-3" />} Gerar nova chave</button></div>}
-            <div className="rounded-xl border border-[var(--wo-line)] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Sequência de ativação</span><ol className="mt-3 space-y-3 text-[10px] text-[var(--wo-muted)]"><li><strong className="text-[var(--wo-text)]">01 · Salve a chave</strong><br />Guarde em secret manager ou variável de ambiente.</li><li><strong className="text-[var(--wo-text)]">02 · Admita o agente</strong><br />Formalize o contrato usando o externalId do runtime.</li><li><strong className="text-[var(--wo-text)]">03 · Envie um evento</strong><br />Execução, feedback ou observação de KPI.</li><li><strong className="text-[var(--wo-text)]">04 · Confirme a prova</strong><br />O status muda para comprovado e registra freshness.</li></ol>{!agentContext?.agentId && <button type="button" onClick={onAdmit} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[var(--wo-primary)] px-3 py-2 text-[10px] font-medium text-[var(--wo-bg)]">Continuar para admissão <ArrowRight className="h-3 w-3" /></button>}</div>
+            {agentContext?.agentId && <div className="rounded-xl border border-[var(--wo-accent)] bg-[color-mix(in_srgb,var(--wo-accent)_10%,var(--wo-card))] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-accent-text)]">Admissão concluída</span><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]"><strong className="text-[var(--wo-text)]">{agentContext.name || "Agente"}</strong> já está vinculado a esta origem. Envie o primeiro evento com <code className="text-[var(--wo-text)]">externalId: {agentContext.externalId}</code> para iniciar a supervisão.</p></div>}
+            {connector.setupApiKey ? <div className="rounded-xl border border-[var(--wo-warning)] bg-[color-mix(in_srgb,var(--wo-warning)_10%,var(--wo-card))] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-warning-text)]">Chave exibida uma única vez</span><code className="mt-3 block break-all rounded-lg bg-[var(--wo-bg)] p-3 text-[9px] text-[var(--wo-text)]">{connector.setupApiKey}</code><button type="button" onClick={() => onCopy(connector.setupApiKey!, "Chave")} className="mt-3 inline-flex items-center gap-2 text-[10px] font-medium text-[var(--wo-warning-text)]"><Copy className="h-3 w-3" /> Copiar chave</button></div> : <div className="rounded-xl bg-[var(--wo-card-2)] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Credencial protegida</span><p className="mt-2 text-[10px] leading-relaxed text-[var(--wo-muted)]">A chave existente não pode ser recuperada. Gere uma nova somente se perdeu a original; a anterior será revogada.</p><button type="button" onClick={onRotate} disabled={rotating} className="mt-3 inline-flex items-center gap-2 text-[10px] font-medium text-[var(--wo-primary)] disabled:opacity-50">{rotating ? <Loader2 className="h-3 w-3 animate-spin" /> : <KeyRound className="h-3 w-3" />} Gerar nova chave</button></div>}
+            <div className="rounded-xl border border-[var(--wo-line)] p-4"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Sequência de ativação</span><ol className="mt-3 space-y-3 text-[10px] text-[var(--wo-muted)]"><li><strong className="text-[var(--wo-text)]">01 · Salve a chave</strong><br />Guarde em secret manager ou variável de ambiente.</li><li><strong className="text-[var(--wo-text)]">02 · Admita o agente</strong><br />Formalize o contrato usando o externalId do runtime.</li><li><strong className="text-[var(--wo-text)]">03 · Envie um evento</strong><br />Execução, feedback ou observação de KPI.</li><li><strong className="text-[var(--wo-text)]">04 · Confirme a prova</strong><br />O status muda para comprovado e registra a última atualização.</li></ol>{!agentContext?.agentId && <button type="button" onClick={onAdmit} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[var(--wo-primary)] px-3 py-2 text-[10px] font-medium text-[var(--wo-bg)]">Continuar para admissão <ArrowRight className="h-3 w-3" /></button>}</div>
           </div>
           <div className="min-w-0 rounded-xl bg-[#090d12] p-4 text-[#dce6f2]"><div className="flex items-center justify-between gap-3"><div><span className="text-[8px] uppercase tracking-[0.12em] text-[#7f91a8]">Primeiro evento · cURL</span><p className="mt-1 text-[9px] text-[#7f91a8]">{agentContext?.externalId ? "Payload pronto com o externalId admitido." : "Edite externalId para coincidir com a admissão."}</p></div><button type="button" onClick={() => onCopy(curl, "Comando")} className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[9px] text-[#dce6f2]"><Copy className="h-3 w-3" /> Copiar</button></div><pre className="mt-4 max-h-[31rem] overflow-auto whitespace-pre-wrap break-words font-mono text-[9px] leading-relaxed text-[#b7c7da]">{curl}</pre></div>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUser } from "@clerk/react";
+import { useUserSeguro } from "@/lib/clerk-safe";
 import { Link } from "wouter";
 import { Briefcase, Terminal } from "lucide-react";
 import { OperationalPageFrame } from "@/components/layout";
@@ -14,7 +14,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeading, Eyebrow, AgentDisc, Pill } from "@/components/cohort";
 import { useAppShell } from "@/lib/app-shell";
-import { useListAgents } from "@workspace/api-client-react";
+import { getListAgentsQueryKey, useListAgents } from "@workspace/api-client-react";
 import { platformLabel } from "@/lib/platforms";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -117,16 +117,17 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-export default function ProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
-  const { user, isLoaded } = useUser();
+export default function ProfilePage({ embedded = false, demo = false }: { embedded?: boolean; demo?: boolean } = {}) {
+  const { user, isLoaded } = useUserSeguro();
   const { perspective, setPerspective } = useAppShell();
-  const { data: agents, isLoading } = useListAgents();
-  const { lang } = useLang();
+  const { data: agents, isLoading } = useListAgents(undefined, {
+    query: { queryKey: getListAgentsQueryKey(), enabled: !demo },
+  });
+  const { lang, setLang } = useLang();
   const t = L[lang];
   const [theme, setTheme] = useState("light");
-  const [language, setLanguage] = useState("pt-BR");
 
-  const followed = (agents ?? []).slice(0, 4);
+  const followed = Array.isArray(agents) ? agents.slice(0, 4) : [];
 
   return (
     <OperationalPageFrame embedded={embedded} breadcrumbs={[{ label: t.bcAccount }, { label: t.bcProfile }]}>
@@ -243,14 +244,14 @@ export default function ProfilePage({ embedded = false }: { embedded?: boolean }
                 <div className="text-sm font-medium text-foreground">{t.langLabel}</div>
                 <div className="text-xs text-muted-foreground">{t.langDesc}</div>
               </div>
-              <Select value={language} onValueChange={setLanguage}>
+              <Select value={lang} onValueChange={(v) => setLang(v as Lang)}>
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                  <SelectItem value="en-US">English (US)</SelectItem>
-                  <SelectItem value="es-ES">Español</SelectItem>
+                  <SelectItem value="pt">Português (Brasil)</SelectItem>
+                  <SelectItem value="en">English (US)</SelectItem>
+                  <SelectItem value="es">Español</SelectItem>
                 </SelectContent>
               </Select>
             </div>

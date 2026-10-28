@@ -1,10 +1,8 @@
-import { OrganizationSwitcher, useAuth, useClerk } from "@clerk/react";
+import { useAuth } from "@clerk/react";
 import { syncActiveOrganization } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Building2,
   Loader2,
-  LogOut,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
@@ -31,7 +29,6 @@ const initialState: BootstrapState = {
 
 export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, userId, orgId } = useAuth();
-  const { signOut } = useClerk();
   const queryClient = useQueryClient();
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [state, setState] = useState<BootstrapState>(initialState);
@@ -62,7 +59,7 @@ export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
         previousScopeKeyRef.current = scopeKey;
       }
 
-      if (!isSignedIn || !userId || !orgId || !scopeKey) return;
+      if (!isSignedIn || !userId || !scopeKey) return;
 
       try {
         await syncActiveOrganization({ signal: controller.signal });
@@ -103,30 +100,6 @@ export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
         message="A sessão foi autenticada, mas o identificador do usuário não está disponível."
         onRetry={() => setRetryAttempt((attempt) => attempt + 1)}
       />
-    );
-  }
-
-  if (!orgId || !scopeKey) {
-    return (
-      <TenantStateCard
-        icon={<Building2 className="h-5 w-5" />}
-        eyebrow="Organização necessária"
-        title="Escolha onde você vai operar"
-        description="Selecione ou crie uma organização. O Muster separa agentes, métricas, jornadas e decisões por tenant."
-      >
-        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-          <OrganizationSwitcher hidePersonal skipInvitationScreen />
-          <Button
-            variant="ghost"
-            onClick={() =>
-              signOut({ redirectUrl: import.meta.env.BASE_URL || "/" })
-            }
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Trocar conta
-          </Button>
-        </div>
-      </TenantStateCard>
     );
   }
 

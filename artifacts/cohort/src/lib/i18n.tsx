@@ -66,3 +66,20 @@ export function useLang() {
 export function localeOf(lang: Lang): string {
   return lang === "pt" ? "pt-BR" : lang === "en" ? "en-US" : "es-ES";
 }
+
+/**
+ * Deep-translates the strings of a static structure (arrays/objects) using a
+ * pt→target dictionary. Strings missing from the dictionary pass through, so
+ * colors, ids and numbers stay untouched.
+ */
+export function localize<T>(value: T, dict?: Record<string, string>): T {
+  if (!dict) return value;
+  if (typeof value === "string") return (dict[value] ?? value) as T;
+  if (Array.isArray(value)) return value.map((v) => localize(v, dict)) as T;
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = localize(v, dict);
+    return out as T;
+  }
+  return value;
+}

@@ -1,7 +1,13 @@
+export type AccountKind = "company" | "personal";
+
 export interface TenantScope {
   userId: string;
+  /** Organização ativa; na conta pessoal, "personal:<userId>". */
   organizationId: string;
+  kind: AccountKind;
 }
+
+export const PERSONAL_PREFIX = "personal:";
 
 export function createTenantScope(
   userId?: string | null,
@@ -10,11 +16,22 @@ export function createTenantScope(
   const normalizedUserId = userId?.trim();
   const normalizedOrganizationId = organizationId?.trim();
 
-  if (!normalizedUserId || !normalizedOrganizationId) return null;
+  if (!normalizedUserId) return null;
+
+  // Sem organização ativa = conta pessoal. Ela é um tenant próprio e nunca
+  // aparece dentro da conta da empresa.
+  if (!normalizedOrganizationId) {
+    return {
+      userId: normalizedUserId,
+      organizationId: `${PERSONAL_PREFIX}${normalizedUserId}`,
+      kind: "personal",
+    };
+  }
 
   return {
     userId: normalizedUserId,
     organizationId: normalizedOrganizationId,
+    kind: "company",
   };
 }
 

@@ -28,6 +28,8 @@ import {
   type AgentEventRow,
 } from "./telemetry";
 import { telemetryAlertPlan } from "./telemetry-alert-policy";
+import { computeOutcome } from "./outcome-layers";
+import { loadOutcomeInputs } from "./outcome-loader";
 import {
   declaredMetricContractsFromBusinessCase,
   projectTelemetryToDeclaredContracts,
@@ -80,6 +82,8 @@ export async function reevaluateAgentFromTelemetry(input: {
   agentId: string;
   orgId: string;
   projectionCauseEventId?: string;
+  /** Escopo do evento causador: a projeção fica no mesmo projeto/ambiente. */
+  projectionScope?: { projectId: string | null; environmentId: string | null };
 }): Promise<AgentTelemetryReevaluationResult | null> {
   const [agent] = await db
     .select()
@@ -102,14 +106,25 @@ export async function reevaluateAgentFromTelemetry(input: {
   const windowDays = 30;
   const events = await loadAgentEvents(input.agentId, windowDays);
   const summary = summarizeEvents(events, windowDays);
-  const rawRealLayers = layersFromTelemetry(summary);
+  // Camada 1 da cunha na mesma janela: a camada value só existe quando o
+  // custo por resultado validado é calculável contra a meta do contrato.
+  const outcomeInputs = await loadOutcomeInputs({
+    orgId: input.orgId,
+    agentId: input.agentId,
+    period: {
+      start: new Date(Date.now() - (windowDays - 1) * 86_400_000).toISOString().slice(0, 10),
+      end: new Date().toISOString().slice(0, 10),
+    },
+  });
+  const outcome = outcomeInputs ? computeOutcome(outcomeInputs.inputs) : undefined;
+  const rawRealLayers = layersFromTelemetry(summary, outcome);
   const baselineAvailable = hasDeclaredBaseline(identity?.businessCase);
   const declaredMetricContracts = declaredMetricContractsFromBusinessCase(
     identity?.businessCase,
   );
   const telemetryMetrics = projectTelemetryToDeclaredContracts(
     declaredMetricContracts,
-    proposedMetricsFromTelemetry(summary),
+    proposedMetricsFromTelemetry(summary, outcome),
   ).map(
     (metric) => ({ ...metric, baselineAvailable }),
   );
@@ -488,6 +503,8 @@ export async function reevaluateAgentFromTelemetry(input: {
     if (input.projectionCauseEventId) {
       await transaction.insert(eventOutbox).values({
         orgId: input.orgId,
+        projectId: input.projectionScope?.projectId ?? null,
+        environmentId: input.projectionScope?.environmentId ?? null,
         aggregateType: "agent",
         aggregateId: input.agentId,
         eventType: AGENT_EVALUATION_PROJECTED_EVENT_TYPE,

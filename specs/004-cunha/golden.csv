@@ -1,0 +1,4 @@
+agent,tasks,accepted,auto_not_counted,tokens_cents,review_cents,rework_cents,off_invoice_cents,total_cents,cost_per_validated_cents,human_cost_per_task_cents,savings_cents,savings_percent,acceptance_rate,auto_share,intervention_rate,retry_cents,illusory_win_count
+ag_golden_a,4,3,0,160,1000,200,500,1860,620,2000,1380,69,75,33.33,75,45,1
+ag_golden_b,3,2,1,360,600,0,0,960,480,4500,4020,89.33,66.67,0,33.33,130,1
+ag_golden_c,2,1,0,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,unavailable:missing_hourly_rate,50,100,0,0,1

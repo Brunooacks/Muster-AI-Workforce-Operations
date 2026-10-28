@@ -1,5 +1,5 @@
-export const DEFAULT_AUTH_REDIRECT = "/comando";
-export const DEFAULT_ONBOARDING_REDIRECT = "/comando";
+export const DEFAULT_AUTH_REDIRECT = "/visao-geral";
+export const DEFAULT_ONBOARDING_REDIRECT = "/visao-geral";
 
 type AuthMode = "sign-in" | "sign-up";
 
@@ -64,4 +64,16 @@ export function onboardingFallbackFromLocation(location: string): string {
   return requested && !isOnboardingPath(requested)
     ? requested
     : DEFAULT_ONBOARDING_REDIRECT;
+}
+
+/**
+ * RG-N03: rotas que o OnboardingGate deixa abrir antes de concluir o
+ * onboarding. O passo "conectar e mapear" leva às telas de conector; sem
+ * esta lista, o gate mandava de volta para /onboarding (loop).
+ */
+const ONBOARDING_ALLOWED = ["/onboarding", "/conectores", "/ops/conectores"];
+
+export function onboardingGateAllows(location: string): boolean {
+  const pathname = location.split(/[?#]/, 1)[0] ?? "";
+  return ONBOARDING_ALLOWED.some((base) => pathname === base || pathname.startsWith(base + "/"));
 }

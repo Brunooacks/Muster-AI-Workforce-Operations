@@ -51,7 +51,7 @@ type NavItem = { name: string; href: string; icon: typeof Users };
 type NavGroup = { label: string; items: NavItem[] };
 
 // Rotas e ícones são fixos; só os rótulos variam por idioma.
-const NAV_LABELS: Record<
+export const NAV_LABELS: Record<
   Lang,
   {
     groups: [string, string, string, string];
@@ -66,20 +66,20 @@ const NAV_LABELS: Record<
   pt: {
     groups: ["Operação", "Governança", "Conta", "Administração"],
     items: {
-      "/comando": "Comando",
+      "/visao-geral": "Visão geral",
       "/agentes": "Agentes",
       "/frota": "Frota",
-      "/alertas": "Detector de vitória ilusória",
+      "/alertas": "Alertas de qualidade",
       "/governanca": "Governança",
-      "/metricas": "Métricas",
-      "/equipes": "Equipes mistas",
-      "/jornadas": "Jornadas A2A",
-      "/benchmarks": "Benchmarks",
+      "/metricas": "Custos",
+      "/equipes": "Squads mistos",
+      "/jornadas": "Jornadas",
+      "/benchmarks": "Aprendizados",
       "/admissao": "Admissão",
       "/conectores": "Conectores",
       "/configuracoes": "Configurações",
       "/perfil": "Perfil",
-      "/admin": "Admin Console",
+      "/admin": "Administração",
     },
     signOut: "Sair",
     search: "Buscar agente, papel, plataforma…",
@@ -90,20 +90,20 @@ const NAV_LABELS: Record<
   en: {
     groups: ["Operations", "Governance", "Account", "Administration"],
     items: {
-      "/comando": "Command",
+      "/visao-geral": "Overview",
       "/agentes": "Agents",
       "/frota": "Fleet",
-      "/alertas": "Illusory victory detector",
+      "/alertas": "Quality alerts",
       "/governanca": "Governance",
-      "/metricas": "Metrics",
-      "/equipes": "Mixed teams",
-      "/jornadas": "A2A journeys",
-      "/benchmarks": "Benchmarks",
+      "/metricas": "Costs",
+      "/equipes": "Mixed squads",
+      "/jornadas": "Journeys",
+      "/benchmarks": "Learnings",
       "/admissao": "Admission",
       "/conectores": "Connectors",
       "/configuracoes": "Settings",
       "/perfil": "Profile",
-      "/admin": "Admin Console",
+      "/admin": "Administration",
     },
     signOut: "Sign out",
     search: "Search agent, role, platform…",
@@ -114,20 +114,20 @@ const NAV_LABELS: Record<
   es: {
     groups: ["Operación", "Gobernanza", "Cuenta", "Administración"],
     items: {
-      "/comando": "Mando",
+      "/visao-geral": "Visión general",
       "/agentes": "Agentes",
       "/frota": "Flota",
-      "/alertas": "Detector de victoria ilusoria",
+      "/alertas": "Alertas de calidad",
       "/governanca": "Gobernanza",
-      "/metricas": "Métricas",
-      "/equipes": "Equipos mixtos",
-      "/jornadas": "Jornadas A2A",
-      "/benchmarks": "Benchmarks",
+      "/metricas": "Costos",
+      "/equipes": "Squads mixtos",
+      "/jornadas": "Jornadas",
+      "/benchmarks": "Aprendizajes",
       "/admissao": "Admisión",
       "/conectores": "Conectores",
       "/configuracoes": "Configuración",
       "/perfil": "Perfil",
-      "/admin": "Admin Console",
+      "/admin": "Administración",
     },
     signOut: "Cerrar sesión",
     search: "Buscar agente, rol, plataforma…",
@@ -153,7 +153,7 @@ function navGroups(lang: Lang): NavGroup[] {
     {
       label: l.groups[0],
       items: [
-        item("/comando", Compass),
+        item("/visao-geral", Compass),
         item("/agentes", Users),
         item("/frota", LayoutGrid),
         item("/jornadas", RouteIcon),
@@ -346,7 +346,7 @@ function UserCard({
     <div className="rounded-xl border border-card-border bg-card p-3">
       {onNavigate ? (
         <div className="mb-3 border-b border-card-border pb-3">
-          <OrganizationSwitcher hidePersonal skipInvitationScreen />
+          <OrganizationSwitcher skipInvitationScreen />
         </div>
       ) : null}
       <Link
@@ -537,7 +537,7 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
             <GlobalSearch />
             <PerspectiveToggle />
             <div className="hidden max-w-56 lg:block">
-              <OrganizationSwitcher hidePersonal skipInvitationScreen />
+              <OrganizationSwitcher skipInvitationScreen />
             </div>
             <ProfileSwitcher />
             <LangSwitcher />

@@ -81,4 +81,24 @@ describe("withAiBudget", () => {
     expect(result).toEqual({ aiInsight: "unavailable" });
     expect(model).not.toHaveBeenCalled();
   });
+
+  it("grava o projeto quando conhecido e nulo quando a chamada é org-wide", async () => {
+    enableAi();
+    const projetos: Array<string | null> = [];
+    const store: AiUsageStore = {
+      reserve: async ({ projectId }) => {
+        projetos.push(projectId);
+        return true;
+      },
+      settle: async ({ projectId }) => {
+        projetos.push(projectId);
+      },
+    };
+    const model = async () => ({ usage: { prompt_tokens: 1, completion_tokens: 1 } });
+
+    await withAiBudgetUsingStore(store, "org-a", "agent-analysis", model, "prj-1");
+    await withAiBudgetUsingStore(store, "org-a", "agent-analysis", model);
+
+    expect(projetos).toEqual(["prj-1", "prj-1", null, null]);
+  });
 });

@@ -6,6 +6,7 @@ import {
   type AgentEventRow,
   type TelemetrySummary,
 } from "./telemetry";
+import { CALC_VERSION, computeOutcome, normalizeTasks } from "./outcome-layers";
 
 let seq = 0;
 function event(overrides: Partial<AgentEventRow> = {}): AgentEventRow {
@@ -278,28 +279,40 @@ describe("layersFromTelemetry", () => {
     expect(layersFromTelemetry(s).governance?.score).toBe(40);
   });
 
-  it("omits value when there is no cost, includes it in R$ when small", () => {
+  it("value: sem custo por resultado validado a camada é omitida (sem score neutro fixo)", () => {
     expect(layersFromTelemetry(emptySummary()).value).toBeUndefined();
-
     const s: TelemetrySummary = { ...emptySummary(), totalCostCents: 4550 };
-    const layers = layersFromTelemetry(s);
-    expect(layers.value?.metrics[0]).toMatchObject({
-      label: "Custo total mensal",
-      value: 45.5,
-      unit: "R$",
-    });
+    expect(layersFromTelemetry(s).value).toBeUndefined();
   });
 
-  it("switches value to R$ mil at scale", () => {
-    const s: TelemetrySummary = {
-      ...emptySummary(),
-      totalCostCents: 250_000, // R$ 2.500 → 2,5 mil
-    };
-    const layers = layersFromTelemetry(s);
-    expect(layers.value?.metrics[0]).toMatchObject({
-      value: 2.5,
-      unit: "R$ mil",
+  it("value: score = avanço do baseline até a meta de custo do contrato", () => {
+    const { tasks, coverage } = normalizeTasks([
+      {
+        id: "e1", kind: "execution", ts: "2026-10-02T10:00:00.000Z", taskId: "t1", runId: "r1", attempt: 1,
+        costCents: 600, tokensIn: null, tokensOut: null, contextTokens: null, model: null, capabilities: null,
+        success: true, expected: null, actual: null, acceptedBy: "ana", acceptedByKind: "human",
+        acceptedRuleVersion: null, humanMinutes: null, reworkCount: null,
+      },
+    ]);
+    const outcome = computeOutcome({
+      calcVersion: CALC_VERSION,
+      agentId: "ag",
+      period: { start: "2026-10-01", end: "2026-10-31" },
+      tasks,
+      coverage,
+      contract: {
+        id: "ct", version: 1, metricKey: "cost_per_validated_task", unit: "BRL", direction: "down",
+        baseline: 10, target: 4, referenceHumanMinutes: null, requireHumanAccept: false, referenceModel: null,
+      },
+      hourlyRate: { rateId: "rr", hourlyCostCents: 6000, currency: "BRL", role: "support", areaId: null },
+      offInvoice: { cents: 0, itemIds: [], missingFx: false },
+      priceTable: null,
+      fx: null,
     });
+    const value = layersFromTelemetry(emptySummary(), outcome).value;
+    // R$ 6 por tarefa: de 10 até 4, andou 4 de 6 → 67.
+    expect(value?.score).toBe(67);
+    expect(value?.metrics[0]).toMatchObject({ label: "Custo por tarefa aceita", value: 6, unit: "R$", sourceSignal: "cost_per_validated_task" });
   });
 
   it("reports every telemetry metric with flat trend in v1", () => {

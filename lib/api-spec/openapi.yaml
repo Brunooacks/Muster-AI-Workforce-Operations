@@ -10,6 +10,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: rates
+    description: Custo-hora e custos fora da fatura da conta (cunha)
   - name: health
     description: Health operations
   - name: fleet
@@ -22,6 +24,10 @@ tags:
     description: Platform connectors (plug and play)
   - name: organizations
     description: Authenticated organization discovery and tenant provisioning
+  - name: projects
+    description: Projetos da conta e seus ambientes (sandbox e prod)
+  - name: runtime
+    description: Leituras do próprio agente autenticado por chave (escopo conta, projeto e ambiente)
   - name: telemetry
     description: Continuous telemetry activity, projections and supervision
   - name: executive-reporting
@@ -1547,6 +1553,242 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProfessionalPlanDecision"
 
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: Lista os projetos da conta ativa
+      responses:
+        "200":
+          description: Projetos da conta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Cria um projeto (já nasce com os ambientes sandbox e prod)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Projeto criado com os dois ambientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCreated"
+        "409":
+          description: Já existe projeto com este slug na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /projects/{projectId}/environments:
+    get:
+      operationId: listProjectEnvironments
+      tags: [projects]
+      summary: Lista os ambientes de um projeto da conta
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ambientes do projeto
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Environment"
+        "404":
+          description: Projeto não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents:
+    get:
+      operationId: listRuntimeAgents
+      tags: [runtime]
+      summary: Agentes do projeto da chave (autenticação por chave de agente)
+      parameters:
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: environment
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/EnvironmentKind"
+      responses:
+        "200":
+          description: Agentes do projeto da chave
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuntimeAgent"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents/{agentId}:
+    get:
+      operationId: readRuntimeAgent
+      description: >-
+        Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora
+        dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo
+        nome quando a operação tem caminho e query.
+      tags: [runtime]
+      summary: O próprio agente da chave
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuntimeAgent"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents/{agentId}/events:
+    get:
+      operationId: listRuntimeAgentEvents
+      description: >-
+        Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora
+        dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo
+        nome quando a operação tem caminho e query.
+      tags: [runtime]
+      summary: Eventos do outbox do agente no ambiente da chave
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Eventos do agente no ambiente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuntimeOutboxEvent"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /runtime/agents/{agentId}/api-keys:
+    get:
+      operationId: listRuntimeAgentApiKeys
+      description: >-
+        Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora
+        dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo
+        nome quando a operação tem caminho e query.
+      tags: [runtime]
+      summary: Chaves (mascaradas) do agente no ambiente da chave
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chaves do agente no ambiente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentApiKey"
+        "401":
+          description: Chave ausente, inválida, revogada ou com prefixo divergente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Chave de sandbox pedindo produção
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Fora do projeto/conta da chave, inexistente, ou chave prod pedindo sandbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /agents/{agentId}/api-keys:
     get:
       operationId: listAgentApiKeys
@@ -1646,6 +1888,21 @@ paths:
                   duplicate:
                     type: boolean
                     description: True when this idempotency key was already accepted for this agent.
+        "409":
+          description: Já existe resultado (execution/error) para esta tentativa da tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: >-
+            Cadeia de tarefa inválida (retryOf de outra task ou fora de ordem,
+            attempt > 1 sem retryOf, runId/attempt sem taskId) ou aceite auto
+            sem acceptedRuleVersion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /integrations/agent-events:
     post:
@@ -1883,6 +2140,245 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RealtimeGovernanceResponse"
+
+  /agents/{agentId}/contracts:
+    get:
+      operationId: listAgentContracts
+      tags: [agents]
+      summary: Histórico de versões do contrato numérico do agente (cunha · C2.2)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Versão ativa (nula = contrato pendente) e histórico
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentContractHistory"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createAgentContract
+      tags: [agents]
+      summary: Cria a próxima versão do contrato (nunca edita a anterior)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentContractInput"
+      responses:
+        "201":
+          description: Versão criada e ativa; a anterior vira superseded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentContract"
+        "400":
+          description: Validação (números, deadline futura, dono membro da conta)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /rates/roles:
+    get:
+      operationId: listRoleRates
+      tags: [rates]
+      summary: Custo-hora por área/papel (cunha · C3.2)
+      responses:
+        "200":
+          description: Linhas da conta (só admin)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleRate"
+        "403":
+          description: Apenas admin da conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createRoleRate
+      tags: [rates]
+      summary: Cadastra custo-hora com vigência (409 se cruzar outra vigência do mesmo papel/área)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleRateInput"
+      responses:
+        "201":
+          description: Criado (trilha no outbox)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleRate"
+        "400":
+          description: Validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Apenas admin da conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /rates/off-invoice:
+    get:
+      operationId: listOffInvoiceCosts
+      tags: [rates]
+      summary: Custos fora da fatura (cunha · C3.2)
+      responses:
+        "200":
+          description: Linhas da conta (só admin)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OffInvoiceCost"
+        "403":
+          description: Apenas admin da conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createOffInvoiceCost
+      tags: [rates]
+      summary: Cadastra custo fora da fatura com período e alocação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OffInvoiceCostInput"
+      responses:
+        "201":
+          description: Criado (trilha no outbox)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OffInvoiceCost"
+        "400":
+          description: Validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Apenas admin da conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /agents/{agentId}/outcome:
+    get:
+      operationId: getAgentOutcome
+      tags: [agents]
+      summary: Camadas 1–3, sinais e contrato vigente do agente no período (cunha · C12.1)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            description: YYYY-MM (padrão = mês corrente)
+      responses:
+        "200":
+          description: Resultado do período; mês fechado vem do snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentOutcome"
+        "400":
+          description: period inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /agents/{agentId}/outcome/close:
+    post:
+      operationId: closeAgentOutcomePeriod
+      tags: [agents]
+      summary: Fecha um mês encerrado em snapshot imutável (idempotente; só admin)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Já fechado com os mesmos inputs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeSnapshotRef"
+        "201":
+          description: Snapshot criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutcomeSnapshotRef"
+        "400":
+          description: period inválido ou mês ainda aberto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   securitySchemes:
@@ -2973,6 +3469,16 @@ components:
           type: ["string", "null"]
         decidedAt:
           type: ["string", "null"]
+        contractId:
+          type: ["string", "null"]
+          description: Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)
+        contractVersion:
+          type: ["integer", "null"]
+        contract:
+          description: A versão do contrato à qual o veredito se refere (regra R3)
+          oneOf:
+            - $ref: "#/components/schemas/AgentContract"
+            - type: "null"
         createdAt:
           type: string
 
@@ -3395,6 +3901,10 @@ components:
           type: string
           minLength: 1
           description: Connector selected as the authenticated source of discovery and telemetry for this agent.
+        projectId:
+          type: string
+          minLength: 1
+          description: Projeto do agente. Sem valor, o agente entra no projeto Padrão da conta.
         areaId:
           type: string
           nullable: true
@@ -5020,21 +5530,398 @@ components:
           type: string
           format: date-time
 
+    EnvironmentKind:
+      type: string
+      enum: [sandbox, prod]
+      description: Ambiente de um projeto. Chave sandbox nunca alcança prod.
+
+    AgentContractInput:
+      type: object
+      required: [metricKey, unit, direction, baseline, target, deadline, ownerMemberId]
+      properties:
+        metricKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 40
+        direction:
+          type: string
+          enum: [up, down]
+        baseline:
+          type: number
+        target:
+          type: number
+        limit:
+          type: ["number", "null"]
+        deadline:
+          type: string
+          description: Data futura YYYY-MM-DD
+        ownerMemberId:
+          type: string
+          description: organization_members.id do dono (membro da conta)
+        referenceHumanMinutes:
+          type: ["number", "null"]
+          minimum: 0
+          description: Minutos humanos de referência por tarefa (D-C2)
+        requireHumanAccept:
+          type: boolean
+          description: Aceite automático não conta como tarefa aceita (D-C3)
+        referenceModel:
+          type: ["string", "null"]
+          maxLength: 120
+          description: Modelo de referência fixado pela conta (D-C1)
+    AgentContract:
+      type: object
+      required: [id, agentId, version, metricKey, unit, direction, baseline, target, limit, deadline, ownerMemberId, status, createdBy, createdAt, supersededAt, referenceHumanMinutes, requireHumanAccept, referenceModel]
+      properties:
+        id:
+          type: string
+        agentId:
+          type: string
+        version:
+          type: integer
+        metricKey:
+          type: string
+        unit:
+          type: string
+        direction:
+          type: string
+          enum: [up, down]
+        baseline:
+          type: number
+        target:
+          type: number
+        limit:
+          type: ["number", "null"]
+        deadline:
+          type: string
+        ownerMemberId:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, superseded]
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+        supersededAt:
+          type: ["string", "null"]
+        referenceHumanMinutes:
+          type: ["number", "null"]
+        requireHumanAccept:
+          type: boolean
+        referenceModel:
+          type: ["string", "null"]
+    AgentContractOwnerCandidate:
+      type: object
+      required: [id, userId, role]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+    AgentContractHistory:
+      type: object
+      required: [agentId, active, versions, ownerCandidates]
+      properties:
+        agentId:
+          type: string
+        active:
+          oneOf:
+            - $ref: "#/components/schemas/AgentContract"
+            - type: "null"
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentContract"
+        ownerCandidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentContractOwnerCandidate"
+    RoleRateInput:
+      type: object
+      required: [role, hourlyCostCents, currency, validFrom]
+      properties:
+        areaId:
+          type: ["string", "null"]
+        role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        hourlyCostCents:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+          enum: [BRL, USD]
+        validFrom:
+          type: string
+        validTo:
+          type: ["string", "null"]
+    RoleRate:
+      type: object
+      required: [id, areaId, role, hourlyCostCents, currency, validFrom, validTo, createdBy, createdAt]
+      properties:
+        id:
+          type: string
+        areaId:
+          type: ["string", "null"]
+        role:
+          type: string
+        hourlyCostCents:
+          type: integer
+        currency:
+          type: string
+          enum: [BRL, USD]
+        validFrom:
+          type: string
+        validTo:
+          type: ["string", "null"]
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+    OffInvoiceCostInput:
+      type: object
+      required: [category, amountCents, currency, periodStart, periodEnd, allocation]
+      properties:
+        projectId:
+          type: ["string", "null"]
+        agentId:
+          type: ["string", "null"]
+        category:
+          type: string
+          enum: [license, infra, integration, other]
+        amountCents:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+          enum: [BRL, USD]
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        allocation:
+          type: string
+          enum: [agent, project, per_task]
+        description:
+          type: ["string", "null"]
+          maxLength: 500
+    OffInvoiceCost:
+      type: object
+      required: [id, projectId, agentId, category, amountCents, currency, periodStart, periodEnd, allocation, description, createdBy, createdAt]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: ["string", "null"]
+        agentId:
+          type: ["string", "null"]
+        category:
+          type: string
+          enum: [license, infra, integration, other]
+        amountCents:
+          type: integer
+        currency:
+          type: string
+          enum: [BRL, USD]
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        allocation:
+          type: string
+          enum: [agent, project, per_task]
+        description:
+          type: ["string", "null"]
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+    OutcomeNumber:
+      type: object
+      description: "Número com status: ok traz value; unavailable traz reason (nunca um valor neutro)."
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        value: {}
+        reason:
+          type: string
+    AgentOutcome:
+      type: object
+      required: [agentId, period, source, calcVersion, coverage, layer1, layer2, layer3, signals, contract, verdict]
+      properties:
+        agentId:
+          type: string
+        period:
+          type: string
+        source:
+          type: string
+          enum: [live, snapshot]
+        calcVersion:
+          type: string
+        coverage:
+          $ref: "#/components/schemas/OutcomeNumber"
+        layer1:
+          type: object
+          additionalProperties: true
+          description: "cost, decomposition {retry, context, model}, referenceModel — cada um OutcomeNumber"
+        layer2:
+          type: object
+          additionalProperties: true
+          description: "tasks, acceptanceRate, interventionRate, autoAcceptShare, expectedMatchRate, contract"
+        layer3:
+          type: object
+          additionalProperties: true
+          description: "provenance, trail, ownerCoverage, credentialCoverage, snapshot"
+        signals:
+          type: object
+          additionalProperties: true
+          description: "adoption, illusoryWin, tokenAnomaly"
+        contract:
+          oneOf:
+            - $ref: "#/components/schemas/AgentContract"
+            - type: "null"
+        verdict:
+          type: object
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [coming_soon]
+    OutcomeSnapshotRef:
+      type: object
+      required: [id, agentId, period, calcVersion, inputsHash, created]
+      properties:
+        id:
+          type: string
+        agentId:
+          type: string
+        period:
+          type: string
+        calcVersion:
+          type: string
+        inputsHash:
+          type: string
+        created:
+          type: boolean
+    Project:
+      type: object
+      required: [id, name, slug, isDefault, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        isDefault:
+          type: boolean
+          description: Projeto "Padrão" criado para toda conta.
+        createdAt:
+          type: string
+          format: date-time
+
+    ProjectInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 60
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          description: Sem valor, é derivado do nome.
+
+    ProjectCreated:
+      type: object
+      required: [project, environments]
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+        environments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Environment"
+
+    Environment:
+      type: object
+      required: [id, projectId, kind, createdAt]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        kind:
+          $ref: "#/components/schemas/EnvironmentKind"
+        createdAt:
+          type: string
+          format: date-time
+
+    RuntimeAgent:
+      type: object
+      required: [id, name, slug, projectId]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        projectId:
+          type: string
+
+    RuntimeOutboxEvent:
+      type: object
+      required: [id, eventType, status, projectId, environment, createdAt]
+      properties:
+        id:
+          type: string
+        eventType:
+          type: string
+        status:
+          type: string
+        projectId:
+          type: string
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
+        createdAt:
+          type: string
+          format: date-time
+
     AgentApiKeyInput:
       type: object
       properties:
         label:
           type: string
           description: Nome operacional da credencial (ex.- "produção", "staging").
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
 
     AgentApiKey:
       type: object
-      required: [id, agentId, prefix, masked, createdAt, revoked]
+      required: [id, agentId, projectId, environment, prefix, masked, createdAt, revoked]
       properties:
         id:
           type: string
         agentId:
           type: string
+        projectId:
+          type: string
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
         label:
           type: string
           nullable: true
@@ -5073,6 +5960,8 @@ components:
     AgentEventInput:
       type: object
       properties:
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
         idempotencyKey:
           type: string
           minLength: 1
@@ -5082,7 +5971,7 @@ components:
             rede para evitar materializar o evento duas vezes.
         kind:
           type: string
-          enum: [execution, error, escalation, feedback, heartbeat]
+          enum: [execution, error, escalation, feedback, heartbeat, human_review]
         # Optional occurrence time (ISO 8601). Agents that batch or replay
         # events report the real execution time; when omitted the server
         # stamps the event with "now".
@@ -5099,13 +5988,90 @@ components:
           type: number
         success:
           type: boolean
+          description: Em human_review, a decisão (true = aprovado, false = rejeitado).
         metadata:
           type: object
           additionalProperties: true
+        # Cunha (C1.3): resultado da tarefa. Nomes iguais aos headers
+        # x-veltrix-task / x-veltrix-run. Conta, projeto e ambiente vêm sempre
+        # da credencial, nunca do corpo.
+        taskId:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Tarefa (x-veltrix-task).
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Execução/tentativa da tarefa (x-veltrix-run).
+        attempt:
+          type: integer
+          minimum: 1
+          description: >-
+            Ordinal do run dentro da task. Sem valor = 1, ou anterior + 1
+            quando há retryOf. attempt > 1 exige retryOf.
+        retryOf:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: runId da tentativa anterior da mesma task.
+        expected:
+          description: Resultado esperado (camada 2).
+        actual:
+          description: Resultado obtido (camada 2).
+        acceptedBy:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Quem decidiu (pessoa ou regra). Em human_review, o revisor.
+        acceptedByKind:
+          type: string
+          enum: [human, auto]
+        acceptedRuleVersion:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Obrigatório quando acceptedByKind = auto.
+        acceptedAt:
+          type: string
+          format: date-time
+        capabilities:
+          $ref: "#/components/schemas/TaskCapabilities"
+        reworkCount:
+          type: integer
+          minimum: 0
+        humanMinutes:
+          type: number
+          minimum: 0
+          maximum: 999999.99
+          description: Minutos humanos reais (revisão em human_review; retrabalho nos demais).
+        contextTokens:
+          type: integer
+          minimum: 0
+        model:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    TaskCapabilities:
+      type: object
+      description: Capabilities que a tarefa usou (base do modelo de referência).
+      properties:
+        tools:
+          type: boolean
+        vision:
+          type: boolean
+        contextWindow:
+          type: integer
+          minimum: 0
+      additionalProperties: true
 
     AgentHeartbeatInput:
       type: object
       properties:
+        environment:
+          $ref: "#/components/schemas/EnvironmentKind"
         runtime:
           type: string
         version:
