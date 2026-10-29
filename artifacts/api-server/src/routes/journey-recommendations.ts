@@ -455,6 +455,14 @@ router.post(
   async (req, res) => {
     const { journeyId, recommendationId } = JourneyRecommendationParams.parse(req.params);
     const body = JourneyRecommendationDecisionInput.parse(req.body);
+    const [ownedJourney] = await db
+      .select({ id: journeys.id })
+      .from(journeys)
+      .where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
+    if (!ownedJourney) {
+      res.status(404).json({ error: "Journey not found" });
+      return;
+    }
     const [recommendation] = await db
       .select()
       .from(journeyRecommendations)
@@ -556,6 +564,14 @@ router.patch(
     const { journeyId, recommendationId, actionId } =
       JourneyRecommendationActionParams.parse(req.params);
     const body = UpdateJourneyRecommendationActionInput.parse(req.body);
+    const [ownedJourney] = await db
+      .select({ id: journeys.id })
+      .from(journeys)
+      .where(and(eq(journeys.id, journeyId), ofOrg(journeys, req.orgId!)));
+    if (!ownedJourney) {
+      res.status(404).json({ error: "Journey not found" });
+      return;
+    }
     if (
       (body.status === "blocked" || body.status === "completed") &&
       !body.result?.trim()

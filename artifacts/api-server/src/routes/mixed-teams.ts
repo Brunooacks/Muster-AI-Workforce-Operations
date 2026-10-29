@@ -339,6 +339,10 @@ router.delete(
   requireMixedTeamManager,
   async (req, res) => {
     const { teamId, membershipId } = TeamMemberParams.parse(req.params);
+    if (!(await getTeam(teamId, req.orgId!))) {
+      res.status(404).json({ error: "Team not found" });
+      return;
+    }
     const deleted = await db
       .delete(teamMemberships)
       .where(
@@ -406,6 +410,10 @@ router.delete(
   requireMixedTeamManager,
   async (req, res) => {
     const { teamId, assignmentId } = TeamAssignmentParams.parse(req.params);
+    if (!(await getTeam(teamId, req.orgId!))) {
+      res.status(404).json({ error: "Team not found" });
+      return;
+    }
     const deleted = await db
       .delete(teamAgentAssignments)
       .where(

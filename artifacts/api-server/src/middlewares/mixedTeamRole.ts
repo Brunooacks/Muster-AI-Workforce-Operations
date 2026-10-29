@@ -98,10 +98,8 @@ export function requireMixedTeamRole(
     try {
       const teamId = await resolveTeamId(req);
       if (!teamId || !req.orgId) {
-        res.status(403).json({
-          error: "Forbidden",
-          reason: "A equipe não pertence à organização ativa.",
-        });
+        // Recurso de outra organização: 404, sem confirmar que o id existe (RG-X02).
+        res.status(404).json({ error: "Not found" });
         return;
       }
       const [team] = await db
@@ -110,10 +108,8 @@ export function requireMixedTeamRole(
         .where(and(eq(teams.id, teamId), eq(teams.orgId, req.orgId)))
         .limit(1);
       if (!team) {
-        res.status(403).json({
-          error: "Forbidden",
-          reason: "A equipe não pertence à organização ativa.",
-        });
+        // Recurso de outra organização: 404, sem confirmar que o id existe (RG-X02).
+        res.status(404).json({ error: "Not found" });
         return;
       }
       const decision = authorizeMixedTeamManagement(

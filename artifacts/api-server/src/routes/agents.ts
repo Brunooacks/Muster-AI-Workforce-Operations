@@ -394,6 +394,11 @@ router.patch("/agents/:agentId/identity", requireAuth, requireOrg, async (req, r
 
 router.get("/agents/:agentId/evaluations", requireAuth, requireOrg, async (req, res) => {
   const { agentId } = ListAgentEvaluationsParams.parse(req.params);
+  // evaluations é tabela-filha: o escopo vem do agente (P0 MU-10-SG1).
+  if (!(await agentInOrg(req.orgId!, agentId))) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
   const rows = await db
     .select()
     .from(evaluations)
@@ -408,6 +413,11 @@ router.get(
   requireAuth, requireOrg,
   async (req, res) => {
     const { agentId, window } = GetAgentMetricsParams.parse(req.params);
+    // metric_points é tabela-filha: o escopo vem do agente (P0 MU-09-SG1).
+    if (!(await agentInOrg(req.orgId!, agentId))) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
 
     const limit = window === "1h" || window === "24h" ? 24 : window === "7d" ? 7 : 30;
 

@@ -354,6 +354,10 @@ router.delete(
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId, stepId } = JourneyStepParams.parse(req.params);
+    if (!(await journeyExists(journeyId, req.orgId!))) {
+      res.status(404).json({ error: "Journey not found" });
+      return;
+    }
     const deleted = await db
       .delete(journeySteps)
       .where(and(eq(journeySteps.id, stepId), eq(journeySteps.journeyId, journeyId)))
@@ -410,6 +414,10 @@ router.delete(
   requireMixedTeamManager,
   async (req, res) => {
     const { journeyId, handoffId } = JourneyHandoffParams.parse(req.params);
+    if (!(await journeyExists(journeyId, req.orgId!))) {
+      res.status(404).json({ error: "Journey not found" });
+      return;
+    }
     const deleted = await db
       .delete(journeyHandoffs)
       .where(
