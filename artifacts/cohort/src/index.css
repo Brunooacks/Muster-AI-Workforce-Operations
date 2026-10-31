@@ -146,8 +146,8 @@
   --sidebar-accent-foreground: 240 3% 12%;
   --sidebar-ring: 189 92% 53%;
 
-  --app-font-sans: 'Geist', system-ui, -apple-system, sans-serif;
-  --app-font-serif: 'Geist', system-ui, sans-serif;
+  --app-font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
+  --app-font-serif: 'Outfit', system-ui, sans-serif;
   --app-font-mono: 'IBM Plex Mono', Menlo, monospace;
   --radius: 0.75rem;
 
@@ -290,7 +290,7 @@
     min-width: 320px;
   }
 
-  /* Tipografia Geist + IBM Plex Mono */
+  /* Tipografia Outfit + IBM Plex Mono */
   html {
     font-family: var(--app-font-sans);
   }

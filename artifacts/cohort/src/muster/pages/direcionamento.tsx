@@ -70,7 +70,7 @@ export default function DirecionamentoPage() {
                 <line x1="40" x2={w - 20} y1={y(40)} y2={y(40)} stroke="#9a9aa0" strokeDasharray="4 4" />
                 {[20, 30, 40, 50, 60].map((v) => <text key={v} x="32" y={y(v) + 4} textAnchor="end" fontSize="11" fill="#8a8a8f" fontFamily="IBM Plex Mono">{v}%</text>)}
                 <polyline fill="none" stroke="currentColor" strokeWidth="2.2" points={pts.map((v, i) => `${80 + i * 115},${y(v)}`).join(" ")} />
-                {pts.map((v, i) => <g key={i}><circle cx={80 + i * 115} cy={y(v)} r="5" fill="currentColor" /><text x={80 + i * 115} y={y(v) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fontFamily="Geist" fill="currentColor">{F.n(v)}%</text><text x={80 + i * 115} y={h - 4} textAnchor="middle" fontSize="11" fill="#8a8a8f" fontFamily="IBM Plex Mono">{t(...MES[S[i].mes])}</text></g>)}
+                {pts.map((v, i) => <g key={i}><circle cx={80 + i * 115} cy={y(v)} r="5" fill="currentColor" /><text x={80 + i * 115} y={y(v) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fontFamily="var(--app-font-sans)" fill="currentColor">{F.n(v)}%</text><text x={80 + i * 115} y={h - 4} textAnchor="middle" fontSize="11" fill="#8a8a8f" fontFamily="IBM Plex Mono">{t(...MES[S[i].mes])}</text></g>)}
               </svg>
             </div>
           </section>

@@ -1083,7 +1083,7 @@ h1 .itip{width:22px;height:22px;font-size:13px;vertical-align:.35em}
 .mp :where(ol,ul){margin:1em 0;padding-left:40px}
 .mp :where(ol){list-style:decimal}.mp :where(ul){list-style:disc}
 .mp :where(h4){margin:1.33em 0}
-/* O protótipo só carrega Geist até 600; negrito renderiza com a face 600. */
+/* O protótipo só carrega Outfit até 600; negrito renderiza com a face 600. */
 .mp :where(b,strong){font-weight:600}
 
 /* 390px: a marca ocupa duas linhas; o selo vira só o ponto, com o texto acessível */
