@@ -70,20 +70,7 @@ export function HomeHero() {
         <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           {t.logosLabel}
         </span>
-        <div className="flex flex-wrap items-center justify-center gap-x-[26px] gap-y-4">
-          {LOGOS.map((logo) => (
-            <img
-              key={logo.alt}
-              src={`https://commons.wikimedia.org/wiki/Special:FilePath/${logo.file}?width=240`}
-              alt={logo.alt}
-              title={logo.alt}
-              loading="lazy"
-              style={{ height: logo.height }}
-              className="w-auto opacity-70 grayscale"
-            />
-          ))}
-          <span className="text-[13px] font-medium text-muted-foreground">{t.homeMade}</span>
-        </div>
+        <HomeLogos homeMade={t.homeMade} />
       </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-4 text-[18px]">
@@ -100,3 +87,29 @@ export function HomeHero() {
     </section>
   );
 }
+
+/** Faixa de compatibilidade da home; também usada nas telas de entrar e criar conta. */
+export function HomeLogos({ homeMade, className = "justify-center" }: { homeMade: string; className?: string }) {
+  return (
+    <div className={`flex flex-wrap items-center gap-x-[26px] gap-y-4 ${className}`}>
+      {LOGOS.map((logo) => (
+        <img
+          key={logo.alt}
+          src={`https://commons.wikimedia.org/wiki/Special:FilePath/${logo.file}?width=240`}
+          alt={logo.alt}
+          title={logo.alt}
+          loading="lazy"
+          style={{ height: logo.height }}
+          className="w-auto opacity-70 grayscale"
+        />
+      ))}
+      <span className="text-[13px] font-medium text-muted-foreground">{homeMade}</span>
+    </div>
+  );
+}
+
+export const HOME_LOGOS_LABEL: Record<Lang, { label: string; homeMade: string }> = {
+  pt: { label: pt.logosLabel, homeMade: pt.homeMade },
+  en: { label: en.logosLabel, homeMade: en.homeMade },
+  es: { label: es.logosLabel, homeMade: es.homeMade },
+};

@@ -510,3 +510,11 @@
 ::-webkit-scrollbar-corner { background: transparent; }
 /* Vídeo da home: brilho discreto no canto, no tom do acento. */
 .home-video-glow { background: radial-gradient(120% 80% at 80% 0%, hsl(189 92% 53% / .08), transparent 55%); }
+
+/* Grade fina do fundo da home, reaproveitada no login (RG-M10). */
+.home-backdrop-grid {
+  opacity: .04;
+  background-image: linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at top, black, transparent 70%);
+}

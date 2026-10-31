@@ -23,6 +23,7 @@ import { TenantBootstrapBoundary } from "@/components/tenant-bootstrap";
 import { AppShellProvider } from "@/lib/app-shell";
 import { LANG_PATHS, LangProvider, useLang, type Lang } from "@/lib/i18n";
 import { AuthShell } from "@/muster/auth/auth-shell";
+import { AuthCardPreview } from "@/muster/auth/auth-card-preview";
 import { musterClerkAppearance, musterClerkLocalization } from "@/muster/auth/clerk-config";
 
 import NotFound from "@/pages/not-found";
@@ -312,6 +313,13 @@ function DemoRoutes() {
       ))}
       {DesignSystemPage && <Route path="/design-system" component={DesignSystemPage} />}
       <Route path="/calculadora" component={CalculadoraPage} />
+      {/* Prévia sem Clerk: mesma moldura do login com o cartão estático. */}
+      <Route path="/sign-in/*?">
+        <AuthShell mode="sign-in" homeHref="/" switchHref="/sign-up"><AuthCardPreview mode="sign-in" /></AuthShell>
+      </Route>
+      <Route path="/sign-up/*?">
+        <AuthShell mode="sign-up" homeHref="/" switchHref="/sign-in"><AuthCardPreview mode="sign-up" /></AuthShell>
+      </Route>
       <Route path="/agentes/:id/conectar">
         <WorkforceOsLabPage labMode={false} demo />
       </Route>

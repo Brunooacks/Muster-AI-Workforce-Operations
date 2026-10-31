@@ -5,6 +5,8 @@ import { MusterMark } from "@/components/logo";
 import { LangSwitcher } from "@/components/lang-switcher";
 import { useLang } from "@/lib/i18n";
 import { AUTH_COPY } from "./auth-copy";
+import { HomeLogos, HOME_LOGOS_LABEL } from "@/components/home/home-hero";
+import { HomeBackdrop } from "@/components/home/home-backdrop";
 
 const PROFILE_KEY = "muster:profile";
 
@@ -53,8 +55,9 @@ export function AuthShell({
   const t = AUTH_COPY[lang];
   const isSignIn = mode === "sign-in";
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground" data-testid={`auth-${mode}`}>
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+    <div className="relative isolate min-h-[100dvh] overflow-hidden bg-background text-foreground" data-testid={`auth-${mode}`}>
+      <HomeBackdrop />
+      <header className="relative mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <Link href={homeHref} className="flex min-w-0 items-center gap-2.5" aria-label="Muster Workforce Operations">
           <MusterMark className="h-7 w-7 shrink-0" />
           <span className="hidden text-[17px] font-semibold tracking-[-0.02em] sm:inline">Muster Workforce Operations</span>
@@ -72,10 +75,10 @@ export function AuthShell({
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-12 pt-4 sm:px-8 lg:min-h-[calc(100dvh-88px)] lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pt-0">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-12 pt-4 sm:px-8 lg:min-h-[calc(100dvh-88px)] lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pt-0">
         <section className="hidden lg:block">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{t.eyebrow}</p>
-          <h1 className="mt-5 max-w-[16ch] text-[52px] font-semibold leading-[1.02] tracking-[-0.04em]">
+          <h1 className="mt-5 max-w-[16ch] text-[64px] font-semibold leading-[0.98] tracking-[-0.05em] text-balance">
             {isSignIn ? t.signInTitle : t.signUpTitle}
           </h1>
           <p className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-muted-foreground">
@@ -91,6 +94,10 @@ export function AuthShell({
               </li>
             ))}
           </ul>
+          <div className="mt-12">
+            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{HOME_LOGOS_LABEL[lang].label}</p>
+            <HomeLogos homeMade={HOME_LOGOS_LABEL[lang].homeMade} className="justify-start" />
+          </div>
         </section>
 
         <main className="mx-auto w-full max-w-[440px]">
