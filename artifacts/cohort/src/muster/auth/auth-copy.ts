@@ -4,6 +4,13 @@ import type { Lang } from "@/lib/i18n";
  * Textos das telas de entrar e criar conta. Linguagem corporativa e direta:
  * fala de equipe, rotina e decisão, sem jargão de tecnologia.
  */
+/**
+ * RG-M08: mínimo de senha configurado na instância Clerk de produção (medido em
+ * 31/10/2026: "Your password must contain 15 or more characters"). Se a regra
+ * mudar no Clerk, mude aqui.
+ */
+export const PASSWORD_MIN_LENGTH = 15;
+
 export type AuthCopy = {
   back: string;
   eyebrow: string;
@@ -31,6 +38,8 @@ export type AuthCopy = {
   hasAccount: string;
   signIn: string;
   sameMethod: string;
+  /** RG-M08: regra de senha do Clerk, visível antes do envio. */
+  passwordRule: string;
   footnote: string;
   themeLight: string;
   themeNight: string;
@@ -65,6 +74,7 @@ export const AUTH_COPY: Record<Lang, AuthCopy> = {
     hasAccount: "Já tem conta?",
     signIn: "Entrar",
     sameMethod: "Entre do mesmo jeito que criou a conta: com Google ou o seu e-mail.",
+    passwordRule: `Senha: mínimo de ${PASSWORD_MIN_LENGTH} caracteres.`,
     footnote: "O login protege o acesso das pessoas. Os agentes usam credenciais próprias, limitadas por empresa e por regra.",
     themeLight: "Claro",
     themeNight: "Noite",
@@ -97,6 +107,7 @@ export const AUTH_COPY: Record<Lang, AuthCopy> = {
     hasAccount: "Already have an account?",
     signIn: "Sign in",
     sameMethod: "Sign in the same way you signed up: with Google or your email.",
+    passwordRule: `Password: at least ${PASSWORD_MIN_LENGTH} characters.`,
     footnote: "Sign-in protects people's access. Agents use their own credentials, limited by company and by policy.",
     themeLight: "Light",
     themeNight: "Night",
@@ -129,6 +140,7 @@ export const AUTH_COPY: Record<Lang, AuthCopy> = {
     hasAccount: "¿Ya tienes cuenta?",
     signIn: "Entrar",
     sameMethod: "Entra de la misma forma en que creaste la cuenta: con Google o tu correo.",
+    passwordRule: `Contraseña: mínimo de ${PASSWORD_MIN_LENGTH} caracteres.`,
     footnote: "El inicio de sesión protege el acceso de las personas. Los agentes usan credenciales propias, limitadas por empresa y por reglas.",
     themeLight: "Claro",
     themeNight: "Noche",

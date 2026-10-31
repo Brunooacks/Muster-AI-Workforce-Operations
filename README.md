@@ -28,19 +28,15 @@ O que a plataforma acompanha:
 
 ## Status atual
 
-Em construção, com publicação em **https://muster.veltrixplatform.com**. As telas novas estão em PRs empilhados, em rascunho, aguardando revisão:
+Publicado em **https://muster.veltrixplatform.com**. A `main` é o que roda em produção (atualizada em 31/10/2026):
 
-| Fase | Conteúdo | PR |
-| :--- | :--- | :--- |
-| Fase 1 | Base da área logada: conta empresa × pessoal, componentes-base e tema do protótipo (Claro/Noite) | [#67](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/67) |
-| Fase 2 · Marco 1 | Visão geral, Direcionamento, Baseline e Histórico | [#68](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/68) |
-| Fase 2 · Marco 2 | Squads mistos, Aprendizados e Board | [#69](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/69) |
-| Home | Nova página inicial (design aprovado) | [#66](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/66) |
-| Login | Entrar e criar conta com e-mail corporativo, Google ou GitHub | [#70](https://github.com/Brunooacks/Muster-AI-Workforce-Operations/pull/70) |
+- Base das releases de 26 a 30/10: home nova, área logada (Fases 1 e 2), login, glossário, onboarding sem loop (RG-N03), `/design-system` fora de produção (RG-N20).
+- **#71** (e1093bf): home sem "em breve", preços fora até decisão, login sem GitHub (RG-N29).
+- **P0 tenancy** (4011543): rotas `:id` herdam o escopo da organização; outra organização recebe 404 (MU-09/MU-10, RG-X02).
+- **Imagem sha-1490459** (commit reconstituído a partir da árvore publicada, que não estava em nenhum repositório): calculadora de custo por caso (RG-M02), `/en`, `/es`, `/pt` (RG-M05), rollup de métricas 30d (RG-M12), `requireOrg` com duas organizações (RG-X01).
+- **RG-M08** (31/10): `/sign-up` mostra a regra de senha antes do envio (mínimo de 15 caracteres, a regra configurada no Clerk).
 
-Release candidata: branch `release/muster-2026-10-26` junta #66, #67, #68, #69 e #70 sem merge na `main`. As migrações da home (#66) foram renumeradas para 0023..0027, depois de `0022_conta_pessoal`. O manifesto lista cada PR incluído.
-
-Próximas etapas: Jornadas, Agentes, Entregas, Custos e Governança; conectores reais (Jira, Linear, Confluence); cobrança.
+Pendentes: chaves do Clerk de produção (decisão 16A/16B), moeda e LGPD (exigem migração de schema, não aplicadas), evento do gateway Veltrix medido no Muster (RG-M17).
 
 ## Temas e idiomas
 
@@ -53,9 +49,8 @@ As telas `/sign-in` e `/sign-up` usam os componentes do Clerk com a aparência d
 
 - **E-mail corporativo**, com código de verificação e/ou senha, conforme a configuração do Clerk.
 - **Google** (Gmail e Google Workspace).
-- **GitHub**.
 
-Google e GitHub aparecem quando estão ativados no Clerk com credenciais próprias (OAuth). Agentes não usam esse login: têm credenciais próprias, limitadas por empresa e por regra.
+GitHub saiu da tela de login no #71. Google aparece quando está ativado no Clerk com credenciais próprias (OAuth). Senha: mínimo de 15 caracteres, mostrado no `/sign-up` antes do envio. Agentes não usam esse login: têm credenciais próprias, limitadas por empresa e por regra.
 
 ## Como rodar localmente
 
