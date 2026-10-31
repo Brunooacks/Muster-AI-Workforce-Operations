@@ -30,6 +30,7 @@ const pt = {
     gastoMensal: "Gasto mensal com agentes",
     custoHora: "Custo-hora do time",
     minutosPorTarefa: "Tempo médio por tarefa",
+    custoPorCaso: "Custo humano por caso",
   } as Record<CampoEntrada, string>,
   dicas: {
     agentes: "quantos estão rodando hoje",
@@ -38,9 +39,10 @@ const pt = {
     gastoMensal: "modelos, infra e licenças",
     custoHora: "salário + encargos ÷ horas",
     minutosPorTarefa: "tempo de um humano na mesma tarefa",
+    custoPorCaso: "opcional: 0 = usar custo-hora × tempo",
   } as Record<CampoEntrada, string>,
   sufixos: { aceitacao: "%", minutosPorTarefa: "min" } as Partial<Record<CampoEntrada, string>>,
-  prefixos: { gastoMensal: "R$", custoHora: "R$" } as Partial<Record<CampoEntrada, string>>,
+  prefixos: { gastoMensal: "R$", custoHora: "R$", custoPorCaso: "R$" } as Partial<Record<CampoEntrada, string>>,
   resultTitle: "Custo por resultado validado",
   resultAgente: "com agente no Muster",
   resultHumano: "no time humano",
@@ -59,6 +61,7 @@ const pt = {
     "resultados validados = tarefas × aceitação",
     "custo por resultado (agente) = gasto mensal ÷ resultados validados",
     "custo humano mensal = tarefas × minutos ÷ 60 × custo-hora",
+    "custo humano mensal = tarefas × custo por caso (se informado)",
     "custo por resultado (humano) = custo humano mensal ÷ resultados validados",
   ],
   formulaNote:
@@ -82,6 +85,7 @@ const en: typeof pt = {
     gastoMensal: "Monthly agent spend",
     custoHora: "Team hourly cost",
     minutosPorTarefa: "Average time per task",
+    custoPorCaso: "Human cost per case",
   } as Record<CampoEntrada, string>,
   dicas: {
     agentes: "how many are running today",
@@ -90,9 +94,10 @@ const en: typeof pt = {
     gastoMensal: "models, infrastructure and licenses",
     custoHora: "salary + charges ÷ hours",
     minutosPorTarefa: "time a person takes on the same task",
+    custoPorCaso: "optional: 0 = use hourly cost × time",
   } as Record<CampoEntrada, string>,
   sufixos: { aceitacao: "%", minutosPorTarefa: "min" } as Partial<Record<CampoEntrada, string>>,
-  prefixos: { gastoMensal: "R$", custoHora: "R$" } as Partial<Record<CampoEntrada, string>>,
+  prefixos: { gastoMensal: "R$", custoHora: "R$", custoPorCaso: "R$" } as Partial<Record<CampoEntrada, string>>,
   resultTitle: "Cost per validated result",
   resultAgente: "with an agent on Muster",
   resultHumano: "with the human team",
@@ -111,6 +116,7 @@ const en: typeof pt = {
     "validated results = tasks × acceptance",
     "cost per result (agent) = monthly spend ÷ validated results",
     "monthly human cost = tasks × minutes ÷ 60 × hourly cost",
+    "monthly human cost = tasks × cost per case (if provided)",
     "cost per result (human) = monthly human cost ÷ validated results",
   ],
   formulaNote:
@@ -133,6 +139,7 @@ const es: typeof pt = {
     gastoMensal: "Gasto mensual en agentes",
     custoHora: "Costo por hora del equipo",
     minutosPorTarefa: "Tiempo medio por tarea",
+    custoPorCaso: "Costo humano por caso",
   } as Record<CampoEntrada, string>,
   dicas: {
     agentes: "cuántos están operando hoy",
@@ -141,9 +148,10 @@ const es: typeof pt = {
     gastoMensal: "modelos, infraestructura y licencias",
     custoHora: "salario + cargas ÷ horas",
     minutosPorTarefa: "tiempo de una persona en la misma tarea",
+    custoPorCaso: "opcional: 0 = usar costo por hora × tiempo",
   } as Record<CampoEntrada, string>,
   sufixos: { aceitacao: "%", minutosPorTarefa: "min" } as Partial<Record<CampoEntrada, string>>,
-  prefixos: { gastoMensal: "R$", custoHora: "R$" } as Partial<Record<CampoEntrada, string>>,
+  prefixos: { gastoMensal: "R$", custoHora: "R$", custoPorCaso: "R$" } as Partial<Record<CampoEntrada, string>>,
   resultTitle: "Costo por resultado validado",
   resultAgente: "con agente en Muster",
   resultHumano: "en el equipo humano",
@@ -162,6 +170,7 @@ const es: typeof pt = {
     "resultados validados = tareas × aceptación",
     "costo por resultado (agente) = gasto mensual ÷ resultados validados",
     "costo humano mensual = tareas × minutos ÷ 60 × costo por hora",
+    "costo humano mensual = tareas × costo por caso (si se informa)",
     "costo por resultado (humano) = costo humano mensual ÷ resultados validados",
   ],
   formulaNote:
@@ -172,7 +181,7 @@ const es: typeof pt = {
 
 const copy: Record<Lang, typeof pt> = { pt, en, es };
 
-const CAMPOS: CampoEntrada[] = ["agentes", "tarefas", "aceitacao", "gastoMensal", "custoHora", "minutosPorTarefa"];
+const CAMPOS: CampoEntrada[] = ["agentes", "tarefas", "aceitacao", "gastoMensal", "custoHora", "minutosPorTarefa", "custoPorCaso"];
 
 function iniciais(): Record<CampoEntrada, string> {
   return Object.fromEntries(CAMPOS.map((campo) => [campo, String(ENTRADAS_PADRAO[campo])])) as Record<

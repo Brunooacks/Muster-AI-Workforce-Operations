@@ -21,8 +21,25 @@ export const LANGS: Array<{ code: Lang; label: string; flag: string }> = [
 
 const STORAGE_KEY = "muster:lang";
 
+/**
+ * RG-M05 — /en e /es são URLs públicas de idioma: a primeira tela já vem no
+ * idioma da URL (e a escolha é persistida), em vez de cair no 404.
+ */
+export const LANG_PATHS: Record<string, Lang> = { "/en": "en", "/es": "es", "/pt": "pt" };
+
+export function langFromPath(pathname: string): Lang | null {
+  const limpo = pathname.replace(/\/+$/, "").toLowerCase();
+  const ultimo = "/" + (limpo.split("/").pop() ?? "");
+  return LANG_PATHS[ultimo] ?? null;
+}
+
 function initialLang(): Lang {
   try {
+    const daUrl = langFromPath(window.location.pathname);
+    if (daUrl) {
+      window.localStorage.setItem(STORAGE_KEY, daUrl);
+      return daUrl;
+    }
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "pt" || stored === "en" || stored === "es") return stored;
     const nav = navigator.language.toLowerCase();

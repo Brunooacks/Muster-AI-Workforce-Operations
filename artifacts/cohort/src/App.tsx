@@ -21,7 +21,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TenantBootstrapBoundary } from "@/components/tenant-bootstrap";
 import { AppShellProvider } from "@/lib/app-shell";
-import { LangProvider, useLang } from "@/lib/i18n";
+import { LANG_PATHS, LangProvider, useLang, type Lang } from "@/lib/i18n";
 import { AuthShell } from "@/muster/auth/auth-shell";
 import { musterClerkAppearance, musterClerkLocalization } from "@/muster/auth/clerk-config";
 
@@ -100,6 +100,17 @@ function SignUpPage() {
     </AuthShell>
   );
 }
+
+/** RG-M05 — /en, /es e /pt: landing no idioma da URL (não é rota inexistente). */
+function LangLanding({ lang: alvo, children }: { lang: Lang; children: React.ReactNode }) {
+  const { lang, setLang } = useLang();
+  useEffect(() => {
+    if (lang !== alvo) setLang(alvo);
+  }, [lang, alvo, setLang]);
+  return <>{children}</>;
+}
+
+const LANG_ROUTES = Object.entries(LANG_PATHS) as Array<[string, Lang]>;
 
 function HomeRedirect() {
   return (
@@ -209,6 +220,11 @@ function ClerkProviderWithRoutes({
                 <Suspense fallback={null}>
                 <Switch>
                   <Route path="/" component={HomeRedirect} />
+                  {LANG_ROUTES.map(([path, l]) => (
+                    <Route key={path} path={path}>
+                      <LangLanding lang={l}><HomeRedirect /></LangLanding>
+                    </Route>
+                  ))}
                   <Route path="/sign-in/*?" component={SignInPage} />
                   <Route path="/sign-up/*?" component={SignUpPage} />
 
@@ -289,6 +305,11 @@ function DemoRoutes() {
       <Suspense fallback={null}>
       <Switch>
       <Route path="/" component={LandingPage} />
+      {LANG_ROUTES.map(([path, l]) => (
+        <Route key={path} path={path}>
+          <LangLanding lang={l}><LandingPage /></LangLanding>
+        </Route>
+      ))}
       {DesignSystemPage && <Route path="/design-system" component={DesignSystemPage} />}
       <Route path="/calculadora" component={CalculadoraPage} />
       <Route path="/agentes/:id/conectar">

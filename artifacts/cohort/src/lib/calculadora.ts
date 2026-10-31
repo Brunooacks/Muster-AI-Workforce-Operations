@@ -5,6 +5,7 @@
  *   resultados validados  = tarefas × aceitação/100
  *   custo por resultado (agente) = gasto mensal ÷ resultados validados
  *   custo humano mensal   = tarefas × minutos/60 × custo-hora
+ *                           (ou tarefas × custo por caso, quando informado > 0 — RG-M02)
  *   custo por resultado (humano) = custo humano mensal ÷ resultados validados
  *
  * Os dois lados gastam em todas as tarefas e só a aceitação conta como
@@ -18,6 +19,8 @@ export interface EntradasCalculadora {
   aceitacao: number;
   custoHora: number;
   minutosPorTarefa: number;
+  /** RG-M02 — custo humano por caso (R$). 0 = calcular pelo custo-hora × tempo. */
+  custoPorCaso: number;
 }
 
 export interface ResultadoCalculadora {
@@ -40,6 +43,7 @@ export const ENTRADAS_PADRAO: EntradasCalculadora = {
   aceitacao: 70,
   custoHora: 85,
   minutosPorTarefa: 25,
+  custoPorCaso: 0,
 };
 
 export type ErrosEntradas = Partial<Record<CampoEntrada, string>>;
@@ -51,6 +55,7 @@ const LIMITES: Record<CampoEntrada, { min: number; max: number; inteiro?: boolea
   aceitacao: { min: 1, max: 100 },
   custoHora: { min: 0, max: 1_000_000 },
   minutosPorTarefa: { min: 1, max: 480 },
+  custoPorCaso: { min: 0, max: 1_000_000 },
 };
 
 export function validar(e: EntradasCalculadora): ErrosEntradas {
@@ -92,10 +97,11 @@ export function calcular(e: EntradasCalculadora): ResultadoCalculadora {
   const aceitacao = finito(e.aceitacao);
   const custoHora = finito(e.custoHora);
   const minutos = finito(e.minutosPorTarefa);
+  const custoPorCaso = finito(e.custoPorCaso ?? 0);
 
   const resultadosValidados = aceitacao > 0 ? tarefas * (aceitacao / 100) : 0;
   const tempoHoras = (tarefas * minutos) / 60;
-  const custoHumanoMensal = tempoHoras * custoHora;
+  const custoHumanoMensal = custoPorCaso > 0 ? tarefas * custoPorCaso : tempoHoras * custoHora;
 
   const custoPorResultadoAgente = resultadosValidados > 0 ? gastoMensal / resultadosValidados : null;
   const custoPorResultadoHumano = resultadosValidados > 0 ? custoHumanoMensal / resultadosValidados : null;

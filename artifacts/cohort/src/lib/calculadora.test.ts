@@ -17,6 +17,7 @@ const base: EntradasCalculadora = {
   aceitacao: 70,
   custoHora: 85,
   minutosPorTarefa: 25,
+  custoPorCaso: 0,
 };
 
 test("resultados validados = tarefas × aceitação", () => {

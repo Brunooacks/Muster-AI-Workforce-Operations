@@ -42,6 +42,7 @@ import {
   reevaluateAgentFromTelemetry,
 } from "../lib/agent-telemetry-reevaluation";
 import { supervisionDispatchFor } from "../lib/continuous-supervision";
+import { rollupAgentDay } from "../lib/metric-points-rollup";
 import {
   TASK_TRAIL_EVENT_TYPE,
   TaskOutcomeError,
@@ -247,6 +248,8 @@ router.post("/agents/:agentId/events", requireAgentCredential, async (req, res) 
         })
         .returning({ id: agentEvents.id, ts: agentEvents.ts });
       if (!event) throw new Error("Falha ao persistir evento do agente.");
+      // RG-M12: evento validado agrega no ponto diário de metric_points (idempotente).
+      if (kind !== "heartbeat") await rollupAgentDay(transaction as never, agentId, event.ts);
       const outbox = telemetryOutboxEntry({
         orgId: req.orgId!,
         projectId: projectId,
