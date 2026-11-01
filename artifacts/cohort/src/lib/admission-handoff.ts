@@ -52,3 +52,14 @@ export function consumeAdmissionHandoff(): AdmissionHandoff | null {
     return null;
   }
 }
+
+/** Há um agente importado de conector aguardando a admissão completa? (não consome) */
+export function hasPendingAdmissionHandoff(): boolean {
+  try {
+    return Boolean(
+      sessionStorage.getItem(ADMISSION_HANDOFF_KEY) ?? sessionStorage.getItem(LEGACY_FAST_ASSESSMENT_KEY),
+    );
+  } catch {
+    return false;
+  }
+}

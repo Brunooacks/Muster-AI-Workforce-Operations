@@ -50,6 +50,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdicionarAgenteScreen } from "@/pages/adicionar-agente";
+import { hasPendingAdmissionHandoff } from "@/lib/admission-handoff";
+import { telaDeAdmissao } from "@/lib/adicionar-agente";
 import { EntregasScreen } from "@/pages/entregas";
 import { PendenciasScreen } from "@/pages/pendencias";
 import { MapaScreen } from "@/pages/mapa";
@@ -1537,7 +1539,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "benchmarks" && (semApi ? <BenchmarksScreen /> : <BenchmarksPage embedded />)}
             {screen === "connectors" && <ConnectorsScreen />}
             {screen === "settings" && (semApi ? <SettingsScreen /> : <GovernancePage embedded />)}
-            {screen === "admission" && (semApi ? <AdicionarAgenteScreen /> : <AdmissionPage embedded />)}
+            {screen === "admission" && (telaDeAdmissao(semApi, window.location.search, hasPendingAdmissionHandoff()) === "completa" ? <AdmissionPage embedded /> : <AdicionarAgenteScreen operacional={!semApi} />)}
             {screen === "alerts" &&
               (semApi || location === "/pendencias" ? <PendenciasScreen /> : <AlertsPage embedded />)}
             {screen === "admin" && (demo ? <SoComLogin titulo="Administração da organização" /> : <AdminConsolePage />)}

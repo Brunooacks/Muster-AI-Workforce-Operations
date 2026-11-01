@@ -84,7 +84,7 @@ export function createOrganizationRouteHandlers(
         return;
       }
 
-      const memberships = await dependencies.listMemberships(userId);
+      const memberships = await listMembershipsOrEmpty(dependencies, userId);
       const localOrganizations = await dependencies.listLocalOrganizations(
         memberships.map((membership) => membership.organization.id),
       );
@@ -160,6 +160,30 @@ export function createOrganizationRouteHandlers(
       res.json({ organization });
     },
   };
+}
+
+/**
+ * RG-M13: com Organizations desligado na instância Clerk (Muster prod), a API
+ * do Clerk responde 403 e o handler repassava 403 para usuário novo. Sem
+ * organizações no Clerk, a lista é vazia (o usuário opera na conta pessoal).
+ */
+export function isClerkOrganizationsDisabledError(error: unknown): boolean {
+  const status =
+    (error as { status?: number })?.status ??
+    (error as { statusCode?: number })?.statusCode;
+  return status === 403 || status === 404;
+}
+
+async function listMembershipsOrEmpty(
+  dependencies: OrganizationRouteDependencies,
+  userId: string,
+): Promise<ClerkOrganizationMembershipSnapshot[]> {
+  try {
+    return await dependencies.listMemberships(userId);
+  } catch (error) {
+    if (isClerkOrganizationsDisabledError(error)) return [];
+    throw error;
+  }
 }
 
 function readClerkAuth(req: Request): AuthenticatedOrganizationContext {

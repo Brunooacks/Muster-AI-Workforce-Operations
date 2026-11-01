@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { PLATFORM_LABELS } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
+import { useCreateAgent } from "@workspace/api-client-react";
 import {
   ETAPAS,
   FORM_VAZIO,
@@ -13,6 +14,7 @@ import {
   problemaDaEtapa,
   progressoEtapa,
   type CampoChave,
+  montarPayloadAgente,
   type FormAdicionarAgente,
 } from "@/lib/adicionar-agente";
 
@@ -34,7 +36,36 @@ const ORIGENS = [
   { nome: "GitHub Copilot", area: "Engenharia", detalhe: "Pull requests e revisões" },
 ];
 
-export function AdicionarAgenteScreen() {
+export function AdicionarAgenteScreen({ operacional = false }: { operacional?: boolean } = {}) {
+  return operacional ? <AdicionarAgenteOperacional /> : <AdicionarAgenteForm />;
+}
+
+function AdicionarAgenteOperacional() {
+  const [, navigate] = useLocation();
+  const createAgent = useCreateAgent();
+  return (
+    <AdicionarAgenteForm
+      enviando={createAgent.isPending}
+      concluir={(form, falhar) =>
+        createAgent.mutate(
+          { data: montarPayloadAgente(form) },
+          {
+            onSuccess: (res) => navigate(`/agentes/${res.agent.id}/conectar`),
+            onError: () => falhar("Não foi possível adicionar o agente. Tente de novo em instantes."),
+          },
+        )
+      }
+    />
+  );
+}
+
+function AdicionarAgenteForm({
+  concluir,
+  enviando = false,
+}: {
+  concluir?: (form: FormAdicionarAgente, falhar: (msg: string) => void) => void;
+  enviando?: boolean;
+} = {}) {
   const [, navigate] = useLocation();
   const [indice, setIndice] = useState(0);
   const [form, setForm] = useState<FormAdicionarAgente>(FORM_VAZIO);
@@ -64,7 +95,8 @@ export function AdicionarAgenteScreen() {
     }
     setErro(null);
     if (indice === ETAPAS.length - 1) {
-      navigate("/agentes");
+      if (concluir) concluir(form, setErro);
+      else navigate("/agentes");
       return;
     }
     setIndice((atual) => atual + 1);
@@ -237,11 +269,12 @@ export function AdicionarAgenteScreen() {
               type="button"
               data-testid="avancar-admissao"
               onClick={avancar}
+              disabled={enviando}
               className="rounded-xl bg-[var(--wo-accent)] text-[13px] font-medium text-[var(--wo-accent-ink)] hover:bg-[var(--wo-accent)]"
             >
               {indice === ETAPAS.length - 1 ? (
                 <>
-                  <UserPlus className="h-3.5 w-3.5" /> Adicionar agente
+                  <UserPlus className="h-3.5 w-3.5" /> {enviando ? "Adicionando…" : "Adicionar agente"}
                 </>
               ) : (
                 <>

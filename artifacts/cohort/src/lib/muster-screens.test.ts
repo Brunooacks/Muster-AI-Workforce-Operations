@@ -10,7 +10,7 @@ test("telas da fase 2 são rotas conhecidas do app", () => {
   }
 });
 
-test("entrada padrão do app é a Visão geral", () => {
-  assert.equal(DEFAULT_AUTH_REDIRECT, "/visao-geral");
-  assert.equal(DEFAULT_ONBOARDING_REDIRECT, "/visao-geral");
+test("entrada padrão do app é a Visão geral real (/comando, RG-M15)", () => {
+  assert.equal(DEFAULT_AUTH_REDIRECT, "/comando");
+  assert.equal(DEFAULT_ONBOARDING_REDIRECT, "/comando");
 });

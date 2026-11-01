@@ -29,14 +29,6 @@ import { musterClerkAppearance, musterClerkLocalization } from "@/muster/auth/cl
 import NotFound from "@/pages/not-found";
 import { isOnboardingComplete } from "@/lib/onboarding";
 import { WORKFORCE_STATIC_PATHS } from "@/lib/workforce-routing";
-import VisaoGeralPage from "@/muster/pages/visao-geral";
-import DirecionamentoPage from "@/muster/pages/direcionamento";
-import BaselinePage from "@/muster/pages/baseline";
-import HistoricoPage from "@/muster/pages/historico";
-import SquadsPage from "@/muster/pages/squads";
-import FichaAgentePage from "@/muster/pages/ficha-agente";
-import AprendizadosPage from "@/muster/pages/aprendizados";
-import BoardPage from "@/muster/pages/board";
 import {
   authFallbackFromLocation,
   authRoute,
@@ -45,6 +37,7 @@ import {
   requestedAuthRedirect,
   signedOutSignInPath,
   onboardingGateAllows,
+  DEFAULT_AUTH_REDIRECT,
 } from "@/lib/auth-routing";
 
 // Cada rota vira um chunk próprio: a home e a calculadora não carregam a área
@@ -117,7 +110,7 @@ function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <Redirect to="/visao-geral" />
+        <Redirect to={DEFAULT_AUTH_REDIRECT} />
       </Show>
       <Show when="signed-out">
         <LandingPage />
@@ -229,14 +222,11 @@ function ClerkProviderWithRoutes({
                   <Route path="/sign-in/*?" component={SignInPage} />
                   <Route path="/sign-up/*?" component={SignUpPage} />
 
-                  <Route path="/visao-geral"><ProtectedRoute component={VisaoGeralPage} /></Route>
-                  <Route path="/direcionamento"><ProtectedRoute component={DirecionamentoPage} /></Route>
-                  <Route path="/baseline"><ProtectedRoute component={BaselinePage} /></Route>
-                  <Route path="/historico"><ProtectedRoute component={HistoricoPage} /></Route>
-                  <Route path="/squads"><ProtectedRoute component={SquadsPage} /></Route>
-                  <Route path="/aprendizados"><ProtectedRoute component={AprendizadosPage} /></Route>
-                  <Route path="/board"><ProtectedRoute component={BoardPage} /></Route>
-                  <Route path="/agentes/:id/ficha"><ProtectedRoute component={FichaAgentePage} /></Route>
+                  {/* RG-M15: telas de protótipo (dados da Lumen) não existem para quem está logado. */}
+                  {["/visao-geral", "/direcionamento", "/baseline", "/historico", "/squads", "/aprendizados", "/board"].map((p) => (
+                    <Route key={p} path={p}><Redirect to={DEFAULT_AUTH_REDIRECT} /></Route>
+                  ))}
+                  <Route path="/agentes/:id/ficha">{(params) => <Redirect to={`/agentes/${params.id}`} />}</Route>
                   <Route path="/agentes/:id/conectar">
                     <ProtectedRoute component={WorkforceOsProductionPage} />
                   </Route>

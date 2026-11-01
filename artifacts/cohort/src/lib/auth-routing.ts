@@ -1,5 +1,6 @@
-export const DEFAULT_AUTH_REDIRECT = "/visao-geral";
-export const DEFAULT_ONBOARDING_REDIRECT = "/visao-geral";
+/** RG-M15: Visão geral real do app (SHELL_NAV[0]); /visao-geral era protótipo com dados da Lumen. */
+export const DEFAULT_AUTH_REDIRECT = "/comando";
+export const DEFAULT_ONBOARDING_REDIRECT = "/comando";
 
 type AuthMode = "sign-in" | "sign-up";
 

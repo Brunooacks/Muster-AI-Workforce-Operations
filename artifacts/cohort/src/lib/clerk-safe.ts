@@ -41,3 +41,10 @@ export function useAcoesClerkSeguras(): {
     return { disponivel: false, openUserProfile: () => {}, openOrganizationProfile: () => {} };
   }
 }
+
+/**
+ * RG-M13: Organizations está desligado na instância Clerk do Muster. O
+ * <OrganizationSwitcher> consulta /v1/me/organization_memberships e recebe 403.
+ * Só renderiza quando o build liga VITE_CLERK_ORGANIZATIONS=1.
+ */
+export const CLERK_ORGANIZACOES = String(import.meta.env?.VITE_CLERK_ORGANIZATIONS ?? "") === "1";

@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { OrganizationSwitcher, useClerk, useOrganization } from "@clerk/react";
+import { CLERK_ORGANIZACOES } from "@/lib/clerk-safe";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { Link } from "wouter";
@@ -94,7 +95,7 @@ export default function AdminConsolePage() {
             Não foi possível confirmar sua alçada no tenant ativo. Troque de organização ou tente carregar novamente.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <OrganizationSwitcher hidePersonal skipInvitationScreen />
+            {CLERK_ORGANIZACOES && <OrganizationSwitcher hidePersonal skipInvitationScreen />}
             <button type="button" onClick={() => overviewQuery.refetch()} className="inline-flex items-center gap-2 rounded-xl border border-[var(--wo-line)] px-4 py-2.5 text-xs text-[var(--wo-text)]">
               <RefreshCw className="h-4 w-4" /> Tentar novamente
             </button>
@@ -156,7 +157,7 @@ export default function AdminConsolePage() {
                   <span className="text-[10px] text-[var(--wo-muted)]">{roleLabel} · isolamento ativo por organização</span>
                 </div>
               </div>
-              <OrganizationSwitcher hidePersonal skipInvitationScreen />
+              {CLERK_ORGANIZACOES && <OrganizationSwitcher hidePersonal skipInvitationScreen />}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-px bg-[var(--wo-line)]">

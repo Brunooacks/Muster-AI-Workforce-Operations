@@ -120,3 +120,67 @@ export function etapasConcluidas(form: FormAdicionarAgente, ate: number): number
 export function progressoEtapa(numero: number): string {
   return `Etapa ${numero} de ${ETAPAS.length}`;
 }
+
+/** Contrato do POST /api/agents (subconjunto de AgentInput usado pelo cadastro em 4 etapas). */
+export type PayloadNovoAgente = {
+  name: string;
+  role: string;
+  platform: string;
+  bio: string;
+  tagline?: string;
+  shouldDo?: string[];
+  shouldNotDo?: string[];
+  autonomyLevel: "escalates";
+  autonomyNotes?: string;
+  limits?: string[];
+  businessOwner?: string;
+  businessCaseDescription?: string;
+};
+
+function linhas(valor: string): string[] {
+  return valor.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+}
+
+export function orcamentoNormalizado(valor: string): string {
+  const limpo = valor.trim().replace(/^R\$\s*/i, "").replace(/\./g, "").replace(",", ".");
+  return Number(limpo).toFixed(2).replace(".", ",");
+}
+
+/** RG-M12: mapeia as 4 etapas para o contrato existente, sem campo novo no banco. */
+export function montarPayloadAgente(form: FormAdicionarAgente): PayloadNovoAgente {
+  const nome = form.nome.trim();
+  const funcao = form.funcao.trim();
+  const entrega = form.entregaPronta.trim();
+  const confirma = form.comoConfirma.trim();
+  const humano = form.chamaHumano.trim();
+  const orcamento = `Orçamento mensal: R$ ${orcamentoNormalizado(form.orcamento)}`;
+  const payload: PayloadNovoAgente = {
+    name: nome,
+    role: funcao,
+    platform: form.plataforma,
+    bio: funcao,
+    tagline: funcao,
+    shouldDo: [entrega, ...(confirma ? [`Confirmação: ${confirma}`] : [])].filter(Boolean),
+    autonomyLevel: "escalates",
+    limits: [orcamento],
+    businessCaseDescription: [`Entrega pronta: ${entrega}`, confirma && `Como confirma: ${confirma}`, orcamento]
+      .filter(Boolean)
+      .join("\n"),
+  };
+  const naoPode = linhas(form.naoPode);
+  if (naoPode.length) payload.shouldNotDo = naoPode;
+  if (humano) payload.autonomyNotes = `Chama um humano quando: ${humano}`;
+  if (form.responsavel.trim()) payload.businessOwner = form.responsavel.trim();
+  return payload;
+}
+
+/**
+ * RG-M12: logado, "Adicionar agente" abre as 4 etapas. A admissão completa
+ * (7 etapas) fica só para agente importado de conector (handoff/connectorId)
+ * ou ?completa=1, porque ela cobre métricas e conector que as 4 etapas não têm.
+ */
+export function telaDeAdmissao(semApi: boolean, search: string, handoffPendente: boolean): "quatro-etapas" | "completa" {
+  if (semApi) return "quatro-etapas";
+  const q = new URLSearchParams(search);
+  return q.get("completa") === "1" || q.has("connectorId") || handoffPendente ? "completa" : "quatro-etapas";
+}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { OrganizationSwitcher, useClerk, useUser } from "@clerk/react";
+import { CLERK_ORGANIZACOES } from "@/lib/clerk-safe";
 import {
   LayoutGrid,
   Users,
@@ -346,7 +347,7 @@ function UserCard({
     <div className="rounded-xl border border-card-border bg-card p-3">
       {onNavigate ? (
         <div className="mb-3 border-b border-card-border pb-3">
-          <OrganizationSwitcher skipInvitationScreen />
+          {CLERK_ORGANIZACOES && <OrganizationSwitcher skipInvitationScreen />}
         </div>
       ) : null}
       <Link
@@ -537,7 +538,7 @@ export function AppLayout({ children, title, breadcrumbs }: LayoutProps) {
             <GlobalSearch />
             <PerspectiveToggle />
             <div className="hidden max-w-56 lg:block">
-              <OrganizationSwitcher skipInvitationScreen />
+              {CLERK_ORGANIZACOES && <OrganizationSwitcher skipInvitationScreen />}
             </div>
             <ProfileSwitcher />
             <LangSwitcher />
