@@ -729,7 +729,7 @@ type PaletaId = "mineral" | "graphite" | "dracula" | "mocha";
 type AparenciaProps = { palette: PaletaId; setPalette: (palette: PaletaId) => void };
 
 const DIRECOES_VISUAIS: Array<{ id: PaletaId; cor: string; nome: string }> = [
-  { id: "mineral", cor: "#0f766e", nome: "Mineral" },
+  { id: "mineral", cor: "#1d1d1f", nome: "Claro (home)" },
   { id: "graphite", cor: "#55c2ff", nome: "Graphite" },
   { id: "dracula", cor: "#bd93f9", nome: "Dracula" },
   { id: "mocha", cor: "#89b4fa", nome: "Mocha" },
