@@ -47,6 +47,7 @@ const PT = {
     "Conecte uma fonte e o Muster transforma execução técnica em propósito, evidência e decisões de gestão.",
   time: "Experiência guiada · cerca de 2 minutos",
   liveLabel: "Simulação visual ao vivo",
+  liveBadge: "ao vivo",
   previewTitle: "Do runtime à decisão",
   previewAgent: "Atlas · Revisor de PR",
   previewRole: "Engenharia de Software",
@@ -108,6 +109,7 @@ const L: Record<Lang, Dict> = {
       "Connect a source and Muster turns technical execution into purpose, evidence and management decisions.",
     time: "Guided experience · about 2 minutes",
     liveLabel: "Live visual simulation",
+    liveBadge: "live",
     previewTitle: "From runtime to decision",
     previewAgent: "Atlas · PR Reviewer",
     previewRole: "Software Engineering",
@@ -163,6 +165,7 @@ const L: Record<Lang, Dict> = {
       "Conecta una fuente y Muster transforma la ejecución técnica en propósito, evidencia y decisiones de gestión.",
     time: "Experiencia guiada · cerca de 2 minutos",
     liveLabel: "Simulación visual en vivo",
+    liveBadge: "en vivo",
     previewTitle: "Del runtime a la decisión",
     previewAgent: "Atlas · Revisor de PR",
     previewRole: "Ingeniería de Software",
@@ -446,7 +449,7 @@ function LiveWorkforcePreview({ copy, phase, reduceMotion }: { copy: Dict; phase
             {["github", "openai-agents", "vllm-local"].map((platform, index) => <motion.div key={platform} animate={reduceMotion ? undefined : { y: phase === 0 ? [0, -4, 0] : 0 }} transition={{ delay: index * .15, duration: 1.4, repeat: phase === 0 ? Infinity : 0 }} className="rounded-xl border border-foreground/10 bg-background p-2 shadow-lg"><PlatformIcon platform={platform} size="lg" /></motion.div>)}
           </div>
           <motion.div layout className="relative mx-auto mt-8 max-w-md rounded-2xl border border-accent/20 bg-background p-4 shadow-[0_16px_50px_rgba(0,0,0,.08)]">
-            <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-full bg-primary font-sans text-base font-semibold text-primary-foreground">A</span><div><strong className="block text-xs font-medium">{copy.previewAgent}</strong><span className="mt-1 block text-[9px] text-muted-foreground">{copy.previewRole}</span></div><span className="ml-auto rounded-full bg-accent/10 px-2 py-1 text-[8px] uppercase tracking-[0.07em] text-primary">live</span></div>
+            <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-full bg-primary font-sans text-base font-semibold text-primary-foreground">A</span><div><strong className="block text-xs font-medium">{copy.previewAgent}</strong><span className="mt-1 block text-[9px] text-muted-foreground">{copy.previewRole}</span></div><span className="ml-auto rounded-full bg-accent/10 px-2 py-1 text-[8px] uppercase tracking-[0.07em] text-primary">{copy.liveBadge}</span></div>
             <div className="mt-4 grid grid-cols-3 gap-2">{metrics.map(({ label, value, icon: Icon }) => <div key={label} className="rounded-xl bg-black/15 p-2.5"><div className="flex items-center justify-between"><span className="text-[8px] text-muted-foreground">{label}</span><Icon className="h-3 w-3 text-primary" /></div><strong className="mt-2 block font-mono text-base font-medium">{value}%</strong><div className="mt-2 h-1 overflow-hidden rounded-full bg-foreground/[0.06]"><motion.div animate={{ width: `${value}%` }} transition={{ duration: reduceMotion ? 0 : .7 }} className="h-full rounded-full bg-primary" /></div></div>)}</div>
           </motion.div>
         </div>

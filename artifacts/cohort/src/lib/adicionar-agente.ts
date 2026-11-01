@@ -143,7 +143,8 @@ function linhas(valor: string): string[] {
 
 export function orcamentoNormalizado(valor: string): string {
   const limpo = valor.trim().replace(/^R\$\s*/i, "").replace(/\./g, "").replace(",", ".");
-  return Number(limpo).toFixed(2).replace(".", ",");
+  // pt-BR com milhar: "1.200,50" (RG-M20), nunca "1200,50".
+  return Number(limpo).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /** RG-M12: mapeia as 4 etapas para o contrato existente, sem campo novo no banco. */

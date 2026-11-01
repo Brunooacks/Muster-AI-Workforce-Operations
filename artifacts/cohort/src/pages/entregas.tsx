@@ -153,6 +153,41 @@ const pt = {
   },
 };
 
+/**
+ * Na área logada (operacional) a lista ilustrativa NUNCA aparece: ainda não há
+ * endpoint de entregas por item, então mostramos o total real do período e o
+ * caminho para conectar/abrir o agente.
+ */
+export function EntregasOperacional({ totalEntregas, totalAgentes }: { totalEntregas: number; totalAgentes: number }) {
+  const semAgentes = totalAgentes === 0;
+  return (
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-6 px-4 py-6 lg:px-8" data-testid="entregas-operacional">
+      <header className="flex flex-col gap-2">
+        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Operação · últimos 30 dias</span>
+        <h1 className="text-[clamp(26px,3vw,38px)] font-semibold tracking-[-0.03em]">{pt.titulo}</h1>
+        <p className="max-w-[720px] text-[15px] leading-[1.5] text-muted-foreground">{pt.sub}</p>
+      </header>
+      <section className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+        <p className="text-[15px] font-medium">
+          {totalEntregas > 0
+            ? `${totalEntregas.toLocaleString("pt-BR")} entregas registradas nos últimos 30 dias.`
+            : "Ainda não há entregas registradas."}
+        </p>
+        <p className="mx-auto mt-2 max-w-[560px] text-[13px] leading-relaxed text-muted-foreground">
+          {semAgentes
+            ? "Adicione e conecte um agente. As entregas aparecem aqui depois da primeira execução."
+            : totalEntregas > 0
+              ? "O detalhe de cada entrega, com prova, fica no prontuário de cada agente."
+              : "Conecte a telemetria do agente. As entregas aparecem aqui depois da primeira execução."}
+        </p>
+        <a href={semAgentes ? "/admissao" : "/agentes"} className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground">
+          {semAgentes ? "Adicionar agente" : "Abrir Agentes"}
+        </a>
+      </section>
+    </div>
+  );
+}
+
 export function EntregasScreen() {
   const [, setLocation] = useLocation();
   const busca = new URLSearchParams(useSearch());

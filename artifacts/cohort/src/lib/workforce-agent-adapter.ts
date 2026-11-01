@@ -201,7 +201,7 @@ export function adaptApiAgent(
     responsibilityCoverage,
     evidenceConfidence,
     reviewDue: agent.lastEvaluatedAt
-      ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(agent.lastEvaluatedAt))
+      ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(agent.lastEvaluatedAt))
       : "Sem avaliação",
     reviewUrgency: (agent.activeAlerts ?? 0) > 0
       ? `${agent.activeAlerts} alerta(s)`

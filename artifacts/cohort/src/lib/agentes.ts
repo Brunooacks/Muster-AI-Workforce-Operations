@@ -121,7 +121,9 @@ export function coberturaDoAgente(
 
 export function metasDoAgente(agent: Pick<WorkforceProfessionalAgent, "metrics">) {
   const { total, atingidas } = metasContadas(agent);
-  return { total, atingidas, rotulo: `${atingidas} de ${total} ${total === 1 ? "meta" : "metas"}` };
+  // RG-M20: sem metas definidas não vira "0 de 0 metas".
+  const rotulo = total === 0 ? "sem metas definidas" : `${atingidas} de ${total} ${total === 1 ? "meta" : "metas"}`;
+  return { total, atingidas, rotulo };
 }
 
 export type BulletMeta = {
@@ -210,4 +212,15 @@ export const FRICCAO_ILUSTRATIVA: Array<{ tipo: string; quantidade: number }> = 
 
 export function ordenarAgentes<T extends { status: StatusAgente }>(linhas: T[]): T[] {
   return [...linhas].sort((a, b) => ORDEM_ACAO.indexOf(a.status) - ORDEM_ACAO.indexOf(b.status));
+}
+
+/** RG-M20: só entra no mapa quem já tem entrega registrada (senão vira bolha cortada em 0,0). */
+export function agentesNoMapa<T extends { monthlyVolume?: number | null }>(agents: T[]): T[] {
+  return agents.filter((agent) => (agent.monthlyVolume ?? 0) > 0);
+}
+
+/** Posição da bolha limitada para não cortar na borda do mapa. */
+export function posicaoNoMapa(valor: number): number {
+  if (!Number.isFinite(valor)) return 50;
+  return Math.min(92, Math.max(8, valor));
 }

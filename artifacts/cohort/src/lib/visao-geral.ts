@@ -1,3 +1,4 @@
+import { rotuloMes } from "./periodo-atual";
 import { formatBRL, formatNumero } from "./calculadora";
 
 /**
@@ -98,11 +99,14 @@ export type LeituraVisaoGeral = {
   matrizVazia?: string;
 };
 
-export const ROTULOS_PERIODO: Record<Periodo, string> = {
-  "Este mês": "out/26",
-  "Mês passado": "set/26",
-  "Últimos 90 dias": "últimos 90 dias",
-};
+/** Rótulos calculados no fuso America/Sao_Paulo (nada de mês fixo). */
+export function rotulosPeriodo(agora: Date = new Date()): Record<Periodo, string> {
+  return {
+    "Este mês": rotuloMes(0, agora),
+    "Mês passado": rotuloMes(-1, agora),
+    "Últimos 90 dias": "últimos 90 dias",
+  };
+}
 
 /** Custo por entrega aceita: gasto do período ÷ entregas aceitas (glossário §4). */
 export function custoPorEntrega(gasto: number | null | undefined, aceitas: number | null | undefined): number | null {
@@ -218,16 +222,17 @@ export function leituraOperacional(opcoes: {
     prazo: prazoDe(alerta.dueAt),
     bloco: "pendência aberta",
   }));
-  const numero = temVolume
-    ? { valor: formatNumero(volume), rotulo: `entregas registradas · ${ROTULOS_PERIODO[periodo]}` }
-    : { valor: "—", rotulo: `entregas registradas · ${ROTULOS_PERIODO[periodo]}` };
+  // Estado vazio mostra "0" (nunca um traço que vira barra no tipo display).
+  const numero = { valor: formatNumero(temVolume ? volume : 0), rotulo: `entregas registradas · ${rotulosPeriodo()[periodo]}` };
   const frase = temVolume
     ? `${agents.length} profissionais registraram ${formatNumero(volume)} entregas e gastaram ${formatBRL(gasto)} no período. A prova e a aceitação por entrega ainda não estão consolidadas por período.`
-    : `Ainda não há entregas registradas por período. ${opcoes.totalAgents ?? 0} profissionais monitorados${opcoes.saudeMedia != null ? `, saúde média de ${Math.round(opcoes.saudeMedia)}%` : ""}.`;
+    : (opcoes.totalAgents ?? 0) === 0
+      ? "Ainda não há entregas registradas. Nenhum profissional monitorado ainda."
+      : `Ainda não há entregas registradas por período. ${opcoes.totalAgents} ${opcoes.totalAgents === 1 ? "profissional monitorado" : "profissionais monitorados"}; a saúde aparece depois das primeiras entregas.`;
 
   return {
     periodo,
-    rotuloPeriodo: ROTULOS_PERIODO[periodo],
+    rotuloPeriodo: rotulosPeriodo()[periodo],
     numero,
     frase,
     entregas: {
@@ -240,8 +245,9 @@ export function leituraOperacional(opcoes: {
       comProva: null,
       aceitas: null,
       percentual: null,
-      nota: confianca != null
-        ? `Média de ${Math.round(confianca)}% de confiança da prova nos ${agents.length} profissionais`
+      // RG-M20: sem entregas não há prova a medir; nada de "0% … nos 1 profissionais".
+      nota: confianca != null && temVolume
+        ? `Média de ${Math.round(confianca)}% de confiança da prova ${agents.length === 1 ? "no profissional" : `nos ${agents.length} profissionais`}`
         : "Sem prova consolidada no período",
       vazio: "A contagem de entregas com prova verificável por período chega quando a aceitação for registrada em cada entrega.",
     },
@@ -253,7 +259,9 @@ export function leituraOperacional(opcoes: {
       meta: null,
       custoHumano: null,
       serie: [],
-      aviso: "Orçamento não definido. Defina o orçamento mensal na etapa 3 de Adicionar agente.",
+      aviso: (opcoes.totalAgents ?? agents.length) > 0
+        ? "O orçamento informado no cadastro fica no combinado de cada agente. A comparação gasto × orçamento aparece depois da primeira execução."
+        : "Orçamento não definido. Defina o orçamento mensal na etapa 3 de Adicionar agente.",
     },
     percepcao: {
       nota: null,
@@ -400,10 +408,10 @@ export function leituraIlustrativa(periodo: Periodo): LeituraVisaoGeral {
 
   return {
     periodo,
-    rotuloPeriodo: ROTULOS_PERIODO[periodo],
+    rotuloPeriodo: rotulosPeriodo()[periodo],
     numero: {
       valor: formatNumero(dados.aceitas),
-      rotulo: `entregas aceitas · ${ROTULOS_PERIODO[periodo]}`,
+      rotulo: `entregas aceitas · ${rotulosPeriodo()[periodo]}`,
     },
     frase: `${dados.aceitas} das ${dados.total} entregas do período foram aceitas e ${dados.comProva} delas têm prova verificável. Cada entrega aceita custou ${formatBRL(dados.porEntrega)}, dentro da meta de ${formatBRL(0.3)}.`,
     entregas: {

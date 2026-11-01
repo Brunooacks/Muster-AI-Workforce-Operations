@@ -65,10 +65,11 @@ type AlertsDict = {
 
 const alertsI18n: Record<Lang, AlertsDict> = {
   pt: {
-    breadcrumbGov: "Governança",
-    title: "Detector de Vitória Ilusória",
+    breadcrumbGov: "Decisões",
+    // RG-M20: mesmo nome do menu ("Pendências"), sem jargão interno.
+    title: "Pendências",
     subtitle:
-      "Monitoramento passivo que cruza as 3 camadas de KPIs em busca de contradições — ex.: adoção caindo enquanto o sucesso aparente sobe.",
+      "O que precisa de uma decisão sua, em ordem de urgência. O Muster cruza os indicadores e aponta contradições — ex.: adoção caindo enquanto o sucesso aparente sobe.",
     errorTitle: "Não foi possível carregar os alertas",
     statActive: "Alertas ativos",
     statActiveDelta: "Padrões em monitoramento",

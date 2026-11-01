@@ -40,7 +40,7 @@ test("RG-M12: payload passa no contrato do POST /api/agents", () => {
   assert.equal(parsed.bio, form.funcao);
   assert.equal(parsed.businessOwner, "Patrícia Lima");
   assert.deepEqual(parsed.shouldNotDo, ["Dar reembolso", "Prometer prazo"]);
-  assert.deepEqual(parsed.limits, ["Orçamento mensal: R$ 1200,50"]);
+  assert.deepEqual(parsed.limits, ["Orçamento mensal: R$ 1.200,50"]);
   assert.equal(parsed.autonomyLevel, "escalates");
   assert.match(parsed.autonomyNotes ?? "", /cancelamento/);
   assert.match(parsed.businessCaseDescription ?? "", /Entrega pronta: Ticket resolvido/);

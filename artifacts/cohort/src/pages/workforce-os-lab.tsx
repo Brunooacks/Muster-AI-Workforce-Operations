@@ -52,9 +52,10 @@ import { cn } from "@/lib/utils";
 import { AdicionarAgenteScreen } from "@/pages/adicionar-agente";
 import { hasPendingAdmissionHandoff } from "@/lib/admission-handoff";
 import { telaDeAdmissao } from "@/lib/adicionar-agente";
-import { EntregasScreen } from "@/pages/entregas";
+import { EntregasOperacional, EntregasScreen } from "@/pages/entregas";
 import { PendenciasScreen } from "@/pages/pendencias";
 import { MapaScreen } from "@/pages/mapa";
+import { rotuloMes } from "@/lib/periodo-atual";
 import { SHELL_NAV, SHELL_RODAPE, shellItemAtivo, seloDaTela, classeSelo } from "@/lib/shell-nav";
 import { ShellBottomBar } from "@/components/shell/bottom-bar";
 import { ContaBoundary, useConta } from "@/components/shell/conta";
@@ -90,6 +91,8 @@ import {
   ordenarAgentes,
   statusDoAgente,
   type StatusAgente,
+  agentesNoMapa,
+  posicaoNoMapa,
 } from "@/lib/agentes";
 import { BulletMeta, FriccaoEmpilhada, SeloCobertura, ChipStatus } from "@/components/shell/agentes-graficos";
 import { AgentOutcomePanel } from "@/components/agent-outcome";
@@ -585,7 +588,7 @@ function AppHeader({ labMode, screen }: { labMode: boolean; screen: Screen }) {
           <span className="sm:hidden">Muster</span>
           <span className="hidden sm:inline">Muster Workforce OS</span>
         </span>
-        {selo && (
+        {labMode && selo && (
           <span
             className={cn(
               "rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]",
@@ -721,9 +724,11 @@ function NavigationRail({
         >
           <Settings className="h-4 w-4" />
           <span className="hidden text-[11px] xl:block">{SHELL_RODAPE.label}</span>
-          <span className="hidden rounded-full border border-primary/50 px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.1em] text-primary xl:ml-auto xl:block">
-            {SHELL_RODAPE.selo}
-          </span>
+          {labMode && (
+            <span className="hidden rounded-full border border-primary/50 px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.1em] text-primary xl:ml-auto xl:block">
+              {SHELL_RODAPE.selo}
+            </span>
+          )}
         </Link>
         <Link href="/perfil" aria-label="Abrir perfil" className="mt-2 flex items-center justify-center gap-3 rounded-xl px-1 py-1 transition-colors hover:bg-secondary/60 xl:justify-start xl:px-2">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-secondary text-[10px] font-medium text-foreground">{conta.iniciais}</div>
@@ -849,7 +854,10 @@ function PortfolioMatrix({ agents, selectedAgentId, onSelect }: { agents: Profes
       <span className="absolute left-4 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-warning-text)]">Mentorar</span>
       <span className="absolute bottom-3 left-4 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-danger-text)]">Rever função</span>
       <span className="absolute bottom-3 right-4 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--wo-muted)]">Corrigir operação</span>
-      {agents.map((agent) => {
+      {agentesNoMapa(agents).length === 0 && (
+        <p className="absolute inset-x-8 top-1/2 z-10 -translate-y-1/2 rounded-xl bg-[var(--wo-card)] px-4 py-3 text-center text-xs text-[var(--wo-muted)]">O mapa aparece depois das primeiras entregas registradas.</p>
+      )}
+      {agentesNoMapa(agents).map((agent) => {
         const size = Math.max(38, Math.min(58, Number.parseFloat(agent.volume.replace(/[^0-9,.]/g, "").replace(",", ".")) || 42));
         return (
           <button
@@ -859,8 +867,8 @@ function PortfolioMatrix({ agents, selectedAgentId, onSelect }: { agents: Profes
             onClick={() => onSelect(agent.id)}
             className={cn("absolute grid -translate-x-1/2 translate-y-1/2 place-items-center rounded-full border-2 text-[10px] font-medium text-[var(--wo-text)] shadow-lg transition-transform hover:scale-105", selectedAgentId === agent.id && "ring-4 ring-[var(--wo-primary-soft)]")}
             style={{
-              left: `${agent.operationalHealth}%`,
-              bottom: `${agent.contractFulfillment}%`,
+              left: `${posicaoNoMapa(agent.operationalHealth)}%`,
+              bottom: `${posicaoNoMapa(agent.contractFulfillment)}%`,
               width: size,
               height: size,
               borderColor: agent.status === "critical" ? "var(--wo-danger)" : agent.status === "attention" ? "var(--wo-warning)" : "var(--wo-accent)",
@@ -872,7 +880,7 @@ function PortfolioMatrix({ agents, selectedAgentId, onSelect }: { agents: Profes
         );
       })}
       <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-[var(--wo-muted)]">Saúde operacional →</span>
-      <span className="absolute left-1 top-1/2 -translate-y-1/2 -rotate-90 text-[9px] text-[var(--wo-muted)]">Cumprimento do propósito →</span>
+      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 rotate-180 text-[9px] text-[var(--wo-muted)] [writing-mode:vertical-rl]">Cumprimento do propósito →</span>
     </div>
   );
 }
@@ -928,7 +936,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
           <FriccaoEmpilhada
             segmentos={operational ? [] : FRICCAO_ILUSTRATIVA}
             totalEntregas={operational ? (totalEntregas || null) : 312}
-            periodo="out/26"
+            periodo={rotuloMes(0)}
             vazio="Sem fricção registrada nos últimos 30 dias. Ela aparece quando uma entrega precisa de nova tentativa."
           />
         </Panel>
@@ -936,7 +944,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
           <h2 className="text-sm font-medium text-[var(--wo-text)]">Prova das metas</h2>
           <div className="mt-3 flex flex-wrap items-baseline gap-x-3">
             <strong className="font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{coberturas[0]!.quantidade}</strong>
-            <span className="text-xs text-[var(--wo-muted)]">de {agents.length} agentes com cobertura fechada</span>
+            <span className="text-xs text-[var(--wo-muted)]">de {agents.length} {agents.length === 1 ? "agente" : "agentes"} com cobertura fechada</span>
           </div>
           <ul className="mt-3 space-y-2">
             {coberturas.map((item) => (
@@ -955,7 +963,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
       <Panel className="overflow-hidden" data-testid="agentes-tabela">
         <div className="border-b border-[var(--wo-line)] px-4 py-3">
           <h2 className="text-sm font-medium text-[var(--wo-text)]">Lista de agentes</h2>
-          <p className="mt-1 text-[10px] text-[var(--wo-muted)]">Colunas: agente · função, responsável, entregas (30 dias), gasto (30 dias), metas atingidas, cobertura e próxima revisão.</p>
+          <p className="mt-1 text-[10px] text-[var(--wo-muted)]">Colunas: agente · função, responsável, entregas (30 dias), gasto (30 dias), metas atingidas, cobertura e última avaliação.</p>
         </div>
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[900px] border-collapse text-xs">
@@ -967,7 +975,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
                 <th className="px-3 py-3 text-right font-normal">Gasto (30 d)</th>
                 <th className="px-3 py-3 font-normal">Metas atingidas</th>
                 <th className="px-3 py-3 font-normal">Cobertura</th>
-                <th className="px-3 py-3 font-normal">Próxima revisão</th>
+                <th className="px-3 py-3 font-normal">Última avaliação</th>
                 <th className="px-3 py-3 font-normal" />
               </tr>
             </thead>
@@ -988,7 +996,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
                           <span className="mt-1 block truncate text-[10px] text-[var(--wo-muted)]">{agent.role}</span>
                           <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                             <ChipStatus status={status} />
-                            <span className="text-[9px] text-[var(--wo-muted)]">Cumpre {metas.rotulo}</span>
+                            <span className="text-[9px] text-[var(--wo-muted)]">{metas.total === 0 ? "Sem metas definidas" : `Cumpre ${metas.rotulo}`}</span>
                           </span>
                         </span>
                       </button>
@@ -1031,7 +1039,7 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
                   <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Entregas (30 d)</dt><dd className="font-mono tabular-nums text-[var(--wo-text)]">{agent.monthlyVolume?.toLocaleString("pt-BR") ?? "—"}</dd></div>
                   <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Gasto (30 d)</dt><dd className="font-mono tabular-nums text-[var(--wo-text)]">{agent.monthlyCost != null ? formatBRL(agent.monthlyCost) : "—"}</dd></div>
                   <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Metas</dt><dd className="font-mono tabular-nums text-[var(--wo-text)]">{metas.rotulo}</dd></div>
-                  <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Próxima revisão</dt><dd className="text-[var(--wo-text)]">{agent.reviewDue}</dd></div>
+                  <div><dt className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Última avaliação</dt><dd className="text-[var(--wo-text)]">{agent.reviewDue}</dd></div>
                 </dl>
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <SeloCobertura cobertura={cobertura} />
@@ -1053,12 +1061,12 @@ function PortfolioScreen({ agents, selectedAgent, onSelect, openProfessional, is
             <div className="text-sm text-[var(--wo-muted)]">Escolha um agente na lista para ver o combinado dele.</div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-xs font-medium text-[var(--wo-primary)]">{selectedAgent.initials}</span><div><h2 className="text-base font-medium text-[var(--wo-text)]">{selectedAgent.name}</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">{selectedAgent.role}</p><div className="mt-2"><PlatformStack platforms={selectedAgent.platforms} /></div></div></div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-xs font-medium text-[var(--wo-primary)]">{selectedAgent.initials}</span><div><h2 className="text-base font-medium text-[var(--wo-text)]">{selectedAgent.name}</h2><p className="mt-1 text-[10px] text-[var(--wo-muted)]">{selectedAgent.role}</p><div className="mt-2"><PlatformStack platforms={selectedAgent.platforms} /></div></div></div>
                 <ChipStatus status={statusDoAgente(selectedAgent)} />
               </div>
               <p className="mt-3 text-[11px] leading-relaxed text-[var(--wo-muted)]">{motivoDoStatus(selectedAgent)}</p>
-              <div className="mt-4 rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">O que foi combinado</span><p className="mt-2 text-xs leading-relaxed text-[var(--wo-text)]">{selectedAgent.purpose}</p></div>
+              <div className="mt-4 rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">O que foi combinado</span><p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-[var(--wo-text)]">{selectedAgent.purpose}</p></div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--wo-card-2)] p-3"><span className="text-[9px] uppercase tracking-[0.08em] text-[var(--wo-muted)]">Metas atingidas</span><span className="font-mono text-sm text-[var(--wo-text)]">{metasDoAgente(selectedAgent).rotulo}</span></div>
               <div className="mt-3"><SeloCobertura cobertura={coberturaDoAgente(selectedAgent)} /></div>
               <button type="button" onClick={() => openProfessional(selectedAgent.id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--wo-accent)] px-3 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Abrir prontuário <ArrowRight className="h-4 w-4" /></button>
@@ -1291,7 +1299,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" data-testid="prontuario-blocos">
         <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">1 · Entregas</span><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{agent.monthlyVolume?.toLocaleString("pt-BR") ?? "—"}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">entregas nos últimos 30 dias</span><Link href={`/entregas?agente=${encodeURIComponent(agent.name)}`} className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--wo-primary)]">Ver as entregas <ArrowRight className="h-3 w-3" /></Link></Panel>
         <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">2 · Prova</span><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{metasDoAgente(agent).total === 0 ? "—" : `${agent.observedMetricCount ?? 0} de ${metasDoAgente(agent).total}`}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">metas com prova no período</span><div className="mt-2"><SeloCobertura cobertura={coberturaDoAgente(agent)} /></div></Panel>
-        <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">3 · Custo</span><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{agent.monthlyCost != null ? formatBRL(agent.monthlyCost) : "—"}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">{agent.monthlyVolume && agent.monthlyCost != null ? `${formatBRL(agent.monthlyCost / agent.monthlyVolume)} por entrega · out/26` : "sem custo registrado no período"}</span></Panel>
+        <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">3 · Custo</span><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{agent.monthlyCost != null ? formatBRL(agent.monthlyCost) : "—"}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">{agent.monthlyVolume && agent.monthlyCost != null ? `${formatBRL(agent.monthlyCost / agent.monthlyVolume)} por entrega · ${rotuloMes(0)}` : "sem custo registrado no período"}</span></Panel>
         <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">4 · Percepção</span>{agent.percepcao ? <><strong className="mt-2 block font-mono text-2xl font-medium tabular-nums text-[var(--wo-text)]">{agent.percepcao.nota.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong><span className="mt-1 block text-[10px] text-[var(--wo-muted)]">de 5 em {agent.percepcao.respostas} respostas · <span aria-hidden="true">👎</span> {agent.percepcao.negativas}</span></> : <p className="mt-2 text-[11px] leading-relaxed text-[var(--wo-muted)]">Sem percepção registrada no período. Ela aparece depois que quem recebe a entrega responde.</p>}</Panel>
         <Panel className="p-3"><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">5 · O que fazer agora</span><p className="mt-2 text-[11px] leading-relaxed text-[var(--wo-text)]">{agent.recommendation}</p><Link href="/pendencias" className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--wo-primary)]">Abrir Pendências <ArrowRight className="h-3 w-3" /></Link></Panel>
       </div>
@@ -1299,7 +1307,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
       {reevaluationMessage && <div className="rounded-xl bg-[color-mix(in_srgb,var(--wo-accent)_13%,var(--wo-card))] px-3 py-2 text-[11px] text-[var(--wo-accent-text)]" role="status">{reevaluationMessage}</div>}
 
       <Panel className="p-4 sm:p-5">
-        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Goal className="h-4 w-4" /></span><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">O que foi combinado</span><h2 className="mt-2 max-w-4xl text-xl font-medium leading-snug text-[var(--wo-text)]">{agent.purpose}</h2></div></div>
+        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--wo-primary-soft)] text-[var(--wo-primary)]"><Goal className="h-4 w-4" /></span><div><span className="text-[9px] uppercase tracking-[0.1em] text-[var(--wo-muted)]">O que foi combinado</span><h2 className="mt-2 max-w-4xl whitespace-pre-line text-xl font-medium leading-snug text-[var(--wo-text)]">{agent.purpose}</h2></div></div>
         <div className="mt-5 grid gap-3 lg:grid-cols-3"><ContractList title="Faz" icon={ClipboardCheck} items={agent.duties} /><ContractList title="Precisa garantir" icon={UserCheck} items={agent.responsibilities} /><ContractList title="Não pode" icon={ShieldCheck} items={agent.boundaries} /></div>
       </Panel>
 
@@ -1310,7 +1318,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
             <h2 className="mt-2 text-lg font-medium text-[var(--wo-text)]">Antes do agente, o combinado e os últimos 30 dias</h2>
             <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-[var(--wo-muted)]">Cada linha mostra o valor medido antes do agente começar, o que foi combinado e o que aconteceu nos últimos 30 dias — com a prova que sustenta o número.</p>
           </div>
-          <span className="shrink-0 rounded-full border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-2.5 py-1 font-mono text-[10px] text-[var(--wo-muted)]">{metasDoAgente(agent).rotulo} cumpridas</span>
+          <span className="shrink-0 rounded-full border border-[var(--wo-line)] bg-[var(--wo-card-2)] px-2.5 py-1 font-mono text-[10px] text-[var(--wo-muted)]">{metasDoAgente(agent).total === 0 ? "sem metas definidas" : `${metasDoAgente(agent).rotulo} cumpridas`}</span>
         </div>
         {agent.metrics.length === 0 ? (
           <p className="mt-4 rounded-xl border border-dashed border-[var(--wo-line)] px-4 py-6 text-center text-[11px] leading-relaxed text-[var(--wo-muted)]">
@@ -1333,7 +1341,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
                       <span className="shrink-0 text-[10px] text-[var(--wo-muted)]">sem casos registrados</span>
                     )}
                   </div>
-                  <div className="mt-3"><BulletMeta bullet={bullet} periodo="out/26" semRotulo /></div>
+                  <div className="mt-3"><BulletMeta bullet={bullet} periodo={rotuloMes(0)} semRotulo /></div>
                   {bullet.semMeta && (
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--wo-card)] px-3 py-2">
                       <span className="text-[11px] text-[var(--wo-muted)]">Estimado · sem meta definida. Defina metas para medir o combinado.</span>
@@ -1541,12 +1549,12 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "settings" && (semApi ? <SettingsScreen /> : <GovernancePage embedded />)}
             {screen === "admission" && (telaDeAdmissao(semApi, window.location.search, hasPendingAdmissionHandoff()) === "completa" ? <AdmissionPage embedded /> : <AdicionarAgenteScreen operacional={!semApi} />)}
             {screen === "alerts" &&
-              (semApi || location === "/pendencias" ? <PendenciasScreen /> : <AlertsPage embedded />)}
+              (semApi ? <PendenciasScreen /> : <AlertsPage embedded />)}
             {screen === "admin" && (demo ? <SoComLogin titulo="Administração da organização" /> : <AdminConsolePage />)}
             {screen === "accountSettings" && <AccountSettingsPage embedded palette={palette} setPalette={setPalette} />}
             {screen === "profile" && <ProfilePage embedded demo={demo} />}
             {screen === "connection" && <ConectarPage embedded />}
-            {screen === "entregas" && <EntregasScreen />}
+            {screen === "entregas" && (semApi ? <EntregasScreen /> : <EntregasOperacional totalEntregas={visibleAgents.reduce((t, a) => t + (a.monthlyVolume ?? 0), 0)} totalAgentes={visibleAgents.length} />)}
             {screen === "mapa" && <MapaScreen />}
             </Suspense>
           </main>

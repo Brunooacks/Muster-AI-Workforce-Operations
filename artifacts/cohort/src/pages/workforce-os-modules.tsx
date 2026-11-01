@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useIdentidadeSegura } from "@/lib/clerk-safe";
 import { useLocation } from "wouter";
 import {
@@ -165,6 +165,9 @@ const statusEntregaClass: Record<StatusEntrega, string> = {
   Aguardando: "border-[var(--wo-line)] text-[var(--wo-muted)]",
 };
 
+/** Selos de migração (NOVO/EVOLUI/JUNTA…) são anotação de protótipo: só no laboratório. */
+const SelosVisiveis = createContext(false);
+
 function Bloco({
   numero,
   titulo,
@@ -182,12 +185,13 @@ function Bloco({
   rodape?: ReactNode;
   className?: string;
 }) {
+  const selosVisiveis = useContext(SelosVisiveis);
   return (
     <section className={cn("flex min-w-0 flex-col rounded-2xl border border-[var(--wo-line)] bg-[var(--wo-card)] p-4 sm:p-5", className)}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--wo-primary-soft)] font-mono text-[11px] text-[var(--wo-primary)]">{numero}</span>
         <h2 className="text-sm font-medium text-[var(--wo-text)]">{titulo}</h2>
-        <span className={cn("rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]", classeSelo(selo))}>{selo}</span>
+        {selosVisiveis && <span className={cn("rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]", classeSelo(selo))}>{selo}</span>}
       </div>
       <p className="mt-1 text-[11px] text-[var(--wo-muted)]">{pergunta}</p>
       <div className="mt-3 flex-1 space-y-3">{children}</div>
@@ -273,10 +277,11 @@ export function ManagerScreen({
     return agents.find((agente) => agente.name.toLowerCase() === nome)?.id ?? nome;
   };
   const rotuloDetalhes = operational && kpis
-    ? `Ver qualidade, governança e outros indicadores (${formatNumero(kpis.totalEvaluations)} avaliações) →`
+    ? `Ver qualidade, governança e outros indicadores (${formatNumero(kpis.totalEvaluations)} ${kpis.totalEvaluations === 1 ? "avaliação" : "avaliações"}) →`
     : "Ver qualidade, governança e outros indicadores →";
 
   return (
+    <SelosVisiveis.Provider value={!operational}>
     <div
       className="space-y-4 p-4 sm:p-6"
       data-workforce-embedded-page={operational ? "true" : undefined}
@@ -597,6 +602,7 @@ export function ManagerScreen({
         </>
       )}
     </div>
+    </SelosVisiveis.Provider>
   );
 }
 

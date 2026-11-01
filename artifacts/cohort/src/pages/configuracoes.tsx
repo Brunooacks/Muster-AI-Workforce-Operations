@@ -1,3 +1,4 @@
+import { useNomeOrganizacaoAtiva } from "@/components/tenant-bootstrap";
 import { useState } from "react";
 import { Link } from "wouter";
 import { useAcoesClerkSeguras } from "@/lib/clerk-safe";
@@ -82,11 +83,12 @@ const PT = {
   wsDesc: "Identidade e configurações gerais do espaço de trabalho da sua frota.",
   wsName: "Nome do workspace",
   wsNameDesc: "Visível para toda a equipe",
+  wsNameFallback: "Sua organização",
   wsTz: "Fuso horário",
   wsTzDesc: "Usado em relatórios e janelas de avaliação",
   wsFleetModel: "Modelo de frota",
   wsFleetModelDesc: "Frota compartilhada por toda a organização",
-  orgWide: "Org-wide",
+  orgWide: "Toda a organização",
   intTitle: "Integrações",
   intDesc: "Plataformas conectadas para descobrir e sincronizar agentes da frota.",
   connectorsEyebrow: "Conectores",
@@ -199,6 +201,7 @@ const L: Record<Lang, Dict> = {
     wsDesc: "Identity and general settings of your fleet's workspace.",
     wsName: "Workspace name",
     wsNameDesc: "Visible to the whole team",
+    wsNameFallback: "Your organization",
     wsTz: "Time zone",
     wsTzDesc: "Used in reports and evaluation windows",
     wsFleetModel: "Fleet model",
@@ -311,6 +314,7 @@ const L: Record<Lang, Dict> = {
     wsDesc: "Identidad y configuraciones generales del espacio de trabajo de tu flota.",
     wsName: "Nombre del workspace",
     wsNameDesc: "Visible para todo el equipo",
+    wsNameFallback: "Tu organización",
     wsTz: "Zona horaria",
     wsTzDesc: "Usada en reportes y ventanas de evaluación",
     wsFleetModel: "Modelo de flota",
@@ -433,6 +437,7 @@ function SectionShell({
 function WorkspaceSection() {
   const { lang } = useLang();
   const t = L[lang];
+  const nomeOrg = useNomeOrganizacaoAtiva();
   return (
     <SectionShell
       title={t.wsTitle}
@@ -444,7 +449,7 @@ function WorkspaceSection() {
             <div className="text-sm font-medium text-foreground">{t.wsName}</div>
             <div className="text-xs text-muted-foreground">{t.wsNameDesc}</div>
           </div>
-          <span className="font-mono text-sm text-foreground">Muster</span>
+          <span className="font-mono text-sm text-foreground">{nomeOrg ?? t.wsNameFallback}</span>
         </div>
         <div className="flex items-center justify-between gap-4 px-5 py-4">
           <div>
@@ -460,7 +465,7 @@ function WorkspaceSection() {
               {t.wsFleetModelDesc}
             </div>
           </div>
-          <Pill tone="sage">{t.orgWide}</Pill>
+          <span className="shrink-0 whitespace-nowrap"><Pill tone="sage">{t.orgWide}</Pill></span>
         </div>
       </Card>
     </SectionShell>

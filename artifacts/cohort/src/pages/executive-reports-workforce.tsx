@@ -1,3 +1,5 @@
+import { chaveMesAtual } from "@/lib/periodo-atual";
+import { deveBuscarRelatorio, periodoParaExibir } from "@/lib/relatorio-periodo";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
@@ -71,8 +73,7 @@ const reportingChain = [
 ];
 
 function currentPeriod(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return chaveMesAtual();
 }
 
 function formatPeriod(period: string): string {
@@ -121,14 +122,21 @@ export function ExecutiveReportsScreen({ operational = true }: { operational?: b
   const [templateId, setTemplateId] = useState<TemplateId>("board-brief");
   const [narrativeMode, setNarrativeMode] = useState<NarrativeMode>("deterministic");
   const [generationMessage, setGenerationMessage] = useState("");
+  const periodosGerados = Array.isArray(listQuery.data?.reports) ? listQuery.data.reports.map((r) => r.period) : undefined;
   const reportQuery = useGetExecutiveReport(selectedPeriod, {
-    query: { queryKey: getGetExecutiveReportQueryKey(selectedPeriod), retry: false, enabled: operational },
+    query: {
+      queryKey: getGetExecutiveReportQueryKey(selectedPeriod),
+      retry: false,
+      enabled: operational && deveBuscarRelatorio(selectedPeriod, periodosGerados),
+    },
   });
 
+  const periodosChave = periodosGerados?.join(",");
   useEffect(() => {
-    const latest = Array.isArray(listQuery.data?.reports) ? listQuery.data.reports[0] : undefined;
-    if (latest && !reportQuery.data && reportQuery.isError) setSelectedPeriod(latest.period);
-  }, [listQuery.data, reportQuery.data, reportQuery.isError]);
+    const alvo = periodoParaExibir(selectedPeriod, periodosGerados, false);
+    if (alvo !== selectedPeriod && !reportQuery.data) setSelectedPeriod(alvo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodosChave]);
 
   const selectedTemplate = templates.find((template) => template.id === templateId) ?? templates[0]!;
   const relatorioDaApi = relatorioValido(reportQuery.data);

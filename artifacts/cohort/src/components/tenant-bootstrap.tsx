@@ -6,7 +6,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   createTenantScopeKey,
@@ -27,11 +27,18 @@ const initialState: BootstrapState = {
   error: null,
 };
 
+/** Nome da organização ativa (RG-M20): Configurações mostra o nome real, não "Muster". */
+const OrganizacaoAtiva = createContext<string | null>(null);
+export function useNomeOrganizacaoAtiva(): string | null {
+  return useContext(OrganizacaoAtiva);
+}
+
 export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, userId, orgId } = useAuth();
   const queryClient = useQueryClient();
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [state, setState] = useState<BootstrapState>(initialState);
+  const [nomeOrg, setNomeOrg] = useState<string | null>(null);
   const runIdRef = useRef(0);
   const previousScopeKeyRef = useRef<string | null | undefined>(undefined);
   const scopeKey = createTenantScopeKey(userId, orgId);
@@ -62,8 +69,9 @@ export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
       if (!isSignedIn || !userId || !scopeKey) return;
 
       try {
-        await syncActiveOrganization({ signal: controller.signal });
+        const sincronizada = await syncActiveOrganization({ signal: controller.signal });
         if (!isCurrentRun()) return;
+        setNomeOrg(sincronizada?.organization?.name ?? null);
 
         setState({ scopeKey, status: "ready", error: null });
       } catch (error) {
@@ -122,7 +130,7 @@ export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <OrganizacaoAtiva.Provider value={nomeOrg}>{children}</OrganizacaoAtiva.Provider>;
 }
 
 function TenantLoadingState() {

@@ -135,7 +135,7 @@ test("metasDoAgente conta o que foi cumprido", () => {
     atingidas: 2,
     rotulo: "2 de 3 metas",
   });
-  assert.equal(metasDoAgente(agente({ metrics: [] })).rotulo, "0 de 0 metas");
+  assert.equal(metasDoAgente(agente({ metrics: [] })).rotulo, "sem metas definidas");
 });
 
 test("bulletDaMeta compara atual, combinado e linha de base", () => {
@@ -201,7 +201,7 @@ test("métrica sem meta combinada vira estimado e não conta como meta", () => {
       { label: "Tempo até a primeira exceção do dia", baseline: "6 h", target: "", current: "4 h", status: "off", source: "ERP · amostra auditada" },
     ],
   });
-  assert.deepEqual(metasDoAgente(semMeta), { total: 0, atingidas: 0, rotulo: "0 de 0 metas" });
+  assert.deepEqual(metasDoAgente(semMeta), { total: 0, atingidas: 0, rotulo: "sem metas definidas" });
   assert.equal(statusDoAgente(semMeta), "atencao");
   assert.equal(
     motivoDoStatus(semMeta),
