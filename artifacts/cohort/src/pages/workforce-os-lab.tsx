@@ -1554,7 +1554,7 @@ export default function WorkforceOsLabPage({ defaultScreen, labMode = true, demo
             {screen === "accountSettings" && <AccountSettingsPage embedded palette={palette} setPalette={setPalette} />}
             {screen === "profile" && <ProfilePage embedded demo={demo} />}
             {screen === "connection" && <ConectarPage embedded />}
-            {screen === "entregas" && (semApi ? <EntregasScreen /> : <EntregasOperacional totalEntregas={visibleAgents.reduce((t, a) => t + (a.monthlyVolume ?? 0), 0)} totalAgentes={visibleAgents.length} />)}
+            {screen === "entregas" && (semApi ? <EntregasScreen /> : <EntregasOperacional agentes={visibleAgents} />)}
             {screen === "mapa" && <MapaScreen />}
             </Suspense>
           </main>

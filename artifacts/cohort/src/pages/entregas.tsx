@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useQueries } from "@tanstack/react-query";
+import { getAgentOutcome, getGetAgentOutcomeQueryKey } from "@workspace/api-client-react";
+import { resumirEntregas, reais, pct } from "@/lib/entregas-resumo";
+import type { OutcomePayload } from "@/lib/agent-outcome-view";
 import { useLocation, useSearch } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -153,37 +157,138 @@ const pt = {
   },
 };
 
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+function rotuloMes(p: string): string {
+  const [ano, mes] = p.split("-");
+  return `${MESES[Number(mes) - 1]}/${ano}`;
+}
+function ultimosMeses(n: number): string[] {
+  const hoje = new Date();
+  return Array.from({ length: n }, (_, i) => new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth() - i, 1)).toISOString().slice(0, 7));
+}
+
+function Kpi({ rotulo, valor, detalhe, destaque }: { rotulo: string; valor: string; detalhe?: string; destaque?: boolean }) {
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-1 rounded-2xl border border-border bg-card p-4", destaque && "border-primary/40 bg-primary/5")}>
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{rotulo}</span>
+      <strong className="font-mono text-[22px] font-medium tabular-nums leading-tight sm:text-[26px]">{valor}</strong>
+      {detalhe && <span className="text-[12px] leading-snug text-muted-foreground">{detalhe}</span>}
+    </div>
+  );
+}
+
+function Barra({ valor }: { valor: number | null }) {
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((valor ?? 0) * 100)}%` }} />
+    </div>
+  );
+}
+
 /**
- * Na área logada (operacional) a lista ilustrativa NUNCA aparece: ainda não há
- * endpoint de entregas por item, então mostramos o total real do período e o
- * caminho para conectar/abrir o agente.
+ * Área logada (RG-M21): consolida o resultado real de cada agente no mês
+ * (GET /agents/:id/outcome) em KPIs, mix de aceite e ranking por agente.
+ * A lista ilustrativa nunca aparece aqui.
  */
-export function EntregasOperacional({ totalEntregas, totalAgentes }: { totalEntregas: number; totalAgentes: number }) {
-  const semAgentes = totalAgentes === 0;
+export function EntregasOperacional({ agentes }: { agentes: Array<{ id: string; name: string; role?: string | null }> }) {
+  const meses = ultimosMeses(3);
+  const [periodo, setPeriodo] = useState(meses[0]!);
+  const consultas = useQueries({
+    queries: agentes.map((a) => ({
+      queryKey: getGetAgentOutcomeQueryKey(a.id, { period: periodo }),
+      queryFn: () => getAgentOutcome(a.id, { period: periodo }),
+    })),
+  });
+  const carregando = consultas.some((c) => c.isLoading);
+  const r = resumirEntregas(agentes.map((a, i) => ({ id: a.id, nome: a.name, papel: a.role ?? "", outcome: consultas[i]?.data as OutcomePayload | undefined })));
+  const semAgentes = agentes.length === 0;
+
   return (
     <div className="mx-auto flex max-w-[1180px] flex-col gap-6 px-4 py-6 lg:px-8" data-testid="entregas-operacional">
-      <header className="flex flex-col gap-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Operação · últimos 30 dias</span>
-        <h1 className="text-[clamp(26px,3vw,38px)] font-semibold tracking-[-0.03em]">{pt.titulo}</h1>
-        <p className="max-w-[720px] text-[15px] leading-[1.5] text-muted-foreground">{pt.sub}</p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Operação · {rotuloMes(periodo)}</span>
+          <h1 className="text-[clamp(26px,3vw,38px)] font-semibold tracking-[-0.03em]">{pt.titulo}</h1>
+          <p className="max-w-[640px] text-[15px] leading-[1.5] text-muted-foreground">Tarefas que os agentes concluíram, quantas foram aceitas, quanto custou cada uma e quanto custaria fazer com pessoas.</p>
+        </div>
+        <div className="flex gap-2" role="group" aria-label="Período">
+          {meses.map((m) => (
+            <button key={m} type="button" aria-pressed={periodo === m} onClick={() => setPeriodo(m)}
+              className={cn("rounded-full border px-3.5 py-1.5 text-[13px] transition-colors", periodo === m ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground")}>
+              {rotuloMes(m)}
+            </button>
+          ))}
+        </div>
       </header>
-      <section className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-        <p className="text-[15px] font-medium">
-          {totalEntregas > 0
-            ? `${totalEntregas.toLocaleString("pt-BR")} entregas registradas nos últimos 30 dias.`
-            : "Ainda não há entregas registradas."}
-        </p>
-        <p className="mx-auto mt-2 max-w-[560px] text-[13px] leading-relaxed text-muted-foreground">
-          {semAgentes
-            ? "Adicione e conecte um agente. As entregas aparecem aqui depois da primeira execução."
-            : totalEntregas > 0
-              ? "O detalhe de cada entrega, com prova, fica no prontuário de cada agente."
-              : "Conecte a telemetria do agente. As entregas aparecem aqui depois da primeira execução."}
-        </p>
-        <a href={semAgentes ? "/admissao" : "/agentes"} className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground">
-          {semAgentes ? "Adicionar agente" : "Abrir Agentes"}
-        </a>
-      </section>
+
+      {semAgentes ? (
+        <section className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <p className="text-[15px] font-medium">Ainda não há entregas registradas.</p>
+          <p className="mx-auto mt-2 max-w-[560px] text-[13px] text-muted-foreground">Adicione e conecte um agente. As entregas aparecem aqui depois da primeira execução.</p>
+          <a href="/conectores" className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground">Conectar agente</a>
+        </section>
+      ) : carregando ? (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />)}</div>
+      ) : (
+        <>
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-5" aria-label="Indicadores do período">
+            <Kpi rotulo="Entregas" valor={r.entregas.toLocaleString("pt-BR")} detalhe={`${agentes.length} agentes no período`} />
+            <Kpi rotulo="Aceitas" valor={r.aceitas.toLocaleString("pt-BR")} detalhe={`${pct(r.taxaAceite)} de aceite`} />
+            <Kpi rotulo="Custo por entrega aceita" valor={reais(r.custoPorAceitaCents)} detalhe={`total ${reais(r.custoTotalCents)}`} />
+            <Kpi rotulo="Se fosse feito por pessoas" valor={reais(r.custoHumanoEquivalenteCents)} detalhe="custo-hora × minutos de referência" />
+            <Kpi rotulo="Economia no período" valor={reais(r.economiaCents)} detalhe={r.economiaPct != null ? `${pct(r.economiaPct)} abaixo do custo humano` : "cadastre custo-hora e contrato"} destaque />
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5" aria-label="Como as entregas foram aceitas">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-[15px] font-semibold">Como as entregas foram aceitas</h2>
+              <span className="text-[12px] text-muted-foreground">{r.aceitas.toLocaleString("pt-BR")} aceitas · {(r.entregas - r.aceitas).toLocaleString("pt-BR")} recusadas ou em aberto</span>
+            </div>
+            <div className="mt-3 flex h-3 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full bg-primary" style={{ width: `${Math.round((r.taxaAceite ?? 0) * (r.aceiteAuto ?? 0) * 100)}%` }} />
+              <div className="h-full bg-primary/45" style={{ width: `${Math.round((r.taxaAceite ?? 0) * (r.aceiteHumano ?? 0) * 100)}%` }} />
+            </div>
+            <div className="mt-2 flex flex-wrap gap-4 text-[12px] text-muted-foreground">
+              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-primary" />Aceite automático por regra · {pct(r.aceiteAuto)}</span>
+              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-primary/45" />Aprovada por pessoa · {pct(r.aceiteHumano)}</span>
+              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-muted-foreground/30" />Recusada ou em aberto · {pct(r.taxaAceite == null ? null : 1 - r.taxaAceite)}</span>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3" aria-label="Entregas por agente">
+            <h2 className="text-[15px] font-semibold">Por agente</h2>
+            <ul className="flex flex-col gap-2">
+              {r.agentes.map((a) => (
+                <li key={a.id}>
+                  <a href={`/agentes/${a.id}`} className="grid grid-cols-2 items-center gap-x-4 gap-y-2 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-foreground/40 lg:grid-cols-[minmax(0,2.2fr)_repeat(4,minmax(0,1fr))]">
+                    <div className="col-span-2 min-w-0 lg:col-span-1">
+                      <p className="truncate text-[15px] font-medium">{a.nome}</p>
+                      <p className="truncate text-[12px] text-muted-foreground">{a.papel}</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Entregas</span>
+                      <span className="font-mono text-[15px] tabular-nums">{a.entregas.toLocaleString("pt-BR")}{a.aceitas != null && <span className="text-muted-foreground"> · {a.aceitas.toLocaleString("pt-BR")} aceitas</span>}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Aceite</span>
+                      <span className="font-mono text-[15px] tabular-nums">{pct(a.taxaAceite)}</span>
+                      <Barra valor={a.taxaAceite} />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Custo por aceita</span>
+                      <span className="font-mono text-[15px] tabular-nums">{reais(a.custoPorAceitaCents)}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Custo humano</span>
+                      <span className="font-mono text-[15px] tabular-nums">{reais(a.custoHumanoCents)}{a.economiaPct != null && <span className="text-primary"> · −{pct(a.economiaPct)}</span>}</span>
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
     </div>
   );
 }
