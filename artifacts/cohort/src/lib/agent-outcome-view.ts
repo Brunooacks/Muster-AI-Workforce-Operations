@@ -65,7 +65,7 @@ export const REASON_LABEL: Record<string, string> = {
   no_contract: "agente sem contrato numérico (contrato pendente)",
   contract_metric_not_computed: "a métrica do contrato não é calculada pela camada 2",
   no_context_tokens: "eventos sem tokens de contexto",
-  missing_price_table: "tabela de preços da Veltrix ainda não disponível",
+  missing_price_table: "tabela de preços de referência ainda não disponível",
   quality_goal_not_defined: "contrato sem meta de qualidade (acceptance_rate)",
   no_qualified_model: "nenhum modelo bateu a meta de qualidade do contrato",
   no_token_counts: "eventos sem contagem de tokens",
