@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUser } from "@clerk/react";
 import {
   useCreateAgentContract,
   useListAgentContracts,
@@ -43,9 +44,18 @@ interface LegacyBusinessCase {
   description?: string;
 }
 
-function ownerLabel(id: string, owners: AgentContractOwnerCandidate[]) {
+const PAPEL: Record<string, string> = { owner: "dono da conta", admin: "administrador", member: "membro", viewer: "leitor" };
+/** RG-M23: nunca mostrar o id cru do Clerk; nome da pessoa logada ou o papel. */
+export function ownerLabel(
+  id: string,
+  owners: AgentContractOwnerCandidate[],
+  me?: { id: string; nome: string | null } | null,
+) {
   const o = owners.find((c) => c.id === id);
-  return o ? `${o.userId} · ${o.role}` : id;
+  if (!o) return "responsável não identificado";
+  const papel = PAPEL[o.role] ?? o.role;
+  const nome = me && o.userId === me.id && me.nome ? me.nome : "membro da organização";
+  return `${nome} · ${papel}`;
 }
 
 function ContractNumbers({ c }: { c: AgentContract }) {
@@ -78,6 +88,8 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
   const today = new Date().toISOString().slice(0, 10);
   const errors = form ? contractFormErrors(form, today) : {};
   const owners = data?.ownerCandidates ?? [];
+  const { user } = useUser();
+  const me = user ? { id: user.id, nome: user.fullName ?? user.firstName ?? null } : null;
   const active = data?.active ?? null;
   const legacyText = [legacy.baseline, legacy.targetPayback, legacy.actualPayback].some((v) => v?.trim());
 
@@ -122,7 +134,7 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
         <>
           <div className="flex items-center gap-2">
             <Pill tone="sage">v{active.version} vigente</Pill>
-            <span className="truncate text-[11px] text-muted-foreground">dono {ownerLabel(active.ownerMemberId, owners)}</span>
+            <span className="truncate text-[11px] text-muted-foreground">dono {ownerLabel(active.ownerMemberId, owners, me)}</span>
           </div>
           <ContractNumbers c={active} />
         </>
@@ -215,7 +227,7 @@ export function AgentContractPanel({ agentId, legacy }: { agentId: string; legac
                 >
                   <option value="">Selecione um membro da conta</option>
                   {owners.map((o) => (
-                    <option key={o.id} value={o.id}>{o.userId} · {o.role}</option>
+                    <option key={o.id} value={o.id}>{ownerLabel(o.id, owners, me)}</option>
                   ))}
                 </select>
               </div>
