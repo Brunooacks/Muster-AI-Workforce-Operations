@@ -98,6 +98,7 @@ import { BulletMeta, FriccaoEmpilhada, SeloCobertura, ChipStatus } from "@/compo
 import { AgentOutcomePanel } from "@/components/agent-outcome";
 import { AgentContractPanel } from "@/components/agent-contract";
 import { queryClient } from "@/lib/queryClient";
+import { rotuloCodigo } from "@/lib/humanizar-codigos";
 import {
   adaptApiAgent,
   type WorkforceContractMetric,
@@ -1185,7 +1186,7 @@ function ProfessionalScreen({ agent, operational = false }: { agent: Professiona
       {
         onSuccess: async (outcome) => {
           setReevaluationMessage(
-            `Reavaliação concluída com ${outcome.dataSource === "telemetry" ? "telemetria real" : "linha de base"}: saúde ${outcome.healthScore}/100 e veredito ${outcome.verdict}.`,
+            `Reavaliação concluída com ${outcome.dataSource === "telemetry" ? "telemetria real" : "linha de base"}: saúde ${outcome.healthScore}/100 e veredito ${rotuloCodigo(outcome.verdict)}.`,
           );
           await Promise.all([
             queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agent.id) }),

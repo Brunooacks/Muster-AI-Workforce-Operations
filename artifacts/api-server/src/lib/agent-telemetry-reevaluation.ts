@@ -563,6 +563,7 @@ export function rotuloGovernanca(code: string | null | undefined): string {
     stable: "estável",
     regressing: "em queda",
     improving: "em alta",
+    regression: "em regressão",
     grounded: "fundamentado",
     ungrounded: "sem fundamentação",
   };

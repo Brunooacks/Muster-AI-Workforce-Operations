@@ -848,7 +848,7 @@ export default function AgentDetailPage() {
               icon={Gauge}
               label="Saúde consolidada"
               value={`${agent.healthScore}/100`}
-              detail={`Veredito atual: ${agent.currentVerdict}`}
+              detail={`Veredito atual: ${rotuloCodigo(agent.currentVerdict)}`}
               tone={agent.healthScore >= 80 ? "stable" : agent.healthScore >= 60 ? "attention" : "critical"}
             />
             <OperationalSignal

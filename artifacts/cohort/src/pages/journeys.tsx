@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { ScenarioSourceBadge } from "@/components/mission-control/operational-status";
 import { classifyScenarioSource } from "@/components/mission-control/presentation";
 import { isActionableJourneyBottleneck } from "@/lib/journey-performance";
+import { rotuloCodigo } from "@/lib/humanizar-codigos";
 import {
   Activity,
   AlertTriangle,
@@ -620,7 +621,7 @@ function StepCard({
             </div>
             <div className="rounded-lg bg-secondary/45 p-2">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Decisão</p>
-              <p className="mt-1 break-words text-xs font-medium text-foreground">{step.agent.currentVerdict}</p>
+              <p className="mt-1 break-words text-xs font-medium text-foreground">{rotuloCodigo(step.agent.currentVerdict)}</p>
             </div>
           </div>
         )}

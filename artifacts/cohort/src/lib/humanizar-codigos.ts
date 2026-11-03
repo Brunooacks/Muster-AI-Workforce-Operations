@@ -6,9 +6,11 @@ const ROTULOS: Record<string, string> = {
   "continuous-governance": "Governança contínua",
   insufficient_data: "dados insuficientes",
   not_measured: "não medido",
-  mentor: "acompanhar",
+  mentor: "mentorar",
   retire: "aposentar",
   promote: "promover",
+  observation: "em observação",
+  regression: "em regressão",
   maintain: "manter",
   stable: "estável",
   regressing: "em queda",
@@ -25,5 +27,5 @@ export function rotuloCodigo(codigo: string | null | undefined, fallback = ""): 
 
 export function humanizarCodigos(texto: string | null | undefined): string {
   if (!texto) return "";
-  return texto.replace(/\b(continuous-governance|insufficient_data|not_measured|mentor|retire|promote|maintain|stable|regressing|improving|grounded|ungrounded|task_id)\b/g, (m) => ROTULOS[m] ?? m);
+  return texto.replace(/\b(continuous-governance|insufficient_data|not_measured|mentor|retire|promote|maintain|stable|regressing|improving|grounded|ungrounded|regression|task_id)\b/g, (m) => ROTULOS[m] ?? m);
 }
