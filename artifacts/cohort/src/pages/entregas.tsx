@@ -171,7 +171,7 @@ function Kpi({ rotulo, valor, detalhe, destaque }: { rotulo: string; valor: stri
   return (
     <div className={cn("flex min-w-0 flex-col gap-1 rounded-2xl border border-border bg-card p-4", destaque && "border-primary/40 bg-primary/5")}>
       <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{rotulo}</span>
-      <strong className="font-mono text-[22px] font-medium tabular-nums leading-tight sm:text-[26px]">{valor}</strong>
+      <strong className="truncate text-[22px] font-semibold tabular-nums leading-tight tracking-[-0.02em] xl:text-[24px]">{valor}</strong>
       {detalhe && <span className="text-[12px] leading-snug text-muted-foreground">{detalhe}</span>}
     </div>
   );
@@ -267,20 +267,20 @@ export function EntregasOperacional({ agentes }: { agentes: Array<{ id: string; 
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Entregas</span>
-                      <span className="font-mono text-[15px] tabular-nums">{a.entregas.toLocaleString("pt-BR")}{a.aceitas != null && <span className="text-muted-foreground"> · {a.aceitas.toLocaleString("pt-BR")} aceitas</span>}</span>
+                      <span className="text-[15px] font-medium tabular-nums">{a.entregas.toLocaleString("pt-BR")}{a.aceitas != null && <span className="text-muted-foreground"> · {a.aceitas.toLocaleString("pt-BR")} aceitas</span>}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Aceite</span>
-                      <span className="font-mono text-[15px] tabular-nums">{pct(a.taxaAceite)}</span>
+                      <span className="text-[15px] font-medium tabular-nums">{pct(a.taxaAceite)}</span>
                       <Barra valor={a.taxaAceite} />
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Custo por aceita</span>
-                      <span className="font-mono text-[15px] tabular-nums">{reais(a.custoPorAceitaCents)}</span>
+                      <span className="text-[15px] font-medium tabular-nums">{reais(a.custoPorAceitaCents)}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Custo humano</span>
-                      <span className="font-mono text-[15px] tabular-nums">{reais(a.custoHumanoCents)}{a.economiaPct != null && <span className="text-primary"> · −{pct(a.economiaPct)}</span>}</span>
+                      <span className="text-[15px] font-medium tabular-nums">{reais(a.custoHumanoCents)}{a.economiaPct != null && <span className="block text-[12px] font-normal text-muted-foreground">{pct(a.economiaPct)} mais barato com o agente</span>}</span>
                     </div>
                   </a>
                 </li>
