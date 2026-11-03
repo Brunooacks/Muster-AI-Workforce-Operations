@@ -239,7 +239,7 @@ export function leituraOperacional(opcoes: {
       total: temVolume ? volume : null,
       aceitas: null,
       ultimas: [],
-      vazio: "As últimas entregas aparecem aqui quando o agente registrar a tarefa com task_id e a origem do pedido.",
+      vazio: "As últimas entregas aparecem aqui quando o agente registrar a tarefa com identificador e a origem do pedido.",
     },
     prova: {
       comProva: null,
@@ -276,7 +276,7 @@ export function leituraOperacional(opcoes: {
       metaPrazo: 95,
       resultado: null,
       metaResultado: 75,
-      vazio: "A comparação entre tarefa no prazo e resultado aceito exige tarefas com prazo e task_id registrados.",
+      vazio: "A comparação entre tarefa no prazo e resultado aceito exige tarefas com prazo e identificador registrados.",
     },
     matriz: pontos,
     eixoCusto: "custo por entrega",

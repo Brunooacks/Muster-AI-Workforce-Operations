@@ -24,6 +24,7 @@ import { detectorPresentation } from "@/components/carteira";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { humanizarCodigos, rotuloCodigo } from "@/lib/humanizar-codigos";
 
 type AlertsDict = {
   breadcrumbGov: string;
@@ -346,7 +347,7 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                       <CardHeader className="space-y-2">
                         <div className="flex items-center justify-between gap-3">
                           <span className="font-mono text-xs text-muted-foreground">
-                            {alert.patternType || t.patternFallback}
+                            {rotuloCodigo(alert.patternType, t.patternFallback)}
                           </span>
                           <span
                             className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] ${d.pill}`}
@@ -355,7 +356,7 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                           </span>
                         </div>
                         <CardTitle className="font-serif text-xl font-medium leading-tight tracking-tight">
-                          {alert.pattern}
+                          {humanizarCodigos(alert.pattern)}
                         </CardTitle>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span>
@@ -373,12 +374,12 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                       <CardContent className="flex flex-1 flex-col gap-3">
                         <div className="space-y-1">
                           <Eyebrow>{t.hypothesis}</Eyebrow>
-                          <p className="text-[13px] leading-snug text-foreground/80">{alert.hypothesis}</p>
+                          <p className="text-[13px] leading-snug text-foreground/80">{humanizarCodigos(alert.hypothesis)}</p>
                         </div>
                         <div className="space-y-1">
                           <Eyebrow>{t.recommendation}</Eyebrow>
                           <p className="text-[13px] font-semibold leading-snug text-foreground/90">
-                            {alert.recommendation}
+                            {humanizarCodigos(alert.recommendation)}
                           </p>
                         </div>
                         <div className="mt-auto flex items-center justify-between pt-2 text-xs text-muted-foreground">

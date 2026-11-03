@@ -421,8 +421,8 @@ export async function reevaluateAgentFromTelemetry(input: {
               ? ("high" as const)
               : ("medium" as const),
         hypothesis: [
-          `Regressão: ${governanceAssessment.regression.status}`,
-          `Fundamentação: ${governanceAssessment.hallucinationStatus}`,
+          `Regressão: ${rotuloGovernanca(governanceAssessment.regression.status)}`,
+          `Fundamentação: ${rotuloGovernanca(governanceAssessment.hallucinationStatus)}`,
           `Contexto: ${governanceAssessment.contextHealthScore ?? "não medido"}`,
         ].join(" · "),
         recommendation:
@@ -553,4 +553,19 @@ export async function reevaluateAgentFromTelemetry(input: {
       hallucinationStatus: governanceAssessment.hallucinationStatus,
     },
   };
+}
+
+/** RG-M22: o texto do alerta vai para a tela; nunca levar o código cru. */
+export function rotuloGovernanca(code: string | null | undefined): string {
+  const map: Record<string, string> = {
+    insufficient_data: "dados insuficientes",
+    not_measured: "não medido",
+    stable: "estável",
+    regressing: "em queda",
+    improving: "em alta",
+    grounded: "fundamentado",
+    ungrounded: "sem fundamentação",
+  };
+  if (!code) return "não medido";
+  return map[code] ?? code;
 }

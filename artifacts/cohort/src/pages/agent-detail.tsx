@@ -87,6 +87,7 @@ import {
 import { relativeAge } from "@/components/mission-control/presentation";
 import { AgentContractPanel } from "@/components/agent-contract";
 import { AgentOutcomePanel } from "@/components/agent-outcome";
+import { humanizarCodigos, rotuloCodigo } from "@/lib/humanizar-codigos";
 
 const AUTONOMY_LABEL: Record<Lang, Record<string, string>> = {
   pt: {
@@ -356,7 +357,7 @@ function TelemetrySection({
         onSuccess: (outcome) => {
           toast({
             title: `Reavaliado — ${DATA_SOURCE_LABEL[outcome.dataSource] ?? outcome.dataSource}`,
-            description: `Veredito: ${outcome.verdict} · saúde ${outcome.healthScore}. ${outcome.rationale}`,
+            description: `Veredito: ${rotuloCodigo(outcome.verdict)} · saúde ${outcome.healthScore}. ${humanizarCodigos(outcome.rationale)}`,
           });
           queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agentId) });
           queryClient.invalidateQueries({ queryKey: getGetAgentMetricsQueryKey(agentId, "30d") });
@@ -1089,22 +1090,22 @@ export default function AgentDetailPage() {
                 return (
                   <div key={alert.id} className={`${cardBase} border-l-4 ${d.border} p-5`}>
                     <div className="mb-3 flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">{alert.patternType}</span>
+                      <span className="font-mono text-xs text-muted-foreground">{rotuloCodigo(alert.patternType)}</span>
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] ${d.pill}`}
                       >
                         {d.pillLabel}
                       </span>
                     </div>
-                    <h3 className="mb-3 font-serif text-xl font-medium leading-tight tracking-tight">{alert.pattern}</h3>
+                    <h3 className="mb-3 font-serif text-xl font-medium leading-tight tracking-tight">{humanizarCodigos(alert.pattern)}</h3>
                     <div className="space-y-3 text-[13px]">
                       <div>
                         <Eyebrow>{t.hypothesis}</Eyebrow>
-                        <p className="mt-1 leading-snug text-foreground/80">{alert.hypothesis}</p>
+                        <p className="mt-1 leading-snug text-foreground/80">{humanizarCodigos(alert.hypothesis)}</p>
                       </div>
                       <div>
                         <Eyebrow>{t.action}</Eyebrow>
-                        <p className="mt-1 font-semibold leading-snug text-foreground/90">{alert.recommendation}</p>
+                        <p className="mt-1 font-semibold leading-snug text-foreground/90">{humanizarCodigos(alert.recommendation)}</p>
                       </div>
                     </div>
                   </div>

@@ -60,7 +60,7 @@ export function AgentOutcomePanel({ agentId }: { agentId: string }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-serif text-2xl font-medium tracking-tight">Resultado validado</h2>
-          <p className="text-xs text-muted-foreground">Só entram tarefas com task_id; cada número diz de onde veio.</p>
+          <p className="text-xs text-muted-foreground">Só entram tarefas identificadas pelo SDK; cada número diz de onde veio.</p>
         </div>
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
           Período
@@ -97,7 +97,7 @@ function OutcomeBlocks({ view }: { view: ReturnType<typeof outcomeView> }) {
       </div>
       {view.empty && (
         <p role="status" className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
-          Nenhuma tarefa com task_id neste período. Envie taskId/runId/attempt pelo SDK para medir o resultado.
+          Nenhuma tarefa identificada neste período. Envie o identificador da tarefa, da execução e da tentativa pelo SDK para medir o resultado.
         </p>
       )}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
