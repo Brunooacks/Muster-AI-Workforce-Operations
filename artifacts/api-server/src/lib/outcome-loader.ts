@@ -1,3 +1,4 @@
+import { resolvePriceTable } from "./value/reference-prices";
 import { and, asc, eq, gte, isNotNull, lt, lte, or, isNull, gt, sql } from "drizzle-orm";
 import {
   db,
@@ -196,7 +197,7 @@ export async function loadOutcomeInputs(input: {
         ? { rateId: rate.id, hourlyCostCents: rate.hourlyCostCents, currency: rate.currency, role: rate.role, areaId: rate.areaId }
         : null,
       offInvoice,
-      priceTable: input.priceTable ?? null,
+      priceTable: resolvePriceTable(input.priceTable),
       fx,
     },
   };
