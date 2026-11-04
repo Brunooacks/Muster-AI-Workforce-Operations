@@ -10,7 +10,6 @@ const pt = {
   secondary: "Criar conta ›",
   brand: "Muster Workforce Operations",
   tagline: "Identidade · Prova · Decisão · Responsabilidade",
-  veltrix: "Gateway de IA: quanto cada chamada custa, com limite de gasto em todos os modelos.",
   tupiniquim: "As taxas do dia a dia, sem letra miúda — dá para comparar antes de assinar.",
 };
 
@@ -21,7 +20,6 @@ const en: typeof pt = {
   secondary: "Create account ›",
   brand: "Muster Workforce Operations",
   tagline: "Identity · Evidence · Decision · Accountability",
-  veltrix: "AI gateway: what each call costs, with spending limits across all models.",
   tupiniquim: "Everyday fees with no fine print, so you can compare before you sign.",
 };
 const es: typeof pt = {
@@ -31,7 +29,6 @@ const es: typeof pt = {
   secondary: "Crear cuenta ›",
   brand: "Muster Workforce Operations",
   tagline: "Identidad · Prueba · Decisión · Responsabilidad",
-  veltrix: "Gateway de IA: cuánto cuesta cada llamada, con límite de gasto en todos los modelos.",
   tupiniquim: "Las tarifas del día a día, sin letra pequeña, para comparar antes de contratar.",
 };
 
@@ -72,16 +69,7 @@ export function HomeFechamento() {
           </span>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <a
-            href="https://veltrixplatform.com"
-            target="_blank"
-            rel="noreferrer"
-            className="flex flex-col gap-1 rounded-[16px] border border-black/[.08] p-4 transition-colors hover:bg-secondary"
-          >
-            <span className="text-[13px] font-semibold text-foreground">Veltrix</span>
-            <span className="text-[13px] leading-[1.45] text-muted-foreground">{t.veltrix}</span>
-          </a>
+        <div className="grid gap-4">
           <a
             href="https://tupiniquim.veltrixplatform.com"
             target="_blank"
