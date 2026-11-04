@@ -117,7 +117,7 @@ export function BulletMeta({ bullet, periodo, semRotulo = false }: { bullet: Bul
         )}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--wo-muted)]">
-        <span>antes do agente {numero(bullet.antes, bullet.unidade)}</span>
+        <span>{bullet.antes != null ? `antes do agente ${numero(bullet.antes, bullet.unidade)}` : "antes do agente: sem linha de base"}</span>
         <span>combinado {bullet.combinadoTexto}</span>
         <span className="font-mono">{periodo}</span>
         <span className={cn("font-mono uppercase tracking-[0.08em]", bullet.ok === false ? "text-[var(--wo-danger-text)]" : bullet.ok ? "text-[var(--wo-accent-text)]" : "")}>

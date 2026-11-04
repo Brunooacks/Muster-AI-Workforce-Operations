@@ -82,6 +82,8 @@ type DeclaredMetricContract = {
   unit: string;
   target?: string;
   rationale?: string;
+  /** valor da meta antes do agente (ex.: "61%"), quando o contrato o declara */
+  baseline?: string;
 };
 
 function declaredMetricContracts(detail?: AgentDetail): DeclaredMetricContract[] {
@@ -91,7 +93,7 @@ function declaredMetricContracts(detail?: AgentDetail): DeclaredMetricContract[]
   return businessCase?.metricContracts?.filter((metric) => metric.label && metric.unit) ?? [];
 }
 
-function formatMetric(metric: KpiMetric, baseline: string): WorkforceContractMetric {
+function formatMetric(metric: KpiMetric, baseline: string, casos?: number): WorkforceContractMetric {
   const target = metric.target ?? "Meta não definida";
   const percentage = metric.unit === "%";
   const current = `${Number(metric.value.toFixed(2)).toLocaleString("pt-BR")}${percentage ? "%" : ` ${metric.unit}`}`;
@@ -105,6 +107,7 @@ function formatMetric(metric: KpiMetric, baseline: string): WorkforceContractMet
     status,
     source: "Muster telemetry",
     observed: true,
+    ...(casos && casos > 0 ? { casos } : {}),
   };
 }
 
@@ -145,11 +148,12 @@ export function adaptApiAgent(
         const observed = observedMetrics.find(
           (metric) => metric.label.trim().toLocaleLowerCase("pt-BR") === contract.label.trim().toLocaleLowerCase("pt-BR"),
         );
+        const baselineDaMeta = contract.baseline?.trim() || baseline;
         return observed && (agent.monthlyVolume ?? 0) > 0
-          ? formatMetric(observed, baseline)
+          ? formatMetric(observed, baselineDaMeta, agent.monthlyVolume)
           : {
               label: contract.label,
-              baseline,
+              baseline: baselineDaMeta,
               target: contract.target ?? "Meta não definida",
               current: "Sem prova",
               status: "watch" as const,
@@ -157,7 +161,7 @@ export function adaptApiAgent(
               observed: false,
             };
       })
-    : observedMetrics.map((metric) => formatMetric(metric, baseline));
+    : observedMetrics.map((metric) => formatMetric(metric, baseline, agent.monthlyVolume));
   const observedMetricCount = metrics.filter((metric) => metric.observed).length;
   const operationalHealth = clampScore(agent.healthScore);
   const measuredContractFulfillment = metricValue(observedMetrics, [
