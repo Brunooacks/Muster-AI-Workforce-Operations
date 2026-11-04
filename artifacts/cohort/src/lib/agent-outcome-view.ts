@@ -106,6 +106,16 @@ function cell<T>(label: string, n: Num<T>, fmt: (v: T) => string, hint?: (v: T) 
   return { label, text: "Indisponível", unavailable: true, hint: reasonText(n.reason) };
 }
 
+/** Fechamento do período: mês corrente aparece como "em andamento", não como falta. */
+export function snapshotCell(period: string, n: OutcomePayload["layer3"]["snapshot"]): Cell {
+  if (n.status !== "ok" && n.reason === "period_not_closed" && /^\d{4}-\d{2}$/.test(period)) {
+    const [y, mo] = period.split("-").map(Number) as [number, number];
+    const ny = mo === 12 ? y + 1 : y, nm = mo === 12 ? 1 : mo + 1;
+    return { label: "Fechamento", text: "Mês em andamento", unavailable: false, hint: `fecha em 01/${String(nm).padStart(2, "0")}/${ny}` };
+  }
+  return cell("Fechamento", n, (v) => v.inputsHash.slice(0, 12), (v) => `fechado em ${v.createdAt.slice(0, 10)}`);
+}
+
 export interface OutcomeView {
   headline: Cell;
   cost: Cell[];
@@ -156,7 +166,7 @@ export function outcomeView(o: OutcomePayload): OutcomeView {
       v.missing.length ? `falta: ${v.missing.map((m) => OWNER_LABEL[m] ?? m).join(", ")}` : "completa",
     ),
     cell("Credencial", o.layer3.credentialCoverage, (v) => plural(v.activeKeys, "chave ativa", "chaves ativas"), (v) => v.environments.join(", ")),
-    cell("Snapshot", o.layer3.snapshot, (v) => v.inputsHash.slice(0, 12), (v) => `fechado em ${v.createdAt.slice(0, 10)}`),
+    snapshotCell(o.period, o.layer3.snapshot),
   ];
   const signals: Cell[] = [
     cell("Adoção", o.signals.adoption, (v) => `${v.tasks} tarefas`, (v) => `${v.activeDays} dias ativos`),

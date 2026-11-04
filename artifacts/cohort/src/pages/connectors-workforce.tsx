@@ -579,7 +579,7 @@ export function ConnectorsScreen() {
                 <div className="mt-4 flex justify-end"><button type="button" onClick={continueAdmission} className="inline-flex items-center gap-2 rounded-xl bg-[var(--wo-accent)] px-4 py-2.5 text-xs font-medium text-[var(--wo-accent-ink)]">Continuar para admissão <ArrowRight className="h-4 w-4" /></button></div>
               </div>
             ) : (
-              <div className="grid min-h-72 place-items-center text-center"><div><Code2 className="mx-auto h-8 w-8 text-[var(--wo-muted)]" /><strong className="mt-3 block text-sm text-[var(--wo-text)]">Nenhum assessment executado</strong><p className="mt-1 max-w-sm text-[10px] text-[var(--wo-muted)]">O resultado mede prontidão técnica; performance só nasce de execuções reais.</p></div></div>
+              <div className="grid min-h-72 place-items-center text-center"><div><Code2 className="mx-auto h-8 w-8 text-[var(--wo-muted)]" /><strong className="mt-3 block text-sm text-[var(--wo-text)]">Cole a URL do repositório para analisar</strong><p className="mt-1 max-w-sm text-[10px] text-[var(--wo-muted)]">A análise mede prontidão técnica (código, propósito, telemetria e métricas); performance só nasce de execuções reais.</p></div></div>
             )}
           </div>
         </div>
