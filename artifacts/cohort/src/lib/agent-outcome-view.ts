@@ -73,7 +73,7 @@ export const REASON_LABEL: Record<string, string> = {
   too_few_tasks: "menos de 5 tarefas no período",
   no_trail_records: "nenhuma revisão ou aceite registrado na trilha",
   no_active_agent_key: "agente sem chave ativa",
-  period_not_closed: "período ainda não fechado em snapshot",
+  period_not_closed: "período ainda não fechado",
 };
 
 const OWNER_LABEL: Record<string, string> = {

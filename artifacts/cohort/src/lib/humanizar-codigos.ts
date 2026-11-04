@@ -11,6 +11,7 @@ const ROTULOS: Record<string, string> = {
   promote: "promover",
   observation: "em observação",
   regression: "em regressão",
+  warning: "em alerta",
   maintain: "manter",
   stable: "estável",
   regressing: "em queda",
@@ -27,5 +28,5 @@ export function rotuloCodigo(codigo: string | null | undefined, fallback = ""): 
 
 export function humanizarCodigos(texto: string | null | undefined): string {
   if (!texto) return "";
-  return texto.replace(/\b(continuous-governance|insufficient_data|not_measured|mentor|retire|promote|maintain|stable|regressing|improving|grounded|ungrounded|regression|task_id)\b/g, (m) => ROTULOS[m] ?? m);
+  return texto.replace(/\b(continuous-governance|insufficient_data|not_measured|mentor|retire|promote|maintain|stable|regressing|improving|grounded|ungrounded|regression|warning|task_id)\b/g, (m) => ROTULOS[m] ?? m);
 }
