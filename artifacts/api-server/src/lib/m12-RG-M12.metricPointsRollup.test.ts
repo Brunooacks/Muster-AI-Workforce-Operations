@@ -1,4 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// O teste é puro (tx falso); evita que o import do módulo exija DATABASE_URL no CI sem banco.
+vi.mock("@workspace/db", async () => ({ ...(await import("@workspace/db/schema")), db: {} }));
 import { dailyPointFromEvents, rollupAgentDay, utcDayStart } from "./metric-points-rollup";
 import type { AgentEventRow } from "./telemetry";
 
