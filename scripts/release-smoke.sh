@@ -86,4 +86,7 @@ done
 unknown="$(request /api/not-a-route 404)"
 grep -q '"error"' <<<"$unknown"
 
+protected="$(request /api/organizations 401)"
+grep -q '"error":"Unauthorized"' <<<"$protected"
+
 printf 'Release smoke aprovado em %s\n' "$base_url"
