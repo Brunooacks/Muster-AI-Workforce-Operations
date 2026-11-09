@@ -1,0 +1,493 @@
+{
+ "empresa": "Lumen Logística S.A.",
+ "periodo": "setembro/2026",
+ "decisoes": 3,
+ "economiaDesligarTriagem": 4200,
+ "projetos": [
+  "Pós-venda",
+  "Last mile",
+  "Pedido a faturamento",
+  "Contas a pagar",
+  "Service desk",
+  "Plataforma"
+ ],
+ "agentes": [
+  {
+   "id": "sofia",
+   "nome": "Sofia",
+   "funcao": "Atendimento ao cliente",
+   "dono": "Marina Duarte",
+   "time": "Atendimento",
+   "projeto": "Pós-venda",
+   "plataforma": "OpenAI Agents SDK",
+   "entregas": 1284,
+   "validadas": 1207,
+   "custoMes": 3740,
+   "custoPorResultado": 3.1,
+   "custoHumanoUnit": 11.4,
+   "qualidade": 94,
+   "baseline": 89,
+   "resgatePct": 9,
+   "quadrante": "Ampliar",
+   "status": "ok",
+   "atrito": 12,
+   "incidentes": 1,
+   "squad": "Pós-venda",
+   "bl": {
+    "papel": "Analista de atendimento",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 58,
+    "custoMes": 6820.799999999999,
+    "n": 598,
+    "fonte": "medido",
+    "origem": "Zendesk · histórico jan–jun/2026",
+    "congelado": "01/07/2026",
+    "versao": "v2"
+   }
+  },
+  {
+   "id": "atlas",
+   "nome": "Atlas",
+   "funcao": "Roteirização de entregas",
+   "dono": "Diego Ramos",
+   "time": "Operações",
+   "projeto": "Last mile",
+   "plataforma": "LangGraph",
+   "entregas": 2310,
+   "validadas": 2148,
+   "custoMes": 5120,
+   "custoPorResultado": 2.38,
+   "custoHumanoUnit": 7.8,
+   "qualidade": 92,
+   "baseline": 86,
+   "resgatePct": 6,
+   "quadrante": "Ampliar",
+   "status": "ok",
+   "atrito": 14,
+   "incidentes": 0,
+   "squad": "Last mile",
+   "bl": {
+    "papel": "Analista de roteirização",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 52,
+    "custoMes": 6115.2,
+    "n": 784,
+    "fonte": "medido",
+    "origem": "Jira · OPS jan–jun/2026",
+    "congelado": "01/07/2026",
+    "versao": "v2"
+   }
+  },
+  {
+   "id": "fiscal",
+   "nome": "Agente Fiscal",
+   "funcao": "Emissão de NF-e",
+   "dono": "Carla Mendes",
+   "time": "Financeiro",
+   "projeto": "Pedido a faturamento",
+   "plataforma": "AWS Bedrock Agents",
+   "entregas": 1960,
+   "validadas": 1412,
+   "custoMes": 6890,
+   "custoPorResultado": 4.88,
+   "custoHumanoUnit": 6.2,
+   "qualidade": 78,
+   "baseline": 91,
+   "resgatePct": 27,
+   "quadrante": "Corrigir",
+   "status": "atenção",
+   "atrito": 53,
+   "incidentes": 6,
+   "squad": "Faturamento",
+   "bl": {
+    "papel": "Analista fiscal",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 71,
+    "custoMes": 8349.6,
+    "n": 1347,
+    "fonte": "medido",
+    "origem": "Jira · FIN jan–jun/2026",
+    "congelado": "01/07/2026",
+    "versao": "v2"
+   }
+  },
+  {
+   "id": "cobranca",
+   "nome": "Cobrança",
+   "funcao": "Régua de cobrança",
+   "dono": "Carla Mendes",
+   "time": "Financeiro",
+   "projeto": "Pedido a faturamento",
+   "plataforma": "CrewAI",
+   "entregas": 1388,
+   "validadas": 1260,
+   "custoMes": 2310,
+   "custoPorResultado": 1.83,
+   "custoHumanoUnit": 5.9,
+   "qualidade": 90,
+   "baseline": 88,
+   "resgatePct": 8,
+   "quadrante": "Observar",
+   "status": "ok",
+   "atrito": 11,
+   "incidentes": 1,
+   "squad": "Faturamento",
+   "bl": {
+    "papel": "Analista de cobrança",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 49,
+    "custoMes": 5762.4,
+    "n": 977,
+    "fonte": "medido",
+    "origem": "ERP · régua 2025",
+    "congelado": "01/07/2026",
+    "versao": "v2"
+   }
+  },
+  {
+   "id": "cadastro",
+   "nome": "Cadastro",
+   "funcao": "Validação de cadastro",
+   "dono": "Paulo Siqueira",
+   "time": "Comercial",
+   "projeto": "Pedido a faturamento",
+   "plataforma": "n8n",
+   "entregas": 2040,
+   "validadas": 1897,
+   "custoMes": 1480,
+   "custoPorResultado": 0.78,
+   "custoHumanoUnit": 3.1,
+   "qualidade": 93,
+   "baseline": 90,
+   "resgatePct": 5,
+   "quadrante": "Ampliar",
+   "status": "ok",
+   "atrito": 10,
+   "incidentes": 0,
+   "squad": "Faturamento",
+   "bl": {
+    "papel": "Assistente de cadastro",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 41,
+    "custoMes": 4821.599999999999,
+    "n": 1555,
+    "fonte": "medido",
+    "origem": "Linear · CAD jan–jun/2026",
+    "congelado": "01/07/2026",
+    "versao": "v2"
+   }
+  },
+  {
+   "id": "triagem",
+   "nome": "Triagem-NF",
+   "funcao": "Triagem de notas recebidas",
+   "dono": "Paulo Siqueira",
+   "time": "Financeiro",
+   "projeto": "Contas a pagar",
+   "plataforma": "Copilot Studio",
+   "entregas": 640,
+   "validadas": 371,
+   "custoMes": 4200,
+   "custoPorResultado": 11.32,
+   "custoHumanoUnit": 4.8,
+   "qualidade": 71,
+   "baseline": 88,
+   "resgatePct": 38,
+   "quadrante": "Desligar",
+   "status": "crítico",
+   "atrito": 24,
+   "incidentes": 9,
+   "squad": "Contas a pagar",
+   "bl": {
+    "papel": "Assistente de contas a pagar",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 44,
+    "custoMes": 5174.4,
+    "n": 1078,
+    "fonte": "declarado",
+    "origem": "Declarado por Paulo Siqueira em 02/07",
+    "congelado": "01/07/2026",
+    "versao": "v1"
+   }
+  },
+  {
+   "id": "helena",
+   "nome": "Helena",
+   "funcao": "Suporte interno de TI",
+   "dono": "Rafael Carvalho",
+   "time": "TI",
+   "projeto": "Service desk",
+   "plataforma": "Zendesk AI",
+   "entregas": 910,
+   "validadas": 802,
+   "custoMes": 1650,
+   "custoPorResultado": 2.06,
+   "custoHumanoUnit": 9.2,
+   "qualidade": 88,
+   "baseline": 85,
+   "resgatePct": 12,
+   "quadrante": "Observar",
+   "status": "ok",
+   "atrito": 11,
+   "incidentes": 2,
+   "squad": "Plataforma",
+   "bl": {
+    "papel": "Analista de service desk",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 55,
+    "custoMes": 6468,
+    "n": 703,
+    "fonte": "medido",
+    "origem": "Zendesk · histórico 2025",
+    "congelado": "01/07/2026",
+    "versao": "v2"
+   }
+  },
+  {
+   "id": "code",
+   "nome": "Forja",
+   "funcao": "Agente de código (PRs)",
+   "dono": "Rafael Carvalho",
+   "time": "TI",
+   "projeto": "Plataforma",
+   "plataforma": "Claude Code + GitHub",
+   "entregas": 146,
+   "validadas": 121,
+   "custoMes": 980,
+   "custoPorResultado": 8.1,
+   "custoHumanoUnit": 62,
+   "qualidade": 83,
+   "baseline": 80,
+   "resgatePct": 17,
+   "quadrante": "Corrigir",
+   "status": "atenção",
+   "atrito": 2,
+   "incidentes": 3,
+   "squad": "Plataforma",
+   "bl": {
+    "papel": "Dev pleno",
+    "horas": 168,
+    "fator": 0.7,
+    "horasProd": 117.6,
+    "custoHora": 118,
+    "custoMes": 13876.8,
+    "n": 224,
+    "fonte": "declarado",
+    "origem": "Declarado por Rafael Carvalho em 10/07",
+    "congelado": "01/07/2026",
+    "versao": "v1"
+   }
+  }
+ ],
+ "cov": 94.7,
+ "snaps": [
+  {
+   "mes": "jul",
+   "validadas": 7036,
+   "custo": 22678,
+   "cpr": 3.2231381466742466,
+   "humano": 7.531139852188742,
+   "incidentes": 28,
+   "atrito": 178,
+   "cobertura": 58,
+   "parcial": true,
+   "hash": "a91f…3c0e",
+   "fechado": "01/08",
+   "rows": [
+    {
+     "id": "sofia",
+     "v": 941,
+     "c": 3216,
+     "inc": 1
+    },
+    {
+     "id": "atlas",
+     "v": 1632,
+     "c": 4403,
+     "inc": 0
+    },
+    {
+     "id": "fiscal",
+     "v": 1045,
+     "c": 5925,
+     "inc": 8
+    },
+    {
+     "id": "cobranca",
+     "v": 983,
+     "c": 1987,
+     "inc": 1
+    },
+    {
+     "id": "cadastro",
+     "v": 1442,
+     "c": 1273,
+     "inc": 0
+    },
+    {
+     "id": "triagem",
+     "v": 275,
+     "c": 3612,
+     "inc": 11
+    },
+    {
+     "id": "helena",
+     "v": 626,
+     "c": 1419,
+     "inc": 2
+    },
+    {
+     "id": "code",
+     "v": 92,
+     "c": 843,
+     "inc": 5
+    }
+   ]
+  },
+  {
+   "mes": "ago",
+   "validadas": 8140,
+   "custo": 25053,
+   "cpr": 3.077764127764128,
+   "humano": 7.525712530712531,
+   "incidentes": 25,
+   "atrito": 159,
+   "cobertura": 77,
+   "parcial": true,
+   "hash": "5d27…b8a1",
+   "fechado": "01/09",
+   "rows": [
+    {
+     "id": "sofia",
+     "v": 1086,
+     "c": 3553,
+     "inc": 1
+    },
+    {
+     "id": "atlas",
+     "v": 1890,
+     "c": 4864,
+     "inc": 0
+    },
+    {
+     "id": "fiscal",
+     "v": 1214,
+     "c": 6546,
+     "inc": 7
+    },
+    {
+     "id": "cobranca",
+     "v": 1134,
+     "c": 2195,
+     "inc": 1
+    },
+    {
+     "id": "cadastro",
+     "v": 1669,
+     "c": 1406,
+     "inc": 0
+    },
+    {
+     "id": "triagem",
+     "v": 319,
+     "c": 3990,
+     "inc": 10
+    },
+    {
+     "id": "helena",
+     "v": 722,
+     "c": 1568,
+     "inc": 2
+    },
+    {
+     "id": "code",
+     "v": 106,
+     "c": 931,
+     "inc": 4
+    }
+   ]
+  },
+  {
+   "mes": "set",
+   "validadas": 9218,
+   "custo": 26370,
+   "cpr": 2.8607073117812973,
+   "humano": 7.511878932523324,
+   "incidentes": 22,
+   "atrito": 137,
+   "cobertura": 94.7,
+   "parcial": false,
+   "hash": "e04c…71d9",
+   "fechado": "01/10",
+   "rows": [
+    {
+     "id": "sofia",
+     "v": 1207,
+     "c": 3740,
+     "inc": 1
+    },
+    {
+     "id": "atlas",
+     "v": 2148,
+     "c": 5120,
+     "inc": 0
+    },
+    {
+     "id": "fiscal",
+     "v": 1412,
+     "c": 6890,
+     "inc": 6
+    },
+    {
+     "id": "cobranca",
+     "v": 1260,
+     "c": 2310,
+     "inc": 1
+    },
+    {
+     "id": "cadastro",
+     "v": 1897,
+     "c": 1480,
+     "inc": 0
+    },
+    {
+     "id": "triagem",
+     "v": 371,
+     "c": 4200,
+     "inc": 9
+    },
+    {
+     "id": "helena",
+     "v": 802,
+     "c": 1650,
+     "inc": 2
+    },
+    {
+     "id": "code",
+     "v": 121,
+     "c": 980,
+     "inc": 3
+    }
+   ]
+  }
+ ],
+ "jornada": {
+  "perdaFiscal": 186,
+  "perdaTotal": 290,
+  "perdaFiscalPct": 64
+ }
+}

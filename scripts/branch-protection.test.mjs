@@ -34,13 +34,14 @@ cat "$GH_RESPONSE"
 }
 
 describe("branch-protection.sh", () => {
-  it("gera o payload padrão com os checks atuais e a proteção estrita", () => {
+  it("gera o payload padrão exigindo só o status do Woodpecker", () => {
     const payload = printedPayload();
 
     expect(payload.required_status_checks).toEqual({
       strict: true,
-      contexts: ["typecheck · test · build", "actionlint"],
+      contexts: ["ci/woodpecker"],
     });
+    expect(payload.required_status_checks.contexts).not.toContain("actionlint");
     expect(payload.enforce_admins).toBe(true);
     expect(payload.required_pull_request_reviews.required_approving_review_count).toBe(0);
     expect(payload.required_pull_request_reviews).not.toHaveProperty("dismissal_restrictions");

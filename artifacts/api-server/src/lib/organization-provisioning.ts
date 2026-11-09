@@ -1,3 +1,4 @@
+import { personalExternalId, personalSlug } from "./account-scope";
 import { clerkClient } from "@clerk/express";
 import { db, organizations, organizationMembers } from "@workspace/db";
 import { and, eq, inArray } from "drizzle-orm";
@@ -190,4 +191,48 @@ export async function ensureOrganizationMember(
     name: [publicUser.firstName, publicUser.lastName].filter(Boolean).join(" "),
     email: publicUser.identifier || null,
   };
+}
+
+/**
+ * Conta pessoal do usuário: tenant próprio (kind = "personal"), com o usuário
+ * como dono. Idempotente. Nunca recebe o seed de catálogo da empresa.
+ */
+export async function provisionPersonalAccount(
+  userId: string,
+): Promise<ProvisionedOrganization> {
+  const externalId = personalExternalId(userId);
+  return db.transaction(async (tx) => {
+    const [organization] = await tx
+      .insert(organizations)
+      .values({
+        name: "Conta pessoal",
+        slug: personalSlug(userId),
+        externalId,
+        kind: "personal",
+      })
+      .onConflictDoUpdate({
+        target: organizations.externalId,
+        set: { updatedAt: new Date() },
+      })
+      .returning({
+        id: organizations.id,
+        externalId: organizations.externalId,
+        name: organizations.name,
+        slug: organizations.slug,
+      });
+    if (!organization?.externalId) {
+      throw new Error("Personal account provisioning did not return an external id.");
+    }
+    await tx
+      .insert(organizationMembers)
+      .values({ orgId: organization.id, userId, role: "owner" })
+      .onConflictDoNothing();
+    return {
+      id: organization.id,
+      externalId: organization.externalId,
+      name: organization.name,
+      slug: organization.slug,
+      role: "owner",
+    };
+  });
 }

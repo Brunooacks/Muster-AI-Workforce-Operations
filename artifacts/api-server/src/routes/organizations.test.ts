@@ -151,6 +151,53 @@ describe("organization lifecycle routes", () => {
   });
 });
 
+describe("conta pessoal", () => {
+  it("sem organização ativa, provisiona e usa a conta pessoal do próprio usuário", async () => {
+    const provisionPersonalAccount = vi.fn().mockResolvedValue({
+      id: "local_personal",
+      externalId: "personal:user_1",
+      name: "Conta pessoal",
+      slug: "pessoal-user-1",
+      role: "owner",
+    });
+    const provisionOrganization = vi.fn();
+    const handlers = createOrganizationRouteHandlers({
+      requireAuth: authenticatedAs("user_1"),
+      readAuth: () => ({ userId: "user_1", activeOrganizationId: null }),
+      listMemberships: vi.fn().mockResolvedValue([]),
+      listLocalOrganizations: vi.fn(),
+      provisionOrganization,
+      provisionPersonalAccount,
+    });
+    const request = { userId: "user_1" } as Request;
+    const response = responseMock();
+    await handlers.syncActive(request, response, vi.fn());
+    expect(provisionPersonalAccount).toHaveBeenCalledWith("user_1");
+    expect(provisionOrganization).not.toHaveBeenCalled();
+    expect(request.orgId).toBe("local_personal");
+  });
+
+  it("com organização ativa, nunca usa a conta pessoal", async () => {
+    const provisionPersonalAccount = vi.fn();
+    const handlers = createOrganizationRouteHandlers({
+      requireAuth: authenticatedAs("user_1"),
+      readAuth: () => ({ userId: "user_1", activeOrganizationId: "org_x" }),
+      listMemberships: vi.fn().mockResolvedValue([
+        { role: "org:member", organization: { id: "org_x", name: "X", slug: "x" } },
+      ]),
+      listLocalOrganizations: vi.fn(),
+      provisionOrganization: vi.fn().mockResolvedValue({
+        id: "local_x", externalId: "org_x", name: "X", slug: "x", role: "member",
+      }),
+      provisionPersonalAccount,
+    });
+    const request = { userId: "user_1" } as Request;
+    await handlers.syncActive(request, responseMock(), vi.fn());
+    expect(provisionPersonalAccount).not.toHaveBeenCalled();
+    expect(request.orgId).toBe("local_x");
+  });
+});
+
 function authenticatedAs(userId: string) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     req.userId = userId;

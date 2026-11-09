@@ -155,6 +155,48 @@
       "when": 1791042431700,
       "tag": "0021_premium_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792962127056,
+      "tag": "0022_conta_pessoal",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792962187056,
+      "tag": "0023_projects_envs",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792962247056,
+      "tag": "0024_agent_events_outcome",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792962307056,
+      "tag": "0025_agent_contracts",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792962367056,
+      "tag": "0026_rates_offinvoice",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792962427056,
+      "tag": "0027_outcome_snapshots",
+      "breakpoints": true
     }
   ]
 }

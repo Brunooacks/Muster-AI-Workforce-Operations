@@ -60,10 +60,18 @@ test("parâmetro de protótipo aceita somente telas declaradas", () => {
 });
 
 test("fluxos especializados mantêm contexto no item principal", () => {
-  assert.equal(navigationScreenForWorkforceScreen("admission"), "connectors");
+  assert.equal(navigationScreenForWorkforceScreen("admission"), "admission");
   assert.equal(navigationScreenForWorkforceScreen("connection"), "connectors");
   assert.equal(navigationScreenForWorkforceScreen("alerts"), "today");
   assert.equal(navigationScreenForWorkforceScreen("profile"), "settings");
+});
+
+test("Pendências é a casa das decisões e as rotas antigas seguem vivas", () => {
+  assert.equal(routeForWorkforceScreen("alerts"), "/pendencias");
+  assert.deepEqual(resolveWorkforceRoute("/pendencias"), { screen: "alerts" });
+  assert.deepEqual(resolveWorkforceRoute("/alertas"), { screen: "alerts" });
+  assert.equal(isKnownAppPath("/pendencias"), true);
+  assert.equal(isKnownAppPath("/alertas"), true);
 });
 
 test("Admin Console é uma rota corporativa de primeira classe", () => {

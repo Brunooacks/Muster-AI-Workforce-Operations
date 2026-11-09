@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "@clerk/backend": "^3.17.1",
+    "@clerk/localizations": "^4.24.1",
     "@clerk/testing": "^2.2.33",
     "@hookform/resolvers": "^3.10.0",
     "@playwright/test": "^1.62.1",

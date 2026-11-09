@@ -14,6 +14,7 @@ import {
   listClerkOrganizationMemberships,
   listLocalOrganizationsByExternalIds,
   provisionClerkOrganization,
+  provisionPersonalAccount,
   type LocalOrganizationSnapshot,
   type ProvisionedOrganization,
 } from "../lib/organization-provisioning";
@@ -37,6 +38,8 @@ export interface OrganizationRouteDependencies {
     userId: string,
     membership: ClerkOrganizationMembershipSnapshot,
   ) => Promise<ProvisionedOrganization>;
+  /** Conta pessoal: usada quando não há organização ativa na sessão. */
+  provisionPersonalAccount?: (userId: string) => Promise<ProvisionedOrganization>;
 }
 
 export interface OrganizationRouteHandlers {
@@ -50,6 +53,7 @@ const defaultDependencies: OrganizationRouteDependencies = {
   listMemberships: listClerkOrganizationMemberships,
   listLocalOrganizations: listLocalOrganizationsByExternalIds,
   provisionOrganization: provisionClerkOrganization,
+  provisionPersonalAccount,
 };
 
 export function createOrganizationsRouter(
@@ -80,7 +84,7 @@ export function createOrganizationRouteHandlers(
         return;
       }
 
-      const memberships = await dependencies.listMemberships(userId);
+      const memberships = await listMembershipsOrEmpty(dependencies, userId);
       const localOrganizations = await dependencies.listLocalOrganizations(
         memberships.map((membership) => membership.organization.id),
       );
@@ -121,6 +125,12 @@ export function createOrganizationRouteHandlers(
         res.status(401).json({ error: "Unauthorized" });
         return;
       }
+      if (!auth.activeOrganizationId && dependencies.provisionPersonalAccount) {
+        const personal = await dependencies.provisionPersonalAccount(userId);
+        req.orgId = personal.id;
+        res.json({ organization: { ...personal, kind: "personal" } });
+        return;
+      }
       if (!auth.activeOrganizationId) {
         res.status(409).json({
           error: "Selecione uma organização ativa no Clerk antes de continuar.",
@@ -150,6 +160,30 @@ export function createOrganizationRouteHandlers(
       res.json({ organization });
     },
   };
+}
+
+/**
+ * RG-M13: com Organizations desligado na instância Clerk (Muster prod), a API
+ * do Clerk responde 403 e o handler repassava 403 para usuário novo. Sem
+ * organizações no Clerk, a lista é vazia (o usuário opera na conta pessoal).
+ */
+export function isClerkOrganizationsDisabledError(error: unknown): boolean {
+  const status =
+    (error as { status?: number })?.status ??
+    (error as { statusCode?: number })?.statusCode;
+  return status === 403 || status === 404;
+}
+
+async function listMembershipsOrEmpty(
+  dependencies: OrganizationRouteDependencies,
+  userId: string,
+): Promise<ClerkOrganizationMembershipSnapshot[]> {
+  try {
+    return await dependencies.listMemberships(userId);
+  } catch (error) {
+    if (isClerkOrganizationsDisabledError(error)) return [];
+    throw error;
+  }
 }
 
 function readClerkAuth(req: Request): AuthenticatedOrganizationContext {

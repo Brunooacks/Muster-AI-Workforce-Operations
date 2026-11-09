@@ -581,7 +581,7 @@ export default function MetricasPage({ embedded = false }: { embedded?: boolean 
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-chart-2/30 bg-chart-2/[0.05] p-4">
-                    <AlertCircle className="h-5 w-5 shrink-0 text-chart-2" />
+                    <AlertCircle className="h-5 w-5 shrink-0 text-chart-2-text" />
                     <div>
                       <p className="font-serif text-2xl font-medium leading-none text-foreground">{readinessSummary.review}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{t.reviewSummary}</p>
@@ -647,7 +647,7 @@ export default function MetricasPage({ embedded = false }: { embedded?: boolean 
                                       type="button"
                                       aria-label={t.deleteAria}
                                       onClick={() => setConfirmDelete(m)}
-                                      className="rounded-md p-1 text-muted-foreground/60 hover:bg-muted hover:text-chart-4"
+                                      className="rounded-md p-1 text-muted-foreground/60 hover:bg-muted hover:text-chart-4-text"
                                     >
                                       <Trash2 className="h-3 w-3" />
                                     </button>
@@ -661,7 +661,7 @@ export default function MetricasPage({ embedded = false }: { embedded?: boolean 
                                 <span className="ml-auto font-mono text-xs font-medium text-foreground">{m.target || "—"}{m.unit ? ` · ${m.unit}` : ""}</span>
                               </div>
                               {readiness.missing.length > 0 && (
-                                <p className="mt-2 text-[11px] text-chart-2">{t.missingLabel}: {readiness.missing.join(", ")}</p>
+                                <p className="mt-2 text-[11px] text-chart-2-text">{t.missingLabel}: {readiness.missing.join(", ")}</p>
                               )}
                               <details className="mt-2 rounded-md border border-card-border/60 bg-background/30 px-2.5 py-2 open:bg-secondary/20">
                                 <summary className="cursor-pointer list-none text-[11px] font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

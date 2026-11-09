@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "kind" text DEFAULT 'company' NOT NULL;

@@ -4,17 +4,11 @@ Este procedimento prepara a proteção de `main`, mas a aplicação no GitHub é
 
 ## Checks obrigatórios
 
-O padrão atual do script é:
+O CI saiu do GitHub Actions (E0). O padrão do script exige um único status:
 
-- `typecheck · test · build`
-- `actionlint`
+- `ci/woodpecker` (pipeline `.woodpecker/ci.yml`, que roda o equivalente a `make ci`; veja `docs/CI.md`)
 
-Inclua os checks abaixo somente depois que os respectivos PRs estiverem em `main` e verdes:
-
-- `PostgreSQL integration` (PR #23)
-- `docker build · release smoke` (PR #19)
-- `e2e autenticado · Clerk` (PR #24)
-- E2E público (MUS-153)
+Os checks antigos do Actions (`typecheck · test · build`, `actionlint`) não existem mais. Integração com PostgreSQL, release smoke e E2E entram como steps do Woodpecker e continuam reportados sob `ci/woodpecker`, sem novos contextos.
 
 ## Aplicação manual
 
@@ -24,19 +18,13 @@ Primeiro, revise o payload e o comando sem alterar o GitHub:
 scripts/branch-protection.sh --print
 ```
 
-Com todos os checks futuros já disponíveis, a lista fica explícita:
-
-```bash
-scripts/branch-protection.sh --print --checks 'typecheck · test · build,actionlint,PostgreSQL integration,docker build · release smoke,e2e autenticado · Clerk,E2E público'
-```
-
 Depois da revisão, o Bruno deve rodar exatamente o comando abaixo, digitar `APLICAR` e confirmar o retorno do `gh`:
 
 ```bash
 scripts/branch-protection.sh --apply
 ```
 
-Para aplicar a lista completa, use o mesmo argumento `--checks` do comando de revisão. O modo `--apply` recusa execução sem terminal interativo e não chama o GitHub se a confirmação não for exatamente `APLICAR`.
+Aplique somente depois que `ci/woodpecker` tiver aparecido verde em um PR recente; caso contrário, nenhum PR consegue ser mesclado. O modo `--apply` recusa execução sem terminal interativo e não chama o GitHub se a confirmação não for exatamente `APLICAR`.
 
 O padrão é `REQUIRED_APPROVALS=0`: o PR continua obrigatório, mas não exige uma aprovação. Esse é o ajuste necessário enquanto o repositório pertence à conta `Brunooacks`, possui um único colaborador e os PRs são abertos pela própria conta do Bruno — o autor não pode aprovar o próprio PR. O trade-off é que a proteção bloqueia push direto e exige CI verde, mas não cria revisão por pares. Quando houver um colaborador que possa revisar, eleve o requisito, por exemplo:
 

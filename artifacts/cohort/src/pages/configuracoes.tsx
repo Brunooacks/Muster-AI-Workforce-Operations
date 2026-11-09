@@ -1,6 +1,7 @@
+import { useNomeOrganizacaoAtiva } from "@/components/tenant-bootstrap";
 import { useState } from "react";
 import { Link } from "wouter";
-import { useClerk } from "@clerk/react";
+import { useAcoesClerkSeguras } from "@/lib/clerk-safe";
 import {
   Building2,
   Plug,
@@ -8,12 +9,15 @@ import {
   Bell,
   ShieldCheck,
   CreditCard,
+  Palette,
   Webhook,
+  Calculator,
   ArrowRight,
   Check,
 } from "lucide-react";
 import { OperationalPageFrame } from "@/components/layout";
 import { AccessControlPanel } from "@/components/access-control/access-control-panel";
+import { RatesSettings } from "@/components/rates-settings";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -31,7 +35,9 @@ type SectionId =
   | "notificacoes"
   | "seguranca"
   | "faturamento"
-  | "webhooks";
+  | "custos"
+  | "webhooks"
+  | "aparencia";
 
 const SECTIONS: { id: SectionId; icon: typeof Building2 }[] = [
   { id: "workspace", icon: Building2 },
@@ -40,7 +46,9 @@ const SECTIONS: { id: SectionId; icon: typeof Building2 }[] = [
   { id: "notificacoes", icon: Bell },
   { id: "seguranca", icon: ShieldCheck },
   { id: "faturamento", icon: CreditCard },
+  { id: "custos", icon: Calculator },
   { id: "webhooks", icon: Webhook },
+  { id: "aparencia", icon: Palette },
 ];
 
 const NOTIFICATION_PREF_IDS = [
@@ -67,17 +75,20 @@ const PT = {
     notificacoes: "Notificações",
     seguranca: "Segurança",
     faturamento: "Faturamento",
+    custos: "Custo-hora e custos",
     webhooks: "API · Webhooks",
+    aparencia: "Aparência",
   } as Record<SectionId, string>,
   wsTitle: "Workspace",
   wsDesc: "Identidade e configurações gerais do espaço de trabalho da sua frota.",
   wsName: "Nome do workspace",
   wsNameDesc: "Visível para toda a equipe",
+  wsNameFallback: "Sua organização",
   wsTz: "Fuso horário",
   wsTzDesc: "Usado em relatórios e janelas de avaliação",
   wsFleetModel: "Modelo de frota",
   wsFleetModelDesc: "Frota compartilhada por toda a organização",
-  orgWide: "Org-wide",
+  orgWide: "Toda a organização",
   intTitle: "Integrações",
   intDesc: "Plataformas conectadas para descobrir e sincronizar agentes da frota.",
   connectorsEyebrow: "Conectores",
@@ -105,7 +116,7 @@ const PT = {
       desc: "Promover, Mentorar ou Aposentar sugeridos pela análise",
     },
     probation: {
-      label: "Fim de período de probation",
+      label: "Fim de período de experiência",
       desc: "Quando um agente conclui a janela de observação",
     },
     digest: {
@@ -133,7 +144,7 @@ const PT = {
     {
       name: "Início",
       price: "Grátis",
-      features: ["Até 5 agentes", "Análise de 5 camadas", "1 conector"],
+      features: ["Até 5 agentes", "Análise de 3 camadas", "1 conector"],
       current: false,
     },
     {
@@ -160,6 +171,9 @@ const PT = {
   events: "Eventos",
   apiKey: "Chave de API",
   genKey: "Gerar nova chave",
+  apTitle: "Aparência",
+  apDesc: "Como o Muster aparece para você. O tema vale para todas as telas desta pessoa.",
+  apHint: "Guardado neste navegador. Não muda o que as outras pessoas veem.",
 };
 
 type Dict = typeof PT;
@@ -179,12 +193,15 @@ const L: Record<Lang, Dict> = {
       notificacoes: "Notifications",
       seguranca: "Security",
       faturamento: "Billing",
+      custos: "Hourly and off-invoice costs",
       webhooks: "API · Webhooks",
+      aparencia: "Appearance",
     },
     wsTitle: "Workspace",
     wsDesc: "Identity and general settings of your fleet's workspace.",
     wsName: "Workspace name",
     wsNameDesc: "Visible to the whole team",
+    wsNameFallback: "Your organization",
     wsTz: "Time zone",
     wsTzDesc: "Used in reports and evaluation windows",
     wsFleetModel: "Fleet model",
@@ -272,6 +289,9 @@ const L: Record<Lang, Dict> = {
     events: "Events",
     apiKey: "API key",
     genKey: "Generate new key",
+    apTitle: "Appearance",
+    apDesc: "How Muster looks to you. The theme applies to every screen for this person.",
+    apHint: "Stored in this browser. It does not change what other people see.",
   },
   es: {
     bcAccount: "Cuenta",
@@ -286,12 +306,15 @@ const L: Record<Lang, Dict> = {
       notificacoes: "Notificaciones",
       seguranca: "Seguridad",
       faturamento: "Facturación",
+      custos: "Costo-hora y costos",
       webhooks: "API · Webhooks",
+      aparencia: "Apariencia",
     },
     wsTitle: "Workspace",
     wsDesc: "Identidad y configuraciones generales del espacio de trabajo de tu flota.",
     wsName: "Nombre del workspace",
     wsNameDesc: "Visible para todo el equipo",
+    wsNameFallback: "Tu organización",
     wsTz: "Zona horaria",
     wsTzDesc: "Usada en reportes y ventanas de evaluación",
     wsFleetModel: "Modelo de flota",
@@ -380,6 +403,9 @@ const L: Record<Lang, Dict> = {
     events: "Eventos",
     apiKey: "Clave de API",
     genKey: "Generar nueva clave",
+    apTitle: "Apariencia",
+    apDesc: "Cómo se ve Muster para ti. El tema se aplica a todas las pantallas de esta persona.",
+    apHint: "Guardado en este navegador. No cambia lo que ven las demás personas.",
   },
 };
 
@@ -411,6 +437,7 @@ function SectionShell({
 function WorkspaceSection() {
   const { lang } = useLang();
   const t = L[lang];
+  const nomeOrg = useNomeOrganizacaoAtiva();
   return (
     <SectionShell
       title={t.wsTitle}
@@ -422,7 +449,7 @@ function WorkspaceSection() {
             <div className="text-sm font-medium text-foreground">{t.wsName}</div>
             <div className="text-xs text-muted-foreground">{t.wsNameDesc}</div>
           </div>
-          <span className="font-mono text-sm text-foreground">Muster</span>
+          <span className="font-mono text-sm text-foreground">{nomeOrg ?? t.wsNameFallback}</span>
         </div>
         <div className="flex items-center justify-between gap-4 px-5 py-4">
           <div>
@@ -438,7 +465,7 @@ function WorkspaceSection() {
               {t.wsFleetModelDesc}
             </div>
           </div>
-          <Pill tone="sage">{t.orgWide}</Pill>
+          <span className="shrink-0 whitespace-nowrap"><Pill tone="sage">{t.orgWide}</Pill></span>
         </div>
       </Card>
     </SectionShell>
@@ -518,7 +545,7 @@ function IntegrationsSection() {
 }
 
 function TeamSection() {
-  const { openOrganizationProfile } = useClerk();
+  const { openOrganizationProfile } = useAcoesClerkSeguras();
   const { lang } = useLang();
   const t = L[lang];
   return (
@@ -561,7 +588,7 @@ function NotificationsSection() {
 }
 
 function SecuritySection() {
-  const { openUserProfile } = useClerk();
+  const { openUserProfile } = useAcoesClerkSeguras();
   const { lang } = useLang();
   const t = L[lang];
   return (
@@ -702,17 +729,64 @@ function WebhooksSection() {
   );
 }
 
-const SECTION_CONTENT: Record<SectionId, React.FC> = {
+type PaletaId = "mineral" | "graphite" | "dracula" | "mocha";
+
+type AparenciaProps = { palette: PaletaId; setPalette: (palette: PaletaId) => void };
+
+const DIRECOES_VISUAIS: Array<{ id: PaletaId; cor: string; nome: string }> = [
+  { id: "mineral", cor: "#1d1d1f", nome: "Claro (home)" },
+  { id: "graphite", cor: "#55c2ff", nome: "Graphite" },
+  { id: "dracula", cor: "#bd93f9", nome: "Dracula" },
+  { id: "mocha", cor: "#89b4fa", nome: "Mocha" },
+];
+
+function AparenciaSection({ palette, setPalette }: AparenciaProps) {
+  const { lang } = useLang();
+  const t = L[lang];
+  return (
+    <SectionShell title={t.apTitle} description={t.apDesc}>
+      <Card className="divide-y divide-card-border">
+        <div className="px-5 py-5">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Direção visual">
+            {DIRECOES_VISUAIS.map((opcao) => (
+              <button
+                key={opcao.id}
+                type="button"
+                aria-label={`Tema ${opcao.nome}`}
+                aria-pressed={palette === opcao.id}
+                onClick={() => setPalette(opcao.id)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                  palette === opcao.id
+                    ? "border-primary bg-secondary font-medium text-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span className="h-3 w-3 rounded-full border border-white/20" style={{ background: opcao.cor }} />
+                {opcao.nome}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">{t.apHint}</p>
+        </div>
+      </Card>
+    </SectionShell>
+  );
+}
+
+const SECTION_CONTENT: Record<SectionId, React.FC<AparenciaProps>> = {
   workspace: WorkspaceSection,
+  aparencia: AparenciaSection,
   integracoes: IntegrationsSection,
   equipe: TeamSection,
   notificacoes: NotificationsSection,
   seguranca: SecuritySection,
   faturamento: BillingSection,
+  custos: RatesSettings,
   webhooks: WebhooksSection,
 };
 
-export default function SettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
+export default function SettingsPage({ embedded = false, palette, setPalette }: { embedded?: boolean; palette: PaletaId; setPalette: (palette: PaletaId) => void }) {
   const [section, setSection] = useState<SectionId>(readInitialSection);
   const { lang } = useLang();
   const t = L[lang];
@@ -754,7 +828,7 @@ export default function SettingsPage({ embedded = false }: { embedded?: boolean 
           </nav>
 
           <div className="min-w-0 flex-1">
-            <Content />
+            <Content palette={palette} setPalette={setPalette} />
           </div>
         </div>
       </div>

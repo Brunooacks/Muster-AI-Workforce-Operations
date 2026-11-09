@@ -1,0 +1,58 @@
+# Muster · CI no Woodpecker (substitui .github/workflows/ci.yml).
+# Os dois steps juntos equivalem a `make ci`: o segredo da lista de bloqueio
+# fica exposto só ao step name-gate (D-E0-3) e é mascarado no log.
+# O status no GitHub sai como `ci/woodpecker` com
+# WOODPECKER_STATUS_CONTEXT_FORMAT="{{ .context }}" no servidor (docs/CI.md).
+
+when:
+  - event: pull_request
+    branch: main
+  - event: push
+    branch: main
+
+steps:
+  - name: name-gate
+    image: node:24-bookworm
+    environment:
+      MUSTER_BLOCKLIST:
+        from_secret: muster_blocklist
+    commands:
+      - make name-gate
+
+  - name: ci
+    image: node:24-bookworm
+    depends_on: [name-gate]
+    environment:
+      CI: "true"
+      npm_config_store_dir: /pnpm-store
+    # Cache do store do pnpm em volume do agent (repo precisa ser "trusted").
+    volumes:
+      - muster-pnpm-store:/pnpm-store
+    commands:
+      - corepack enable
+      - corepack prepare pnpm@9.15.0 --activate
+      - make ci-core
+
+  # Integração contra Postgres efêmero (service abaixo): matriz 2×2×2 da E1,
+  # backfill e up→down→up da 0022. Sem segredo nenhum; o banco morre com o run.
+  - name: integration
+    image: node:24-bookworm
+    depends_on: [ci]
+    environment:
+      CI: "true"
+      npm_config_store_dir: /pnpm-store
+      DATABASE_URL: postgresql://postgres@postgres:5432/muster
+    volumes:
+      - muster-pnpm-store:/pnpm-store
+    commands:
+      - corepack enable
+      - corepack prepare pnpm@9.15.0 --activate
+      - pnpm install --frozen-lockfile
+      - make ci-integration
+
+services:
+  - name: postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: muster
+      POSTGRES_HOST_AUTH_METHOD: trust

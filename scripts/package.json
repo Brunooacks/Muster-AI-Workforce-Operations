@@ -27,7 +27,8 @@
     "gauntlet:report": "tsx ./src/gauntlet-consolidate.ts",
     "maturity:evaluate": "tsx ./src/maturity-agent.ts",
     "demo:onboarding-battery": "tsx ./src/onboarding-operational-battery.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "contrast": "node ./ci/contrast.mjs"
   },
   "devDependencies": {
     "@types/node": "catalog:",

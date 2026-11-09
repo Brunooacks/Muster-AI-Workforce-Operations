@@ -5,6 +5,7 @@
  * Cohort — AI agent fleet governance API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentContract } from './agentContract';
 import type { NextAction } from './nextAction';
 import type { VerdictDecision } from './verdictDecision';
 import type { VerdictVerdict } from './verdictVerdict';
@@ -23,5 +24,14 @@ export interface Verdict {
   decidedBy?: string | null;
   /** @nullable */
   decidedAt?: string | null;
+  /**
+     * Contrato vigente quando o veredito foi gravado (nulo = antes do contrato numérico)
+     * @nullable
+     */
+  contractId?: string | null;
+  /** @nullable */
+  contractVersion?: number | null;
+  /** A versão do contrato à qual o veredito se refere (regra R3) */
+  contract?: AgentContract | null;
   createdAt: string;
 }

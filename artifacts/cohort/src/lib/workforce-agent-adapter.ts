@@ -11,6 +11,8 @@ export type WorkforceContractMetric = {
   status: "on" | "off" | "watch";
   source: string;
   observed?: boolean;
+  /** quantidade de casos que comprovam a meta no período */
+  casos?: number;
 };
 
 export type WorkforceProfessionalAgent = {
@@ -42,6 +44,8 @@ export type WorkforceProfessionalAgent = {
   diagnosis: string;
   recommendation: string;
   observedMetricCount?: number;
+  /** percepção de quem recebeu a entrega: nota de 1 a 5, respostas e 👍👎 */
+  percepcao?: { nota: number; respostas: number; positivas: number; negativas: number };
 };
 
 function clampScore(value: number): number {
@@ -78,6 +82,8 @@ type DeclaredMetricContract = {
   unit: string;
   target?: string;
   rationale?: string;
+  /** valor da meta antes do agente (ex.: "61%"), quando o contrato o declara */
+  baseline?: string;
 };
 
 function declaredMetricContracts(detail?: AgentDetail): DeclaredMetricContract[] {
@@ -87,7 +93,7 @@ function declaredMetricContracts(detail?: AgentDetail): DeclaredMetricContract[]
   return businessCase?.metricContracts?.filter((metric) => metric.label && metric.unit) ?? [];
 }
 
-function formatMetric(metric: KpiMetric, baseline: string): WorkforceContractMetric {
+function formatMetric(metric: KpiMetric, baseline: string, casos?: number): WorkforceContractMetric {
   const target = metric.target ?? "Meta não definida";
   const percentage = metric.unit === "%";
   const current = `${Number(metric.value.toFixed(2)).toLocaleString("pt-BR")}${percentage ? "%" : ` ${metric.unit}`}`;
@@ -101,6 +107,7 @@ function formatMetric(metric: KpiMetric, baseline: string): WorkforceContractMet
     status,
     source: "Muster telemetry",
     observed: true,
+    ...(casos && casos > 0 ? { casos } : {}),
   };
 }
 
@@ -112,7 +119,7 @@ function statusFromAgent(agent: Agent): WorkforceAgentStatus {
 }
 
 function statusLabel(agent: Agent): string {
-  if (agent.status === "observation" && agent.healthScore === 0) return "Sem evidência";
+  if (agent.status === "observation" && agent.healthScore === 0) return "Sem prova";
   if (agent.currentVerdict === "promote") return "Pronto para ampliar";
   if (agent.currentVerdict === "mentor") return "Mentoria necessária";
   if (agent.currentVerdict === "retire") return "Rever função";
@@ -120,11 +127,11 @@ function statusLabel(agent: Agent): string {
 }
 
 function recommendation(agent: Agent): string {
-  if (agent.healthScore === 0) return "Conectar telemetria e formar uma baseline antes de decidir.";
-  if (agent.currentVerdict === "promote") return "Ampliar gradualmente o escopo, preservando limites e evidência contínua.";
-  if (agent.currentVerdict === "mentor") return "Abrir plano de desenvolvimento com owner, prazo e critério de reavaliação.";
+  if (agent.healthScore === 0) return "Conectar telemetria e formar uma linha de base antes de decidir.";
+  if (agent.currentVerdict === "promote") return "Ampliar gradualmente o escopo, preservando limites e prova contínua.";
+  if (agent.currentVerdict === "mentor") return "Abrir plano de desenvolvimento com responsável, prazo e critério de reavaliação.";
   if (agent.currentVerdict === "retire") return "Bloquear novas ampliações e revisar a função com o responsável humano.";
-  return "Manter em observação até reunir evidência comparável suficiente.";
+  return "Manter em observação até reunir prova comparável suficiente.";
 }
 
 export function adaptApiAgent(
@@ -141,19 +148,20 @@ export function adaptApiAgent(
         const observed = observedMetrics.find(
           (metric) => metric.label.trim().toLocaleLowerCase("pt-BR") === contract.label.trim().toLocaleLowerCase("pt-BR"),
         );
+        const baselineDaMeta = contract.baseline?.trim() || baseline;
         return observed && (agent.monthlyVolume ?? 0) > 0
-          ? formatMetric(observed, baseline)
+          ? formatMetric(observed, baselineDaMeta, agent.monthlyVolume)
           : {
               label: contract.label,
-              baseline,
+              baseline: baselineDaMeta,
               target: contract.target ?? "Meta não definida",
-              current: "Sem evidência",
+              current: "Sem prova",
               status: "watch" as const,
               source: contract.rationale ?? "Contrato de admissão",
               observed: false,
             };
       })
-    : observedMetrics.map((metric) => formatMetric(metric, baseline));
+    : observedMetrics.map((metric) => formatMetric(metric, baseline, agent.monthlyVolume));
   const observedMetricCount = metrics.filter((metric) => metric.observed).length;
   const operationalHealth = clampScore(agent.healthScore);
   const measuredContractFulfillment = metricValue(observedMetrics, [
@@ -188,7 +196,7 @@ export function adaptApiAgent(
     role: agent.role,
     team: agent.areaName ?? "Área pendente",
     purpose: detail?.identity.businessCase.description || detail?.identity.bio || agent.bio || agent.tagline || `Executar a função de ${agent.role}.`,
-    owner: detail?.owners.businessOwner || agent.businessOwner || "Owner pendente",
+    owner: detail?.owners.businessOwner || agent.businessOwner || "Responsável pendente",
     platforms: [agent.platform],
     status: statusFromAgent(agent),
     statusLabel: statusLabel(agent),
@@ -197,7 +205,7 @@ export function adaptApiAgent(
     responsibilityCoverage,
     evidenceConfidence,
     reviewDue: agent.lastEvaluatedAt
-      ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(agent.lastEvaluatedAt))
+      ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(agent.lastEvaluatedAt))
       : "Sem avaliação",
     reviewUrgency: (agent.activeAlerts ?? 0) > 0
       ? `${agent.activeAlerts} alerta(s)`
@@ -217,18 +225,18 @@ export function adaptApiAgent(
       ? detail.identity.shouldDo
       : [
           `Executar somente a função contratada: ${agent.role}.`,
-          "Reportar execuções, falhas e evidências ao Muster.",
+          "Reportar execuções, falhas e provas ao Muster.",
           "Escalonar situações fora dos limites declarados.",
         ],
     responsibilities: declaredMetrics.length > 0
       ? declaredMetrics.map((metric) => `${metric.label}: ${metric.target ?? "meta pendente"}.`)
       : observedMetrics.length > 0
         ? observedMetrics.map((metric) => `${metric.label}: ${metric.target ?? "meta pendente"}.`)
-      : ["Formar baseline real antes de receber autonomia adicional."],
+      : ["Formar linha de base real antes de receber autonomia adicional."],
     boundaries: detail
       ? [...detail.identity.shouldNotDo, ...detail.identity.limits]
       : [
-          "Não ocultar falhas ou alterar evidências.",
+          "Não ocultar falhas ou alterar provas.",
           "Não ampliar autonomia sem decisão registrada.",
           "Não executar ações irreversíveis fora do contrato.",
         ],

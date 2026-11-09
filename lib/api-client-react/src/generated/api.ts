@@ -31,6 +31,9 @@ import type {
   AgentApiKeyCreated,
   AgentApiKeyInput,
   AgentAreaInput,
+  AgentContract,
+  AgentContractHistory,
+  AgentContractInput,
   AgentDetail,
   AgentDraft,
   AgentDraftRecord,
@@ -39,6 +42,7 @@ import type {
   AgentHeartbeatAccepted,
   AgentHeartbeatInput,
   AgentInput,
+  AgentOutcome,
   AgentSupervision,
   AgentUpdate,
   Alert,
@@ -53,6 +57,7 @@ import type {
   CatalogMetricInput,
   CatalogMetricUpdate,
   CatalogVertical,
+  CloseAgentOutcomePeriodParams,
   Connector,
   ConnectorCapability,
   ConnectorInput,
@@ -62,6 +67,7 @@ import type {
   DiscoveryImportInput,
   DiscoveryResult,
   DiscoveryRun,
+  Environment,
   Error,
   Evaluation,
   EvaluationMetricUpdate,
@@ -78,6 +84,7 @@ import type {
   FleetKpis,
   FleetSummary,
   GenerateExecutiveReportRequest,
+  GetAgentOutcomeParams,
   GitHubStatus,
   HealthStatus,
   IdentityUpdate,
@@ -91,21 +98,32 @@ import type {
   ListContinuousTelemetryActivityParams,
   ListExecutiveReportsParams,
   ListFleetAlertsParams,
+  ListRuntimeAgentsParams,
   MetricInstrumentation,
   MetricPoint,
   MetricStarterKit,
+  OffInvoiceCost,
+  OffInvoiceCostInput,
   OrganizationError,
   OrganizationList,
+  OutcomeSnapshotRef,
   PreAssessInput,
   PreAssessResult,
   ProfessionalPlanActionUpdate,
   ProfessionalPlanDecision,
   ProfessionalPlanDecisionInput,
+  Project,
+  ProjectCreated,
+  ProjectInput,
   RealtimeGovernanceResponse,
   ReevaluateOutcome,
   RegisterConnectorInput,
   RegisterConnectorResult,
   RejectDraftInput,
+  RoleRate,
+  RoleRateInput,
+  RuntimeAgent,
+  RuntimeOutboxEvent,
   StartDiscoveryRunInput,
   StreamContinuousTelemetryActivityParams,
   TelemetrySummary,
@@ -5170,6 +5188,549 @@ export const useUpdateProfessionalPlanAction = <TError = ErrorType<unknown>,
       return useMutation(getUpdateProfessionalPlanActionMutationOptions(options));
     }
 
+export const getListProjectsUrl = () => {
+
+
+
+
+  return `/api/projects`
+}
+
+/**
+ * @summary Lista os projetos da conta ativa
+ */
+export const listProjects = async ( options?: RequestInit): Promise<Project[]> => {
+
+  return customFetch<Project[]>(getListProjectsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectsQueryKey = () => {
+    return [
+    `/api/projects`
+    ] as const;
+    }
+
+
+export const getListProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listProjects>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjects>>> = ({ signal }) => listProjects({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjects>>>
+export type ListProjectsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Lista os projetos da conta ativa
+ */
+
+export function useListProjects<TData = Awaited<ReturnType<typeof listProjects>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateProjectUrl = () => {
+
+
+
+
+  return `/api/projects`
+}
+
+/**
+ * @summary Cria um projeto (já nasce com os ambientes sandbox e prod)
+ */
+export const createProject = async (projectInput: ProjectInput, options?: RequestInit): Promise<ProjectCreated> => {
+
+  return customFetch<ProjectCreated>(getCreateProjectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      projectInput,)
+  }
+);}
+
+
+
+
+export const getCreateProjectMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<ProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<ProjectInput>}, TContext> => {
+
+const mutationKey = ['createProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProject>>, {data: BodyType<ProjectInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProject(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof createProject>>>
+    export type CreateProjectMutationBody = BodyType<ProjectInput>
+    export type CreateProjectMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cria um projeto (já nasce com os ambientes sandbox e prod)
+ */
+export const useCreateProject = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProject>>, TError,{data: BodyType<ProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProject>>,
+        TError,
+        {data: BodyType<ProjectInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProjectMutationOptions(options));
+    }
+
+export const getListProjectEnvironmentsUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/environments`
+}
+
+/**
+ * @summary Lista os ambientes de um projeto da conta
+ */
+export const listProjectEnvironments = async (projectId: string, options?: RequestInit): Promise<Environment[]> => {
+
+  return customFetch<Environment[]>(getListProjectEnvironmentsUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectEnvironmentsQueryKey = (projectId: string,) => {
+    return [
+    `/api/projects/${projectId}/environments`
+    ] as const;
+    }
+
+
+export const getListProjectEnvironmentsQueryOptions = <TData = Awaited<ReturnType<typeof listProjectEnvironments>>, TError = ErrorType<Error>>(projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectEnvironments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectEnvironmentsQueryKey(projectId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectEnvironments>>> = ({ signal }) => listProjectEnvironments(projectId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(projectId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectEnvironments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectEnvironmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectEnvironments>>>
+export type ListProjectEnvironmentsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Lista os ambientes de um projeto da conta
+ */
+
+export function useListProjectEnvironments<TData = Awaited<ReturnType<typeof listProjectEnvironments>>, TError = ErrorType<Error>>(
+ projectId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectEnvironments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectEnvironmentsQueryOptions(projectId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRuntimeAgentsUrl = (params?: ListRuntimeAgentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/runtime/agents?${stringifiedParams}` : `/api/runtime/agents`
+}
+
+/**
+ * @summary Agentes do projeto da chave (autenticação por chave de agente)
+ */
+export const listRuntimeAgents = async (params?: ListRuntimeAgentsParams, options?: RequestInit): Promise<RuntimeAgent[]> => {
+
+  return customFetch<RuntimeAgent[]>(getListRuntimeAgentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRuntimeAgentsQueryKey = (params?: ListRuntimeAgentsParams,) => {
+    return [
+    `/api/runtime/agents`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListRuntimeAgentsQueryOptions = <TData = Awaited<ReturnType<typeof listRuntimeAgents>>, TError = ErrorType<Error>>(params?: ListRuntimeAgentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRuntimeAgentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRuntimeAgents>>> = ({ signal }) => listRuntimeAgents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRuntimeAgentsQueryResult = NonNullable<Awaited<ReturnType<typeof listRuntimeAgents>>>
+export type ListRuntimeAgentsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Agentes do projeto da chave (autenticação por chave de agente)
+ */
+
+export function useListRuntimeAgents<TData = Awaited<ReturnType<typeof listRuntimeAgents>>, TError = ErrorType<Error>>(
+ params?: ListRuntimeAgentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRuntimeAgentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReadRuntimeAgentUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/runtime/agents/${agentId}`
+}
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary O próprio agente da chave
+ */
+export const readRuntimeAgent = async (agentId: string, options?: RequestInit): Promise<RuntimeAgent> => {
+
+  return customFetch<RuntimeAgent>(getReadRuntimeAgentUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadRuntimeAgentQueryKey = (agentId: string,) => {
+    return [
+    `/api/runtime/agents/${agentId}`
+    ] as const;
+    }
+
+
+export const getReadRuntimeAgentQueryOptions = <TData = Awaited<ReturnType<typeof readRuntimeAgent>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readRuntimeAgent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadRuntimeAgentQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readRuntimeAgent>>> = ({ signal }) => readRuntimeAgent(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readRuntimeAgent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReadRuntimeAgentQueryResult = NonNullable<Awaited<ReturnType<typeof readRuntimeAgent>>>
+export type ReadRuntimeAgentQueryError = ErrorType<Error>
+
+
+/**
+ * @summary O próprio agente da chave
+ */
+
+export function useReadRuntimeAgent<TData = Awaited<ReturnType<typeof readRuntimeAgent>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readRuntimeAgent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReadRuntimeAgentQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRuntimeAgentEventsUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/runtime/agents/${agentId}/events`
+}
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary Eventos do outbox do agente no ambiente da chave
+ */
+export const listRuntimeAgentEvents = async (agentId: string, options?: RequestInit): Promise<RuntimeOutboxEvent[]> => {
+
+  return customFetch<RuntimeOutboxEvent[]>(getListRuntimeAgentEventsUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRuntimeAgentEventsQueryKey = (agentId: string,) => {
+    return [
+    `/api/runtime/agents/${agentId}/events`
+    ] as const;
+    }
+
+
+export const getListRuntimeAgentEventsQueryOptions = <TData = Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRuntimeAgentEventsQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRuntimeAgentEvents>>> = ({ signal }) => listRuntimeAgentEvents(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRuntimeAgentEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listRuntimeAgentEvents>>>
+export type ListRuntimeAgentEventsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Eventos do outbox do agente no ambiente da chave
+ */
+
+export function useListRuntimeAgentEvents<TData = Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRuntimeAgentEventsQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRuntimeAgentApiKeysUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/runtime/agents/${agentId}/api-keys`
+}
+
+/**
+ * Também aceita `?environment=sandbox|prod` (ausente = o da chave). Fica fora dos parâmetros declarados porque o orval gera dois `…Params` com o mesmo nome quando a operação tem caminho e query.
+ * @summary Chaves (mascaradas) do agente no ambiente da chave
+ */
+export const listRuntimeAgentApiKeys = async (agentId: string, options?: RequestInit): Promise<AgentApiKey[]> => {
+
+  return customFetch<AgentApiKey[]>(getListRuntimeAgentApiKeysUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRuntimeAgentApiKeysQueryKey = (agentId: string,) => {
+    return [
+    `/api/runtime/agents/${agentId}/api-keys`
+    ] as const;
+    }
+
+
+export const getListRuntimeAgentApiKeysQueryOptions = <TData = Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRuntimeAgentApiKeysQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>> = ({ signal }) => listRuntimeAgentApiKeys(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRuntimeAgentApiKeysQueryResult = NonNullable<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>>
+export type ListRuntimeAgentApiKeysQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Chaves (mascaradas) do agente no ambiente da chave
+ */
+
+export function useListRuntimeAgentApiKeys<TData = Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRuntimeAgentApiKeys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRuntimeAgentApiKeysQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListAgentApiKeysUrl = (agentId: string,) => {
 
 
@@ -5418,7 +5979,7 @@ export const ingestAgentEvent = async (agentId: string,
 
 
 
-export const getIngestAgentEventMutationOptions = <TError = ErrorType<unknown>,
+export const getIngestAgentEventMutationOptions = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext> => {
 
@@ -5447,12 +6008,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type IngestAgentEventMutationResult = NonNullable<Awaited<ReturnType<typeof ingestAgentEvent>>>
     export type IngestAgentEventMutationBody = BodyType<AgentEventInput>
-    export type IngestAgentEventMutationError = ErrorType<unknown>
+    export type IngestAgentEventMutationError = ErrorType<Error>
 
     /**
  * @summary Ingest a telemetry event (execution, error, escalation) for an agent
  */
-export const useIngestAgentEvent = <TError = ErrorType<unknown>,
+export const useIngestAgentEvent = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAgentEvent>>, TError,{agentId: string;data: BodyType<AgentEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof ingestAgentEvent>>,
@@ -6340,3 +6901,623 @@ export function useGetRealtimeGovernance<TData = Awaited<ReturnType<typeof getRe
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+
+
+
+
+
+
+export const getListAgentContractsUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/contracts`
+}
+
+/**
+ * @summary Histórico de versões do contrato numérico do agente (cunha · C2.2)
+ */
+export const listAgentContracts = async (agentId: string, options?: RequestInit): Promise<AgentContractHistory> => {
+
+  return customFetch<AgentContractHistory>(getListAgentContractsUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentContractsQueryKey = (agentId: string,) => {
+    return [
+    `/api/agents/${agentId}/contracts`
+    ] as const;
+    }
+
+
+export const getListAgentContractsQueryOptions = <TData = Awaited<ReturnType<typeof listAgentContracts>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentContracts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentContractsQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentContracts>>> = ({ signal }) => listAgentContracts(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentContracts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentContractsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentContracts>>>
+export type ListAgentContractsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Histórico de versões do contrato numérico do agente (cunha · C2.2)
+ */
+
+export function useListAgentContracts<TData = Awaited<ReturnType<typeof listAgentContracts>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentContracts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentContractsQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAgentContractUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/contracts`
+}
+
+/**
+ * @summary Cria a próxima versão do contrato (nunca edita a anterior)
+ */
+export const createAgentContract = async (agentId: string,
+    agentContractInput: AgentContractInput, options?: RequestInit): Promise<AgentContract> => {
+
+  return customFetch<AgentContract>(getCreateAgentContractUrl(agentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentContractInput,)
+  }
+);}
+
+
+
+
+export const getCreateAgentContractMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentContract>>, TError,{agentId: string;data: BodyType<AgentContractInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgentContract>>, TError,{agentId: string;data: BodyType<AgentContractInput>}, TContext> => {
+
+const mutationKey = ['createAgentContract'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgentContract>>, {agentId: string;data: BodyType<AgentContractInput>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  createAgentContract(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgentContractMutationResult = NonNullable<Awaited<ReturnType<typeof createAgentContract>>>
+    export type CreateAgentContractMutationBody = BodyType<AgentContractInput>
+    export type CreateAgentContractMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cria a próxima versão do contrato (nunca edita a anterior)
+ */
+export const useCreateAgentContract = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgentContract>>, TError,{agentId: string;data: BodyType<AgentContractInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgentContract>>,
+        TError,
+        {agentId: string;data: BodyType<AgentContractInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAgentContractMutationOptions(options));
+    }
+
+export const getListRoleRatesUrl = () => {
+
+
+
+
+  return `/api/rates/roles`
+}
+
+/**
+ * @summary Custo-hora por área/papel (cunha · C3.2)
+ */
+export const listRoleRates = async ( options?: RequestInit): Promise<RoleRate[]> => {
+
+  return customFetch<RoleRate[]>(getListRoleRatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRoleRatesQueryKey = () => {
+    return [
+    `/api/rates/roles`
+    ] as const;
+    }
+
+
+export const getListRoleRatesQueryOptions = <TData = Awaited<ReturnType<typeof listRoleRates>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoleRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRoleRatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRoleRates>>> = ({ signal }) => listRoleRates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRoleRates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRoleRatesQueryResult = NonNullable<Awaited<ReturnType<typeof listRoleRates>>>
+export type ListRoleRatesQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Custo-hora por área/papel (cunha · C3.2)
+ */
+
+export function useListRoleRates<TData = Awaited<ReturnType<typeof listRoleRates>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoleRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRoleRatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateRoleRateUrl = () => {
+
+
+
+
+  return `/api/rates/roles`
+}
+
+/**
+ * @summary Cadastra custo-hora com vigência (409 se cruzar outra vigência do mesmo papel/área)
+ */
+export const createRoleRate = async (roleRateInput: RoleRateInput, options?: RequestInit): Promise<RoleRate> => {
+
+  return customFetch<RoleRate>(getCreateRoleRateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      roleRateInput,)
+  }
+);}
+
+
+
+
+export const getCreateRoleRateMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoleRate>>, TError,{data: BodyType<RoleRateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRoleRate>>, TError,{data: BodyType<RoleRateInput>}, TContext> => {
+
+const mutationKey = ['createRoleRate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRoleRate>>, {data: BodyType<RoleRateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRoleRate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRoleRateMutationResult = NonNullable<Awaited<ReturnType<typeof createRoleRate>>>
+    export type CreateRoleRateMutationBody = BodyType<RoleRateInput>
+    export type CreateRoleRateMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cadastra custo-hora com vigência (409 se cruzar outra vigência do mesmo papel/área)
+ */
+export const useCreateRoleRate = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoleRate>>, TError,{data: BodyType<RoleRateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRoleRate>>,
+        TError,
+        {data: BodyType<RoleRateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateRoleRateMutationOptions(options));
+    }
+
+export const getListOffInvoiceCostsUrl = () => {
+
+
+
+
+  return `/api/rates/off-invoice`
+}
+
+/**
+ * @summary Custos fora da fatura (cunha · C3.2)
+ */
+export const listOffInvoiceCosts = async ( options?: RequestInit): Promise<OffInvoiceCost[]> => {
+
+  return customFetch<OffInvoiceCost[]>(getListOffInvoiceCostsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOffInvoiceCostsQueryKey = () => {
+    return [
+    `/api/rates/off-invoice`
+    ] as const;
+    }
+
+
+export const getListOffInvoiceCostsQueryOptions = <TData = Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOffInvoiceCostsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOffInvoiceCosts>>> = ({ signal }) => listOffInvoiceCosts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOffInvoiceCostsQueryResult = NonNullable<Awaited<ReturnType<typeof listOffInvoiceCosts>>>
+export type ListOffInvoiceCostsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Custos fora da fatura (cunha · C3.2)
+ */
+
+export function useListOffInvoiceCosts<TData = Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOffInvoiceCosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOffInvoiceCostsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateOffInvoiceCostUrl = () => {
+
+
+
+
+  return `/api/rates/off-invoice`
+}
+
+/**
+ * @summary Cadastra custo fora da fatura com período e alocação
+ */
+export const createOffInvoiceCost = async (offInvoiceCostInput: OffInvoiceCostInput, options?: RequestInit): Promise<OffInvoiceCost> => {
+
+  return customFetch<OffInvoiceCost>(getCreateOffInvoiceCostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      offInvoiceCostInput,)
+  }
+);}
+
+
+
+
+export const getCreateOffInvoiceCostMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOffInvoiceCost>>, TError,{data: BodyType<OffInvoiceCostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createOffInvoiceCost>>, TError,{data: BodyType<OffInvoiceCostInput>}, TContext> => {
+
+const mutationKey = ['createOffInvoiceCost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createOffInvoiceCost>>, {data: BodyType<OffInvoiceCostInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createOffInvoiceCost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateOffInvoiceCostMutationResult = NonNullable<Awaited<ReturnType<typeof createOffInvoiceCost>>>
+    export type CreateOffInvoiceCostMutationBody = BodyType<OffInvoiceCostInput>
+    export type CreateOffInvoiceCostMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cadastra custo fora da fatura com período e alocação
+ */
+export const useCreateOffInvoiceCost = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createOffInvoiceCost>>, TError,{data: BodyType<OffInvoiceCostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createOffInvoiceCost>>,
+        TError,
+        {data: BodyType<OffInvoiceCostInput>},
+        TContext
+      > => {
+      return useMutation(getCreateOffInvoiceCostMutationOptions(options));
+    }
+
+export const getGetAgentOutcomeUrl = (agentId: string,
+    params?: GetAgentOutcomeParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/agents/${agentId}/outcome?${stringifiedParams}` : `/api/agents/${agentId}/outcome`
+}
+
+/**
+ * @summary Camadas 1–3, sinais e contrato vigente do agente no período (cunha · C12.1)
+ */
+export const getAgentOutcome = async (agentId: string,
+    params?: GetAgentOutcomeParams, options?: RequestInit): Promise<AgentOutcome> => {
+
+  return customFetch<AgentOutcome>(getGetAgentOutcomeUrl(agentId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentOutcomeQueryKey = (agentId: string,
+    params?: GetAgentOutcomeParams,) => {
+    return [
+    `/api/agents/${agentId}/outcome`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAgentOutcomeQueryOptions = <TData = Awaited<ReturnType<typeof getAgentOutcome>>, TError = ErrorType<Error>>(agentId: string,
+    params?: GetAgentOutcomeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentOutcome>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentOutcomeQueryKey(agentId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentOutcome>>> = ({ signal }) => getAgentOutcome(agentId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentOutcome>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentOutcomeQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentOutcome>>>
+export type GetAgentOutcomeQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Camadas 1–3, sinais e contrato vigente do agente no período (cunha · C12.1)
+ */
+
+export function useGetAgentOutcome<TData = Awaited<ReturnType<typeof getAgentOutcome>>, TError = ErrorType<Error>>(
+ agentId: string,
+    params?: GetAgentOutcomeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentOutcome>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentOutcomeQueryOptions(agentId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCloseAgentOutcomePeriodUrl = (agentId: string,
+    params: CloseAgentOutcomePeriodParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/agents/${agentId}/outcome/close?${stringifiedParams}` : `/api/agents/${agentId}/outcome/close`
+}
+
+/**
+ * @summary Fecha um mês encerrado em snapshot imutável (idempotente; só admin)
+ */
+export const closeAgentOutcomePeriod = async (agentId: string,
+    params: CloseAgentOutcomePeriodParams, options?: RequestInit): Promise<OutcomeSnapshotRef> => {
+
+  return customFetch<OutcomeSnapshotRef>(getCloseAgentOutcomePeriodUrl(agentId,params),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCloseAgentOutcomePeriodMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, TError,{agentId: string;params: CloseAgentOutcomePeriodParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, TError,{agentId: string;params: CloseAgentOutcomePeriodParams}, TContext> => {
+
+const mutationKey = ['closeAgentOutcomePeriod'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, {agentId: string;params: CloseAgentOutcomePeriodParams}> = (props) => {
+          const {agentId,params} = props ?? {};
+
+          return  closeAgentOutcomePeriod(agentId,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CloseAgentOutcomePeriodMutationResult = NonNullable<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>>
+
+    export type CloseAgentOutcomePeriodMutationError = ErrorType<Error>
+
+    /**
+ * @summary Fecha um mês encerrado em snapshot imutável (idempotente; só admin)
+ */
+export const useCloseAgentOutcomePeriod = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeAgentOutcomePeriod>>, TError,{agentId: string;params: CloseAgentOutcomePeriodParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof closeAgentOutcomePeriod>>,
+        TError,
+        {agentId: string;params: CloseAgentOutcomePeriodParams},
+        TContext
+      > => {
+      return useMutation(getCloseAgentOutcomePeriodMutationOptions(options));
+    }
+

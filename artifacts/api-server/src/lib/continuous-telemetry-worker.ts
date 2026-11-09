@@ -90,6 +90,7 @@ async function processTelemetryEvent(
         orgId: event.orgId,
         agentId: event.aggregateId,
         projectionCauseEventId: event.id,
+        projectionScope: { projectId: event.projectId, environmentId: event.environmentId },
       }),
   );
 

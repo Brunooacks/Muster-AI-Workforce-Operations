@@ -1,3 +1,4 @@
+/** RG-M15: Visão geral real do app (SHELL_NAV[0]); /visao-geral era protótipo com dados da Lumen. */
 export const DEFAULT_AUTH_REDIRECT = "/comando";
 export const DEFAULT_ONBOARDING_REDIRECT = "/comando";
 
@@ -64,4 +65,16 @@ export function onboardingFallbackFromLocation(location: string): string {
   return requested && !isOnboardingPath(requested)
     ? requested
     : DEFAULT_ONBOARDING_REDIRECT;
+}
+
+/**
+ * RG-N03: rotas que o OnboardingGate deixa abrir antes de concluir o
+ * onboarding. O passo "conectar e mapear" leva às telas de conector; sem
+ * esta lista, o gate mandava de volta para /onboarding (loop).
+ */
+const ONBOARDING_ALLOWED = ["/onboarding", "/conectores", "/ops/conectores"];
+
+export function onboardingGateAllows(location: string): boolean {
+  const pathname = location.split(/[?#]/, 1)[0] ?? "";
+  return ONBOARDING_ALLOWED.some((base) => pathname === base || pathname.startsWith(base + "/"));
 }

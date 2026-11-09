@@ -85,6 +85,9 @@ import {
   RefreshStatusBar,
 } from "@/components/mission-control/operational-status";
 import { relativeAge } from "@/components/mission-control/presentation";
+import { AgentContractPanel } from "@/components/agent-contract";
+import { AgentOutcomePanel } from "@/components/agent-outcome";
+import { humanizarCodigos, rotuloCodigo } from "@/lib/humanizar-codigos";
 
 const AUTONOMY_LABEL: Record<Lang, Record<string, string>> = {
   pt: {
@@ -354,7 +357,7 @@ function TelemetrySection({
         onSuccess: (outcome) => {
           toast({
             title: `Reavaliado — ${DATA_SOURCE_LABEL[outcome.dataSource] ?? outcome.dataSource}`,
-            description: `Veredito: ${outcome.verdict} · saúde ${outcome.healthScore}. ${outcome.rationale}`,
+            description: `Veredito: ${rotuloCodigo(outcome.verdict)} · saúde ${outcome.healthScore}. ${humanizarCodigos(outcome.rationale)}`,
           });
           queryClient.invalidateQueries({ queryKey: getGetAgentQueryKey(agentId) });
           queryClient.invalidateQueries({ queryKey: getGetAgentMetricsQueryKey(agentId, "30d") });
@@ -482,7 +485,7 @@ function TelemetrySection({
             </p>
             <p className="max-w-md text-xs text-muted-foreground/80">
               Sem evidência a plataforma não calcula nota — de propósito. Ligue a telemetria para que
-              as cinco camadas passem a ser medidas.
+              as três camadas passem a ser medidas.
             </p>
             <Button asChild size="sm" className="mt-1">
               <Link href={`/agentes/${agentId}/conectar`}>
@@ -554,7 +557,7 @@ const SNAPSHOT_TONE: Record<string, { heading: string; bar: string }> = {
     bar: "bg-chart-1/20 text-chart-1",
   },
   mentor: {
-    heading: "text-chart-2",
+    heading: "text-chart-2-text",
     bar: "bg-chart-2/90 text-primary-foreground",
   },
   observation: {
@@ -562,7 +565,7 @@ const SNAPSHOT_TONE: Record<string, { heading: string; bar: string }> = {
     bar: "bg-chart-5/20 text-chart-5",
   },
   retire: {
-    heading: "text-chart-4",
+    heading: "text-chart-4-text",
     bar: "bg-primary text-primary-foreground",
   },
 };
@@ -845,7 +848,7 @@ export default function AgentDetailPage() {
               icon={Gauge}
               label="Saúde consolidada"
               value={`${agent.healthScore}/100`}
-              detail={`Veredito atual: ${agent.currentVerdict}`}
+              detail={`Veredito atual: ${rotuloCodigo(agent.currentVerdict)}`}
               tone={agent.healthScore >= 80 ? "stable" : agent.healthScore >= 60 ? "attention" : "critical"}
             />
             <OperationalSignal
@@ -871,6 +874,9 @@ export default function AgentDetailPage() {
             />
           </div>
         </section>
+
+        {/* ===== Cunha · três camadas (custo, qualidade, prova) ===== */}
+        <AgentOutcomePanel agentId={agent.id} />
 
         {/* ===== 01 · Carteira de Trabalho ===== */}
         <section>
@@ -937,7 +943,7 @@ export default function AgentDetailPage() {
                     <ul className="mt-1.5 space-y-1.5">
                       {identity.shouldNotDo.map((item, i) => (
                         <li key={i} className="flex gap-2 text-foreground/90">
-                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-3" />
+                          <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-3-text" />
                           <span className="text-[13px] leading-snug">{item}</span>
                         </li>
                       ))}
@@ -990,27 +996,7 @@ export default function AgentDetailPage() {
               </Pillar>
 
               <Pillar icon={Sparkles} title={t.origin}>
-                <div className="space-y-3 text-sm">
-                  {identity.businessCase.description && (
-                    <p className="text-[13px] italic leading-snug text-foreground/80">
-                      {identity.businessCase.description}
-                    </p>
-                  )}
-                  <div className="space-y-2 border-t border-card-border pt-3">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{t.baseline}</span>
-                      <span className="font-mono text-foreground/90">{identity.businessCase.baseline || "—"}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{t.paybackTarget}</span>
-                      <span className="font-mono text-foreground/90">{identity.businessCase.targetPayback || "—"}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{t.paybackReal}</span>
-                      <span className="font-mono font-semibold text-primary">{identity.businessCase.actualPayback || "—"}</span>
-                    </div>
-                  </div>
-                </div>
+                <AgentContractPanel agentId={agent.id} legacy={identity.businessCase} />
               </Pillar>
             </div>
           </div>
@@ -1094,7 +1080,7 @@ export default function AgentDetailPage() {
           <SectionHeader number="05" title={t.sec04.title} caption={t.sec04.caption} />
           {alertsError ? (
             <div className={`${cardBase} flex items-center gap-3 p-5 text-sm text-muted-foreground`}>
-              <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3" />
+              <AlertTriangle className="h-4 w-4 shrink-0 text-chart-3-text" />
               {p.detectorError}
             </div>
           ) : agentAlerts.length > 0 ? (
@@ -1104,22 +1090,22 @@ export default function AgentDetailPage() {
                 return (
                   <div key={alert.id} className={`${cardBase} border-l-4 ${d.border} p-5`}>
                     <div className="mb-3 flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">{alert.patternType}</span>
+                      <span className="font-mono text-xs text-muted-foreground">{rotuloCodigo(alert.patternType)}</span>
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] ${d.pill}`}
                       >
                         {d.pillLabel}
                       </span>
                     </div>
-                    <h3 className="mb-3 font-serif text-xl font-medium leading-tight tracking-tight">{alert.pattern}</h3>
+                    <h3 className="mb-3 font-serif text-xl font-medium leading-tight tracking-tight">{humanizarCodigos(alert.pattern)}</h3>
                     <div className="space-y-3 text-[13px]">
                       <div>
                         <Eyebrow>{t.hypothesis}</Eyebrow>
-                        <p className="mt-1 leading-snug text-foreground/80">{alert.hypothesis}</p>
+                        <p className="mt-1 leading-snug text-foreground/80">{humanizarCodigos(alert.hypothesis)}</p>
                       </div>
                       <div>
                         <Eyebrow>{t.action}</Eyebrow>
-                        <p className="mt-1 font-semibold leading-snug text-foreground/90">{alert.recommendation}</p>
+                        <p className="mt-1 font-semibold leading-snug text-foreground/90">{humanizarCodigos(alert.recommendation)}</p>
                       </div>
                     </div>
                   </div>

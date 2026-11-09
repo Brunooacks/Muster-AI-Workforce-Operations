@@ -24,6 +24,7 @@ import { detectorPresentation } from "@/components/carteira";
 import { useLang, localeOf, type Lang } from "@/lib/i18n";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { humanizarCodigos, rotuloCodigo } from "@/lib/humanizar-codigos";
 
 type AlertsDict = {
   breadcrumbGov: string;
@@ -65,10 +66,11 @@ type AlertsDict = {
 
 const alertsI18n: Record<Lang, AlertsDict> = {
   pt: {
-    breadcrumbGov: "Governança",
-    title: "Detector de Vitória Ilusória",
+    breadcrumbGov: "Decisões",
+    // RG-M20: mesmo nome do menu ("Pendências"), sem jargão interno.
+    title: "Pendências",
     subtitle:
-      "Monitoramento passivo que cruza as 5 camadas de KPIs em busca de contradições — ex.: adoção caindo enquanto o sucesso aparente sobe.",
+      "O que precisa de uma decisão sua, em ordem de urgência. O Muster cruza os indicadores e aponta contradições — ex.: adoção caindo enquanto o sucesso aparente sobe.",
     errorTitle: "Não foi possível carregar os alertas",
     statActive: "Alertas ativos",
     statActiveDelta: "Padrões em monitoramento",
@@ -209,7 +211,10 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
   const { lang } = useLang();
   const t = alertsI18n[lang];
   const { toast } = useToast();
-  const { data: alerts, isLoading, isError, refetch } = useListFleetAlerts();
+  const { data: alertsResposta, isLoading, isError, refetch } = useListFleetAlerts();
+  // Sem API (modo demonstração ou preview estático) a rota responde HTML:
+  // não é lista de alertas, então a tela mostra o estado vazio em vez de quebrar.
+  const alerts = Array.isArray(alertsResposta) ? alertsResposta : undefined;
   const updateAlert = useUpdateFleetAlert();
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [drafts, setDrafts] = useState<Record<string, { assignedTo: string; dueAt: string }>>({});
@@ -342,7 +347,7 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                       <CardHeader className="space-y-2">
                         <div className="flex items-center justify-between gap-3">
                           <span className="font-mono text-xs text-muted-foreground">
-                            {alert.patternType || t.patternFallback}
+                            {rotuloCodigo(alert.patternType, t.patternFallback)}
                           </span>
                           <span
                             className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] ${d.pill}`}
@@ -351,7 +356,7 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                           </span>
                         </div>
                         <CardTitle className="font-serif text-xl font-medium leading-tight tracking-tight">
-                          {alert.pattern}
+                          {humanizarCodigos(alert.pattern)}
                         </CardTitle>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span>
@@ -369,12 +374,12 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                       <CardContent className="flex flex-1 flex-col gap-3">
                         <div className="space-y-1">
                           <Eyebrow>{t.hypothesis}</Eyebrow>
-                          <p className="text-[13px] leading-snug text-foreground/80">{alert.hypothesis}</p>
+                          <p className="text-[13px] leading-snug text-foreground/80">{humanizarCodigos(alert.hypothesis)}</p>
                         </div>
                         <div className="space-y-1">
                           <Eyebrow>{t.recommendation}</Eyebrow>
                           <p className="text-[13px] font-semibold leading-snug text-foreground/90">
-                            {alert.recommendation}
+                            {humanizarCodigos(alert.recommendation)}
                           </p>
                         </div>
                         <div className="mt-auto flex items-center justify-between pt-2 text-xs text-muted-foreground">
@@ -405,7 +410,7 @@ export default function AlertsPage({ embedded = false }: { embedded?: boolean } 
                             <Label htmlFor={`alert-due-${alert.id}`} className="flex items-center justify-between text-[10px] uppercase tracking-[0.08em]">
                               <span>{t.dueDate}</span>
                               {deadline && (
-                                <span className={deadline === "overdue" ? "text-chart-3" : "text-chart-2"}>
+                                <span className={deadline === "overdue" ? "text-chart-3-text" : "text-chart-2-text"}>
                                   {deadline === "overdue" ? t.overdue : t.dueSoon}
                                 </span>
                               )}

@@ -61,9 +61,9 @@ export function StatCard({
     tone === "up"
       ? "text-chart-1"
       : tone === "down"
-        ? "text-chart-3"
+        ? "text-chart-3-text"
         : tone === "warn"
-        ? "text-chart-2"
+        ? "text-chart-2-text"
         : "text-muted-foreground";
   return (
     <div className="workspace-panel group flex flex-col gap-3 rounded-xl border border-card-border/90 bg-card/90 p-5 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-foreground/20">
@@ -86,9 +86,9 @@ type Tone = "sage" | "ochre" | "terracotta" | "red" | "blue" | "muted";
 
 const TONE_CLASS: Record<Tone, string> = {
   sage: "bg-chart-1/15 text-chart-1",
-  ochre: "bg-chart-2/20 text-chart-2",
-  terracotta: "bg-chart-3/15 text-chart-3",
-  red: "bg-chart-4/15 text-chart-4",
+  ochre: "bg-chart-2/20 text-chart-2-text",
+  terracotta: "bg-chart-3/15 text-chart-3-text",
+  red: "bg-chart-4/15 text-chart-4-text",
   blue: "bg-chart-5/15 text-chart-5",
   muted: "bg-muted text-muted-foreground",
 };
@@ -276,8 +276,8 @@ export function FilterChip({
 /* ── Avatar disc with initial, colored by hashed name ───────── */
 const DISC_TONES = [
   "bg-chart-1/20 text-chart-1",
-  "bg-chart-2/25 text-chart-2",
-  "bg-chart-3/20 text-chart-3",
+  "bg-chart-2/25 text-chart-2-text",
+  "bg-chart-3/20 text-chart-3-text",
   "bg-chart-5/20 text-chart-5",
   "bg-primary/15 text-primary",
 ];

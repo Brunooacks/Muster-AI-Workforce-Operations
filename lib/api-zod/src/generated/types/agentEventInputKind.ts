@@ -15,4 +15,5 @@ export const AgentEventInputKind = {
   escalation: 'escalation',
   feedback: 'feedback',
   heartbeat: 'heartbeat',
+  human_review: 'human_review',
 } as const;

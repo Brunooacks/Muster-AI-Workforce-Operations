@@ -7,8 +7,10 @@
  */
 import type { AgentHeartbeatInputMetadata } from './agentHeartbeatInputMetadata';
 import type { AgentHeartbeatInputStatus } from './agentHeartbeatInputStatus';
+import type { EnvironmentKind } from './environmentKind';
 
 export interface AgentHeartbeatInput {
+  environment?: EnvironmentKind;
   runtime?: string;
   version?: string;
   intervalSeconds?: number;

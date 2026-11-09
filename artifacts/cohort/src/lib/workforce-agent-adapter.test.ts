@@ -28,18 +28,18 @@ test("adapta um agente real sem inventar owner ou baseline", () => {
   const adapted = adaptApiAgent(agent());
   assert.equal(adapted.id, "agent-1");
   assert.equal(adapted.contractFulfillment, 98);
-  assert.equal(adapted.owner, "Owner pendente");
+  assert.equal(adapted.owner, "Responsável pendente");
   assert.equal(adapted.metrics[0]?.baseline, "Não informado");
   assert.equal(adapted.status, "healthy");
 });
 
 test("usa owner e contrato profissional quando a API os fornece", () => {
   const adapted = adaptApiAgent(agent({
-    businessOwner: "Bruno Oliveira",
+    businessOwner: "Rafael Lima",
     monthlyVolume: 100,
     monthlyCost: 14,
   }));
-  assert.equal(adapted.owner, "Bruno Oliveira");
+  assert.equal(adapted.owner, "Rafael Lima");
   assert.equal(adapted.costPerExecution, 0.14);
   assert.equal(adapted.monthlyVolume, 100);
 });
@@ -69,8 +69,8 @@ test("mantém agente sem telemetria em experiência", () => {
     headlineKpis: [],
   }));
   assert.equal(adapted.status, "probation");
-  assert.equal(adapted.statusLabel, "Sem evidência");
-  assert.match(adapted.recommendation, /baseline/);
+  assert.equal(adapted.statusLabel, "Sem prova");
+  assert.match(adapted.recommendation, /linha de base/);
 });
 
 test("preserva o contrato da admissão e explicita lacunas de evidência", () => {
@@ -93,7 +93,7 @@ test("preserva o contrato da admissão e explicita lacunas de evidência", () =>
         ],
       },
     },
-    owners: { businessOwner: "Bruno", technicalOwner: "Bruno", governanceSponsor: "Bruno" },
+    owners: { businessOwner: "Rafael", technicalOwner: "Rafael", governanceSponsor: "Rafael" },
   } as unknown as AgentDetail;
   const adapted = adaptApiAgent(agent({
     monthlyVolume: 1,
@@ -104,7 +104,7 @@ test("preserva o contrato da admissão e explicita lacunas de evidência", () =>
   assert.equal(adapted.metrics.length, 2);
   assert.equal(adapted.metrics[0]?.current, "94%");
   assert.equal(adapted.metrics[0]?.observed, true);
-  assert.equal(adapted.metrics[1]?.current, "Sem evidência");
+  assert.equal(adapted.metrics[1]?.current, "Sem prova");
   assert.equal(adapted.metrics[1]?.observed, false);
   assert.equal(adapted.observedMetricCount, 1);
   assert.equal(adapted.contractFulfillment, 50);

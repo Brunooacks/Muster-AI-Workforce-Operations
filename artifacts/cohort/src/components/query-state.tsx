@@ -20,7 +20,7 @@ export function ErrorState({
       }`}
     >
       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive/10">
-        <AlertOctagon className="h-5 w-5 text-destructive" />
+        <AlertOctagon className="h-5 w-5 text-destructive-text" />
       </div>
       <div>
         <p className="font-medium text-foreground">{title}</p>

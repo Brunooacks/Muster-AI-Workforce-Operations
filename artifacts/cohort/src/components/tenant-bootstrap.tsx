@@ -1,14 +1,12 @@
-import { OrganizationSwitcher, useAuth, useClerk } from "@clerk/react";
+import { useAuth } from "@clerk/react";
 import { syncActiveOrganization } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Building2,
   Loader2,
-  LogOut,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   createTenantScopeKey,
@@ -29,12 +27,18 @@ const initialState: BootstrapState = {
   error: null,
 };
 
+/** Nome da organização ativa (RG-M20): Configurações mostra o nome real, não "Muster". */
+const OrganizacaoAtiva = createContext<string | null>(null);
+export function useNomeOrganizacaoAtiva(): string | null {
+  return useContext(OrganizacaoAtiva);
+}
+
 export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, userId, orgId } = useAuth();
-  const { signOut } = useClerk();
   const queryClient = useQueryClient();
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [state, setState] = useState<BootstrapState>(initialState);
+  const [nomeOrg, setNomeOrg] = useState<string | null>(null);
   const runIdRef = useRef(0);
   const previousScopeKeyRef = useRef<string | null | undefined>(undefined);
   const scopeKey = createTenantScopeKey(userId, orgId);
@@ -62,11 +66,12 @@ export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
         previousScopeKeyRef.current = scopeKey;
       }
 
-      if (!isSignedIn || !userId || !orgId || !scopeKey) return;
+      if (!isSignedIn || !userId || !scopeKey) return;
 
       try {
-        await syncActiveOrganization({ signal: controller.signal });
+        const sincronizada = await syncActiveOrganization({ signal: controller.signal });
         if (!isCurrentRun()) return;
+        setNomeOrg(sincronizada?.organization?.name ?? null);
 
         setState({ scopeKey, status: "ready", error: null });
       } catch (error) {
@@ -106,30 +111,6 @@ export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!orgId || !scopeKey) {
-    return (
-      <TenantStateCard
-        icon={<Building2 className="h-5 w-5" />}
-        eyebrow="Organização necessária"
-        title="Escolha onde você vai operar"
-        description="Selecione ou crie uma organização. O Muster separa agentes, métricas, jornadas e decisões por tenant."
-      >
-        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-          <OrganizationSwitcher hidePersonal skipInvitationScreen />
-          <Button
-            variant="ghost"
-            onClick={() =>
-              signOut({ redirectUrl: import.meta.env.BASE_URL || "/" })
-            }
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Trocar conta
-          </Button>
-        </div>
-      </TenantStateCard>
-    );
-  }
-
   if (
     state.scopeKey !== scopeKey ||
     state.status === "idle" ||
@@ -149,7 +130,7 @@ export function TenantBootstrapBoundary({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <OrganizacaoAtiva.Provider value={nomeOrg}>{children}</OrganizacaoAtiva.Provider>;
 }
 
 function TenantLoadingState() {

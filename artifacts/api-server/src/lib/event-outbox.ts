@@ -5,6 +5,9 @@ import { AGENT_TELEMETRY_EVENT_TYPE } from "./agent-telemetry-reevaluation";
 export interface ClaimedOutboxEvent {
   id: string;
   orgId: string;
+  /** Escopo da E1; nulos em evento org-wide ou anterior à 0022. */
+  projectId: string | null;
+  environmentId: string | null;
   aggregateType: string;
   aggregateId: string;
   eventType: string;
@@ -22,6 +25,8 @@ export interface ClaimedOutboxEvent {
 interface OutboxDatabaseRow {
   id: string;
   org_id: string;
+  project_id: string | null;
+  environment_id: string | null;
   aggregate_type: string;
   aggregate_id: string;
   event_type: string;
@@ -40,6 +45,8 @@ function mapOutboxRow(row: OutboxDatabaseRow): ClaimedOutboxEvent {
   return {
     id: row.id,
     orgId: row.org_id,
+    projectId: row.project_id ?? null,
+    environmentId: row.environment_id ?? null,
     aggregateType: row.aggregate_type,
     aggregateId: row.aggregate_id,
     eventType: row.event_type,

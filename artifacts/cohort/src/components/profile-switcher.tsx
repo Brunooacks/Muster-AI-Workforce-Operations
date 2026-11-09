@@ -18,12 +18,8 @@ import { cn } from "@/lib/utils";
  * construída sobre eles, então nenhum componente precisa saber que mudou.
  */
 export const PROFILES = [
-  { id: "opsroom",    label: "Ops Room",   hint: "verde fósforo sobre vazio",   swatch: "#7fb89a", bg: "#0e1512" },
-  { id: "ambar",      label: "Âmbar",      hint: "fósforo quente, alto contraste", swatch: "#e0a23c", bg: "#12100d" },
-  { id: "ardosia",    label: "Ardósia",    hint: "azul-cinza sóbrio",           swatch: "#6aa9d8", bg: "#121820" },
-  { id: "solarizado", label: "Solarizado", hint: "baixo contraste, olhos calmos", swatch: "#2aa198", bg: "#002028" },
-  { id: "grafite",    label: "Grafite",    hint: "neutro — a cor fica no dado", swatch: "#b8b8c0", bg: "#141416" },
-  { id: "papel",      label: "Papel",      hint: "claro, para sala com projetor", swatch: "#3a7a5c", bg: "#f7f7f2" },
+  { id: "claro", label: "Claro", hint: "padrão do protótipo aprovado", swatch: "#1d1d1f", bg: "#ffffff" },
+  { id: "noite", label: "Noite", hint: "modo escuro, ciano sobre azul-noite", swatch: "#19d3f5", bg: "#06080d" },
 ] as const;
 
 export type ProfileId = (typeof PROFILES)[number]["id"];
@@ -32,17 +28,17 @@ const STORAGE_KEY = "muster:profile";
 
 function aplicar(id: ProfileId) {
   const root = document.documentElement;
-  // Ops Room é o padrão do :root — sem atributo, para não duplicar tokens.
-  if (id === "opsroom") root.removeAttribute("data-profile");
-  else root.setAttribute("data-profile", id);
+  // "claro" é o :root; "noite" liga a classe .dark (tokens do protótipo).
+  root.removeAttribute("data-profile");
+  root.classList.toggle("dark", id === "noite");
 }
 
 export function lerPerfilSalvo(): ProfileId {
   try {
     const salvo = window.localStorage.getItem(STORAGE_KEY) as ProfileId | null;
-    return PROFILES.some((p) => p.id === salvo) ? (salvo as ProfileId) : "opsroom";
+    return PROFILES.some((p) => p.id === salvo) ? (salvo as ProfileId) : "claro";
   } catch {
-    return "opsroom";
+    return "claro";
   }
 }
 

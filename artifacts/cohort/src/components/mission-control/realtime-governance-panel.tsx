@@ -151,9 +151,9 @@ const L: Record<Lang, GovernanceDict> = {
     errorDescription: "A visão permanece sem classificação até a API responder com evidências.",
     retry: "Tentar novamente",
     openAgent: "Abrir agente",
-    direction: "Direction",
-    protection: "Protection",
-    proof: "Proof",
+    direction: "Direção",
+    protection: "Proteção",
+    proof: "Prova",
     context: "Contexto",
     notMeasured: "Não medido",
     health: "Saúde",
@@ -644,7 +644,7 @@ export function RealtimeGovernancePanel() {
                               {item.inputDrift === null ? `${t.inputDrift}: ${t.notMeasured}` : `${t.inputDrift}: ${formatPercent(item.inputDrift)}`}
                             </p>
                             {item.regressionAttributable && (
-                              <p className="mt-1 text-[11px] font-medium text-chart-3">{t.attributable}</p>
+                              <p className="mt-1 text-[11px] font-medium text-chart-3-text">{t.attributable}</p>
                             )}
                             {(item.baselineReleaseId || item.currentReleaseId) && (
                               <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">

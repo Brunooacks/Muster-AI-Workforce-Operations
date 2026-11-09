@@ -33,6 +33,13 @@ const DISPATCH_BY_KIND: Record<AgentEventKind, SupervisionDispatch> = {
     priority: "low",
     debounceMs: 0,
   },
+  // A revisão humana vai para a trilha (agent.task.trail) e entra nas camadas
+  // da cunha na leitura; não dispara a reavaliação das 5 camadas antigas.
+  human_review: {
+    shouldReevaluate: false,
+    priority: "low",
+    debounceMs: 0,
+  },
 };
 
 export function supervisionDispatchFor(

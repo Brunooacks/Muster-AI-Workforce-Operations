@@ -8,8 +8,8 @@ import { relativeAge, type OperationalTone } from "./presentation";
 
 const TONE_CLASS: Record<OperationalTone, string> = {
   stable: "border-chart-1/30 bg-chart-1/[0.06] text-chart-1",
-  attention: "border-chart-2/35 bg-chart-2/[0.07] text-chart-2",
-  critical: "border-chart-3/35 bg-chart-3/[0.07] text-chart-3",
+  attention: "border-chart-2/35 bg-chart-2/[0.07] text-chart-2-text",
+  critical: "border-chart-3/35 bg-chart-3/[0.07] text-chart-3-text",
   neutral: "border-card-border bg-card/80 text-muted-foreground",
 };
 

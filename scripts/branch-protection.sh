@@ -6,7 +6,7 @@ set -euo pipefail
 
 readonly REPOSITORY="Brunooacks/Muster-AI-Workforce-Operations"
 readonly ENDPOINT="repos/${REPOSITORY}/branches/main/protection"
-readonly DEFAULT_CHECKS="typecheck · test · build,actionlint"
+readonly DEFAULT_CHECKS="ci/woodpecker"
 
 mode="print"
 checks_source="${REQUIRED_CHECKS:-$DEFAULT_CHECKS}"

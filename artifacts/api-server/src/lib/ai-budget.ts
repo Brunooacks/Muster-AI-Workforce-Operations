@@ -1,4 +1,4 @@
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { aiUsageDaily } from "@workspace/db/schema";
 
 const MAX_RESERVED_INPUT_TOKENS = 150_000;
@@ -28,6 +28,8 @@ type AiBudgetConfig = AiBudgetLimits & {
 export type AiUsageStore = {
   reserve(input: {
     orgId: string;
+    /** Projeto da chamada, quando conhecido (D-E1-3); nulo = org-wide. */
+    projectId: string | null;
     feature: string;
     day: string;
     monthStart: string;
@@ -40,6 +42,7 @@ export type AiUsageStore = {
   }): Promise<boolean>;
   settle(input: {
     orgId: string;
+    projectId: string | null;
     feature: string;
     day: string;
     reservedInputTokens: number;
@@ -125,6 +128,7 @@ async function postgresUsageStore(): Promise<AiUsageStore> {
           .insert(aiUsageDaily)
           .values({
             orgId: input.orgId,
+            projectId: input.projectId,
             day: input.day,
             feature: input.feature,
             calls: 1,
@@ -133,7 +137,9 @@ async function postgresUsageStore(): Promise<AiUsageStore> {
             estCostUsd: input.reservedCostUsd,
           })
           .onConflictDoUpdate({
-            target: [aiUsageDaily.orgId, aiUsageDaily.day, aiUsageDaily.feature],
+            // A soma mensal acima segue por organização; a linha do dia é
+            // por projeto (NULLS NOT DISTINCT junta as chamadas sem projeto).
+            target: [aiUsageDaily.orgId, aiUsageDaily.projectId, aiUsageDaily.day, aiUsageDaily.feature],
             set: {
               calls: sql`${aiUsageDaily.calls} + 1`,
               inputTokens: sql`${aiUsageDaily.inputTokens} + ${input.reservedInputTokens}`,
@@ -156,6 +162,9 @@ async function postgresUsageStore(): Promise<AiUsageStore> {
         })
         .where(and(
           eq(aiUsageDaily.orgId, input.orgId),
+          input.projectId === null
+            ? isNull(aiUsageDaily.projectId)
+            : eq(aiUsageDaily.projectId, input.projectId),
           eq(aiUsageDaily.day, input.day),
           eq(aiUsageDaily.feature, input.feature),
         ));
@@ -168,6 +177,7 @@ export async function withAiBudgetUsingStore<T extends AiUsageResponse>(
   orgId: string,
   feature: string,
   fn: (limits: AiBudgetLimits) => Promise<T>,
+  projectId: string | null = null,
 ): Promise<{ aiInsight: AiInsightAvailability; value?: T }> {
   const config = configuredBudget();
   if (!config) return { aiInsight: "unavailable" };
@@ -178,6 +188,7 @@ export async function withAiBudgetUsingStore<T extends AiUsageResponse>(
   const reservedCostUsd = costUsd(reservedInputTokens, reservedOutputTokens, config);
   const reserved = await store.reserve({
     orgId,
+    projectId,
     feature,
     day,
     monthStart,
@@ -195,6 +206,7 @@ export async function withAiBudgetUsingStore<T extends AiUsageResponse>(
   const outputTokens = Math.max(0, value.usage?.completion_tokens ?? reservedOutputTokens);
   await store.settle({
     orgId,
+    projectId,
     feature,
     day,
     reservedInputTokens,
@@ -211,8 +223,9 @@ export async function withAiBudget<T extends AiUsageResponse>(
   orgId: string,
   feature: string,
   fn: (limits: AiBudgetLimits) => Promise<T>,
+  projectId: string | null = null,
 ): Promise<{ aiInsight: AiInsightAvailability; value?: T }> {
   const config = configuredBudget();
   if (!config) return { aiInsight: "unavailable" };
-  return withAiBudgetUsingStore(await postgresUsageStore(), orgId, feature, fn);
+  return withAiBudgetUsingStore(await postgresUsageStore(), orgId, feature, fn, projectId);
 }

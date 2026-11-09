@@ -21,8 +21,25 @@ export const LANGS: Array<{ code: Lang; label: string; flag: string }> = [
 
 const STORAGE_KEY = "muster:lang";
 
+/**
+ * RG-M05 — /en e /es são URLs públicas de idioma: a primeira tela já vem no
+ * idioma da URL (e a escolha é persistida), em vez de cair no 404.
+ */
+export const LANG_PATHS: Record<string, Lang> = { "/en": "en", "/es": "es", "/pt": "pt" };
+
+export function langFromPath(pathname: string): Lang | null {
+  const limpo = pathname.replace(/\/+$/, "").toLowerCase();
+  const ultimo = "/" + (limpo.split("/").pop() ?? "");
+  return LANG_PATHS[ultimo] ?? null;
+}
+
 function initialLang(): Lang {
   try {
+    const daUrl = langFromPath(window.location.pathname);
+    if (daUrl) {
+      window.localStorage.setItem(STORAGE_KEY, daUrl);
+      return daUrl;
+    }
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "pt" || stored === "en" || stored === "es") return stored;
     const nav = navigator.language.toLowerCase();
@@ -65,4 +82,21 @@ export function useLang() {
 /** Locale for number/date formatting consistent with the active language. */
 export function localeOf(lang: Lang): string {
   return lang === "pt" ? "pt-BR" : lang === "en" ? "en-US" : "es-ES";
+}
+
+/**
+ * Deep-translates the strings of a static structure (arrays/objects) using a
+ * pt→target dictionary. Strings missing from the dictionary pass through, so
+ * colors, ids and numbers stay untouched.
+ */
+export function localize<T>(value: T, dict?: Record<string, string>): T {
+  if (!dict) return value;
+  if (typeof value === "string") return (dict[value] ?? value) as T;
+  if (Array.isArray(value)) return value.map((v) => localize(v, dict)) as T;
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = localize(v, dict);
+    return out as T;
+  }
+  return value;
 }

@@ -19,6 +19,11 @@ export interface AgentInput {
      * @minLength 1
      */
   connectorId?: string;
+  /**
+     * Projeto do agente. Sem valor, o agente entra no projeto Padrão da conta.
+     * @minLength 1
+     */
+  projectId?: string;
   /** Área responsável. Opcional: um agente descoberto por varredura chega sem dono declarado, e recusar o cadastro por isso só o manteria invisível. Ele entra como "sem área" e a atribuição fica pendente. */
   areaId?: string | null;
   /** @minLength 1 */

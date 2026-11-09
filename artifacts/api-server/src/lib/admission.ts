@@ -3,6 +3,7 @@ import {
   db,
   agents,
   connectors,
+  projects,
   agentConnectorLinks,
   agentIdentities,
   agentOwners,
@@ -57,6 +58,13 @@ export class InvalidAdmissionConnectorError extends Error {
   constructor(public connectorId: string) {
     super(`Connector is not available in this organization: ${connectorId}`);
     this.name = "InvalidAdmissionConnectorError";
+  }
+}
+
+export class InvalidAdmissionProjectError extends Error {
+  constructor(public projectId: string) {
+    super(`Project is not available in this organization: ${projectId}`);
+    this.name = "InvalidAdmissionProjectError";
   }
 }
 
@@ -119,6 +127,8 @@ export interface AdmitAgentInput {
   externalId?: string;
   /** Origem autenticada escolhida na admissão para discovery e telemetria. */
   connectorId?: string;
+  /** Projeto da conta (E1). Sem valor, o banco usa o projeto Padrão. */
+  projectId?: string;
   initialEvaluationRationale?: string;
   initialVerdictRationale?: string;
   suggestedSponsor?: string;
@@ -155,6 +165,15 @@ export async function admitAgentTx(
       .where(and(eq(connectors.id, input.connectorId), eq(connectors.orgId, input.orgId)))
       .limit(1);
     if (!connector) throw new InvalidAdmissionConnectorError(input.connectorId);
+  }
+
+  if (input.projectId) {
+    const [project] = await tx
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.id, input.projectId), eq(projects.orgId, input.orgId)))
+      .limit(1);
+    if (!project) throw new InvalidAdmissionProjectError(input.projectId);
   }
 
   const referencedMetricKeys = [
@@ -218,6 +237,7 @@ export async function admitAgentTx(
       .insert(agents)
       .values({
         orgId: input.orgId,
+        ...(input.projectId ? { projectId: input.projectId } : {}),
         areaId: input.areaId ?? null,
         externalId,
         name: input.name,
