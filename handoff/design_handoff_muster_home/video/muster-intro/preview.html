@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Preview · Muster intro</title>
+<style>
+  body{margin:0;background:#e7e5df;font-family:Geist,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px;box-sizing:border-box;min-height:100vh}
+  .frame{width:min(100%,1280px);aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.18)}
+  iframe{width:1920px;height:1080px;border:0;transform-origin:0 0}
+  .bar{width:min(100%,1280px);display:flex;align-items:center;gap:14px;font-size:13px;color:#555}
+  button{font:500 13px Geist,system-ui,sans-serif;padding:8px 16px;border-radius:999px;border:0;background:#141414;color:#fff;cursor:pointer}
+  input[type=range]{flex:1;accent-color:#141414}
+  code{font:12px ui-monospace,monospace;background:#fff;padding:2px 6px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="frame"><iframe id="f" src="index.html"></iframe></div>
+<div class="bar"><button id="p">▶ Reproduzir</button><input id="r" type="range" min="0" max="53" step="0.01" value="0"><span id="t">0.0s / 53s</span></div>
+<div class="bar">Preview da composição HyperFrames. Para renderizar o MP4: <code>cd video/muster-intro && npx hyperframes render</code></div>
+<script>
+  const f = document.getElementById('f'), p = document.getElementById('p'), r = document.getElementById('r'), t = document.getElementById('t');
+  const fit = () => { const w = document.querySelector('.frame').clientWidth; f.style.transform = `scale(${w / 1920})`; };
+  addEventListener('resize', fit); fit();
+  let tl = null, playing = false, raf;
+  const clips = () => f.contentDocument.querySelectorAll('.clip');
+  const show = (s) => { clips().forEach(c => { const a = +c.dataset.start, d = +c.dataset.duration; c.style.display = (s >= a && s < a + d) ? 'flex' : 'none'; }); };
+  const seek = (s) => { tl.pause(s); show(s); r.value = s; t.textContent = s.toFixed(1) + 's / 53s'; };
+  f.onload = () => { tl = f.contentWindow.__timelines.muster; seek(0); };
+  r.oninput = () => { playing = false; p.textContent = '▶ Reproduzir'; cancelAnimationFrame(raf); seek(+r.value); };
+  p.onclick = () => {
+    if (!tl) return;
+    playing = !playing; p.textContent = playing ? '❚❚ Pausar' : '▶ Reproduzir';
+    let last = performance.now(), s = +r.value >= 53 ? 0 : +r.value;
+    const step = (now) => { if (!playing) return; s += (now - last) / 1000; last = now; if (s >= 53) { s = 53; playing = false; p.textContent = '▶ Reproduzir'; } seek(s); if (playing) raf = requestAnimationFrame(step); };
+    raf = requestAnimationFrame(step);
+  };
+</script>
+</body>
+</html>

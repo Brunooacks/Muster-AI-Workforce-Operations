@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#fff;color:#1d1d1f;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:#397459;text-decoration:none}a:hover{color:#1d1d1f}img{max-width:100%}</style>
+</helmet>
+<div style="width:100%;max-width:1280px;margin:0 auto;background:#fff;color:#1d1d1f;font-family:Geist,system-ui,sans-serif;overflow:hidden">
+
+        <div style="min-height:52px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 16px;padding-top:8px;padding-bottom:8px;padding:0 48px;background:rgba(255,255,255,.85);border-bottom:1px solid rgba(0,0,0,.06)">
+          <div style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 64 64" width="22" height="22" fill="none" stroke="#1d1d1f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 47 L32 38 L49 47" opacity=".35"></path><path d="M15 37 L32 28 L49 37" opacity=".65"></path><path d="M15 27 L32 18 L49 27"></path></svg><span style="font:600 16px Geist,sans-serif;letter-spacing:-.02em">Muster</span></div>
+          <div style="display:flex;gap:clamp(12px,2.5vw,32px);flex-wrap:wrap;justify-content:center;font:400 13px Geist,sans-serif;color:#1d1d1f"><span>Como funciona</span><span>Acompanhamento</span><span>Decisão</span><span>Board</span><span>Integrações</span></div>
+          <div style="display:flex;gap:18px;align-items:center"><span style="font:400 13px Geist,sans-serif;color:#1d1d1f">Entrar</span><span style="font:500 13px Geist,sans-serif;color:#fff;background:#1d1d1f;padding:7px 14px;border-radius:999px">Iniciar avaliação</span></div>
+        </div>
+
+        <div style="padding:96px clamp(20px,5vw,48px) 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px">
+          <h1 style="margin:0;font:600 clamp(37px,7.2vw,92px)/.98 Geist,sans-serif;letter-spacing:-.05em;max-width:1040px;text-wrap:balance">Seus agentes de IA já decidem. <span style="color:#6e6e73">Quem responde por eles?</span></h1>
+          <h2 style="margin:8px 0 0;font:500 30px/1.25 Geist,sans-serif;letter-spacing:-.025em;max-width:900px;text-wrap:balance">Muster: todos os seus agentes de IA, com objetivos, KPIs e um responsável.</h2>
+          <p style="margin:0;max-width:680px;font:400 21px/1.45 Geist,sans-serif;color:#6e6e73;text-wrap:pretty">Onde quer que eles rodem, o Muster mostra em um só lugar o que cada agente deve entregar, quanto custa, se está entregando e quem responde por ele.</p>
+          <div style="display:flex;align-items:center;justify-content:center;gap:26px;flex-wrap:wrap;margin-top:4px"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Amazon_Web_Services_Logo.svg?width=240" alt="AWS" title="AWS" style="height:24px;width:auto;filter:grayscale(1);opacity:.7"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Microsoft_Azure_Logo.svg?width=240" alt="Microsoft Azure" title="Microsoft Azure" style="height:22px;width:auto;filter:grayscale(1);opacity:.7"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Google_Cloud_logo.svg?width=240" alt="Google Cloud" title="Google Cloud" style="height:20px;width:auto;filter:grayscale(1);opacity:.7"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Salesforce.com_logo.svg?width=240" alt="Salesforce" title="Salesforce" style="height:26px;width:auto;filter:grayscale(1);opacity:.7"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/OpenAI_Logo.svg?width=240" alt="OpenAI" title="OpenAI" style="height:18px;width:auto;filter:grayscale(1);opacity:.7"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Anthropic_logo.svg?width=240" alt="Anthropic" title="Anthropic" style="height:16px;width:auto;filter:grayscale(1);opacity:.7"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/ServiceNow_logo.svg?width=240" alt="ServiceNow" title="ServiceNow" style="height:18px;width:auto;filter:grayscale(1);opacity:.7"><span style="font:500 13px Geist,sans-serif;color:#6e6e73">+ agentes feitos em casa</span></div>
+          <div style="display:flex;gap:16px 24px;align-items:center;flex-wrap:wrap;justify-content:center;font:400 18px Geist,sans-serif"><span style="color:#fff;background:#397459;padding:12px 24px;border-radius:999px;font-weight:500">Iniciar avaliação</span><span style="color:#397459">Ver como funciona ›</span></div>
+
+          <div style="margin-top:56px;width:100%;max-width:1152px;display:flex;flex-direction:column;gap:18px">
+            <div ref="{{ vidBoxRef }}" style="position:relative;width:100%;max-width:1152px;aspect-ratio:16/9;border-radius:24px;overflow:hidden;background:#06080d;box-shadow:0 50px 100px -30px rgba(0,0,0,.45)">
+              <iframe ref="{{ vidRef }}" onLoad="{{ vidLoaded }}" src="video/muster-intro/index.html" title="Muster em 53 segundos" style="width:1920px;height:1080px;border:0;transform:scale({{ vidScale }});transform-origin:0 0;pointer-events:none;display:block"></iframe>
+              <sc-if value="{{ vidIdle }}" hint-placeholder-val="{{ true }}"><div onClick="{{ vidToggle }}" style="cursor:pointer;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,8,13,.25)"><span style="width:88px;height:88px;border-radius:50%;background:#fff;color:#1d1d1f;display:flex;align-items:center;justify-content:center;font:600 28px Geist,sans-serif;box-shadow:0 20px 50px rgba(0,0,0,.4)">▶</span></div></sc-if>
+              <div style="position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.15)"><div style="height:4px;background:#19d3f5;width:{{ vidPct }}"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center">
+              <span onClick="{{ vidToggle }}" style="cursor:pointer;font:500 13px Geist,sans-serif;color:#fff;background:#1d1d1f;padding:9px 16px;border-radius:999px">{{ vidBtn }}</span>
+              <sc-for list="{{ vidChapters }}" as="c" hint-placeholder-count="7"><span onClick="{{ c.go }}" style="cursor:pointer;font:500 13px Geist,sans-serif;padding:9px 16px;border-radius:999px;border:1px solid rgba(0,0,0,.12);background:{{ c.bg }};color:{{ c.fg }};transition:all .25s">{{ c.label }}</span></sc-for>
+            </div>
+            <span style="font:400 12px Geist,sans-serif;color:#a1a1a6;text-align:center">53 segundos · clique em um capítulo para pular · telas do produto</span>
+          </div>
+
+        </div>
+
+        <div style="padding:120px clamp(20px,5vw,48px) 0;display:flex;flex-direction:column;align-items:center;gap:40px;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:14px;max-width:860px"><span style="font:500 13px Geist,sans-serif;color:#6e6e73">O que o mercado já sabe</span><h2 style="margin:0;font:600 clamp(22px,4.4vw,56px)/1.05 Geist,sans-serif;letter-spacing:-.04em;text-wrap:balance">Os agentes vão decidir mais. Quatro em cada dez projetos vão ser cancelados.</h2></div>
+          <div style="width:100%;max-width:100%;max-width:1152px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
+            <sc-for list="{{ trends }}" as="t" hint-placeholder-count="3">
+              <div style="background:#f5f5f7;border-radius:24px;padding:40px 36px;display:flex;flex-direction:column;gap:12px;text-align:left"><span style="font:600 clamp(32px,6.3vw,80px)/.9 Geist,sans-serif;letter-spacing:-.06em;color:{{ t.c }}">{{ t.n }}</span><span style="font:500 20px/1.3 Geist,sans-serif;letter-spacing:-.015em;color:#1d1d1f">{{ t.t }}</span><span style="font:400 15px/1.5 Geist,sans-serif;color:#6e6e73">{{ t.d }}</span><span style="font:400 12px Geist,sans-serif;color:#a1a1a6;margin-top:auto;padding-top:12px">{{ t.src }}</span></div>
+            </sc-for>
+          </div>
+          <p style="margin:0;max-width:760px;font:400 13px/1.5 Geist,sans-serif;color:#a1a1a6">Gartner é marca registrada da Gartner, Inc. Previsões de comunicados públicos (jun/2025). Não há endosso do Muster.</p>
+        </div>
+
+        <div style="background:#000;color:#f5f5f7;padding:120px clamp(20px,5vw,48px)">
+          <div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:64px">
+            <div style="display:flex;flex-direction:column;gap:16px;max-width:820px"><span style="font:500 13px Geist,sans-serif;color:#a1a1a6">O que resolvemos</span><h2 style="margin:0;font:600 clamp(24px,4.7vw,60px)/1.05 Geist,sans-serif;letter-spacing:-.04em;text-wrap:balance">Quatro perguntas que hoje ficam sem resposta.</h2></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:1px;background:#2a2a2e;border:1px solid #2a2a2e;border-radius:20px;overflow:hidden">
+              <sc-for list="{{ problems }}" as="p" hint-placeholder-count="4">
+                <div style="background:#000;padding:36px clamp(18px,4vw,40px);display:flex;flex-direction:column;gap:14px">
+                  <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#6e6e73">{{ p.n }}</span>
+                  <span style="font:600 28px/1.15 Geist,sans-serif;letter-spacing:-.02em">{{ p.q }}</span>
+                  <span style="font:400 16px/1.5 Geist,sans-serif;color:#a1a1a6">{{ p.why }}</span>
+                  <span style="font:500 15px Geist,sans-serif;color:#7fb89a;margin-top:auto;padding-top:10px">Muster: {{ p.fix }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:96px clamp(20px,5vw,48px) 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px">
+          <span style="font:500 13px Geist,sans-serif;color:#6e6e73">Objetivos e KPIs por agente</span>
+          <h2 style="margin:0;font:600 clamp(24px,4.7vw,60px)/1.05 Geist,sans-serif;letter-spacing:-.04em;max-width:900px;text-wrap:balance">Cada agente tem uma ficha, como um funcionário.</h2>
+          <div style="margin-top:40px;width:100%;display:flex;flex-direction:column;align-items:center;gap:32px;padding-bottom:96px;background:linear-gradient(180deg,#fff 0%,#f5f5f7 30%,#f5f5f7 100%);border-radius:40px 40px 0 0">
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;max-width:100%;gap:4px;background:rgba(0,0,0,.06);border-radius:24px;padding:4px;margin-top:40px">
+              <sc-for list="{{ cardTabs7 }}" as="t" hint-placeholder-count="4"><span onClick="{{ t.go }}" style="cursor:pointer;font:500 14px Geist,sans-serif;padding:9px 20px;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }};transition:all .3s">{{ t.label }}</span></sc-for>
+            </div>
+            <div style="width:100%;max-width:1152px;display:flex;flex-direction:column;align-items:center;gap:32px;text-align:left">
+              <div style="width:100%;max-width:620px;box-sizing:border-box;height:auto;gap:28px;background:linear-gradient(135deg,#2a2a2e 0%,#141416 55%,#1f1f23 100%);border-radius:28px;padding:36px clamp(18px,4vw,40px);color:#f5f5f7;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 50px 100px -30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12);position:relative;overflow:hidden">
+                <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% 0%,rgba(255,255,255,.08),transparent 60%);pointer-events:none"></div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                  <div style="display:flex;flex-direction:column;gap:2px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(245,245,247,.55)">FICHA DO AGENTE</span><span style="font:400 11px 'IBM Plex Mono',monospace;color:rgba(245,245,247,.4)">Nº 0417 · v3</span></div>
+                  <svg viewBox="0 0 64 64" width="26" height="26" fill="none" stroke="#f5f5f7" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 47 L32 38 L49 47" opacity=".35"></path><path d="M15 37 L32 28 L49 37" opacity=".65"></path><path d="M15 27 L32 18 L49 27"></path></svg>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:18px">
+                  <div style="display:flex;align-items:center;gap:14px"><span style="width:48px;height:48px;border-radius:50%;background:#f5f5f7;color:#1d1d1f;display:flex;align-items:center;justify-content:center;font:600 20px Geist,sans-serif">S</span><div style="display:flex;flex-direction:column"><span style="font:600 30px/1 Geist,sans-serif;letter-spacing:-.02em">Sofia</span><span style="font:400 14px Geist,sans-serif;color:rgba(245,245,247,.6)">Atendimento N1 · Zendesk</span></div><span style="margin-left:auto;font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:{{ cardBadgeC7 }};border:1px solid {{ cardBadgeC7 }};padding:5px 10px;border-radius:999px;transition:all .4s">{{ cardBadge7 }}</span></div>
+                  <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:18px;border-top:1px solid rgba(255,255,255,.12);padding-top:18px">
+                    <div style="display:flex;flex-direction:column;gap:4px;opacity:{{ hl0 }};transition:opacity .4s"><span style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,247,.5)">OBJETIVO</span><span style="font:400 14px/1.35 Geist,sans-serif">Resolver 90% dos chamados de 1º nível sem escalar</span></div>
+                    <div style="display:flex;flex-direction:column;gap:4px;opacity:{{ hl1 }};transition:opacity .4s"><span style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,247,.5)">LIMITE</span><span style="font:400 14px/1.35 Geist,sans-serif">Reembolsa até R$ 500 sozinha</span></div>
+                    <div style="display:flex;flex-direction:column;gap:4px;opacity:{{ hl1 }};transition:opacity .4s"><span style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,247,.5)">RESPONSÁVEL</span><span style="font:400 14px/1.35 Geist,sans-serif">Marina Alves · CX</span></div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:18px;opacity:{{ hl2 }};transition:opacity .4s">
+                    <sc-for list="{{ cardMetrics }}" as="m" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:6px"><span style="font:400 12px Geist,sans-serif;color:rgba(245,245,247,.55)">{{ m.l }}</span><span style="font:500 26px/1 Geist,sans-serif;letter-spacing:-.02em">{{ m.v }}</span><div style="height:2px;background:rgba(255,255,255,.14);border-radius:2px"><div style="height:2px;background:{{ m.c }};width:{{ m.w }};border-radius:2px;transition:width .6s"></div></div></div></sc-for>
+                  </div>
+                </div>
+              </div>
+              <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px 28px">
+                <sc-for list="{{ calloutsL7 }}" as="c" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:4px;max-width:230px;opacity:{{ c.op }};transition:opacity .4s"><span style="font:600 15px Geist,sans-serif;color:#1d1d1f">{{ c.t }}</span><span style="font:400 14px/1.45 Geist,sans-serif;color:#6e6e73">{{ c.d }}</span><span style="width:40px;height:1px;background:#1d1d1f;margin-top:6px"></span></div></sc-for>
+                <sc-for list="{{ calloutsR7 }}" as="c" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:4px;max-width:230px;opacity:{{ c.op }};transition:opacity .4s"><span style="width:40px;height:1px;background:#1d1d1f;margin-bottom:6px"></span><span style="font:600 15px Geist,sans-serif;color:#1d1d1f">{{ c.t }}</span><span style="font:400 14px/1.45 Geist,sans-serif;color:#6e6e73">{{ c.d }}</span></div></sc-for>
+              </div>
+            </div>
+            <p style="margin:0;max-width:640px;font:400 19px/1.45 Geist,sans-serif;color:#1d1d1f;text-align:center;min-height:56px">{{ cardCaption7 }}</p>
+            <span style="font:400 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#a1a1a6">DADOS ILUSTRATIVOS</span>
+          </div>
+        
+        </div>
+
+        <div style="padding:120px clamp(20px,5vw,48px);display:flex;flex-direction:column;align-items:center;gap:48px;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:14px;max-width:820px"><span style="font:500 13px Geist,sans-serif;color:#6e6e73">Acompanhamento</span><h2 style="margin:0;font:600 clamp(24px,4.7vw,60px)/1.05 Geist,sans-serif;letter-spacing:-.04em;text-wrap:balance">Concluir a tarefa não é entregar o resultado.</h2><p style="margin:0;font:400 20px/1.5 Geist,sans-serif;color:#6e6e73">O Muster mede os dois. E avisa quando um esconde o outro.</p></div>
+          <div style="width:100%;max-width:960px;background:#f5f5f7;border-radius:32px;padding:56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:48px;align-items:center;text-align:left">
+            <div style="display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;flex-wrap:wrap;max-width:100%;gap:4px;background:rgba(0,0,0,.06);border-radius:24px;padding:4px;align-self:flex-start"><sc-for list="{{ vTabsA }}" as="t" hint-placeholder-count="2"><span onClick="{{ t.go }}" style="cursor:pointer;font:500 13px Geist,sans-serif;padding:8px 16px;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }};transition:all .3s">{{ t.label }}</span></sc-for></div>
+              <span style="font:400 14px Geist,sans-serif;color:#6e6e73">Atlas · agente de prospecção · agosto</span>
+              <span style="font:600 clamp(22px,2.8vw,36px)/1.1 Geist,sans-serif;letter-spacing:-.03em">{{ vHead }}</span>
+              <p style="margin:0;font:400 16px/1.5 Geist,sans-serif;color:#6e6e73">{{ vSub }}</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;text-align:right">
+              <span style="font:600 clamp(72px,14.1vw,180px)/.85 Geist,sans-serif;letter-spacing:-.07em;color:{{ vColorA }};transition:color .5s">{{ vNum }}</span>
+              <span style="font:500 14px Geist,sans-serif;color:#6e6e73">{{ vLabel }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 48px 120px;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:20px">
+          <div style="background:#f5f5f7;border-radius:32px;padding:56px;display:flex;flex-direction:column;gap:28px;min-height:0">
+            <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px Geist,sans-serif;color:#6e6e73">Decisão com dono</span><h3 style="margin:0;font:600 clamp(22px,3.1vw,40px)/1.08 Geist,sans-serif;letter-spacing:-.03em">O Muster recomenda. Uma pessoa decide.</h3><p style="margin:0;font:400 17px/1.5 Geist,sans-serif;color:#6e6e73">Cada recomendação chega com evidência, prazo e um nome.</p></div>
+            <div style="margin-top:auto;background:#fff;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 40px -20px rgba(0,0,0,.2)">
+              <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#6e6e73">PARA MARINA ALVES · ATÉ 30/08</span>
+              <span style="font:500 19px/1.35 Geist,sans-serif">Ampliar o limite da Sofia para R$ 1.000 em reembolsos de baixo risco.</span>
+              <span style="font:400 13px Geist,sans-serif;color:#6e6e73">Evidência: 1.284 atendimentos · 0 fora da política · 96% de qualidade</span>
+              <div style="display:flex;gap:8px"><span style="font:500 14px Geist,sans-serif;color:#fff;background:#1d1d1f;padding:10px 18px;border-radius:999px">Aprovar</span><span style="font:500 14px Geist,sans-serif;color:#1d1d1f;background:#f5f5f7;padding:10px 18px;border-radius:999px">Ajustar</span><span style="font:500 14px Geist,sans-serif;color:#6e6e73;padding:10px 12px">Rejeitar</span></div>
+            </div>
+          </div>
+          <div style="background:#1d1d1f;color:#f5f5f7;border-radius:32px;padding:56px;display:flex;flex-direction:column;gap:28px;min-height:0">
+            <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px Geist,sans-serif;color:#a1a1a6">Para o board</span><h3 style="margin:0;font:600 clamp(22px,3.1vw,40px)/1.08 Geist,sans-serif;letter-spacing:-.03em">Um relatório por mês. Em uma página.</h3><p style="margin:0;font:400 17px/1.5 Geist,sans-serif;color:#a1a1a6">O que mudou, por quê, o que está em risco e quem cuida.</p></div>
+            <div style="margin-top:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:24px 32px">
+              <sc-for list="{{ boardStats }}" as="b" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 clamp(22px,3.8vw,48px)/1 Geist,sans-serif;letter-spacing:-.04em">{{ b.v }}</span><span style="font:400 14px Geist,sans-serif;color:#a1a1a6">{{ b.l }} <span style="color:{{ b.cA }};font-weight:500">{{ b.d }}</span></span></div></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:0 48px 120px;display:flex;flex-direction:column;align-items:center;gap:28px;text-align:center">
+          <h3 style="margin:0;font:600 clamp(22px,3.1vw,40px)/1.08 Geist,sans-serif;letter-spacing:-.03em">Funciona onde seus agentes já estão.</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:900px">
+            <sc-for list="{{ connectors }}" as="c" hint-placeholder-count="8"><span style="font:500 15px Geist,sans-serif;color:#1d1d1f;border:1px solid rgba(0,0,0,.12);padding:10px 18px;border-radius:999px">{{ c }}</span></sc-for>
+          </div>
+          <p style="margin:0;font:400 15px Geist,sans-serif;color:#6e6e73">Na nuvem ou no seu servidor · dados isolados por empresa · tudo auditável</p>
+        </div>
+
+        <div style="padding:120px clamp(20px,5vw,48px) 0;display:flex;flex-direction:column;align-items:center;gap:40px;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:14px;max-width:860px"><span style="font:500 13px Geist,sans-serif;color:#6e6e73">Preços</span><h2 style="margin:0;font:600 clamp(32px,4.4vw,56px)/1.05 Geist,sans-serif;letter-spacing:-.04em;text-wrap:balance">Preço fixo por empresa. Sem cobrança por usuário.</h2><p style="margin:0;font:400 clamp(16px,1.6vw,19px)/1.5 Geist,sans-serif;color:#6e6e73">Três planos, por porte de empresa. Agentes adicionais quando precisar.</p></div>
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;max-width:100%;gap:4px;background:rgba(0,0,0,.06);border-radius:24px;padding:4px"><sc-for list="{{ billTabs }}" as="t" hint-placeholder-count="2"><span onClick="{{ t.go }}" style="cursor:pointer;font:500 14px Geist,sans-serif;padding:9px 18px;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:{{ t.sh }};transition:all .3s">{{ t.label }}</span></sc-for></div>
+          <div style="width:100%;max-width:100%;max-width:1152px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:stretch">
+            <sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+              <div style="background:{{ p.bg }};color:{{ p.fg }};border:1px solid {{ p.bd }};border-radius:24px;padding:36px 32px;display:flex;flex-direction:column;gap:18px;text-align:left;position:relative">
+                <sc-if value="{{ p.hot }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:18px;right:18px;font:600 11px Geist,sans-serif;letter-spacing:.08em;color:#1d1d1f;background:#19d3f5;padding:5px 10px;border-radius:999px">MAIS ESCOLHIDO</span></sc-if>
+                <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 20px Geist,sans-serif;letter-spacing:-.02em">{{ p.name }}</span><span style="font:400 14px/1.4 Geist,sans-serif;opacity:.7">{{ p.who }}</span></div>
+                <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 clamp(36px,3.6vw,48px)/1 Geist,sans-serif;letter-spacing:-.045em">{{ p.price }}</span><span style="font:400 13px Geist,sans-serif;opacity:.7">{{ p.priceNote }}</span></div>
+                <p style="margin:0;font:400 15px/1.5 Geist,sans-serif;opacity:.85">{{ p.pitch }}</p>
+                <div style="display:flex;flex-direction:column;gap:9px;border-top:1px solid {{ p.line }};padding-top:16px;font:400 14px/1.4 Geist,sans-serif"><sc-for list="{{ p.items }}" as="it" hint-placeholder-count="5"><span style="display:flex;gap:8px"><span style="color:#19d3f5">✓</span><span>{{ it }}</span></span></sc-for></div>
+                <span style="margin-top:auto;font:600 14px Geist,sans-serif;text-align:center;padding:12px 18px;border-radius:999px;background:{{ p.btnBg }};color:{{ p.btnFg }}">{{ p.cta }}</span>
+                <span style="font:400 12px/1.4 Geist,sans-serif;opacity:.6;text-align:center">{{ p.extra }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <p style="margin:0;max-width:820px;font:400 14px/1.6 Geist,sans-serif;color:#6e6e73">Sem cobrança surpresa: aviso aos 80% do limite; acima de 100%, 30 dias de coleta antes de você escolher. Auditoria avulsa: R$ 490 (inclusa em Grandes Empresas).</p>
+        </div>
+
+        <div style="background:#f5f5f7;padding:120px clamp(20px,5vw,48px);display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center">
+          <h2 style="margin:0;font:600 clamp(29px,5.6vw,72px)/1 Geist,sans-serif;letter-spacing:-.045em;max-width:900px;text-wrap:balance">Comece pelo agente que mais preocupa você.</h2>
+          <p style="margin:0;font:400 20px/1.5 Geist,sans-serif;color:#6e6e73;max-width:560px">Em 30 dias: objetivos, KPIs, acompanhamento e o primeiro relatório para o board.</p>
+          <div style="display:flex;gap:16px 24px;align-items:center;flex-wrap:wrap;justify-content:center;font:400 18px Geist,sans-serif"><span style="color:#fff;background:#397459;padding:12px 24px;border-radius:999px;font-weight:500">Iniciar avaliação</span><span style="color:#397459">Falar com a equipe ›</span></div>
+        </div>
+        <div style="padding:24px clamp(20px,5vw,48px);display:flex;justify-content:space-between;font:400 12px Geist,sans-serif;color:#6e6e73;border-top:1px solid rgba(0,0,0,.06)"><span>Muster · AI Workforce Operations</span><span>Identidade · Evidência · Decisão · Responsabilidade</span></div>
+      </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { a: 0, role: 0, ch: 0, typed: 0, blink: true, v: 0, signed: false, ch2: 0, withM: false, typed2: 0 };
+  vidRef = React.createRef();
+  vidBoxRef = React.createRef();
+  vidDur = 53;
+  vidT = 0;
+  vidTl() { const w = this.vidRef.current && this.vidRef.current.contentWindow; return w && w.__timelines && w.__timelines.muster; }
+  vidSeek(t) {
+    const tl = this.vidTl(); if (!tl) return;
+    this.vidT = Math.max(0, Math.min(this.vidDur, t));
+    tl.pause(this.vidT);
+    const doc = this.vidRef.current.contentDocument;
+    doc.querySelectorAll('.clip').forEach(c => { const a = +c.dataset.start, d = +c.dataset.duration; c.style.display = (this.vidT >= a && this.vidT < a + d) ? (c.classList.contains('center') ? 'flex' : 'block') : 'none'; });
+    this.setState({ vidPct: this.vidT / this.vidDur });
+  }
+  vidStop() { this.vidPlaying = false; cancelAnimationFrame(this.vidRaf); this.setState({ vidOn: false }); }
+  vidPlay() {
+    if (!this.vidTl()) return;
+    if (this.vidT >= this.vidDur - .05) this.vidT = 0;
+    this.vidPlaying = true; this.setState({ vidOn: true, vidStarted: true });
+    let last = performance.now();
+    const step = (now) => { if (!this.vidPlaying) return; this.vidSeek(this.vidT + (now - last) / 1000); last = now; if (this.vidT >= this.vidDur) { this.vidStop(); return; } this.vidRaf = requestAnimationFrame(step); };
+    this.vidRaf = requestAnimationFrame(step);
+  }
+  setCh2(i) { this.setState({ ch2: (i + 5) % 5 }); }
+  storyVals() {
+    const { v, signed, ch2, withM, typed2 } = this.state;
+    const ch2Labels = ['O que fizeram?', 'Como você sabe?', 'Alguém nos engana?', 'E se a IA errar?', 'Próximos passos'];
+    const sofia = [
+      { l: 'PROPÓSITO', v: 'Resolver chamados de primeiro nível dentro da política.' },
+      { l: 'PODE SOZINHA', v: 'Reembolsos até R$ 500' },
+      { l: 'RESPONDE A', v: 'Marina Alves · CX' },
+      { l: 'META', v: 'Qualidade ≥ 90% · evidência ≥ 95%' }
+    ];
+    const ch2Fg = (i) => i === ch2;
+    const a = this.state.a;
+    const prov = this.state.prov ?? -1;
+    const provNames = ['AMAZON', 'MICROSOFT', 'GOOGLE', 'SALESFORCE', 'EM CASA'];
+    const provCounts = [14, 9, 6, 11, 7];
+    const rows = [
+      { name: 'Sofia · atendimento', p: 0, prov: 'Amazon', owner: 'Marina Alves', h: 93, cost: 'R$ 12,4k' },
+      { name: 'Atlas · vendas', p: 3, prov: 'Salesforce', owner: 'Rafael Costa', h: 71, cost: 'R$ 18,9k' },
+      { name: 'Nova · dados', p: 2, prov: 'Google', owner: 'Lucas Prado', h: 97, cost: 'R$ 9,1k' },
+      { name: 'Reviewer · engenharia', p: 1, prov: 'Microsoft', owner: 'Gerente de eng.', h: 65, cost: 'R$ 6,7k' },
+      { name: 'Assistente interno', p: 4, prov: 'Feito em casa', owner: 'Sem responsável', h: 58, cost: 'R$ 4,2k' }
+    ];
+    const cardSteps = [
+      { label: 'Identidade', badge: 'ATIVA', bc: '#7fb89a', cap: 'Cada agente tem nome, função e número. Você sabe quantos rodam e o que cada um faz.' },
+      { label: 'Contrato', badge: 'CONTRATO V3', bc: '#f5f5f7', cap: 'Limite de autonomia e responsável humano ficam por escrito, versionados.' },
+      { label: 'Supervisão', badge: 'AO VIVO', bc: '#7fb89a', cap: 'Qualidade, resultado e evidência medidos continuamente, com a fonte de cada número.' },
+      { label: 'Decisão', badge: 'AGUARDA MARINA', bc: '#e7aa40', cap: 'Quando algo sai do contrato, uma pessoa recebe a recomendação e decide.' }
+    ];
+    const op = (i) => (a === i ? 1 : 0.35);
+    const vidChaps = [['Abertura', 0], ['Todas as plataformas', 5], ['Visão geral', 12], ['Objetivos e KPIs', 18], ['Alerta', 25], ['Decisões', 32], ['Começar', 43]];
+    const vidPct = this.state.vidPct ?? 0, vidOn = this.state.vidOn ?? false;
+    const card7 = [
+      { label: 'Identidade', badge: 'ATIVA', bc: '#7fb89a', cap: 'Nome, função e onde roda. Você sabe quantos existem e o que cada um faz.' },
+      { label: 'Objetivos e KPIs', badge: 'METAS DO TRIMESTRE', bc: '#f5f5f7', cap: 'O que ele deve entregar, até onde vai sozinho e quem responde por ele, por escrito.' },
+      { label: 'Acompanhamento', badge: 'AO VIVO', bc: '#7fb89a', cap: 'KPIs, custo e resultado medidos o tempo todo, com a origem de cada número.' },
+      { label: 'Decisão', badge: 'AGUARDA MARINA', bc: '#e7aa40', cap: 'Quando um KPI sai da meta, uma pessoa recebe a recomendação e decide.' }
+    ];
+    const annual = this.state.annual ?? false;
+    const planBase = [
+      { name: 'Startups', who: 'Até 2 anos de CNPJ ou até R$ 4,8 mi/ano e 20 pessoas', m: 'Grátis ou R$ 199', y: 'Grátis ou R$ 1.990', mNote: 'por mês · preço válido por 24 meses', yNote: 'por ano · 2 meses grátis', pitch: 'Para provar valor desde o primeiro agente.', items: ['Grátis: 2 agentes e 30 dias de histórico', 'Startup: 5 agentes e 90 dias de histórico', 'Relatório mensal de entregas (plano pago)', 'Agente adicional: R$ 39/mês', 'Suporte por comunidade e e-mail'], cta: 'Começar grátis', extra: 'Sem cartão.', hot: false, dark: false },
+      { name: 'Pequenas e Médias Empresas', who: 'Até R$ 300 mi/ano ou 500 pessoas', m: 'R$ 690', y: 'R$ 6.900', mNote: 'por mês', yNote: 'por ano · 2 meses grátis', pitch: 'Para quem já tem agentes em produção.', items: ['Até 25 agentes e 15 usuários', '12 meses de histórico', 'Relatório mensal de entregas', 'Agente adicional: R$ 29/mês', 'Suporte por e-mail em 1 dia útil'], cta: 'Testar 14 dias grátis', extra: 'Sem cartão.', hot: true, dark: true },
+      { name: 'Grandes Empresas', who: 'Acima disso, ou quem precisa de contrato, SSO ou SLA', m: 'a partir de R$ 2.990', y: 'contrato anual', mNote: 'por mês, sob contrato', yNote: 'a partir de R$ 2.990/mês', pitch: 'Para operações em escala, com SLA e auditoria.', items: ['A partir de 50 agentes, usuários ilimitados', '24 a 36 meses de histórico', 'Relatório mensal + auditoria trimestral', 'Agente adicional: a partir de R$ 19/mês', 'Canal dedicado com SLA'], cta: 'Falar com a equipe', extra: 'Piloto de 30 dias por R$ 990, abatido no contrato anual.', hot: false, dark: false }
+    ];
+    return {
+      billTabs: ['Mensal', 'Anual · 2 meses grátis'].map((label, i) => ({ label, bg: (i === 1) === annual ? '#fff' : 'transparent', fg: (i === 1) === annual ? '#1d1d1f' : '#6e6e73', sh: (i === 1) === annual ? '0 1px 4px rgba(0,0,0,.12)' : 'none', go: () => this.setState({ annual: i === 1 }) })),
+      plans: planBase.map(p => ({ ...p, price: annual ? p.y : p.m, priceNote: annual ? p.yNote : p.mNote, bg: p.dark ? '#1d1d1f' : '#f5f5f7', fg: p.dark ? '#f5f5f7' : '#1d1d1f', bd: p.dark ? '#1d1d1f' : 'rgba(0,0,0,.06)', line: p.dark ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.1)', btnBg: p.dark ? '#19d3f5' : '#1d1d1f', btnFg: p.dark ? '#1d1d1f' : '#fff' })),
+      trends: [
+        { n: '15%', c: '#1d1d1f', t: 'das decisões do dia a dia serão de agentes de IA até 2028.', d: 'Em 2024, zero.', src: 'Gartner, jun/2025' },
+        { n: '33%', c: '#1d1d1f', t: 'dos softwares corporativos terão agentes embutidos até 2028.', d: 'Em 2024, menos de 1%.', src: 'Gartner, jun/2025' },
+        { n: '40%+', c: '#b54f36', t: 'dos projetos com agentes serão cancelados até 2027.', d: 'Custo alto, valor pouco claro, controle fraco.', src: 'Gartner, jun/2025' }
+      ],
+      logosReady: true,
+      logos: [
+        ['AWS', 'Amazon_Web_Services_Logo.svg', '24px'],
+        ['Microsoft Azure', 'Microsoft_Azure_Logo.svg', '22px'],
+        ['Google Cloud', 'Google_Cloud_logo.svg', '20px'],
+        ['Salesforce', 'Salesforce.com_logo.svg', '26px'],
+        ['OpenAI', 'OpenAI_Logo.svg', '18px'],
+        ['Anthropic', 'Anthropic_logo.svg', '16px'],
+        ['ServiceNow', 'ServiceNow_logo.svg', '18px']
+      ].map(([alt, f, h]) => ({ alt, h, src: 'https://commons.wikimedia.org/wiki/Special:FilePath/' + f + '?width=240' })),
+      vidRef: this.vidRef, vidBoxRef: this.vidBoxRef, vidScale: this.state.vidScale ?? 0.6,
+      vidLoaded: () => this.vidSeek(0),
+      vidToggle: () => (this.vidPlaying ? this.vidStop() : this.vidPlay()),
+      vidIdle: !vidOn && !(this.state.vidStarted ?? false),
+      vidBtn: vidOn ? '❚❚ Pausar' : '▶ Assistir',
+      vidPct: Math.round(vidPct * 1000) / 10 + '%',
+      vidChapters: vidChaps.map(([label, t], i) => { const next = vidChaps[i + 1] ? vidChaps[i + 1][1] : this.vidDur; const cur = this.vidT >= t && this.vidT < next && (this.state.vidStarted ?? false); return { label, bg: cur ? '#1d1d1f' : 'transparent', fg: cur ? '#fff' : '#1d1d1f', go: () => { this.vidSeek(t); if (!this.vidPlaying) this.vidPlay(); } }; }),
+      cardTabs7: card7.map((s, i) => ({ label: s.label, bg: i === a ? '#fff' : 'transparent', fg: i === a ? '#1d1d1f' : '#6e6e73', sh: i === a ? '0 1px 4px rgba(0,0,0,.12)' : 'none', go: () => this.setState({ a: i }) })),
+      cardBadge7: card7[a].badge, cardBadgeC7: card7[a].bc, cardCaption7: card7[a].cap,
+      calloutsL7: [{ t: 'Identidade', d: 'Nome, função e onde roda.', op: a === 0 ? 1 : .35 }, { t: 'Objetivo e limite', d: 'O que deve entregar e até onde vai sozinho.', op: a === 1 ? 1 : .35 }],
+      calloutsR7: [{ t: 'Responsável', d: 'Uma pessoa com nome responde por ele.', op: a === 1 ? 1 : .35 }, { t: 'KPIs e evidência', d: 'Como está indo, com a origem de cada número.', op: a >= 2 ? 1 : .35 }],
+      fails: [
+        { n: '01', c: '#ffb020', t: 'Custa mais do que devolve.', d: 'A fatura do fornecedor chega todo mês. O retorno ninguém soma. Você descobre no fechamento do trimestre.' },
+        { n: '02', c: '#ff3d81', t: 'Parece que vai bem e não vai.', d: 'O agente bate a meta dele (tarefas, leads, tickets) enquanto o resultado do negócio piora. O painel do fornecedor não mostra isso.' },
+        { n: '03', c: '#eef2f7', t: 'Ninguém responde por ele.', d: 'Quando erra, a resposta é “o fornecedor”, “a TI” ou silêncio. Não há dono, prazo nem decisão registrada.' }
+      ],
+      verbs3: [
+        { t: 'Enxergar', d: 'Todos os agentes, de todos os fornecedores, com nome, função, custo e quem responde. Uma lista só.' },
+        { t: 'Definir metas', d: 'Objetivos e KPIs por agente, como um OKR, mais até onde ele vai sozinho. Quando passa do limite, uma pessoa é chamada.' },
+        { t: 'Decidir', d: 'Toda recomendação chega com ganho, risco e prazo. Ampliar, corrigir ou desligar: a decisão é humana e fica registrada.' }
+      ],
+      proofs: [
+        { q: 'Pela primeira vez consegui responder ao board quanto os agentes custam e quanto devolvem, no mesmo slide.', who: 'CFO · banco de médio porte · placeholder', n1: 'R$ 1,2M', l1: 'em agentes desligados ou redimensionados no 1º trimestre', n2: '47', l2: 'agentes com responsável de nome' },
+        { q: 'Descobrimos dois agentes que batiam a meta deles e derrubavam a nossa. Sem o Muster, isso ia virar orçamento do ano seguinte.', who: 'COO · varejo · placeholder', n1: '3', l1: 'alertas de resultado ilusório no 1º mês', n2: '30 dias', l2: 'até o primeiro relatório para o board' },
+        { q: 'Não trocamos nenhum fornecedor. Só passamos a enxergar todos no mesmo lugar.', who: 'CIO · seguradora · placeholder', n1: '5', l1: 'fornecedores no mesmo extrato', n2: '0', l2: 'mudanças na infraestrutura' }
+      ],
+      provs: provNames.map((n, i) => ({ name: n, n: provCounts[i], bd: prov === i ? '#19d3f5' : 'rgba(255,255,255,.1)', bg: prov === i ? 'rgba(25,211,245,.08)' : 'transparent', lc: prov === i ? '#19d3f5' : '#8b94a7', go: () => this.setState({ prov: prov === i ? -1 : i }) })),
+      provLabel: prov < 0 ? 'todos os fornecedores' : provNames[prov].toLowerCase(),
+      provSum: prov < 0 ? '47 AGENTES · 47 COM RESPONSÁVEL · R$ 184k/MÊS' : provCounts[prov] + ' AGENTES · ' + provCounts[prov] + ' COM RESPONSÁVEL',
+      ledger: rows.map(r => ({ ...r, h: r.h + '', hc: r.h >= 90 ? '#19d3f5' : r.h >= 70 ? '#ffb020' : '#ff3d81', op: prov < 0 || prov === r.p ? 1 : 0.25 })),
+      cfo: [
+        { v: 'R$ 184k', l: 'custo mensal de todos os agentes, somados', c: '#eef2f7' },
+        { v: '47 / 47', l: 'agentes com objetivos, KPIs e um responsável de nome', c: '#19d3f5' },
+        { v: 'R$ 212k', l: 'em decisões aguardando aprovação', c: '#ffb020' },
+        { v: '3', l: 'agentes que parecem ir bem e não entregam', c: '#ff3d81' }
+      ],
+      compare: [
+        { cap: 'Quantos agentes temos e o que cada um faz?', alias: 'Inventário', own: 'Os que rodam nela', m: 'Todos, com nome, função e custo' },
+        { cap: 'Quais são os objetivos e KPIs de cada um?', alias: 'Metas', own: 'Os que rodam nela', m: 'Objetivos, KPIs e limite por agente, onde quer que rode' },
+        { cap: 'Quanto custam e como estão indo?', alias: 'Custo e nota', own: 'Os que rodam nela', m: 'Somado por área e por empresa, todo mês' },
+        { cap: 'Estão entregando resultado de verdade?', alias: 'Resultado real', own: 'Em parte', m: 'Avisa quando a tarefa fecha e o resultado não vem' },
+        { cap: 'Quem responde quando um erra?', alias: 'Responsável', own: 'Não é o foco', m: 'Uma pessoa com nome, prazo e decisão registrada' }
+      ],
+      vTabsC: ['Tarefas concluídas', 'Resultado real'].map((label, i) => ({ label, bg: i === v ? '#eef2f7' : 'transparent', fg: i === v ? '#06080d' : '#8b94a7', go: () => this.setState({ v: i }) })),
+      vColorC: v === 0 ? '#eef2f7' : '#ff3d81',
+      cardTabs: cardSteps.map((s, i) => ({ label: s.label, bg: i === a ? '#fff' : 'transparent', fg: i === a ? '#1d1d1f' : '#6e6e73', sh: i === a ? '0 1px 4px rgba(0,0,0,.12)' : 'none', go: () => this.setState({ a: i }) })),
+      cardBadge: cardSteps[a].badge, cardBadgeC: cardSteps[a].bc, cardCaption: cardSteps[a].cap,
+      hl0: a === 0 || a === 1 ? 1 : 0.45, hl1: a === 1 ? 1 : 0.45, hl2: a === 2 || a === 3 ? 1 : 0.45,
+      calloutsL: [
+        { t: 'Identidade', d: 'Nome, função e sistema de origem.', op: op(0) },
+        { t: 'Função e limite', d: 'O que ela faz e até onde pode ir sozinha.', op: op(1) }
+      ],
+      calloutsR: [
+        { t: 'Responsável', d: 'Uma pessoa com nome responde por ela.', op: op(1) },
+        { t: 'Metas e evidência', d: 'Como está indo, com a origem de cada número.', op: op(2) === 1 || a === 3 ? 1 : 0.35 }
+      ],
+      cardMetrics: [{ l: 'Qualidade', v: '93%', w: '93%' }, { l: 'Resultado real', v: '91%', w: '91%' }, { l: 'Evidência', v: '96%', w: '96%' }].map(m => ({ ...m, c: '#7fb89a' })),
+      problems: [
+        { n: '01', q: 'Quantos agentes estão rodando e o que cada um pode fazer?', why: 'Times diferentes ligaram agentes em sistemas diferentes. Não existe uma lista.', fix: 'uma ficha por agente, com objetivo e limite.' },
+        { n: '02', q: 'Eles estão entregando resultado ou só concluindo tarefas?', why: 'O painel do agente diz 98%. O resultado para o negócio, ninguém mede.', fix: 'mede tarefa e resultado, e avisa quando divergem.' },
+        { n: '03', q: 'Quem responde quando um agente erra?', why: 'Hoje a resposta é “o fornecedor”, “a TI” ou silêncio.', fix: 'cada agente tem um responsável humano por escrito.' },
+        { n: '04', q: 'O que você diz ao board?', why: 'Não há relatório, só prints de painéis que ninguém sabe ler.', fix: 'um relatório mensal de uma página, com origem dos números.' }
+      ],
+      vTabsA: ['Tarefas concluídas', 'Resultado real'].map((label, i) => ({ label, bg: i === v ? '#fff' : 'transparent', fg: i === v ? '#1d1d1f' : '#6e6e73', sh: i === v ? '0 1px 4px rgba(0,0,0,.12)' : 'none', go: () => this.setState({ v: i }) })),
+      vColorA: v === 0 ? '#1d1d1f' : '#b54f36',
+      vLabel: v === 0 ? 'das reuniões agendadas no prazo' : 'das reuniões viraram oportunidade',
+      connectors: ['Zendesk', 'Salesforce', 'HubSpot', 'Snowflake', 'Notion AI', 'Kubernetes', 'Docker', 'vLLM', 'AWS', 'Azure', 'GCP', 'On-premise'],
+      profiles: [
+        { name: 'Papel', token: 'data-profile="papel"', bg: '#f9f9f4', fg: '#1f2925', primary: '#397459', alert: '#b54f36', use: '3a' },
+        { name: 'Ops Room', token: ':root (padrão do app)', bg: '#0e1513', fg: '#efe9da', primary: '#7fb89a', alert: '#cc6f5c', use: '3b' },
+        { name: 'Âmbar', token: 'data-profile="ambar"', bg: '#110f0d', fg: '#eee4d3', primary: '#e7aa40', alert: '#cf6959', use: '3c' },
+        { name: 'Graphite / Dracula / Mocha', token: 'só na landing · a remover', bg: '#0a0f1a', fg: '#eef2fb', primary: '#5ba7ff', alert: '#bd93f9', use: '—' }
+      ],
+      vTabsP: ['O que o agente reporta', 'O que o Muster mede'].map((label, i) => ({ label, bg: i === v ? '#1f2925' : 'transparent', fg: i === v ? '#f9f9f4' : '#627469', go: () => this.setState({ v: i }) })),
+      vColorP: v === 0 ? '#1f2925' : '#b54f36',
+      sofiaFieldsO: sofia.map(f => ({ l: f.l, v: signed ? f.v : '—', c: signed ? '#1f2925' : 'rgba(31,41,37,.3)', line: signed ? 'rgba(31,41,37,.25)' : '#b54f36' })),
+      ticker: [
+        { c: '#7fb89a', tag: '● CONTRATO CUMPRIDO', who: 'Vega · entrega contínua', score: '91%' },
+        { c: '#ca9e53', tag: '◆ REVIEW NECESSÁRIO', who: 'Sofia · suporte N1', score: '42 min' },
+        { c: '#7fb89a', tag: '↗ JORNADA A2A', who: 'Entrega contínua segura', score: '94% e2e' },
+        { c: '#7fb89a', tag: '● EVIDÊNCIA', who: 'traces correlacionados', score: '97%' },
+        { c: '#cc6f5c', tag: '▼ GUARDRAIL', who: 'mudança fora do escopo', score: 'bloqueada' }
+      ],
+      chaptersA: ch2Labels.map((l, i) => ({ label: l, n: '0' + (i + 1), fg: ch2Fg(i) ? '#eee4d3' : '#9f9689', bg: ch2Fg(i) ? '#171311' : 'transparent', bar: ch2Fg(i) ? '#e7aa40' : 'transparent', go: () => this.setCh2(i) })),
+      mTabsA: ['Sem Muster', 'Com Muster'].map((label, i) => ({ label, bg: (i === 1) === withM ? '#e7aa40' : 'transparent', fg: (i === 1) === withM ? '#110f0d' : '#9f9689', go: () => this.setState({ withM: i === 1, typed2: 0 }) })),
+      casesA: [
+        { name: 'Sofia', fn: 'Suporte N1', conn: 'Zendesk', score: '93', v: '● PROMOVER', c: '#e7aa40' },
+        { name: 'Atlas', fn: 'SDR', conn: 'HubSpot', score: '71', v: '▼ VITÓRIA ILUSÓRIA', c: '#cf6959' },
+        { name: 'Nova', fn: 'Dados', conn: 'Snowflake', score: '97', v: '● PROMOVER', c: '#e7aa40' },
+        { name: 'Iris', fn: 'Produtividade', conn: 'Notion AI', score: '84', v: '◆ DESENVOLVER', c: '#ca9e53' }
+      ],
+      beats: [
+        { n: '01', k: 'GANCHO', line: 'Sua empresa já contratou agentes de IA. Ninguém assinou o contrato.', why: 'Começa pelo que o leitor já vive, não pelo produto.', c: '#a8a8a3' },
+        { n: '02', k: 'TENSÃO', line: 'O agente diz 98%. O resultado diz 61%.', why: 'A vitória ilusória: o medo concreto, com número.', c: '#ff4f00' },
+        { n: '03', k: 'VIRADA', line: 'Se um agente decide pela empresa, ela precisa saber como ele trabalha.', why: 'A tese que hoje está no rodapé.', c: '#a8a8a3' },
+        { n: '04', k: 'SOLUÇÃO', line: 'Conecte. Contrate. Supervisione. Decida.', why: 'Os 4 ciclos repetidos viram 4 verbos.', c: '#a8a8a3' },
+        { n: '05', k: 'PROVA', line: 'Um agente real, um contrato real, um veredito.', why: 'Mostra, não lista.', c: '#a8a8a3' },
+        { n: '06', k: 'RESOLUÇÃO', line: 'Na próxima reunião, você tem a resposta.', why: 'O ganho é do executivo, não da plataforma.', c: '#a8a8a3' },
+        { n: '07', k: 'CONVITE', line: 'Comece por um agente.', why: 'Um pedido pequeno, fácil de aceitar.', c: '#ff4f00' }
+      ],
+      vTabs: ['O que o agente reporta', 'O que o Muster mede'].map((label, i) => ({ label, bg: i === v ? '#f2f2f0' : 'transparent', fg: i === v ? '#0e0e0e' : '#8a8a86', go: () => this.setState({ v: i }) })),
+      v1: v === 1,
+      vNum: v === 0 ? '98%' : '61%', vColor: v === 0 ? '#f2f2f0' : '#ff4f00',
+      vHead: v === 0 ? 'Meta de reuniões batida.' : 'Mas o resultado não veio.',
+      vSub: v === 0 ? 'das tarefas concluídas no prazo' : 'das reuniões viraram oportunidade real. Dois handoffs quebrados com o time comercial.',
+      signed,
+      signHead: signed ? 'Agora está tudo por escrito.' : 'Uma carteira em branco.',
+      signBody: signed ? 'Função, limite e responsável. O mesmo que você exigiria de qualquer pessoa no time, versionado e auditável.' : 'Sofia tinha acesso, velocidade e boa vontade. Não tinha limite, meta nem alguém a quem responder.',
+      signLabel: signed ? '↺ Ver sem contrato' : 'Escrever o contrato com Muster →',
+      toggleSign: () => this.setState(s => ({ signed: !s.signed })),
+      sofiaFields: sofia.map(f => ({ l: f.l, v: signed ? f.v : '—', c: signed ? '#13352b' : 'rgba(19,53,43,.3)', line: signed ? 'rgba(19,53,43,.25)' : '#d6402a' })),
+      chapters2: ch2Labels.map((l, i) => ({ label: l, n: '0' + (i + 1), fg: i === ch2 ? '#2233ff' : '#fff', bg: i === ch2 ? '#d8ff3d' : 'transparent', go: () => this.setCh2(i) })),
+      d0: ch2 === 0, d1: ch2 === 1, d2: ch2 === 2, d3: ch2 === 3, d4: ch2 === 4,
+      chLabel2: 'ITEM 0' + (ch2 + 1) + ' / 05',
+      prevCh2: () => this.setCh2(ch2 - 1), nextCh2: () => this.setCh2(ch2 + 1),
+      mTabs: ['Sem Muster', 'Com Muster'].map((label, i) => ({ label, bg: (i === 1) === withM ? '#fff' : 'transparent', fg: (i === 1) === withM ? '#2233ff' : '#fff', go: () => this.setState({ withM: i === 1, typed2: 0 }) })),
+      withM, noM: !withM,
+      typedText2: this.answer.slice(0, typed2), typedDone2: typed2 >= this.answer.length
+    };
+  }
+  answer = 'A cobertura subiu 7 pp sem perda de qualidade. O risco está em governança (−3 pp) e em dois handoffs críticos. Recomendação: ampliar a autonomia só onde a evidência supera o contrato.';
+  componentDidMount() {
+    this.ro = new ResizeObserver(() => { const el = this.vidBoxRef.current; if (el) this.setState({ vidScale: el.clientWidth / 1920 }); });
+    if (this.vidBoxRef.current) this.ro.observe(this.vidBoxRef.current);
+    this.t1 = setInterval(() => { if (this.props.autoplay ?? true) this.setState(s => ({ a: (s.a + 1) % 4 })); }, 3600);
+    this.t2 = setInterval(() => { if (this.state.ch === 0 && this.state.typed < this.answer.length) this.setState(s => ({ typed: s.typed + 2 })); }, 30);
+    this.t3 = setInterval(() => this.setState(s => ({ blink: !s.blink })), 500);
+    this.t4 = setInterval(() => { if (this.props.autoplay ?? true) this.setState(s => ({ v: 1 - s.v })); }, 4200);
+    this.t5 = setInterval(() => { if (this.state.ch2 === 0 && this.state.withM && this.state.typed2 < this.answer.length) this.setState(s => ({ typed2: s.typed2 + 2 })); }, 30);
+  }
+  componentWillUnmount() { [this.t1, this.t2, this.t3, this.t4, this.t5].forEach(clearInterval); }
+  setCh(i) { this.setState({ ch: (i + 5) % 5, typed: i === 0 ? 0 : this.state.typed }); }
+  renderVals() {
+    const { a, role, ch, typed } = this.state;
+    const steps = ['Conectar', 'Contratar', 'Supervisionar', 'Decidir'];
+    const badges = ['3 AMBIENTES', 'CONTRATO V3', 'AO VIVO', 'AGUARDA VOCÊ'];
+    const roles = [
+      { id: '0417', ini: 'S', name: 'Sofia', fn: 'Atendimento N1', purpose: 'Resolver chamados de primeiro nível dentro da política de reembolso.', owner: 'Marina Alves · CX', auto: 'Reembolsa até R$ 500', conn: 'ZENDESK', m: [88, 93, 96] },
+      { id: '0522', ini: 'A', name: 'Atlas', fn: 'SDR de prospecção', purpose: 'Qualificar leads inbound e agendar reuniões com o time comercial.', owner: 'Rafael Costa · Vendas', auto: 'Agenda, não negocia preço', conn: 'SALESFORCE', m: [90, 89, 94] },
+      { id: '0631', ini: 'N', name: 'Nova', fn: 'Qualidade de dados', purpose: 'Detectar e corrigir anomalias nas tabelas críticas antes do fechamento.', owner: 'Lucas Prado · Data', auto: 'Corrige, schema exige aprovação', conn: 'SNOWFLAKE', m: [94, 97, 98] },
+      { id: '0708', ini: 'V', name: 'Vega', fn: 'Entrega contínua', purpose: 'Entregar mudanças confiáveis dentro do escopo técnico aprovado.', owner: 'Ana Ribeiro · Plataforma', auto: 'Merge com revisão humana', conn: 'KUBERNETES', m: [91, 96, 97] }
+    ];
+    const roleLabels = ['Suporte', 'Vendas', 'Dados', 'Engenharia'];
+    const r = roles[role];
+    const chLabels = ['A pergunta', 'Como funciona', 'Prova', 'Confiança', 'Começar'];
+    return {
+      ...this.storyVals(),
+      showNotes: this.props.showNotes ?? true,
+      refs: [
+        { name: 'Apple · iPhone', tag: '1a', does: 'O produto ocupa a tela inteira e cada scroll mostra uma única qualidade.', take: 'Um objeto central que muda de estado no lugar de 6 cards.' },
+        { name: 'Nothing', tag: '1c', does: 'Identidade com poucos elementos: uma fonte, uma cor e muita convicção.', take: 'Limitar a paleta a 2 cores fortes e repetir.' },
+        { name: 'Stripe', tag: '1a', does: 'Mostra o produto rodando no hero, com dados e UI reais, antes de qualquer texto.', take: 'Demonstração viva no lugar de screenshots.' },
+        { name: 'Linear', tag: '1a', does: 'Pouca cor, tipografia precisa, uma frase forte por seção.', take: 'Cortar adjetivos e deixar o ritmo fazer o trabalho.' },
+        { name: 'The Browser Co.', tag: '1b', does: 'Fala como gente: carta, manifesto, humor.', take: 'Metáfora humana (RH) no lugar de vocabulário técnico.' },
+        { name: 'Teenage Engineering', tag: '1c', does: 'Produto como objeto lúdico, catálogo sem cara de marketing.', take: 'Deixar o visitante mexer no produto.' },
+        { name: 'Perplexity', tag: '1c', does: 'A interface é uma pergunta. O valor aparece na primeira resposta.', take: 'Abrir com a pergunta que o board faria.' },
+        { name: 'Monocle / Kinfolk', tag: '1b', does: 'Editorial impresso: papel, serifa, capítulos, numeração.', take: 'Contar a carreira de um agente em capítulos.' }
+      ],
+      principles: [
+        { n: '01', t: 'Tese primeiro', d: 'A frase-chave do rodapé sobe para a primeira dobra.' },
+        { n: '02', t: 'Uma ideia por tela', d: 'Cada seção tem uma frase e uma prova, nada além disso.' },
+        { n: '03', t: 'Produto como protagonista', d: 'O agente (Vega, Sofia, Nova) aparece antes de qualquer feature.' },
+        { n: '04', t: 'Mostrar o ciclo uma vez', d: 'Os 4 ciclos repetidos viram um só.' },
+        { n: '05', t: 'Jargão fica no rodapé técnico', d: 'A2A, tenant e p95 vão para a página de plataforma.' },
+        { n: '06', t: 'Um CTA, repetido', d: '“Iniciar avaliação” no topo, no meio e no fim.' }
+      ],
+      acts: [
+        { t: 'Tese', d: 'Agentes executam. Muster prova.' },
+        { t: 'Produto', d: 'Um agente, seu contrato e suas métricas' },
+        { t: 'Manifesto', d: 'A empresa precisa saber como ele trabalha' },
+        { t: 'Board', d: 'Memória decisória, não dashboard' },
+        { t: 'Começar', d: 'Confiança + um CTA' }
+      ],
+      aTabs: steps.map((l, i) => ({ label: l, fgL: i === a ? '#141414' : '#aaa9a4', barL: i === a ? '#ff4f00' : '#e2e1dc', go: () => this.setState({ a: i }) })),
+      aBadge: badges[a], aIs0: a === 0, aIs1: a === 1, aIs2: a === 2, aIs3: a === 3,
+      envs: ['Cloud', 'Híbrido', 'On-premise'],
+      vegaMetrics: [{ l: 'Propósito cumprido', v: 91 }, { l: 'Qualidade', v: 96 }, { l: 'Evidência', v: 97 }].map(m => ({ ...m, w: m.v + '%' })),
+      boardStats: [
+        { v: '92%', l: 'Propósito', d: '+4', cL: '#1a7f4b', cA: '#7fb89a', cC: '#0e9ab8' },
+        { v: '86%', l: 'Saúde', d: '+2', cL: '#1a7f4b', cA: '#7fb89a', cC: '#0e9ab8' },
+        { v: '94%', l: 'Evidência', d: '+7', cL: '#1a7f4b', cA: '#7fb89a', cC: '#0e9ab8' },
+        { v: '78%', l: 'Governança', d: '−3', cL: '#ff4f00', cA: '#e7aa40', cC: '#d6236a' }
+      ],
+      trust: [
+        { t: 'Roda onde você quiser', d: 'Cloud, híbrido ou servidor próprio, com a mesma governança.' },
+        { t: 'Cada empresa isolada', d: 'Áreas, times, pessoas e agentes no mesmo modelo de segurança.' },
+        { t: 'Tudo com origem', d: 'Cada métrica, recomendação e ação fica ligada à sua fonte.' },
+        { t: 'Sem aprisionamento', d: 'API, webhooks e SDK. Você não fica preso a uma plataforma.' }
+      ],
+      roleChips: roleLabels.map((l, i) => ({ label: l, bg: i === role ? '#13352b' : 'transparent', fg: i === role ? '#efe9dc' : '#13352b', go: () => this.setState({ role: i }) })),
+      role: r,
+      roleMetrics: ['Propósito', 'Qualidade', 'Evidência'].map((l, i) => ({ l, v: r.m[i], w: r.m[i] + '%' })),
+      career: [
+        { n: 'I', t: 'Admissão', d: 'O Muster encontra o agente e escreve o contrato: função, deveres e limites.' },
+        { n: 'II', t: 'Avaliação', d: 'Qualidade, segurança e impacto medidos continuamente, com evidência.' },
+        { n: 'III', t: 'Veredito', d: 'Quando o sucesso é ilusório, o Muster aponta. Um humano decide.' },
+        { n: 'IV', t: 'Promoção', d: 'Com bons resultados o agente ganha autonomia. Sem eles, recebe um plano.' }
+      ],
+      chapters: chLabels.map((l, i) => ({ label: l, n: '0' + (i + 1), fg: i === ch ? '#2233ff' : '#fff', bg: i === ch ? '#d8ff3d' : 'transparent', go: () => this.setCh(i) })),
+      ch0: ch === 0, ch1: ch === 1, ch2: ch === 2, ch3: ch === 3, ch4: ch === 4,
+      chLabel: '0' + (ch + 1) + ' / 05 · ' + chLabels[ch].toUpperCase(),
+      prevCh: () => this.setCh(ch - 1), nextCh: () => this.setCh(ch + 1),
+      typedText: this.answer.slice(0, typed), typedDone: typed >= this.answer.length, caret: this.state.blink ? 1 : 0,
+      verbs: [
+        { n: '1', t: 'Conectar', d: 'Cloud, SaaS ou servidor próprio. Sem trocar sua arquitetura.' },
+        { n: '2', t: 'Contratar', d: 'Função, metas, limites e um humano responsável.' },
+        { n: '3', t: 'Supervisionar', d: 'Qualidade, custo e desvios medidos o tempo todo.' },
+        { n: '4', t: 'Decidir', d: 'Recomendações viram ações com dono e prazo.' }
+      ],
+      cases: [
+        { name: 'Sofia', fn: 'Suporte N1', conn: 'Zendesk', score: '93', v: 'PROMOVER', bg: '#d8ff3d', fg: '#2233ff' },
+        { name: 'Atlas', fn: 'SDR', conn: 'HubSpot', score: '71', v: 'SUCESSO ILUSÓRIO', bg: '#ff5a36', fg: '#fff' },
+        { name: 'Nova', fn: 'Dados', conn: 'Snowflake', score: '97', v: 'PROMOVER', bg: '#d8ff3d', fg: '#2233ff' },
+        { name: 'Iris', fn: 'Produtividade', conn: 'Notion AI', score: '84', v: 'DESENVOLVER', bg: '#fff', fg: '#2233ff' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
