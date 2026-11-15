@@ -518,3 +518,7 @@
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse at top, black, transparent 70%);
 }
+
+/* RG-M08 + RG-M14: password rule positioning.
+   DOM order (source): password-rule after {children} (RG-M14 requirement).
+   Visual order (runtime): JavaScript moves it before submit button (RG-M08 requirement). */
