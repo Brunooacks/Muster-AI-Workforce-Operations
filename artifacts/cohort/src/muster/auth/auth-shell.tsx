@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, Moon, Sun } from "lucide-react";
 import { Link } from "wouter";
 import { MusterMark } from "@/components/logo";
@@ -54,35 +54,6 @@ export function AuthShell({
   const { lang } = useLang();
   const t = AUTH_COPY[lang];
   const isSignIn = mode === "sign-in";
-  const passwordHintRef = useRef<HTMLParagraphElement>(null);
-
-  // RG-M08 + RG-M14: Move password hint before submit button after Clerk renders
-  useEffect(() => {
-    if (isSignIn || !passwordHintRef.current) return;
-    
-    const moveHint = () => {
-      const hint = passwordHintRef.current;
-      const submitButton = hint?.closest('[data-auth-mode]')?.querySelector('.cl-formButtonPrimary');
-      if (hint && submitButton && submitButton.parentNode) {
-        // Move hint to appear right before the submit button
-        submitButton.parentNode.insertBefore(hint, submitButton);
-      }
-    };
-
-    // Clerk renders asynchronously, so we need to wait and retry
-    const timer = setTimeout(moveHint, 100);
-    const observer = new MutationObserver(moveHint);
-    const card = passwordHintRef.current.closest('[data-auth-mode]');
-    if (card) {
-      observer.observe(card, { childList: true, subtree: true });
-    }
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
-  }, [isSignIn]);
-
   return (
     <div className="relative isolate min-h-[100dvh] overflow-hidden bg-background text-foreground" data-testid={`auth-${mode}`}>
       <HomeBackdrop />
@@ -136,13 +107,8 @@ export function AuthShell({
               {isSignIn ? t.signInTitle : t.signUpTitle}
             </h1>
           </div>
-          <div className="mt-6 rounded-[28px] border border-card-border bg-card p-6 shadow-[var(--shadow-soft)] sm:p-8 lg:mt-0" data-auth-mode={mode}>
+          <div className="mt-6 rounded-[28px] border border-card-border bg-card p-6 shadow-[var(--shadow-soft)] sm:p-8 lg:mt-0">
             {children}
-            {isSignIn ? null : (
-              <p ref={passwordHintRef} className="mb-4 text-[13px] text-muted-foreground" data-testid="password-rule">
-                {t.passwordRule}
-              </p>
-            )}
           </div>
           <p className="mt-4 text-center text-[13px] text-muted-foreground">
             {isSignIn ? t.noAccount : t.hasAccount}{" "}

@@ -12,10 +12,8 @@ test("RG-M08 copy pt/en/es traz o mínimo de caracteres", () => {
   assert.match(c.AUTH_COPY.es.passwordRule, /15 caracteres/);
 });
 
-test("RG-M08 AuthShell mostra a regra no modo sign-up", () => {
-  const src = readFileSync(new URL("../muster/auth/auth-shell.tsx", import.meta.url), "utf8");
-  // A regra deve estar presente e condicionada ao modo sign-up
-  assert.match(src, /isSignIn \? null : \([\s\S]{0,300}t\.passwordRule/);
-  // E deve ter um mecanismo para aparecer antes do botão de submit (via useEffect)
-  assert.match(src, /useEffect.*passwordHintRef.*insertBefore/s);
+test("RG-M08 regra de senha incluída no subtitle do Clerk sign-up", () => {
+  const clerkConfigSrc = readFileSync(new URL("../muster/auth/clerk-config.ts", import.meta.url), "utf8");
+  // A regra deve estar no signUp.start.subtitle para aparecer antes dos campos
+  assert.match(clerkConfigSrc, /signUp:.*start:.*subtitle:.*passwordRule/s, "password rule must be in Clerk's signUp.start.subtitle");
 });

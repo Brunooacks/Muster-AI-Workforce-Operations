@@ -85,7 +85,13 @@ export function musterClerkLocalization(lang: Lang) {
     },
     signUp: {
       ...base.signUp,
-      start: { ...base.signUp?.start, title: t.cardSignUpTitle, subtitle: t.cardSignUpSubtitle, actionText: t.hasAccount, actionLink: t.signIn },
+      start: { 
+        ...base.signUp?.start, 
+        title: t.cardSignUpTitle, 
+        subtitle: `${t.cardSignUpSubtitle} ${t.passwordRule}`, 
+        actionText: t.hasAccount, 
+        actionLink: t.signIn 
+      },
     },
   };
 }
