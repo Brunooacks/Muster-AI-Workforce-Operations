@@ -12,7 +12,8 @@ test("RG-M08 copy pt/en/es traz o mínimo de caracteres", () => {
   assert.match(c.AUTH_COPY.es.passwordRule, /15 caracteres/);
 });
 
-test("RG-M08 AuthShell mostra a regra no modo sign-up", () => {
+test("RG-M08 AuthShell mostra a regra no modo sign-up antes do formulário", () => {
   const src = readFileSync(new URL("../muster/auth/auth-shell.tsx", import.meta.url), "utf8");
-  assert.match(src, /isSignIn \? null : \([\s\S]{0,200}t\.passwordRule/);
+  // A regra deve aparecer antes do {children} (formulário do Clerk)
+  assert.match(src, /isSignIn \? null : \([\s\S]{0,200}t\.passwordRule[\s\S]{0,200}\{children\}/);
 });
