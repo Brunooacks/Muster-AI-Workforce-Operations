@@ -109,9 +109,6 @@ export function AuthShell({
           </div>
           <div className="mt-6 rounded-[28px] border border-card-border bg-card p-6 shadow-[var(--shadow-soft)] sm:p-8 lg:mt-0">
             {children}
-            {isSignIn ? null : (
-              <p className="mt-4 text-[13px] text-muted-foreground" data-testid="password-rule">{t.passwordRule}</p>
-            )}
           </div>
           <p className="mt-4 text-center text-[13px] text-muted-foreground">
             {isSignIn ? t.noAccount : t.hasAccount}{" "}
