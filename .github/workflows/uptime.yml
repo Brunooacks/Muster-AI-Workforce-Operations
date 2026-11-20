@@ -1,0 +1,77 @@
+name: Uptime
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    env:
+      HEALTH_URL: ${{ vars.MUSTER_HEALTH_URL }}
+    steps:
+      - name: Check configuration
+        id: configuration
+        run: |
+          if [ -z "$HEALTH_URL" ]; then
+            echo "::warning::MUSTER_HEALTH_URL is empty; uptime check skipped."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Request health endpoint
+        id: health
+        if: steps.configuration.outputs.configured == 'true'
+        continue-on-error: true
+        run: curl --fail --silent --show-error --location --max-time 20 "$HEALTH_URL"
+
+      - name: Open, update or resolve uptime issue
+        if: steps.configuration.outputs.configured == 'true'
+        uses: actions/github-script@v7
+        env:
+          HEALTH_OUTCOME: ${{ steps.health.outcome }}
+          HEALTH_URL: ${{ vars.MUSTER_HEALTH_URL }}
+        with:
+          script: |
+            const title = "Uptime check failed";
+            const label = "uptime";
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: label,
+              per_page: 100,
+            });
+            const openIssue = issues.find((issue) => issue.title === title);
+            const failed = process.env.HEALTH_OUTCOME !== "success";
+            const body = `The health endpoint ${process.env.HEALTH_URL} was ${failed ? "unreachable" : "reachable"} at ${new Date().toISOString()}.`;
+
+            if (failed && openIssue) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: openIssue.number,
+                body,
+              });
+            } else if (failed) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [label],
+              });
+            } else if (openIssue) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: openIssue.number,
+                state: "closed",
+                body,
+              });
+            }
