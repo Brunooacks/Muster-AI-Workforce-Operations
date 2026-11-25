@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   agents,
   db,
@@ -203,8 +203,13 @@ router.get("/teams", requireAuth, requireOrg, async (req, res) => {
     .from(teams)
     .where(ofOrg(teams, req.orgId!))
     .orderBy(desc(teams.createdAt));
-  const members = await db.select().from(teamMemberships);
-  const assignments = await db.select().from(teamAgentAssignments);
+  const teamIds = rows.map((row) => row.id);
+  const members = teamIds.length > 0
+    ? await db.select().from(teamMemberships).where(inArray(teamMemberships.teamId, teamIds))
+    : [];
+  const assignments = teamIds.length > 0
+    ? await db.select().from(teamAgentAssignments).where(inArray(teamAgentAssignments.teamId, teamIds))
+    : [];
   const memberCounts = new Map<string, number>();
   const agentCounts = new Map<string, number>();
   for (const member of members) {

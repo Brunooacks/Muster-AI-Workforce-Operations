@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import {
   agents,
   db,
@@ -191,8 +191,13 @@ async function journeyExists(journeyId: string, orgId: string) {
 
 router.get("/journeys", requireAuth, requireOrg, async (req, res) => {
   const rows = await db.select().from(journeys).where(ofOrg(journeys, req.orgId!)).orderBy(desc(journeys.updatedAt));
-  const steps = await db.select().from(journeySteps);
-  const handoffs = await db.select().from(journeyHandoffs);
+  const journeyIds = rows.map((journey) => journey.id);
+  const steps = journeyIds.length > 0
+    ? await db.select().from(journeySteps).where(inArray(journeySteps.journeyId, journeyIds))
+    : [];
+  const handoffs = journeyIds.length > 0
+    ? await db.select().from(journeyHandoffs).where(inArray(journeyHandoffs.journeyId, journeyIds))
+    : [];
 
   const response = rows.map((journey) => {
     const journeyStepRows = steps.filter((step) => step.journeyId === journey.id);

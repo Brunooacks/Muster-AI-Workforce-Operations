@@ -78,9 +78,12 @@ describe("RG-X01 requireOrg com duas organizações", () => {
     expect((await run("u_a", null)).orgId).toBe("org_a");
     expect((await run("u_b", null)).orgId).toBe("org_b");
   });
-  it("u_a com claim da org_b NÃO entra na org_b", async () => {
+  it("u_a com claim da org_b NÃO entra na org_b e falha fechado em 403", async () => {
     const r = await run("u_a", "clerk_org_b");
     expect(r.orgId).not.toBe("org_b");
+    expect(r.status).toBe(403);
+    expect(r.orgId).toBeUndefined();
+    expect(r.next).not.toHaveBeenCalled();
   });
   it("usuário sem vínculo: 403, nunca org_default", async () => {
     const r = await run("u_x", null);

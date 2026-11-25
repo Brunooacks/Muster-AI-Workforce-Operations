@@ -70,7 +70,11 @@ describe.skipIf(!runIntegration)("RG-X02 · rotas :id herdam o escopo da org", (
       { orgId: orgB, userId: userB, role: "owner" },
     ]);
     await db.insert(agents).values({ id: agentA, orgId: orgA, name: "Alvo", slug: `alvo-${s}`, role: "support", platform: "test" });
-    await db.insert(evaluations).values({ agentId: agentA, evaluatedAt: new Date() } as never);
+    await db.insert(evaluations).values({
+      agentId: agentA,
+      evaluatedAt: new Date(),
+      layers: [{ key: "efficacy", name: "Eficácia", score: 80, metrics: [{ key: "r", label: "Taxa", value: "80%", target: ">= 85%" }] }],
+    } as never);
     await db.insert(metricPoints).values({ agentId: agentA, timestamp: new Date() } as never);
     await db.insert(purposes).values({ id: ids.purpose, orgId: orgA, key: `k-${s}`, name: "P", domain: "d", outcome: "o" } as never);
     await db.insert(teams).values({ id: ids.team, orgId: orgA, name: "T", slug: `t-${s}`, purposeId: ids.purpose } as never);
@@ -106,6 +110,7 @@ describe.skipIf(!runIntegration)("RG-X02 · rotas :id herdam o escopo da org", (
 
   const casos: Array<[string, string, () => string, unknown?]> = [
     ["GET", "evaluations (MU-10-SG1)", () => `/agents/${agentA}/evaluations`],
+    ["PATCH", "evaluation metric (MUS-190)", () => `/agents/${agentA}/evaluation/metric`, { layerKey: "efficacy", metricLabel: "Taxa", target: ">= 1%" }],
     ["GET", "metrics/30d (MU-09-SG1)", () => `/agents/${agentA}/metrics/30d`],
     ["DELETE", "journey step", () => `/journeys/${ids.journey}/steps/${ids.step2}`],
     ["DELETE", "journey handoff", () => `/journeys/${ids.journey}/handoffs/${ids.handoff}`],

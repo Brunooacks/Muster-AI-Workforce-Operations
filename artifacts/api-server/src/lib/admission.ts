@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   agents,
+  areas,
   connectors,
   projects,
   agentConnectorLinks,
@@ -58,6 +59,13 @@ export class InvalidAdmissionConnectorError extends Error {
   constructor(public connectorId: string) {
     super(`Connector is not available in this organization: ${connectorId}`);
     this.name = "InvalidAdmissionConnectorError";
+  }
+}
+
+export class InvalidAdmissionAreaError extends Error {
+  constructor(public areaId: string) {
+    super(`Area is not available in this organization: ${areaId}`);
+    this.name = "InvalidAdmissionAreaError";
   }
 }
 
@@ -165,6 +173,15 @@ export async function admitAgentTx(
       .where(and(eq(connectors.id, input.connectorId), eq(connectors.orgId, input.orgId)))
       .limit(1);
     if (!connector) throw new InvalidAdmissionConnectorError(input.connectorId);
+  }
+
+  if (input.areaId) {
+    const [area] = await tx
+      .select({ id: areas.id })
+      .from(areas)
+      .where(and(eq(areas.id, input.areaId), eq(areas.orgId, input.orgId)))
+      .limit(1);
+    if (!area) throw new InvalidAdmissionAreaError(input.areaId);
   }
 
   if (input.projectId) {

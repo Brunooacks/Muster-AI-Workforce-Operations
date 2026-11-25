@@ -66,6 +66,7 @@ import {
   AlreadyAdmittedError,
   InvalidAdmissionCatalogMetricError,
   InvalidAdmissionConnectorError,
+  InvalidAdmissionAreaError,
   InvalidAdmissionProjectError,
   MissingConnectorExternalIdError,
 } from "../lib/admission";
@@ -108,10 +109,13 @@ router.get("/agents", requireAuth, requireOrg, async (req, res) => {
 
   // Roll up each agent's latest-evaluation metrics so the fleet view can count
   // how many are off-target (reusing the client-side metricTargetStatus logic).
-  const evalRows = await db
-    .select()
-    .from(evaluations)
-    .orderBy(desc(evaluations.evaluatedAt));
+  const evalRows = filtered.length > 0
+    ? await db
+        .select()
+        .from(evaluations)
+        .where(inArray(evaluations.agentId, filtered.map((agent) => agent.id)))
+        .orderBy(desc(evaluations.evaluatedAt))
+    : [];
   const latestMetricsByAgent = new Map<string, KpiMetric[]>();
   for (const e of evalRows) {
     if (latestMetricsByAgent.has(e.agentId)) continue;
@@ -186,6 +190,10 @@ router.post("/agents", requireAuth, requireOrg, async (req, res) => {
     }
     if (err instanceof InvalidAdmissionConnectorError) {
       res.status(400).json({ error: "O conector selecionado não pertence à organização ativa." });
+      return;
+    }
+    if (err instanceof InvalidAdmissionAreaError) {
+      res.status(400).json({ error: "A área selecionada não pertence à organização ativa." });
       return;
     }
     if (err instanceof InvalidAdmissionProjectError) {
@@ -544,6 +552,11 @@ router.patch(
     const { agentId } = UpdateEvaluationMetricParams.parse(req.params);
     const body = UpdateEvaluationMetricBody.parse(req.body);
 
+    if (!(await agentInOrg(req.orgId!, agentId))) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+
     const [latest] = await db
       .select()
       .from(evaluations)
@@ -581,6 +594,10 @@ router.patch(
       .where(eq(evaluations.id, latest.id));
 
     const detail = await buildAgentDetail(agentId, req.orgId!);
+    if (!detail) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
     res.json(detail);
   },
 );
