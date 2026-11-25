@@ -1,7 +1,7 @@
 /**
- * View-model da página do agente nas três camadas (cunha · C12.2). Puro: recebe
- * a resposta de GET /agents/:id/outcome e devolve textos prontos, com
- * "indisponível" + motivo legível em vez de qualquer número inventado.
+ * View-model da ficha do agente (MUS-195): desempenho vs humano equivalente em
+ * primeiro plano, ganho líquido (descontando supervisão/retrabalho) e custo por
+ * tarefa validada como métrica secundária. Puro: nunca inventa número neutro.
  */
 
 export type Num<T> = { status: "ok"; value: T } | { status: "unavailable"; reason: string };
@@ -10,8 +10,47 @@ interface Money {
   cents: number;
 }
 
+export interface PerformancePayload {
+  totalTasks: number;
+  completedTasks: number;
+  validatedTasks: number;
+  resolvedAutonomouslyTasks: number;
+  escalatedTasks: number;
+  unnecessaryEscalationTasks: number;
+  unnecessaryEscalationRate: Num<{ rate: number; unnecessaryTasks: number; escalatedTasks: number }>;
+  accuracyRate: Num<number>;
+  avgDeliveryMs: Num<{ avgMs: number; avgMinutes: number; tasksWithDuration: number }>;
+  escalationReworkRate: Num<{ rate: number; affectedTasks: number; escalatedTasks: number; reworkTasks: number }>;
+  humanSupervisionAndRework: Num<{
+    supervisionMinutes: number;
+    reworkMinutes: number;
+    totalMinutes: number;
+    totalHours: number;
+  }>;
+  humanBaseline: Num<{
+    id: string;
+    taskType: string;
+    source: "agent_baseline" | "task_type_baseline" | "role_baseline";
+    humanMinutesPerTask: number;
+    humanAccuracyRate: number;
+    humanEscalationRate: number;
+    measurementKind: "measured" | "estimated";
+    measuredAt: string | null;
+    notes: string | null;
+    deltas: {
+      accuracyPp: number | null;
+      speedup: number | null;
+      timeSavedMinutesPerTask: number | null;
+      escalationReworkPp: number | null;
+      grossSavedHours: number | null;
+      netSavedHours: number | null;
+    };
+  }>;
+}
+
 export interface OutcomePayload {
   agentId: string;
+  taskType?: string | null;
   period: string;
   source: "live" | "snapshot";
   calcVersion: string;
@@ -53,6 +92,7 @@ export interface OutcomePayload {
     illusoryWin: Num<{ count: number; rate: number }>;
     tokenAnomaly: Num<{ count: number; medianTokens: number; maxRatio: number }>;
   };
+  performance?: PerformancePayload;
   verdict: { status: "coming_soon" };
 }
 
@@ -62,6 +102,8 @@ export const REASON_LABEL: Record<string, string> = {
   no_tasks: "nenhum evento com tarefa no período",
   no_accepted_tasks: "nenhuma tarefa aceita no período",
   no_events: "nenhum evento no período",
+  no_duration: "eventos sem duração registrada",
+  no_human_baseline: "referência humana pré-implantação não configurada",
   no_contract: "agente sem contrato numérico (contrato pendente)",
   contract_metric_not_computed: "a métrica do contrato não é calculada pela camada 2",
   no_context_tokens: "eventos sem tokens de contexto",
@@ -90,6 +132,27 @@ export interface Cell {
   hint?: string;
 }
 
+export interface PerformanceCard {
+  key: "validated_tasks" | "accuracy" | "delivery_time" | "escalation_rework";
+  label: string;
+  agentText: string;
+  agentUnavailable: boolean;
+  agentHint?: string;
+  humanText: string;
+  humanUnavailable: boolean;
+  humanHint?: string;
+  deltaText?: string;
+  deltaTone?: "positive" | "negative" | "neutral";
+}
+
+export interface NetGainSummary {
+  netText: string;
+  grossText: string;
+  supervisionText: string;
+  detail: string;
+  positive: boolean;
+}
+
 export function reasonText(reason: string): string {
   return REASON_LABEL[reason] ?? reason;
 }
@@ -100,6 +163,18 @@ export function brl(cents: number): string {
 
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 const pctText = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+const numText = (v: number, digits = 2) => v.toLocaleString("pt-BR", { maximumFractionDigits: digits });
+
+export function formatDurationMs(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  if (ms < 60_000) return `${numText(ms / 1000, 1)} s`;
+  return `${numText(ms / 60_000, 1)} min`;
+}
+
+function signedPp(delta: number): string {
+  const prefix = delta > 0 ? "+" : "";
+  return `${prefix}${numText(delta, 2)} p.p.`;
+}
 
 function cell<T>(label: string, n: Num<T>, fmt: (v: T) => string, hint?: (v: T) => string | undefined): Cell {
   if (n.status === "ok") return { label, text: fmt(n.value), unavailable: false, hint: hint?.(n.value) };
@@ -118,6 +193,14 @@ export function snapshotCell(period: string, n: OutcomePayload["layer3"]["snapsh
 
 export interface OutcomeView {
   headline: Cell;
+  performanceCards: PerformanceCard[];
+  netGainSummary: NetGainSummary | null;
+  baselineMeta: {
+    configured: boolean;
+    taskType: string | null;
+    originLabel: string | null;
+    notes: string | null;
+  };
   cost: Cell[];
   quality: Cell[];
   proof: Cell[];
@@ -127,12 +210,160 @@ export interface OutcomeView {
   empty: boolean;
 }
 
+function buildPerformanceView(o: OutcomePayload): Pick<OutcomeView, "performanceCards" | "netGainSummary" | "baselineMeta"> {
+  const perf = o.performance;
+  const hb = perf?.humanBaseline;
+  const hbVal = hb && hb.status === "ok" ? hb.value : null;
+  const originLabel = hbVal
+    ? hbVal.measurementKind === "measured"
+      ? `Medido pré-implantação${hbVal.measuredAt ? ` · ${hbVal.measuredAt}` : ""}`
+      : `Estimado${hbVal.measuredAt ? ` · ${hbVal.measuredAt}` : ""}`
+    : null;
+
+  const totalTasks = perf?.totalTasks ?? o.layer2.tasks;
+  const completedTasks = perf?.completedTasks ?? o.layer2.tasks;
+  const validatedTasks =
+    perf?.validatedTasks ??
+    (o.layer1.cost.status === "ok"
+      ? o.layer1.cost.value.acceptedTasks
+      : o.layer2.acceptanceRate.status === "ok"
+        ? Math.round((o.layer2.acceptanceRate.value * o.layer2.tasks) / 100)
+        : 0);
+  const resolvedAutonomously = perf?.resolvedAutonomouslyTasks ?? 0;
+  const escalatedTasks = perf?.escalatedTasks ?? 0;
+
+  const accuracyNum = perf?.accuracyRate ?? o.layer2.acceptanceRate;
+  const deliveryNum = perf?.avgDeliveryMs ?? ({ status: "unavailable", reason: "no_duration" } as const);
+  const escalationNum = perf?.escalationReworkRate;
+  const unnecessaryNum = perf?.unnecessaryEscalationRate;
+  const supervisionNum = perf?.humanSupervisionAndRework;
+
+  const cards: PerformanceCard[] = [
+    {
+      key: "validated_tasks",
+      label: "Tarefas concluídas e validadas",
+      agentText: totalTasks === 0 ? "Indisponível" : `${validatedTasks} validadas`,
+      agentUnavailable: totalTasks === 0,
+      agentHint:
+        totalTasks === 0
+          ? reasonText("no_tasks")
+          : `${resolvedAutonomously} resolvidas sem escalar · ${escalatedTasks} encaminhadas ao humano · ${completedTasks}/${totalTasks} concluídas`,
+      humanText: hbVal ? hbVal.taskType : o.taskType ? o.taskType : "Sem referência",
+      humanUnavailable: !hbVal,
+      humanHint: hbVal ? originLabel ?? undefined : reasonText("no_human_baseline"),
+    },
+    {
+      key: "accuracy",
+      label: "Taxa de acerto",
+      agentText: accuracyNum.status === "ok" ? pctText(accuracyNum.value) : "Indisponível",
+      agentUnavailable: accuracyNum.status !== "ok",
+      agentHint: accuracyNum.status === "ok" ? `${validatedTasks} de ${totalTasks} tarefas validadas` : reasonText(accuracyNum.reason),
+      humanText: hbVal ? pctText(hbVal.humanAccuracyRate) : "Não configurado",
+      humanUnavailable: !hbVal,
+      humanHint: hbVal ? "padrão humano equivalente" : reasonText("no_human_baseline"),
+      deltaText:
+        hbVal && hbVal.deltas.accuracyPp !== null ? `${signedPp(hbVal.deltas.accuracyPp)} vs humano` : undefined,
+      deltaTone:
+        hbVal && hbVal.deltas.accuracyPp !== null
+          ? hbVal.deltas.accuracyPp >= 0
+            ? "positive"
+            : "negative"
+          : "neutral",
+    },
+    {
+      key: "delivery_time",
+      label: "Tempo médio de entrega",
+      agentText: deliveryNum.status === "ok" ? formatDurationMs(deliveryNum.value.avgMs) : "Indisponível",
+      agentUnavailable: deliveryNum.status !== "ok",
+      agentHint:
+        deliveryNum.status === "ok"
+          ? `${plural(deliveryNum.value.tasksWithDuration, "tarefa", "tarefas")} com duração medida`
+          : reasonText(deliveryNum.reason),
+      humanText: hbVal ? `${numText(hbVal.humanMinutesPerTask, 1)} min` : "Não configurado",
+      humanUnavailable: !hbVal,
+      humanHint: hbVal ? "tempo médio humano por tarefa" : reasonText("no_human_baseline"),
+      deltaText:
+        hbVal && hbVal.deltas.speedup !== null
+          ? `${numText(hbVal.deltas.speedup, 1)}× mais rápido`
+          : undefined,
+      deltaTone:
+        hbVal && hbVal.deltas.timeSavedMinutesPerTask !== null
+          ? hbVal.deltas.timeSavedMinutesPerTask >= 0
+            ? "positive"
+            : "negative"
+          : "neutral",
+    },
+    {
+      key: "escalation_rework",
+      label: "Escalonamento / retrabalho humano",
+      agentText:
+        escalationNum?.status === "ok"
+          ? pctText(escalationNum.value.rate)
+          : o.layer2.interventionRate.status === "ok"
+            ? pctText(o.layer2.interventionRate.value)
+            : "Indisponível",
+      agentUnavailable: escalationNum ? escalationNum.status !== "ok" : o.layer2.interventionRate.status !== "ok",
+      agentHint:
+        escalationNum?.status === "ok"
+          ? `${escalationNum.value.affectedTasks} de ${totalTasks} tarefas${
+              unnecessaryNum?.status === "ok" && unnecessaryNum.value.escalatedTasks > 0
+                ? ` · ${pctText(unnecessaryNum.value.rate)} desnecessários (${unnecessaryNum.value.unnecessaryTasks}/${unnecessaryNum.value.escalatedTasks})`
+                : ""
+            }`
+          : reasonText(escalationNum?.reason ?? "no_tasks"),
+      humanText: hbVal ? pctText(hbVal.humanEscalationRate) : "Não configurado",
+      humanUnavailable: !hbVal,
+      humanHint:
+        supervisionNum?.status === "ok"
+          ? `${numText(supervisionNum.value.totalHours, 2)} h de supervisão/retrabalho`
+          : "sem supervisão registrada",
+      deltaText:
+        hbVal && hbVal.deltas.escalationReworkPp !== null
+          ? `${signedPp(hbVal.deltas.escalationReworkPp)} vs humano`
+          : undefined,
+      deltaTone:
+        hbVal && hbVal.deltas.escalationReworkPp !== null
+          ? hbVal.deltas.escalationReworkPp <= 0
+            ? "positive"
+            : "negative"
+          : "neutral",
+    },
+  ];
+
+  let netGainSummary: NetGainSummary | null = null;
+  if (hbVal && hbVal.deltas.netSavedHours !== null && hbVal.deltas.grossSavedHours !== null) {
+    const supHours = supervisionNum?.status === "ok" ? supervisionNum.value.totalHours : 0;
+    const net = hbVal.deltas.netSavedHours;
+    netGainSummary = {
+      netText: `${net > 0 ? "+" : ""}${numText(net, 2)} h`,
+      grossText: `${numText(hbVal.deltas.grossSavedHours, 2)} h`,
+      supervisionText: `${numText(supHours, 2)} h`,
+      detail: `${numText(hbVal.deltas.grossSavedHours, 2)} h de ganho bruto − ${numText(supHours, 2)} h de supervisão e retrabalho humano`,
+      positive: net >= 0,
+    };
+  }
+
+  return {
+    performanceCards: cards,
+    netGainSummary,
+    baselineMeta: {
+      configured: Boolean(hbVal),
+      taskType: hbVal?.taskType ?? o.taskType ?? null,
+      originLabel,
+      notes: hbVal?.notes ?? null,
+    },
+  };
+}
+
 export function outcomeView(o: OutcomePayload): OutcomeView {
   const c = o.layer1.cost;
   const headline = cell("Custo por resultado validado", c, (v) => brl(v.costPerValidatedTask.cents), (v) =>
     `${v.acceptedTasks} de ${v.tasks} tarefas aceitas · ${v.attempts} tentativas`,
   );
   const cost: Cell[] = [
+    cell("Custo por tarefa validada", c, (v) => brl(v.costPerValidatedTask.cents), (v) =>
+      `${v.acceptedTasks} de ${v.tasks} tarefas aceitas · ${v.attempts} tentativas`,
+    ),
     cell("Custo humano por tarefa", c, (v) => (v.humanCostPerTask ? brl(v.humanCostPerTask.cents) : "Sem referência"), (v) =>
       v.humanCostPerTask ? undefined : "contrato sem minutos humanos de referência",
     ),
@@ -153,7 +384,7 @@ export function outcomeView(o: OutcomePayload): OutcomeView {
     cell("Aceites automáticos", o.layer2.autoAcceptShare, pctText),
     cell("Intervenção humana", o.layer2.interventionRate, pctText),
     cell("Esperado × obtido", o.layer2.expectedMatchRate, pctText),
-    cell("Contra o contrato", o.layer2.contract, (v) => `${v.value} (baseline ${v.baseline} → meta ${v.target})`, (v) =>
+    cell("Contra o contrato", o.layer2.contract, (v) => `${v.value} (linha de base ${v.baseline} → meta ${v.target})`, (v) =>
       `${v.metricKey} · v${v.contractVersion} · ${v.onTarget ? "na meta" : "fora da meta"}`,
     ),
   ];
@@ -173,8 +404,13 @@ export function outcomeView(o: OutcomePayload): OutcomeView {
     cell("Vitória Ilusória", o.signals.illusoryWin, (v) => `${v.count} (${pctText(v.rate)})`, () => "sucesso técnico sem aceite"),
     cell("Anomalia de tokens", o.signals.tokenAnomaly, (v) => `${v.count} tarefas`, (v) => `> 3× a mediana (${v.medianTokens}); pico ${v.maxRatio}×`),
   ];
+
+  const { performanceCards, netGainSummary, baselineMeta } = buildPerformanceView(o);
   return {
     headline,
+    performanceCards,
+    netGainSummary,
+    baselineMeta,
     cost,
     quality,
     proof,
@@ -183,6 +419,6 @@ export function outcomeView(o: OutcomePayload): OutcomeView {
       `${v.eventsWithTask} de ${v.totalEvents} eventos com tarefa`,
     ),
     sourceLabel: o.source === "snapshot" ? `Snapshot fechado · ${o.calcVersion}` : `Cálculo ao vivo · ${o.calcVersion}`,
-    empty: o.layer2.tasks === 0,
+    empty: (o.performance?.totalTasks ?? o.layer2.tasks) === 0,
   };
 }

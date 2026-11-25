@@ -2609,6 +2609,11 @@ export type AgentOutcomeLayer3 = { [key: string]: unknown };
  */
 export type AgentOutcomeSignals = { [key: string]: unknown };
 
+/**
+ * desempenho do agente vs humano equivalente (MUS-195)
+ */
+export type AgentOutcomePerformance = { [key: string]: unknown };
+
 export type AgentOutcomeVerdictStatus = typeof AgentOutcomeVerdictStatus[keyof typeof AgentOutcomeVerdictStatus];
 
 
@@ -2632,8 +2637,12 @@ export interface AgentOutcome {
   layer2: AgentOutcomeLayer2;
   /** provenance, trail, ownerCoverage, credentialCoverage, snapshot */
   layer3: AgentOutcomeLayer3;
+  /** @nullable */
+  taskType?: string | null;
   /** adoption, illusoryWin, tokenAnomaly */
   signals: AgentOutcomeSignals;
+  /** desempenho do agente vs humano equivalente (MUS-195) */
+  performance?: AgentOutcomePerformance;
   contract: AgentContract | null;
   verdict: AgentOutcomeVerdict;
 }
@@ -3141,6 +3150,127 @@ export interface RealtimeGovernanceResponse {
   summary: RealtimeGovernanceSummary;
   freshness: RealtimeGovernanceResponseFreshness;
   items: RealtimeGovernanceAgent[];
+}
+
+export type HumanBaselineMeasurementKind = typeof HumanBaselineMeasurementKind[keyof typeof HumanBaselineMeasurementKind];
+
+
+export const HumanBaselineMeasurementKind = {
+  measured: 'measured',
+  estimated: 'estimated',
+} as const;
+
+export interface HumanBaseline {
+  id: string;
+  taskType: string;
+  /** @nullable */
+  agentId: string | null;
+  humanMinutesPerTask: number;
+  humanAccuracyRate: number;
+  humanEscalationRate: number;
+  measurementKind: HumanBaselineMeasurementKind;
+  /** @nullable */
+  measuredAt: string | null;
+  /** @nullable */
+  notes: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HumanBaselineList {
+  baselines: HumanBaseline[];
+}
+
+export type HumanBaselineInputMeasurementKind = typeof HumanBaselineInputMeasurementKind[keyof typeof HumanBaselineInputMeasurementKind];
+
+
+export const HumanBaselineInputMeasurementKind = {
+  measured: 'measured',
+  estimated: 'estimated',
+} as const;
+
+export interface HumanBaselineInput {
+  taskType: string;
+  /** @nullable */
+  agentId?: string | null;
+  humanMinutesPerTask: number;
+  humanAccuracyRate: number;
+  humanEscalationRate: number;
+  measurementKind?: HumanBaselineInputMeasurementKind;
+  /** @nullable */
+  measuredAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type AgentHumanBaselineInputScope = typeof AgentHumanBaselineInputScope[keyof typeof AgentHumanBaselineInputScope];
+
+
+export const AgentHumanBaselineInputScope = {
+  task_type: 'task_type',
+  agent: 'agent',
+} as const;
+
+export type AgentHumanBaselineInputMeasurementKind = typeof AgentHumanBaselineInputMeasurementKind[keyof typeof AgentHumanBaselineInputMeasurementKind];
+
+
+export const AgentHumanBaselineInputMeasurementKind = {
+  measured: 'measured',
+  estimated: 'estimated',
+} as const;
+
+export interface AgentHumanBaselineInput {
+  taskType: string;
+  humanMinutesPerTask: number;
+  humanAccuracyRate: number;
+  humanEscalationRate: number;
+  scope?: AgentHumanBaselineInputScope;
+  measurementKind?: AgentHumanBaselineInputMeasurementKind;
+  /** @nullable */
+  measuredAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type ResolvedHumanBaselineSource = typeof ResolvedHumanBaselineSource[keyof typeof ResolvedHumanBaselineSource];
+
+
+export const ResolvedHumanBaselineSource = {
+  agent_baseline: 'agent_baseline',
+  task_type_baseline: 'task_type_baseline',
+  role_baseline: 'role_baseline',
+} as const;
+
+export type ResolvedHumanBaselineMeasurementKind = typeof ResolvedHumanBaselineMeasurementKind[keyof typeof ResolvedHumanBaselineMeasurementKind];
+
+
+export const ResolvedHumanBaselineMeasurementKind = {
+  measured: 'measured',
+  estimated: 'estimated',
+} as const;
+
+export interface ResolvedHumanBaseline {
+  id: string;
+  taskType: string;
+  source: ResolvedHumanBaselineSource;
+  humanMinutesPerTask: number;
+  humanAccuracyRate: number;
+  humanEscalationRate: number;
+  measurementKind: ResolvedHumanBaselineMeasurementKind;
+  /** @nullable */
+  measuredAt: string | null;
+  /** @nullable */
+  notes: string | null;
+}
+
+export interface AgentHumanBaselineContext {
+  agentId: string;
+  /** @nullable */
+  taskType: string | null;
+  role: string;
+  resolved: ResolvedHumanBaseline | null;
+  orgBaselines: HumanBaseline[];
 }
 
 export type ListContinuousTelemetryActivityParams = {

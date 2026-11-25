@@ -9,6 +9,7 @@ import type { AgentContract } from './agentContract';
 import type { AgentOutcomeLayer1 } from './agentOutcomeLayer1';
 import type { AgentOutcomeLayer2 } from './agentOutcomeLayer2';
 import type { AgentOutcomeLayer3 } from './agentOutcomeLayer3';
+import type { AgentOutcomePerformance } from './agentOutcomePerformance';
 import type { AgentOutcomeSignals } from './agentOutcomeSignals';
 import type { AgentOutcomeSource } from './agentOutcomeSource';
 import type { AgentOutcomeVerdict } from './agentOutcomeVerdict';
@@ -26,8 +27,12 @@ export interface AgentOutcome {
   layer2: AgentOutcomeLayer2;
   /** provenance, trail, ownerCoverage, credentialCoverage, snapshot */
   layer3: AgentOutcomeLayer3;
+  /** @nullable */
+  taskType?: string | null;
   /** adoption, illusoryWin, tokenAnomaly */
   signals: AgentOutcomeSignals;
+  /** desempenho do agente vs humano equivalente (MUS-195) */
+  performance?: AgentOutcomePerformance;
   contract: AgentContract | null;
   verdict: AgentOutcomeVerdict;
 }

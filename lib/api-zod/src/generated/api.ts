@@ -3393,7 +3393,9 @@ export const GetAgentOutcomeResponse = zod.object({
   "layer1": zod.record(zod.string(), zod.unknown()).describe('cost, decomposition {retry, context, model}, referenceModel — cada um OutcomeNumber'),
   "layer2": zod.record(zod.string(), zod.unknown()).describe('tasks, acceptanceRate, interventionRate, autoAcceptShare, expectedMatchRate, contract'),
   "layer3": zod.record(zod.string(), zod.unknown()).describe('provenance, trail, ownerCoverage, credentialCoverage, snapshot'),
+  "taskType": zod.string().nullish(),
   "signals": zod.record(zod.string(), zod.unknown()).describe('adoption, illusoryWin, tokenAnomaly'),
+  "performance": zod.record(zod.string(), zod.unknown()).optional().describe('desempenho do agente vs humano equivalente (MUS-195)'),
   "contract": zod.union([zod.object({
   "id": zod.string(),
   "agentId": zod.string(),
@@ -3438,6 +3440,154 @@ export const CloseAgentOutcomePeriodResponse = zod.object({
   "calcVersion": zod.string(),
   "inputsHash": zod.string(),
   "created": zod.boolean()
+})
+
+
+/**
+ * @summary Baselines humanos por tipo de tarefa da organização (MUS-195)
+ */
+export const ListHumanBaselinesResponse = zod.object({
+  "baselines": zod.array(zod.object({
+  "id": zod.string(),
+  "taskType": zod.string(),
+  "agentId": zod.string().nullable(),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "measurementKind": zod.enum(['measured', 'estimated']),
+  "measuredAt": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Cria ou atualiza baseline humano por tipo de tarefa ou agente (só admin)
+ */
+export const UpsertHumanBaselineBody = zod.object({
+  "taskType": zod.string(),
+  "agentId": zod.string().nullish(),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "measurementKind": zod.enum(['measured', 'estimated']).optional(),
+  "measuredAt": zod.string().nullish(),
+  "notes": zod.string().nullish()
+})
+
+export const UpsertHumanBaselineResponse = zod.object({
+  "id": zod.string(),
+  "taskType": zod.string(),
+  "agentId": zod.string().nullable(),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "measurementKind": zod.enum(['measured', 'estimated']),
+  "measuredAt": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove um baseline humano da organização (só admin)
+ */
+export const DeleteHumanBaselineParams = zod.object({
+  "baselineId": zod.coerce.string()
+})
+
+
+/**
+ * @summary Baseline humano resolvido e opções por tipo de tarefa para o agente (MUS-195)
+ */
+export const GetAgentHumanBaselineParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const GetAgentHumanBaselineResponse = zod.object({
+  "agentId": zod.string(),
+  "taskType": zod.string().nullable(),
+  "role": zod.string(),
+  "resolved": zod.union([zod.object({
+  "id": zod.string(),
+  "taskType": zod.string(),
+  "source": zod.enum(['agent_baseline', 'task_type_baseline', 'role_baseline']),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "measurementKind": zod.enum(['measured', 'estimated']),
+  "measuredAt": zod.string().nullable(),
+  "notes": zod.string().nullable()
+}),zod.null()]),
+  "orgBaselines": zod.array(zod.object({
+  "id": zod.string(),
+  "taskType": zod.string(),
+  "agentId": zod.string().nullable(),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "measurementKind": zod.enum(['measured', 'estimated']),
+  "measuredAt": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Define o tipo de tarefa do agente e salva o baseline humano equivalente (só admin)
+ */
+export const SaveAgentHumanBaselineParams = zod.object({
+  "agentId": zod.coerce.string()
+})
+
+export const SaveAgentHumanBaselineBody = zod.object({
+  "taskType": zod.string(),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "scope": zod.enum(['task_type', 'agent']).optional(),
+  "measurementKind": zod.enum(['measured', 'estimated']).optional(),
+  "measuredAt": zod.string().nullish(),
+  "notes": zod.string().nullish()
+})
+
+export const SaveAgentHumanBaselineResponse = zod.object({
+  "agentId": zod.string(),
+  "taskType": zod.string().nullable(),
+  "role": zod.string(),
+  "resolved": zod.union([zod.object({
+  "id": zod.string(),
+  "taskType": zod.string(),
+  "source": zod.enum(['agent_baseline', 'task_type_baseline', 'role_baseline']),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "measurementKind": zod.enum(['measured', 'estimated']),
+  "measuredAt": zod.string().nullable(),
+  "notes": zod.string().nullable()
+}),zod.null()]),
+  "orgBaselines": zod.array(zod.object({
+  "id": zod.string(),
+  "taskType": zod.string(),
+  "agentId": zod.string().nullable(),
+  "humanMinutesPerTask": zod.number(),
+  "humanAccuracyRate": zod.number(),
+  "humanEscalationRate": zod.number(),
+  "measurementKind": zod.enum(['measured', 'estimated']),
+  "measuredAt": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
 })
 
 

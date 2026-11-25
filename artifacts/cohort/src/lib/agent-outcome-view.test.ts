@@ -41,6 +41,8 @@ test("estado vazio: nada inventado, tudo indisponível com motivo legível", () 
   assert.ok([...v.cost, ...v.quality, ...v.signals].every((c) => c.unavailable));
   assert.equal(v.quality.at(-1)!.hint, "agente sem contrato numérico (contrato pendente)");
   assert.equal(v.proof[2]!.hint, "falta: dono de negócio, dono técnico, patrocinador de governança, dono do contrato");
+  assert.equal(v.baselineMeta.configured, false);
+  assert.ok(v.performanceCards.every((c) => c.agentUnavailable && c.humanUnavailable));
 });
 
 test("custo-hora ausente aparece como motivo, nunca como R$ 0", () => {
@@ -54,7 +56,7 @@ test("custo-hora ausente aparece como motivo, nunca como R$ 0", () => {
   assert.ok(!JSON.stringify(v).includes("R$ 0"));
 });
 
-test("estado ok: custo, comparação humana, decomposição, aceite auto e regra na prova", () => {
+test("estado ok: desempenho, custo secundário, comparação humana, decomposição, aceite auto e regra na prova", () => {
   const o = vazio();
   o.source = "snapshot";
   o.layer2.tasks = 4;
@@ -74,8 +76,9 @@ test("estado ok: custo, comparação humana, decomposição, aceite auto e regra
   const v = outcomeView(o);
   assert.match(v.headline.text, /6,20/);
   assert.equal(v.headline.hint, "3 de 4 tarefas aceitas · 5 tentativas");
-  assert.match(v.cost[0]!.text, /20,00/);
-  assert.match(v.cost[1]!.text, /13,80.*69%/);
+  assert.match(v.cost[0]!.text, /6,20/);
+  assert.match(v.cost[1]!.text, /20,00/);
+  assert.match(v.cost[2]!.text, /13,80.*69%/);
   assert.equal(v.quality[1]!.text, "33,33%");
   assert.match(v.proof[1]!.hint!, /regras v1/);
   assert.equal(v.coverage.text, "80%");
