@@ -11,6 +11,7 @@ import {
 } from "@workspace/db";
 import { inOrg } from "./tenant-scope";
 import { resolveHourlyRate } from "./rate-input";
+import { resolveHumanBaseline } from "./human-baselines";
 import {
   CALC_VERSION,
   allocateOffInvoice,
@@ -104,7 +105,7 @@ export async function loadOutcomeInputs(input: {
 }): Promise<{ inputs: OutcomeInputs; projectId: string; environmentId: string | null } | null> {
   const { orgId, agentId, period } = input;
   const [agent] = await db
-    .select({ id: agents.id, projectId: agents.projectId, role: agents.role, areaId: agents.areaId })
+    .select({ id: agents.id, projectId: agents.projectId, role: agents.role, taskType: agents.taskType, areaId: agents.areaId })
     .from(agents)
     .where(inOrg(agents, orgId, eq(agents.id, agentId)))
     .limit(1);
@@ -141,6 +142,7 @@ export async function loadOutcomeInputs(input: {
     taskId: r.taskId ?? null,
     runId: r.runId ?? null,
     attempt: r.attempt ?? null,
+    durationMs: r.durationMs ?? null,
     costCents: r.costCents ?? null,
     tokensIn: r.tokensIn ?? null,
     tokensOut: r.tokensOut ?? null,
@@ -199,6 +201,7 @@ export async function loadOutcomeInputs(input: {
       offInvoice,
       priceTable: resolvePriceTable(input.priceTable),
       fx,
+      humanBaseline: await resolveHumanBaseline(orgId, agent),
     },
   };
 }

@@ -34,6 +34,7 @@ export interface OutcomeEventRow {
   taskId: string | null;
   runId: string | null;
   attempt: number | null;
+  durationMs?: number | null;
   costCents: number | null;
   tokensIn: number | null;
   tokensOut: number | null;
@@ -53,6 +54,7 @@ export interface OutcomeEventRow {
 export interface AttemptRecord {
   runId: string;
   attempt: number;
+  durationMs: number | null;
   costCents: number;
   tokensIn: number | null;
   tokensOut: number | null;
@@ -69,6 +71,7 @@ export interface TaskRecord {
   reworkMinutes: number;
   reworkCount: number;
   humanReviews: number;
+  hasEscalation?: boolean;
   acceptance: { kind: AcceptanceKind; by: string | null; ruleVersion: string | null } | null;
   rejected: boolean;
   /** Esperado × obtido da última tentativa (null = sem os dois lados). */
@@ -115,6 +118,7 @@ export function normalizeTasks(events: readonly OutcomeEventRow[]): {
       .map((e) => ({
         runId: e.runId!,
         attempt: e.attempt!,
+        durationMs: e.durationMs ?? null,
         costCents: e.costCents ?? 0,
         tokensIn: e.tokensIn,
         tokensOut: e.tokensOut,
@@ -131,7 +135,9 @@ export function normalizeTasks(events: readonly OutcomeEventRow[]): {
     let reworkMinutes = 0;
     let reworkCount = 0;
     let humanReviews = 0;
+    let hasEscalation = false;
     for (const e of sorted) {
+      if (e.kind === "escalation") hasEscalation = true;
       if (e.kind === "human_review") {
         humanReviews += 1;
         reviewMinutes += e.humanMinutes ?? 0;
@@ -165,6 +171,7 @@ export function normalizeTasks(events: readonly OutcomeEventRow[]): {
       reworkMinutes: Math.round(reworkMinutes * 100) / 100,
       reworkCount,
       humanReviews,
+      hasEscalation,
       acceptance,
       rejected: human !== null && !human.approved,
       expectedMatch,
@@ -306,6 +313,18 @@ export interface OutcomeContract {
   referenceModel: string | null;
 }
 
+export interface HumanBaselineInput {
+  id: string;
+  taskType: string;
+  source: "agent_baseline" | "task_type_baseline" | "role_baseline";
+  humanMinutesPerTask: number;
+  humanAccuracyRate: number;
+  humanEscalationRate: number;
+  measurementKind: "measured" | "estimated";
+  measuredAt: string | null;
+  notes: string | null;
+}
+
 export interface OutcomeInputs {
   calcVersion: string;
   agentId: string;
@@ -317,6 +336,7 @@ export interface OutcomeInputs {
   offInvoice: { cents: number; itemIds: string[]; missingFx: boolean };
   priceTable: PriceTable | null;
   fx: ExchangeRate | null;
+  humanBaseline?: HumanBaselineInput | null;
 }
 
 /** Métricas que a camada 2 calcula e que um contrato pode usar como meta. */
@@ -398,6 +418,43 @@ export interface OutcomeResult {
     adoption: Num<{ tasks: number; activeDays: number }>;
     illusoryWin: Num<{ count: number; rate: number }>;
     tokenAnomaly: Num<{ count: number; medianTokens: number; maxRatio: number }>;
+  };
+  performance: {
+    totalTasks: number;
+    completedTasks: number;
+    validatedTasks: number;
+    resolvedAutonomouslyTasks: number;
+    escalatedTasks: number;
+    unnecessaryEscalationTasks: number;
+    unnecessaryEscalationRate: Num<{ rate: number; unnecessaryTasks: number; escalatedTasks: number }>;
+    accuracyRate: Num<number>;
+    avgDeliveryMs: Num<{ avgMs: number; avgMinutes: number; tasksWithDuration: number }>;
+    escalationReworkRate: Num<{ rate: number; affectedTasks: number; escalatedTasks: number; reworkTasks: number }>;
+    humanSupervisionAndRework: Num<{
+      supervisionMinutes: number;
+      reworkMinutes: number;
+      totalMinutes: number;
+      totalHours: number;
+    }>;
+    humanBaseline: Num<{
+      id: string;
+      taskType: string;
+      source: "agent_baseline" | "task_type_baseline" | "role_baseline";
+      humanMinutesPerTask: number;
+      humanAccuracyRate: number;
+      humanEscalationRate: number;
+      measurementKind: "measured" | "estimated";
+      measuredAt: string | null;
+      notes: string | null;
+      deltas: {
+        accuracyPp: number | null;
+        speedup: number | null;
+        timeSavedMinutesPerTask: number | null;
+        escalationReworkPp: number | null;
+        grossSavedHours: number | null;
+        netSavedHours: number | null;
+      };
+    }>;
   };
 }
 
@@ -541,6 +598,104 @@ export function computeOutcome(inputs: OutcomeInputs): OutcomeResult {
     });
   }
 
+  // Ficha do agente · desempenho vs humano equivalente (MUS-195).
+  const completedTasks = tasks.filter(
+    (t) => t.attempts.some((a) => a.success === true) || countsAsAccepted(t, requireHumanAccept),
+  ).length;
+  const accuracyRate = layer2Values.acceptance_rate;
+  const taskDurationsMs = tasks
+    .map((t) => {
+      const ds = t.attempts
+        .map((a) => a.durationMs)
+        .filter((d): d is number => d !== null && d !== undefined && Number.isFinite(d) && d >= 0);
+      return ds.length > 0 ? ds.reduce((sum, d) => sum + d, 0) : null;
+    })
+    .filter((d): d is number => d !== null);
+  const avgDeliveryMs: OutcomeResult["performance"]["avgDeliveryMs"] =
+    tasks.length === 0
+      ? na("no_tasks")
+      : taskDurationsMs.length === 0
+        ? na("no_duration")
+        : (() => {
+            const avgMs = Math.round(taskDurationsMs.reduce((s, d) => s + d, 0) / taskDurationsMs.length);
+            return ok({ avgMs, avgMinutes: round(avgMs / 60_000, 2), tasksWithDuration: taskDurationsMs.length });
+          })();
+  const resolvedAutonomouslyTasks = tasks.filter(
+    (t) => countsAsAccepted(t, requireHumanAccept) && t.hasEscalation !== true && t.reworkCount === 0 && t.reworkMinutes === 0 && t.attempts.length <= 1,
+  ).length;
+  const escalatedTasks = tasks.filter((t) => t.hasEscalation === true).length;
+  const unnecessaryEscalationTasks = tasks.filter(
+    (t) =>
+      t.hasEscalation === true &&
+      (t.expectedMatch === true ||
+        (countsAsAccepted(t, requireHumanAccept) && t.reworkCount === 0 && t.reworkMinutes === 0)),
+  ).length;
+  const unnecessaryEscalationRate: OutcomeResult["performance"]["unnecessaryEscalationRate"] =
+    tasks.length === 0
+      ? na("no_tasks")
+      : ok({
+          rate: pct(unnecessaryEscalationTasks, escalatedTasks) ?? 0,
+          unnecessaryTasks: unnecessaryEscalationTasks,
+          escalatedTasks,
+        });
+  const reworkTasks = tasks.filter(
+    (t) => t.reworkCount > 0 || t.reworkMinutes > 0 || t.attempts.length > 1 || t.rejected,
+  ).length;
+  const affectedByEscalationOrRework = tasks.filter(
+    (t) => t.hasEscalation === true || t.reworkCount > 0 || t.reworkMinutes > 0 || t.attempts.length > 1 || t.rejected,
+  ).length;
+  const escalationReworkRate: OutcomeResult["performance"]["escalationReworkRate"] =
+    tasks.length === 0
+      ? na("no_tasks")
+      : ok({
+          rate: pct(affectedByEscalationOrRework, tasks.length) ?? 0,
+          affectedTasks: affectedByEscalationOrRework,
+          escalatedTasks,
+          reworkTasks,
+        });
+  const supervisionMinutes = round(tasks.reduce((s, t) => s + t.reviewMinutes, 0), 2);
+  const reworkMinutesTotal = round(tasks.reduce((s, t) => s + t.reworkMinutes, 0), 2);
+  const totalSupervisionMinutes = round(supervisionMinutes + reworkMinutesTotal, 2);
+  const humanSupervisionAndRework: OutcomeResult["performance"]["humanSupervisionAndRework"] =
+    tasks.length === 0
+      ? na("no_tasks")
+      : ok({
+          supervisionMinutes,
+          reworkMinutes: reworkMinutesTotal,
+          totalMinutes: totalSupervisionMinutes,
+          totalHours: round(totalSupervisionMinutes / 60, 2),
+        });
+  const hb = inputs.humanBaseline ?? null;
+  const humanBaseline: OutcomeResult["performance"]["humanBaseline"] = !hb
+    ? na("no_human_baseline")
+    : (() => {
+        const grossSavedMinutes =
+          avgDeliveryMs.status === "ok"
+            ? (hb.humanMinutesPerTask - avgDeliveryMs.value.avgMinutes) * accepted.length
+            : null;
+        const grossSavedHours = grossSavedMinutes !== null ? round(grossSavedMinutes / 60, 2) : null;
+        const netSavedHours =
+          grossSavedMinutes !== null ? round((grossSavedMinutes - totalSupervisionMinutes) / 60, 2) : null;
+        return ok({
+          ...hb,
+          deltas: {
+            accuracyPp: accuracyRate.status === "ok" ? round(accuracyRate.value - hb.humanAccuracyRate, 2) : null,
+            speedup:
+              avgDeliveryMs.status === "ok" && avgDeliveryMs.value.avgMinutes > 0
+                ? round(hb.humanMinutesPerTask / avgDeliveryMs.value.avgMinutes, 1)
+                : null,
+            timeSavedMinutesPerTask:
+              avgDeliveryMs.status === "ok" ? round(hb.humanMinutesPerTask - avgDeliveryMs.value.avgMinutes, 2) : null,
+            escalationReworkPp:
+              escalationReworkRate.status === "ok"
+                ? round(escalationReworkRate.value.rate - hb.humanEscalationRate, 2)
+                : null,
+            grossSavedHours,
+            netSavedHours,
+          },
+        });
+      })();
+
   const { eventsWithTask, totalEvents } = inputs.coverage;
   return {
     calcVersion: inputs.calcVersion,
@@ -562,6 +717,20 @@ export function computeOutcome(inputs: OutcomeInputs): OutcomeResult {
         ? na("no_tasks")
         : ok({ count: illusory.length, rate: pct(illusory.length, tasks.length) ?? 0 }),
       tokenAnomaly,
+    },
+    performance: {
+      totalTasks: tasks.length,
+      completedTasks,
+      validatedTasks: accepted.length,
+      resolvedAutonomouslyTasks,
+      escalatedTasks,
+      unnecessaryEscalationTasks,
+      unnecessaryEscalationRate,
+      accuracyRate,
+      avgDeliveryMs,
+      escalationReworkRate,
+      humanSupervisionAndRework,
+      humanBaseline,
     },
   };
 }

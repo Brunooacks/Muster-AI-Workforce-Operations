@@ -2380,6 +2380,129 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /human-baselines:
+    get:
+      operationId: listHumanBaselines
+      tags: [agents]
+      summary: Baselines humanos por tipo de tarefa da organização (MUS-195)
+      responses:
+        "200":
+          description: Lista de baselines humanos da organização
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanBaselineList"
+    put:
+      operationId: upsertHumanBaseline
+      tags: [agents]
+      summary: Cria ou atualiza baseline humano por tipo de tarefa ou agente (só admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HumanBaselineInput"
+      responses:
+        "200":
+          description: Baseline salvo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanBaseline"
+        "400":
+          description: Entrada inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /human-baselines/{baselineId}:
+    delete:
+      operationId: deleteHumanBaseline
+      tags: [agents]
+      summary: Remove um baseline humano da organização (só admin)
+      parameters:
+        - name: baselineId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removido
+        "404":
+          description: Baseline não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /agents/{agentId}/human-baseline:
+    get:
+      operationId: getAgentHumanBaseline
+      tags: [agents]
+      summary: Baseline humano resolvido e opções por tipo de tarefa para o agente (MUS-195)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Contexto de baseline humano do agente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentHumanBaselineContext"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      operationId: saveAgentHumanBaseline
+      tags: [agents]
+      summary: Define o tipo de tarefa do agente e salva o baseline humano equivalente (só admin)
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentHumanBaselineInput"
+      responses:
+        "200":
+          description: Contexto atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentHumanBaselineContext"
+        "400":
+          description: Entrada inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Agente não encontrado na conta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -5782,10 +5905,16 @@ components:
           type: object
           additionalProperties: true
           description: "provenance, trail, ownerCoverage, credentialCoverage, snapshot"
+        taskType:
+          type: [string, "null"]
         signals:
           type: object
           additionalProperties: true
           description: "adoption, illusoryWin, tokenAnomaly"
+        performance:
+          type: object
+          additionalProperties: true
+          description: "desempenho do agente vs humano equivalente (MUS-195)"
         contract:
           oneOf:
             - $ref: "#/components/schemas/AgentContract"
@@ -6446,3 +6575,89 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RealtimeGovernanceAgent"
+
+    HumanBaseline:
+      type: object
+      required: [id, taskType, agentId, humanMinutesPerTask, humanAccuracyRate, humanEscalationRate, measurementKind, measuredAt, notes, createdBy, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        taskType: { type: string }
+        agentId: { type: [string, "null"] }
+        humanMinutesPerTask: { type: number }
+        humanAccuracyRate: { type: number }
+        humanEscalationRate: { type: number }
+        measurementKind: { type: string, enum: [measured, estimated] }
+        measuredAt: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    HumanBaselineList:
+      type: object
+      required: [baselines]
+      properties:
+        baselines:
+          type: array
+          items:
+            $ref: "#/components/schemas/HumanBaseline"
+
+    HumanBaselineInput:
+      type: object
+      required: [taskType, humanMinutesPerTask, humanAccuracyRate, humanEscalationRate]
+      properties:
+        taskType: { type: string }
+        agentId: { type: [string, "null"] }
+        humanMinutesPerTask: { type: number }
+        humanAccuracyRate: { type: number }
+        humanEscalationRate: { type: number }
+        measurementKind: { type: string, enum: [measured, estimated] }
+        measuredAt: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+
+    AgentHumanBaselineInput:
+      type: object
+      required: [taskType, humanMinutesPerTask, humanAccuracyRate, humanEscalationRate]
+      properties:
+        taskType: { type: string }
+        humanMinutesPerTask: { type: number }
+        humanAccuracyRate: { type: number }
+        humanEscalationRate: { type: number }
+        scope:
+          type: string
+          enum: [task_type, agent]
+        measurementKind: { type: string, enum: [measured, estimated] }
+        measuredAt: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+
+    ResolvedHumanBaseline:
+      type: object
+      required: [id, taskType, source, humanMinutesPerTask, humanAccuracyRate, humanEscalationRate, measurementKind, measuredAt, notes]
+      properties:
+        id: { type: string }
+        taskType: { type: string }
+        source:
+          type: string
+          enum: [agent_baseline, task_type_baseline, role_baseline]
+        humanMinutesPerTask: { type: number }
+        humanAccuracyRate: { type: number }
+        humanEscalationRate: { type: number }
+        measurementKind: { type: string, enum: [measured, estimated] }
+        measuredAt: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+
+    AgentHumanBaselineContext:
+      type: object
+      required: [agentId, taskType, role, resolved, orgBaselines]
+      properties:
+        agentId: { type: string }
+        taskType: { type: [string, "null"] }
+        role: { type: string }
+        resolved:
+          oneOf:
+            - $ref: "#/components/schemas/ResolvedHumanBaseline"
+            - type: "null"
+        orgBaselines:
+          type: array
+          items:
+            $ref: "#/components/schemas/HumanBaseline"

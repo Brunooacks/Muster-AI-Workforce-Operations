@@ -41,6 +41,8 @@ import type {
   AgentEventInput,
   AgentHeartbeatAccepted,
   AgentHeartbeatInput,
+  AgentHumanBaselineContext,
+  AgentHumanBaselineInput,
   AgentInput,
   AgentOutcome,
   AgentSupervision,
@@ -87,6 +89,9 @@ import type {
   GetAgentOutcomeParams,
   GitHubStatus,
   HealthStatus,
+  HumanBaseline,
+  HumanBaselineInput,
+  HumanBaselineList,
   IdentityUpdate,
   IngestAgentEvent202,
   KpiContractsResponse,
@@ -7519,5 +7524,372 @@ export const useCloseAgentOutcomePeriod = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getCloseAgentOutcomePeriodMutationOptions(options));
+    }
+
+export const getListHumanBaselinesUrl = () => {
+
+
+
+
+  return `/api/human-baselines`
+}
+
+/**
+ * @summary Baselines humanos por tipo de tarefa da organização (MUS-195)
+ */
+export const listHumanBaselines = async ( options?: RequestInit): Promise<HumanBaselineList> => {
+
+  return customFetch<HumanBaselineList>(getListHumanBaselinesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHumanBaselinesQueryKey = () => {
+    return [
+    `/api/human-baselines`
+    ] as const;
+    }
+
+
+export const getListHumanBaselinesQueryOptions = <TData = Awaited<ReturnType<typeof listHumanBaselines>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHumanBaselines>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHumanBaselinesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHumanBaselines>>> = ({ signal }) => listHumanBaselines({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHumanBaselines>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHumanBaselinesQueryResult = NonNullable<Awaited<ReturnType<typeof listHumanBaselines>>>
+export type ListHumanBaselinesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Baselines humanos por tipo de tarefa da organização (MUS-195)
+ */
+
+export function useListHumanBaselines<TData = Awaited<ReturnType<typeof listHumanBaselines>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHumanBaselines>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHumanBaselinesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpsertHumanBaselineUrl = () => {
+
+
+
+
+  return `/api/human-baselines`
+}
+
+/**
+ * @summary Cria ou atualiza baseline humano por tipo de tarefa ou agente (só admin)
+ */
+export const upsertHumanBaseline = async (humanBaselineInput: HumanBaselineInput, options?: RequestInit): Promise<HumanBaseline> => {
+
+  return customFetch<HumanBaseline>(getUpsertHumanBaselineUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      humanBaselineInput,)
+  }
+);}
+
+
+
+
+export const getUpsertHumanBaselineMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertHumanBaseline>>, TError,{data: BodyType<HumanBaselineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertHumanBaseline>>, TError,{data: BodyType<HumanBaselineInput>}, TContext> => {
+
+const mutationKey = ['upsertHumanBaseline'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertHumanBaseline>>, {data: BodyType<HumanBaselineInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertHumanBaseline(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertHumanBaselineMutationResult = NonNullable<Awaited<ReturnType<typeof upsertHumanBaseline>>>
+    export type UpsertHumanBaselineMutationBody = BodyType<HumanBaselineInput>
+    export type UpsertHumanBaselineMutationError = ErrorType<Error>
+
+    /**
+ * @summary Cria ou atualiza baseline humano por tipo de tarefa ou agente (só admin)
+ */
+export const useUpsertHumanBaseline = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertHumanBaseline>>, TError,{data: BodyType<HumanBaselineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertHumanBaseline>>,
+        TError,
+        {data: BodyType<HumanBaselineInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertHumanBaselineMutationOptions(options));
+    }
+
+export const getDeleteHumanBaselineUrl = (baselineId: string,) => {
+
+
+
+
+  return `/api/human-baselines/${baselineId}`
+}
+
+/**
+ * @summary Remove um baseline humano da organização (só admin)
+ */
+export const deleteHumanBaseline = async (baselineId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteHumanBaselineUrl(baselineId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteHumanBaselineMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteHumanBaseline>>, TError,{baselineId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteHumanBaseline>>, TError,{baselineId: string}, TContext> => {
+
+const mutationKey = ['deleteHumanBaseline'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteHumanBaseline>>, {baselineId: string}> = (props) => {
+          const {baselineId} = props ?? {};
+
+          return  deleteHumanBaseline(baselineId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteHumanBaselineMutationResult = NonNullable<Awaited<ReturnType<typeof deleteHumanBaseline>>>
+
+    export type DeleteHumanBaselineMutationError = ErrorType<Error>
+
+    /**
+ * @summary Remove um baseline humano da organização (só admin)
+ */
+export const useDeleteHumanBaseline = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteHumanBaseline>>, TError,{baselineId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteHumanBaseline>>,
+        TError,
+        {baselineId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteHumanBaselineMutationOptions(options));
+    }
+
+export const getGetAgentHumanBaselineUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/human-baseline`
+}
+
+/**
+ * @summary Baseline humano resolvido e opções por tipo de tarefa para o agente (MUS-195)
+ */
+export const getAgentHumanBaseline = async (agentId: string, options?: RequestInit): Promise<AgentHumanBaselineContext> => {
+
+  return customFetch<AgentHumanBaselineContext>(getGetAgentHumanBaselineUrl(agentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgentHumanBaselineQueryKey = (agentId: string,) => {
+    return [
+    `/api/agents/${agentId}/human-baseline`
+    ] as const;
+    }
+
+
+export const getGetAgentHumanBaselineQueryOptions = <TData = Awaited<ReturnType<typeof getAgentHumanBaseline>>, TError = ErrorType<Error>>(agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentHumanBaseline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgentHumanBaselineQueryKey(agentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentHumanBaseline>>> = ({ signal }) => getAgentHumanBaseline(agentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(agentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgentHumanBaseline>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgentHumanBaselineQueryResult = NonNullable<Awaited<ReturnType<typeof getAgentHumanBaseline>>>
+export type GetAgentHumanBaselineQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Baseline humano resolvido e opções por tipo de tarefa para o agente (MUS-195)
+ */
+
+export function useGetAgentHumanBaseline<TData = Awaited<ReturnType<typeof getAgentHumanBaseline>>, TError = ErrorType<Error>>(
+ agentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgentHumanBaseline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgentHumanBaselineQueryOptions(agentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveAgentHumanBaselineUrl = (agentId: string,) => {
+
+
+
+
+  return `/api/agents/${agentId}/human-baseline`
+}
+
+/**
+ * @summary Define o tipo de tarefa do agente e salva o baseline humano equivalente (só admin)
+ */
+export const saveAgentHumanBaseline = async (agentId: string,
+    agentHumanBaselineInput: AgentHumanBaselineInput, options?: RequestInit): Promise<AgentHumanBaselineContext> => {
+
+  return customFetch<AgentHumanBaselineContext>(getSaveAgentHumanBaselineUrl(agentId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agentHumanBaselineInput,)
+  }
+);}
+
+
+
+
+export const getSaveAgentHumanBaselineMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAgentHumanBaseline>>, TError,{agentId: string;data: BodyType<AgentHumanBaselineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveAgentHumanBaseline>>, TError,{agentId: string;data: BodyType<AgentHumanBaselineInput>}, TContext> => {
+
+const mutationKey = ['saveAgentHumanBaseline'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveAgentHumanBaseline>>, {agentId: string;data: BodyType<AgentHumanBaselineInput>}> = (props) => {
+          const {agentId,data} = props ?? {};
+
+          return  saveAgentHumanBaseline(agentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveAgentHumanBaselineMutationResult = NonNullable<Awaited<ReturnType<typeof saveAgentHumanBaseline>>>
+    export type SaveAgentHumanBaselineMutationBody = BodyType<AgentHumanBaselineInput>
+    export type SaveAgentHumanBaselineMutationError = ErrorType<Error>
+
+    /**
+ * @summary Define o tipo de tarefa do agente e salva o baseline humano equivalente (só admin)
+ */
+export const useSaveAgentHumanBaseline = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAgentHumanBaseline>>, TError,{agentId: string;data: BodyType<AgentHumanBaselineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveAgentHumanBaseline>>,
+        TError,
+        {agentId: string;data: BodyType<AgentHumanBaselineInput>},
+        TContext
+      > => {
+      return useMutation(getSaveAgentHumanBaselineMutationOptions(options));
     }
 

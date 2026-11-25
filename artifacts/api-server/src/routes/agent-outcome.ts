@@ -41,7 +41,7 @@ router.get("/agents/:agentId/outcome", requireAuth, requireOrg, async (req, res)
     return;
   }
   const [agent] = await db
-    .select({ id: agents.id, projectId: agents.projectId })
+    .select({ id: agents.id, projectId: agents.projectId, taskType: agents.taskType })
     .from(agents)
     .where(inOrg(agents, orgId, eq(agents.id, agentId)))
     .limit(1);
@@ -121,6 +121,7 @@ router.get("/agents/:agentId/outcome", requireAuth, requireOrg, async (req, res)
 
   res.json({
     agentId,
+    taskType: agent.taskType ?? null,
     period: month,
     source: snapshot ? "snapshot" : "live",
     calcVersion: result.calcVersion,
@@ -129,6 +130,7 @@ router.get("/agents/:agentId/outcome", requireAuth, requireOrg, async (req, res)
     layer2: result.layer2,
     layer3,
     signals: result.signals,
+    performance: result.performance,
     contract: contract ? toAgentContract(contract) : null,
     verdict: { status: "coming_soon" },
   });

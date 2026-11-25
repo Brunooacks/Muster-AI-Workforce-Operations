@@ -369,6 +369,8 @@ export const agents = pgTable("agents", {
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   role: text("role").notNull(),
+  /** Tipo de tarefa padrão para comparação contra baseline humano (MUS-195). */
+  taskType: text("task_type"),
   platform: text("platform").notNull(),
   version: text("version").notNull().default("1.0.0"),
   status: text("status").$type<AgentStatus>().notNull().default("observation"),
@@ -829,6 +831,41 @@ export const offInvoiceCosts = pgTable("off_invoice_costs", {
     "off_invoice_costs_allocation_check",
     sql`("allocation" = 'agent' AND "agent_id" IS NOT NULL) OR ("allocation" = 'project' AND "project_id" IS NOT NULL) OR "allocation" = 'per_task'`,
   ),
+}));
+
+// --- Baseline humano por tipo de tarefa (MUS-195) -----------------------------
+// Configurável por organização e tipo de tarefa (ou específico para um agente).
+// Sem seed nem default global: sem baseline cadastrado, a ficha mostra "indisponível".
+export type BaselineMeasurementKind = "measured" | "estimated";
+
+export const humanBaselines = pgTable("human_baselines", {
+  id: id(),
+  orgId: text("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  taskType: text("task_type").notNull(),
+  /** Opcional: quando preenchido, sobrescreve o baseline do tipo de tarefa só para este agente. */
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "cascade" }),
+  humanMinutesPerTask: numeric("human_minutes_per_task", { precision: 8, scale: 2, mode: "number" }).notNull(),
+  humanAccuracyRate: numeric("human_accuracy_rate", { precision: 5, scale: 2, mode: "number" }).notNull(),
+  humanEscalationRate: numeric("human_escalation_rate", { precision: 5, scale: 2, mode: "number" }).notNull(),
+  /** Origem da medida pré-implantação: medido em campo ou estimado. */
+  measurementKind: text("measurement_kind").$type<BaselineMeasurementKind>().notNull().default("measured"),
+  /** Data da medição pré-implantação (YYYY-MM-DD). */
+  measuredAt: date("measured_at"),
+  notes: text("notes"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  humanBaselinesOrgTaskIdx: uniqueIndex("human_baselines_org_task_idx")
+    .on(table.orgId, sql`lower(trim(${table.taskType}))`)
+    .where(sql`"agent_id" IS NULL`),
+  humanBaselinesOrgAgentIdx: uniqueIndex("human_baselines_org_agent_idx")
+    .on(table.orgId, table.agentId)
+    .where(sql`"agent_id" IS NOT NULL`),
+  humanBaselinesMinutesCheck: check("human_baselines_minutes_check", sql`"human_minutes_per_task" >= 0`),
+  humanBaselinesAccuracyCheck: check("human_baselines_accuracy_check", sql`"human_accuracy_rate" >= 0 AND "human_accuracy_rate" <= 100`),
+  humanBaselinesEscalationCheck: check("human_baselines_escalation_check", sql`"human_escalation_rate" >= 0 AND "human_escalation_rate" <= 100`),
+  humanBaselinesMeasurementKindCheck: check("human_baselines_measurement_kind_check", sql`"measurement_kind" IN ('measured', 'estimated')`),
 }));
 
 // --- Snapshot de resultado por período (cunha · 0026) -------------------------
