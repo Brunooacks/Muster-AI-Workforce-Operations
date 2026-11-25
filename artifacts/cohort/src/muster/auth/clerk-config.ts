@@ -46,6 +46,7 @@ export function musterClerkAppearance(basePath: string) {
       formFieldLabel: "!text-[13px] !font-medium !text-[hsl(var(--foreground))]",
       formFieldInput:
         "!h-11 !rounded-xl !border !border-[hsl(var(--input))] !bg-[hsl(var(--background))] !shadow-none focus:!ring-2 focus:!ring-[hsl(var(--ring)/0.35)] focus:!border-[hsl(var(--ring))]",
+      formFieldHintText: "!text-[13px] !text-[hsl(var(--muted-foreground))] !mt-2",
       formButtonPrimary:
         "!h-11 !rounded-full !bg-[hsl(var(--primary))] hover:!opacity-90 !text-[hsl(var(--primary-foreground))] !text-sm !font-medium !shadow-none !normal-case",
       footerAction: "!hidden",
@@ -75,6 +76,7 @@ export function musterClerkLocalization(lang: Lang) {
     formFieldInputPlaceholder__emailAddress: t.emailPlaceholder,
     formFieldInputPlaceholder__password: t.passwordPlaceholder,
     formFieldInputPlaceholder__signUpPassword: t.newPasswordPlaceholder,
+    formFieldHintText__password: t.passwordRule,
     formButtonPrimary: t.continue,
     formFieldAction__forgotPassword: t.forgot,
     signIn: {
@@ -83,7 +85,13 @@ export function musterClerkLocalization(lang: Lang) {
     },
     signUp: {
       ...base.signUp,
-      start: { ...base.signUp?.start, title: t.cardSignUpTitle, subtitle: t.cardSignUpSubtitle, actionText: t.hasAccount, actionLink: t.signIn },
+      start: { 
+        ...base.signUp?.start, 
+        title: t.cardSignUpTitle, 
+        subtitle: `${t.cardSignUpSubtitle} ${t.passwordRule}`, 
+        actionText: t.hasAccount, 
+        actionLink: t.signIn 
+      },
     },
   };
 }
