@@ -72,6 +72,8 @@ export async function requireOrg(
         return;
       }
     }
+    res.status(403).json({ error: "Usuário sem vínculo com a organização ativa." });
+    return;
   }
 
   if (!claimedOrg) {

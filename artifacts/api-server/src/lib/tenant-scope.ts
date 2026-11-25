@@ -6,6 +6,7 @@ import {
   eventOutbox,
   projects,
   environments,
+  accessGroups,
   areas,
   teams,
   purposes,
@@ -38,6 +39,7 @@ import type { EnvironmentKind } from "@workspace/db/schema";
 
 /** Tabelas-raiz: pertencem diretamente a uma organização. */
 export const ROOT_TABLES = {
+  accessGroups,
   agents,
   projects,
   environments,
